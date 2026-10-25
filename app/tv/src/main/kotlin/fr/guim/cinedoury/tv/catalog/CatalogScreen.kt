@@ -20,7 +20,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.tv.material3.Text
@@ -80,7 +79,7 @@ fun CatalogScreen(
                 ),
             verticalArrangement = Arrangement.spacedBy(CineSpacing.xxl),
         ) {
-            item(key = "header") { CatalogHeader(variant, onToggleVariant, Modifier.focusRequester(firstFocus)) }
+            item(key = "header") { CatalogHeader(variant, onToggleVariant, firstFocus) }
             item(key = "colors") { ColorsSection() }
             item(key = "typography") { TypographySection() }
             item(key = "posters") { PostersSection() }
@@ -116,7 +115,7 @@ internal fun railDestinations() =
 private fun CatalogHeader(
     variant: ThemeVariant,
     onToggleVariant: () -> Unit,
-    toggleModifier: Modifier,
+    toggleFocus: FocusRequester,
 ) {
     val colors = CineTheme.colors
     val typography = CineTheme.typography
@@ -147,7 +146,8 @@ private fun CatalogHeader(
                 icon = CineIcons.Settings,
                 label = switch,
                 onClick = onToggleVariant,
-                modifier = toggleModifier.testTag("theme-toggle"),
+                focusRequester = toggleFocus,
+                modifier = Modifier.testTag("theme-toggle"),
             )
         }
     }

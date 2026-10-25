@@ -19,6 +19,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.layout
@@ -43,6 +45,7 @@ fun PrimaryButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     icon: ImageVector? = null,
+    focusRequester: FocusRequester? = null,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
 ) {
     val colors = CineTheme.colors
@@ -51,6 +54,7 @@ fun PrimaryButton(
         modifier =
             modifier
                 .height(CineSizes.buttonHeight)
+                .withFocusRequester(focusRequester)
                 .cineFocusable(interactionSource, PillShape, CineScale.BUTTON, onClick)
                 .background(if (pressed) colors.accentPressed else colors.accent)
                 .padding(start = if (icon != null) CineSpacing.m else CineSpacing.l, end = CineSpacing.l),
@@ -81,6 +85,7 @@ fun RoundIconButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     selected: Boolean = false,
+    focusRequester: FocusRequester? = null,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
 ) {
     val colors = CineTheme.colors
@@ -95,6 +100,7 @@ fun RoundIconButton(
             modifier =
                 Modifier
                     .size(CineSizes.roundButton)
+                    .withFocusRequester(focusRequester)
                     .cineFocusable(interactionSource, CircleShape, CineScale.BUTTON, onClick)
                     .background(if (focused) colors.text else colors.surface2),
             contentAlignment = Alignment.Center,
@@ -126,6 +132,10 @@ fun RoundIconButton(
         )
     }
 }
+
+/** Attaches [requester] to the focusable element itself, so that `requestFocus()` lands on it. */
+private fun Modifier.withFocusRequester(requester: FocusRequester?): Modifier =
+    if (requester == null) this else focusRequester(requester)
 
 /** Lays the element out at its own width but reports a zero width to its parent. */
 private fun Modifier.ignoreWidth(): Modifier =

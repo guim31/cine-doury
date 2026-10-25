@@ -56,7 +56,7 @@ class JellyfinConnectorTest {
             assertEquals("/Users/AuthenticateByName", authentication.url.encodedPath)
             val header = authentication.headers["Authorization"].orEmpty()
             assertTrue(header.startsWith("MediaBrowser "), header)
-            assertTrue("Client=\"Cine%20Doury\"" in header, header)
+            assertTrue("Client=\"Cine+Doury\"" in header, header)
             assertTrue("DeviceId=\"device-1\"" in header, header)
             assertTrue("Token=" !in header, "no token before sign-in: $header")
             assertEquals(null, authentication.headers["X-Emby-Token"])
