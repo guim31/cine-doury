@@ -128,8 +128,8 @@ class J3NavigationTest {
     fun `a film opens on « Reprendre », then the round buttons, then the cast`() {
         show(J3Samples.film)
         focusable(DetailsPreview.PLAY).assertIsFocused()
-        compose.onNode(hasText("Reprendre — 1 h 09 restantes")).assertExists()
-        compose.onNode(hasText("se termine à 22 h 07", substring = true)).assertExists()
+        compose.onNode(hasText("Reprendre — 1\u00A0h\u00A009 restantes")).assertExists()
+        compose.onNode(hasText("se termine à 22\u00A0h\u00A007", substring = true)).assertExists()
         press(Key.DirectionRight)
         focusable(DetailsPreview.RESTART).assertIsFocused()
         press(Key.DirectionCenter)
@@ -167,7 +167,7 @@ class J3NavigationTest {
     fun `a series offers its next episode, then its seasons and episodes`() {
         show(J3Samples.series)
         focusable(DetailsPreview.PLAY).assertIsFocused()
-        compose.onNode(hasText("Reprendre S01E02 — 24 min restantes")).assertExists()
+        compose.onNode(hasText("Reprendre S01E02 — 24\u00A0min restantes")).assertExists()
         press(Key.DirectionDown)
         focusable(DetailsPreview.season(0)).assertIsFocused()
         press(Key.DirectionRight)

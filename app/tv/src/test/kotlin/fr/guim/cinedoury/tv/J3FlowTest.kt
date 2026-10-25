@@ -150,7 +150,7 @@ class J3FlowTest {
         press(Key.DirectionCenter)
         waitFor(hasTestTag("playback-back"))
         compose.onNode(hasText("Anglais", substring = true)).assertExists()
-        compose.onNode(hasText("Reprise à 40 min", substring = true)).assertExists()
+        compose.onNode(hasText("Reprise à 40\u00A0min", substring = true)).assertExists()
 
         compose.pressBack()
         waitFor(hasTestTag(DetailsPreview.TRACKS))

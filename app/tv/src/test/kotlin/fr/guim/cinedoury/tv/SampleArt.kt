@@ -42,21 +42,25 @@ internal object SampleArt {
     ) = ImageRef(ItemId(title), type, tag = URLEncoder.encode(title, Charsets.UTF_8))
 
     val sources: (ImageRef) -> ImageSource = { ref ->
-        ImageSource { width, height -> "sample:${ref.type.name}:${ref.tag}:$width:$height" }
+        ImageSource { width, height -> "$SCHEME:${ref.type.name}:${ref.tag}:$width:$height" }
     }
 
     @OptIn(ExperimentalCoilApi::class)
     private val handler =
         AsyncImagePreviewHandler { _, request ->
             val parts = request.data.toString().split(":")
-            val title = URLDecoder.decode(parts[TAG], Charsets.UTF_8)
+            // An image that is not one of ours (the samples of J2 have none): a backdrop of its name.
             val image =
-                draw(
-                    ImageType.valueOf(parts[TYPE]),
-                    title,
-                    parts[WIDTH].toInt(),
-                    parts[HEIGHT].toInt(),
-                ).asImage()
+                if (parts.size > HEIGHT && parts[0] == SCHEME) {
+                    draw(
+                        ImageType.valueOf(parts[TYPE]),
+                        URLDecoder.decode(parts[TAG], Charsets.UTF_8),
+                        parts[WIDTH].toInt(),
+                        parts[HEIGHT].toInt(),
+                    )
+                } else {
+                    draw(ImageType.Backdrop, request.data.toString(), FALLBACK_SIZE, FALLBACK_SIZE)
+                }.asImage()
             AsyncImagePainter.State.Success(image.asPainter(request.context), SuccessResult(image, request))
         }
 
@@ -138,6 +142,8 @@ internal object SampleArt {
         return android.graphics.Color.HSVToColor(hsv)
     }
 
+    private const val SCHEME = "sample"
+    private const val FALLBACK_SIZE = 64
     private const val TYPE = 1
     private const val TAG = 2
     private const val WIDTH = 3

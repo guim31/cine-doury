@@ -152,7 +152,14 @@ fun DetailsScreen(
     var focused by rememberSaveable { mutableStateOf<String?>(null) }
     val requesters = remember { FocusRequesters() }
     val item = state.item
-    BackHandler(enabled = panel != null) { panel = if (panel == DetailsPanel.FileInfo) DetailsPanel.More else null }
+    // A closing panel first gives the focus back to the element that opened it, then fades out.
+    val closePanel = {
+        focused?.let { runCatching { requesters[it].requestFocus() } }
+        panel = null
+    }
+    BackHandler(enabled = panel != null) {
+        if (panel == DetailsPanel.FileInfo) panel = DetailsPanel.More else closePanel()
+    }
 
     val play: () -> Unit = { actions.playRequest()?.let(navigation::play) }
     val open: (MediaItem) -> Unit = navigation::open
@@ -209,9 +216,9 @@ fun DetailsScreen(
             panel = panel,
             state = state,
             actions = actions,
-            onPanel = { panel = it },
+            onPanel = { if (it == null) closePanel() else panel = it },
             onPlay = {
-                panel = null
+                closePanel()
                 play()
             },
         )

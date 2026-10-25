@@ -6,7 +6,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -64,28 +68,32 @@ internal fun DetailsPanels(
     onPanel: (DetailsPanel?) -> Unit,
     onPlay: () -> Unit,
 ) {
+    // While the panel fades out, it keeps its lines: none of them leaves with the focus on it.
+    var last by remember { mutableStateOf(panel) }
+    SideEffect { if (panel != null) last = panel }
+    val shown = panel ?: last
     val title =
-        when (panel) {
+        when (shown) {
             DetailsPanel.Tracks -> stringResource(R.string.panel_tracks)
             DetailsPanel.More -> state.item.title
             DetailsPanel.FileInfo -> stringResource(R.string.panel_file)
             null -> ""
         }
     val lines =
-        when (panel) {
+        when (shown) {
             DetailsPanel.Tracks -> trackLines(state, actions, onPlay)
             DetailsPanel.More -> moreLines(state, actions, onPanel)
             DetailsPanel.FileInfo -> fileLines(state.item.mediaSources)
             null -> emptyList()
         }
-    val wide = panel != DetailsPanel.More
+    val wide = shown != DetailsPanel.More
     SidePanel(
         visible = panel != null,
         title = title,
         width = if (wide) CineSizes.widePanelWidth else CineSizes.panelWidth,
         modifier = Modifier.testTag("details-panel"),
     ) {
-        val first = remember(panel) { FocusRequester() }
+        val first = remember(shown) { FocusRequester() }
         val initial =
             lines.indexOfFirst { it is PanelLine.Choice && it.initial }.takeIf { it >= 0 }
                 ?: lines.indexOfFirst { it is PanelLine.Choice }
