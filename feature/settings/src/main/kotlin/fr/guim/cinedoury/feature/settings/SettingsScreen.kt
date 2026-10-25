@@ -67,6 +67,9 @@ interface SettingsNavigation {
     /** The playback profile of the device, in debug builds (J4). */
     fun deviceProfile()
 
+    /** « Demandes (Seerr) » (J5). */
+    fun seerr() = Unit
+
     fun profileClosed()
 
     fun serverForgotten()
@@ -239,6 +242,16 @@ fun SettingsScreen(
                         icon = CineIcons.Tracks,
                         onClick = navigation::subtitles,
                         modifier = Modifier.testTag("subtitle-settings-row"),
+                    )
+                }
+                item { ListSectionTitle(stringResource(R.string.section_search)) }
+                item {
+                    ListRow(
+                        title = stringResource(R.string.seerr_settings),
+                        description = stringResource(R.string.seerr_settings_description),
+                        icon = CineIcons.Request,
+                        onClick = navigation::seerr,
+                        modifier = Modifier.testTag("seerr-settings-row"),
                     )
                 }
                 item { ListSectionTitle(stringResource(R.string.section_startup)) }

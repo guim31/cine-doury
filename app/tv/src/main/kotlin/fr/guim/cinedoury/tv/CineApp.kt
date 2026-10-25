@@ -43,7 +43,6 @@ import fr.guim.cinedoury.core.designsystem.theme.ThemeVariant
 import fr.guim.cinedoury.core.model.MediaItem
 import fr.guim.cinedoury.core.model.PlaybackRequest
 import fr.guim.cinedoury.core.model.RemoteTrailer
-import fr.guim.cinedoury.core.ui.ComingSoonScreen
 import fr.guim.cinedoury.core.ui.RailTarget
 import fr.guim.cinedoury.core.ui.avatarSource
 import fr.guim.cinedoury.feature.auth.AddressMode
@@ -67,9 +66,15 @@ import fr.guim.cinedoury.feature.player.DeviceProfileRoute
 import fr.guim.cinedoury.feature.player.PlaybackSettingsRoute
 import fr.guim.cinedoury.feature.player.PlayerRoute
 import fr.guim.cinedoury.feature.player.SubtitleSettingsRoute
+import fr.guim.cinedoury.feature.search.SearchNavigation
+import fr.guim.cinedoury.feature.search.SearchRoute
+import fr.guim.cinedoury.feature.search.SeerrSettingsRoute
 import fr.guim.cinedoury.feature.settings.SettingsNavigation
 import fr.guim.cinedoury.feature.settings.SettingsRoute
 import fr.guim.cinedoury.tv.catalog.CatalogScreen
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.emptyFlow
 import org.koin.compose.koinInject
 import fr.guim.cinedoury.core.ui.R as UiR
 
@@ -84,7 +89,21 @@ fun CineApp(
     showCatalog: Boolean,
     navigator: Navigator = remember { Navigator(Route.Startup) },
     sessions: SessionManager = koinInject(),
+    searchKeys: Flow<SearchKey> = emptyFlow(),
 ) {
+    val voiceRequests = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
+    LaunchedEffect(searchKeys) {
+        searchKeys.collect { key ->
+            val route = navigator.current.route
+            val allowed =
+                route in SEARCHABLE_FROM || route is Route.Search || route is Route.Details || route is Route.Library
+            when {
+                !allowed -> Unit
+                route is Route.Search && key == SearchKey.Voice -> voiceRequests.tryEmit(Unit)
+                else -> navigator.openSearch(voice = key == SearchKey.Voice)
+            }
+        }
+    }
     val saveable = rememberSaveableStateHolder()
     navigator.onRemoved = { saveable.removeState(it.id) }
     val reduced = CineTheme.reducedMotion
@@ -111,7 +130,7 @@ fun CineApp(
                 LocalSharedElements provides SharedElements(this@SharedTransitionLayout, this@AnimatedContent),
             ) {
                 saveable.SaveableStateProvider(entry.id) {
-                    Screen(entry.route, navigator, sessions, variant, onToggleVariant, showCatalog)
+                    Screen(entry.route, navigator, sessions, variant, onToggleVariant, showCatalog, voiceRequests)
                 }
             }
         }
@@ -126,6 +145,7 @@ private fun Screen(
     variant: ThemeVariant,
     onToggleVariant: () -> Unit,
     showCatalog: Boolean,
+    voiceRequests: Flow<Unit>,
 ) {
     when (route) {
         Route.Startup -> {
@@ -170,7 +190,7 @@ private fun Screen(
         }
 
         else -> {
-            SessionScreen(route, navigator, sessions, variant, onToggleVariant, showCatalog)
+            SessionScreen(route, navigator, sessions, variant, onToggleVariant, showCatalog, voiceRequests)
         }
     }
 }
@@ -184,6 +204,7 @@ private fun SessionScreen(
     variant: ThemeVariant,
     onToggleVariant: () -> Unit,
     showCatalog: Boolean,
+    voiceRequests: Flow<Unit>,
 ) {
     val home = { navigator.replaceAll(Route.Home) }
     when (route) {
@@ -231,12 +252,16 @@ private fun SessionScreen(
             HomeSettingsRoute()
         }
 
-        Route.Search -> {
-            ComingSoonScreen(
-                title = stringResource(UiR.string.soon_title_search),
-                message = stringResource(UiR.string.soon_message_search),
-                onBack = { navigator.pop() },
+        is Route.Search -> {
+            SearchRoute(
+                navigation = searchNavigation(navigator, sessions),
+                voiceAtStart = route.voice,
+                voiceRequests = voiceRequests,
             )
+        }
+
+        Route.SeerrSettings -> {
+            SeerrSettingsRoute()
         }
 
         is Route.Details -> {
@@ -276,6 +301,18 @@ private fun SessionScreen(
     }
 }
 
+/** The « Recherche » keys of the remote (`SPEC.md` § 4.12). */
+enum class SearchKey {
+    /** « Recherche » (`KEYCODE_SEARCH`): the search screen. */
+    Search,
+
+    /** The voice key, when the system lets the app have it: the search, listening. */
+    Voice,
+}
+
+/** The screens a « Recherche » key leads from: the navigation screens, never the player or sign-in. */
+private val SEARCHABLE_FROM = setOf(Route.Home, Route.Settings, Route.HomeSettings)
+
 /** The rail, from any navigation screen: one screen per destination, « Retour » goes home. */
 private fun Navigator.navigate(
     target: RailTarget,
@@ -287,7 +324,7 @@ private fun Navigator.navigate(
         }
 
         RailTarget.Search -> {
-            push(Route.Search)
+            openSearch(voice = false)
         }
 
         is RailTarget.Library -> {
@@ -308,6 +345,26 @@ private fun Navigator.navigate(
             push(Route.Settings)
         }
     }
+}
+
+/**
+ * The search, from anywhere a session is open (`SPEC.md` § 4.12): the one already in the stack (its
+ * query and results kept), else a new one.
+ */
+internal fun Navigator.openSearch(voice: Boolean) {
+    if (current.route is Route.Search) return
+    if (!popTo { it is Route.Search }) push(Route.Search(voice))
+}
+
+private fun searchNavigation(
+    navigator: Navigator,
+    sessions: SessionManager,
+) = object : SearchNavigation {
+    override fun navigate(target: RailTarget) = navigator.navigate(target, sessions)
+
+    override fun open(item: MediaItem) = navigator.push(Route.Details(item))
+
+    override fun sessionEnded() = navigator.replaceAll(Route.Profiles)
 }
 
 private fun homeNavigation(
@@ -393,6 +450,8 @@ private fun settingsNavigation(navigator: Navigator) =
         override fun subtitles() = navigator.push(Route.SubtitleSettings)
 
         override fun deviceProfile() = navigator.push(Route.DeviceProfile)
+
+        override fun seerr() = navigator.push(Route.SeerrSettings)
 
         override fun profileClosed() = navigator.replaceAll(Route.Profiles)
 

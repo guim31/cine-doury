@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="search_title">Recherche</string>
+    <string name="search_placeholder">Titre, personne, collection…</string>
+    <string name="key_space">Espace</string>
+    <string name="key_erase">Effacer</string>
+    <string name="key_clear">Tout effacer</string>
+    <string name="key_accents" translatable="false">àé</string>
+    <string name="key_letters" translatable="false">abc</string>
+    <string name="key_accents_description">Accents</string>
+    <string name="key_letters_description">Lettres</string>
+    <string name="action_voice">Recherche vocale</string>
+    <string name="action_system_keyboard">Clavier du système</string>
+    <string name="system_keyboard_label">Rechercher</string>
+    <string name="row_recent">Recherches récentes</string>
+    <string name="action_clear_recent">Effacer l\'historique</string>
+    <string name="row_latest">Ajouts récents</string>
+    <string name="row_genres">Genres</string>
+    <string name="row_movies">Films</string>
+    <string name="row_series">Séries</string>
+    <string name="row_episodes">Épisodes</string>
+    <string name="row_people">Personnes</string>
+    <string name="row_collections">Collections</string>
+    <string name="row_request">Pas dans la bibliothèque ? Demander</string>
+    <string name="genre_title">Genre : %1$s</string>
+    <string name="results_pending">Recherche sur le serveur…</string>
+    <string name="results_empty_title">Aucun résultat pour « %1$s »</string>
+    <string name="results_empty_message">Vérifiez l\'orthographe, ou essayez un autre mot du titre.</string>
+    <string name="results_error">Le serveur n\'a pas répondu. Les résultats viennent de l\'index de l\'appareil.</string>
+    <string name="results_retry">Réessayer</string>
+    <string name="request_failed_row">Seerr n\'a pas répondu.</string>
+    <string name="voice_listening">Je vous écoute…</string>
+    <string name="voice_hint">Dites un titre, une personne ou une collection.</string>
+    <string name="voice_unavailable">La recherche vocale n\'est pas disponible sur cet appareil.</string>
+    <string name="voice_no_match">Je n\'ai pas compris. Appuyez sur le micro pour réessayer.</string>
+    <string name="voice_denied">Le micro n\'est pas autorisé. Autorisez-le dans les réglages de la TV.</string>
+    <string name="status_requested">Demandé</string>
+    <string name="status_partly">En partie disponible</string>
+    <string name="status_available">Disponible</string>
+    <string name="status_line" translatable="false">%1$s · %2$s</string>
+    <string name="request_confirm_title">Demander « %1$s » ?</string>
+    <string name="request_confirm_message">Seerr le demandera en votre nom. Il arrivera dans la bibliothèque une fois récupéré.</string>
+    <string name="request_confirm">Demander</string>
+    <string name="request_cancel">Annuler</string>
+    <string name="request_seasons_title">Saisons de « %1$s »</string>
+    <string name="request_seasons_loading">Lecture des saisons…</string>
+    <string name="request_season">Saison %1$d</string>
+    <plurals name="request_season_episodes">
+        <item quantity="one">%1$d épisode</item>
+        <item quantity="many">%1$d épisodes</item>
+        <item quantity="other">%1$d épisodes</item>
+    </plurals>
+    <string name="request_season_chosen">Choisie</string>
+    <plurals name="request_seasons_confirm">
+        <item quantity="one">Demander %1$d saison</item>
+        <item quantity="many">Demander %1$d saisons</item>
+        <item quantity="other">Demander %1$d saisons</item>
+    </plurals>
+    <string name="request_seasons_none">Choisissez au moins une saison.</string>
+    <string name="request_failed_title">La demande n\'a pas abouti</string>
+    <string name="request_failed_message">Seerr n\'a pas répondu ou a refusé la demande. Vérifiez ses réglages, puis réessayez.</string>
+    <string name="request_retry">Réessayer</string>
+    <string name="seerr_title">Demandes (Seerr)</string>
+    <string name="seerr_subtitle">Avec un serveur Seerr, Jellyseerr ou Overseerr, la recherche propose de demander les titres absents de la bibliothèque.</string>
+    <string name="seerr_address">Adresse du serveur Seerr</string>
+    <string name="seerr_address_placeholder">http://192.0.2.10:5055</string>
+    <string name="seerr_key">Clé d\'API</string>
+    <string name="seerr_key_placeholder">Réglages de Seerr, « Général »</string>
+    <string name="seerr_show_key">Afficher la clé</string>
+    <string name="seerr_hide_key">Masquer la clé</string>
+    <string name="seerr_save">Vérifier et enregistrer</string>
+    <string name="seerr_remove">Retirer Seerr</string>
+    <string name="seerr_checking">Vérification…</string>
+    <string name="seerr_saved">Seerr %1$s est configuré.</string>
+    <string name="seerr_not_set">Non configuré</string>
+    <string name="seerr_error_unreachable">Le serveur Seerr ne répond pas. Vérifiez l\'adresse et le port, puis réessayez.</string>
+    <string name="seerr_error_key">Seerr refuse cette clé. Recopiez la clé d\'API depuis ses réglages.</string>
+    <string name="seerr_error_not_seerr">Ce n\'est pas un serveur Seerr. Vérifiez l\'adresse, sans chemin en trop.</string>
+    <string name="seerr_error_other">Seerr a répondu par une erreur. Réessayez dans un instant.</string>
+    <string name="seerr_error_empty">Saisissez l\'adresse et la clé d\'API.</string>
+</resources>

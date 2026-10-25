@@ -55,7 +55,13 @@ sealed interface Route {
 
     data object HomeSettings : Route
 
-    data object Search : Route
+    /** The search (J5); [voice]: opened by the voice key of the remote, it listens at once. */
+    data class Search(
+        val voice: Boolean = false,
+    ) : Route
+
+    /** « Demandes (Seerr) » (J5). */
+    data object SeerrSettings : Route
 
     /** The details of an item: a film, a series, an episode, a person, a collection. */
     data class Details(
