@@ -10,11 +10,15 @@ import fr.guim.cinedoury.core.data.SessionManager
 import fr.guim.cinedoury.core.data.UserDataUpdates
 import fr.guim.cinedoury.core.data.db.CineDatabase
 import fr.guim.cinedoury.core.data.home.HomeRepository
+import fr.guim.cinedoury.core.data.home.ProfileKey
 import fr.guim.cinedoury.core.data.index.IndexScheduler
 import fr.guim.cinedoury.core.data.index.LibraryIndex
 import fr.guim.cinedoury.core.data.library.LibraryIconRepository
 import fr.guim.cinedoury.core.data.library.LibraryStateRepository
 import fr.guim.cinedoury.core.data.prefs.AppPreferences
+import fr.guim.cinedoury.core.data.search.RequestSettings
+import fr.guim.cinedoury.core.data.search.SearchRepository
+import fr.guim.cinedoury.core.data.search.TitleIndex
 import fr.guim.cinedoury.core.data.security.KeystoreTokenCipher
 import fr.guim.cinedoury.core.data.security.TokenCipher
 import fr.guim.cinedoury.core.data.server.AddressResolver
@@ -31,8 +35,17 @@ val dataModule =
         single { get<CineDatabase>().preferences() }
         single { get<CineDatabase>().index() }
         single { LibraryIndex(get()) }
+        single { get<CineDatabase>().search() }
+        single { TitleIndex(get()) }
+        single { SearchRepository(get()) }
+        single {
+            RequestSettings(
+                PreferenceDataStoreFactory.create { androidContext().preferencesDataStoreFile(RequestSettings.FILE) },
+                get(),
+            )
+        }
         single { LibraryIconRepository(get()) }
-        single { IndexScheduler(get(), get()) }
+        single { IndexScheduler(get(), get(), get()) }
         single { HomeRepository(get(), get()) }
         single { LibraryStateRepository(get()) }
         single { UserDataUpdates() }
@@ -49,10 +62,18 @@ val dataModule =
         single {
             val home = get<HomeRepository>()
             val index = get<LibraryIndex>()
+            val titles = get<TitleIndex>()
+            val search = get<SearchRepository>()
+            val requests = get<RequestSettings>()
             SessionManager(get(), get(), get(), get(), get()) { serverId, userId ->
                 home.clear(serverId, userId)
-                // The index and the icons belong to the server, not to a profile.
-                if (userId == null) index.clear(serverId)
+                if (userId != null) search.clearRecent(ProfileKey(serverId, userId))
+                // The indexes, the icons and the request server belong to the server, not to a profile.
+                if (userId == null) {
+                    index.clear(serverId)
+                    titles.clear(serverId)
+                    requests.clear(serverId)
+                }
             }
         }
     }

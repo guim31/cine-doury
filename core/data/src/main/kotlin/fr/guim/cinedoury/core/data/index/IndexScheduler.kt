@@ -2,6 +2,7 @@ package fr.guim.cinedoury.core.data.index
 
 import fr.guim.cinedoury.core.data.ActiveSession
 import fr.guim.cinedoury.core.data.SessionManager
+import fr.guim.cinedoury.core.data.search.TitleIndex
 import fr.guim.cinedoury.core.source.SourceException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -17,13 +18,15 @@ import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * Keeps the local index up to date in the background (`SPEC.md` § 4.10): once a profile is open (a
- * few seconds later, so that the home loads first), then every few hours while the app runs. Never on
- * the main thread; a failure waits for the next turn.
+ * Keeps the local index, and the title index of the search (J5), up to date in the background
+ * (`SPEC.md` § 4.10): once a profile is open (a few seconds later, so that the home loads first),
+ * then every few hours while the app runs. Never on the main thread; a failure waits for the next
+ * turn.
  */
 class IndexScheduler(
     private val sessions: SessionManager,
     private val index: LibraryIndex,
+    private val titles: TitleIndex? = null,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
     private val startDelay: Duration = START_DELAY,
 ) {
@@ -57,8 +60,20 @@ class IndexScheduler(
         active: ActiveSession,
         whole: Boolean,
     ) {
+        val libraries =
+            try {
+                active.library.libraries()
+            } catch (_: SourceException) {
+                return
+            }
         try {
-            index.sync(active.profile.serverId, active.library, active.library.libraries(), whole)
+            // The titles first: the search needs them, and they read fast (no media sources).
+            titles?.sync(active.profile.serverId, active.library, libraries, whole)
+        } catch (_: SourceException) {
+            // The search falls back on the server; the next turn tries again.
+        }
+        try {
+            index.sync(active.profile.serverId, active.library, libraries, whole)
         } catch (_: SourceException) {
             // Shown in the settings by the status of the index; the next turn tries again.
         }
