@@ -268,6 +268,14 @@ l'image de l'utilisateur (`/UserImage?userId=…&tag=…`, servie en une seule t
 sur un disque coloré d'après le nom. Un profil connecté s'ouvre directement (après son PIN) ;
 sinon Quick Connect, puis mot de passe.
 
+**Captures** (`docs/screenshots/j1/`, 1920 × 1080, sombre et noir OLED, 26 vues × 2) : le catalogue
+retouché (01 à 11, dont le fond d'ambiance en 10 et 11), puis premier lancement (20), serveurs trouvés
+(21), saisie d'adresse (22), Quick Connect (23), identifiants (24), choix du profil (25), PIN (26,
+27), erreurs : serveur injoignable (28), identifiants refusés (29), code expiré (30), serveur trop
+ancien (31), accueil provisoire (32), réglages (33), oubli du serveur (34). Tests : `J1ScreenshotTest`,
+`J1NavigationTest` (croix directionnelle), `AppFlowTest` (parcours complet sur une source en
+mémoire, avec Room, DataStore et les vrais modèles de vue).
+
 **Navigation** : une pile d'écrans maison (`Navigator`, une douzaine d'écrans, aucun lien profond),
 chaque entrée ayant son `ViewModelStore` et son état sauvegardé ; « Retour » dépile, un parcours
 achevé (connecté, serveur oublié) remplace toute la pile.
