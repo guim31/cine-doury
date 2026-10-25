@@ -192,6 +192,7 @@ private fun SessionScreen(
                 onOpened = home,
                 onSignIn = { username -> navigator.push(Route.QuickConnect(username)) },
                 onPin = { profile -> navigator.push(Route.Pin(profile, PinPurpose.Unlock)) },
+                onPassword = { navigator.push(Route.Password(null)) },
             )
         }
 

@@ -11,7 +11,8 @@ android {
         applicationId = "fr.guim.cinedoury"
         versionCode = 1
         versionName = "0.1.0"
-        // On the emulator of the CI: real playback against the test Jellyfin (PlaybackOnDeviceTest).
+        // On the emulator of the CI: real playback (PlaybackOnDeviceTest) and the sign-in with the remote
+        // (SignInJourneyTest) against the test Jellyfin, the real Keystore (KeystoreTokenCipherTest).
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -83,4 +84,6 @@ dependencies {
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.kotlin.test)
     androidTestImplementation(libs.kotlinx.coroutines.test)
+    androidTestImplementation(platform(libs.compose.bom))
+    androidTestImplementation(libs.compose.ui.test.junit4)
 }

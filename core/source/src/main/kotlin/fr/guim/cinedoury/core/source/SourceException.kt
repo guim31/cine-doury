@@ -5,6 +5,27 @@ package fr.guim.cinedoury.core.source
  * [message] is the technical detail shown under « Plus d'infos ».
  */
 sealed class SourceException(message: String, cause: Throwable? = null) : Exception(message, cause) {
+    /**
+     * The request that failed, as its method and path template (« POST /Users/AuthenticateByName »):
+     * never a query, a token or a password. Null when the failure did not come from a request.
+     */
+    var request: String? = null
+        private set
+
+    /** The HTTP status of the answer, when one came. */
+    var httpStatus: Int? = null
+        private set
+
+    /** Records the request that failed; returns this exception, for `throw`. */
+    fun at(
+        request: String?,
+        httpStatus: Int?,
+    ): SourceException {
+        if (request != null) this.request = request
+        if (httpStatus != null) this.httpStatus = httpStatus
+        return this
+    }
+
     /** No answer: wrong address, server off, network down, timeout. */
     class Unreachable(cause: Throwable? = null) : SourceException("Server unreachable", cause)
 

@@ -36,6 +36,8 @@
     <string name="profiles_title">Who is watching?</string>
     <string name="profiles_other">Other account</string>
     <string name="profiles_to_sign_in">Sign-in needed</string>
+    <string name="profiles_hidden_hint">Your account is not listed? Choose Other account.</string>
+    <string name="profiles_quick_connect">Sign in with Quick Connect</string>
     <string name="pin_unlock_title">Enter the PIN</string>
     <string name="pin_create_title">Choose a PIN</string>
     <string name="pin_create_subtitle">Four digits, asked when this profile opens on this TV.</string>

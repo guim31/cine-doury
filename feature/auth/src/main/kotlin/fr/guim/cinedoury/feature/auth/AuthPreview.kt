@@ -11,4 +11,5 @@ object AuthPreview {
     const val SIGN_IN = "sign-in"
     const val PROFILE = "profile-0"
     const val KEY = "key-5"
+    const val PROFILES_QUICK_CONNECT = "profiles-quick-connect"
 }

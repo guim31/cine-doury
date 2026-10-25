@@ -3,6 +3,7 @@ package fr.guim.cinedoury.core.data.server
 import fr.guim.cinedoury.core.data.Connection
 import fr.guim.cinedoury.core.data.ConnectionMode
 import fr.guim.cinedoury.core.data.SavedServer
+import fr.guim.cinedoury.core.source.FailureLog
 import fr.guim.cinedoury.core.source.ServerAddress
 import fr.guim.cinedoury.core.source.SourceConnector
 import fr.guim.cinedoury.core.source.SourceException
@@ -46,9 +47,19 @@ class AddressResolver(
         try {
             val info = withTimeoutOrNull(timeout) { connector.serverInfo(address) }
             when {
-                info == null -> SourceException.Unreachable()
-                info.id != server.id -> SourceException.NotAServer("Another server (${info.name}) answers at $address")
-                else -> null
+                info == null -> {
+                    SourceException.Unreachable().also { FailureLog.warn("No answer in $timeout at $address") }
+                }
+
+                info.id != server.id -> {
+                    SourceException
+                        .NotAServer("Another server (${info.name}) answers at $address")
+                        .also { FailureLog.warn("Address resolver: ${it.message}") }
+                }
+
+                else -> {
+                    null
+                }
             }
         } catch (error: SourceException) {
             error

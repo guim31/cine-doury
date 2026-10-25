@@ -17,6 +17,7 @@ son domaine :
 | J2 — Accueil et navigation | terminé, fusionné | [#3](https://github.com/guim31/cine-doury/pull/3) |
 | J3 — Fiches (et retouches du J2 : raccord du bandeau, vignettes, index local et filtres HDR/audio, icônes de bibliothèque, clé de débogage) | terminé, fusionné | [#4](https://github.com/guim31/cine-doury/pull/4) |
 | J4 — Lecteur (et retouches du J3 : pastilles des pistes, groupes insécables, logo à la place de l'affiche) | terminé, en revue (captures dans `docs/screenshots/j4/`, numéros 90 à 108 ; ajout : taille des sous-titres en cours de lecture) | [#5](https://github.com/guim31/cine-doury/pull/5) |
+| Essai réel 1 (25/10/2026, Chromecast avec Google TV) : connexion, Quick Connect, saisie à la télécommande, « Plus d'infos », journal | en revue (§ 4.12 ; captures 35 et 36) | [#6](https://github.com/guim31/cine-doury/pull/6) |
 
 *(Chaque jalon met à jour ce tableau et ajoute ses contrats au § 4.)*
 
@@ -883,6 +884,40 @@ d'un bloc) et les pistes (78, 79 : pastilles). Le lecteur provisoire (86) dispar
   « S01 · E02 », « 10:47 PM » (`UI.md` § 5).
 - **Logo ou affiche** : un film, une série ou une collection qui a un logo n'affiche plus son
   affiche ; l'affiche de la carte vole vers le logo en s'y fondant (`sharedBounds`, des deux côtés).
+
+### 4.12 Essai réel 1 : diagnostic et saisie (25/10/2026)
+
+Premier essai sur un appareil réel (Chromecast avec Google TV, Android 14, Gboard) branché au
+Jellyfin 12.3 de la maison, avec l'APK du J3. Défauts et corrections :
+
+| Défaut | Cause | Correction |
+|---|---|---|
+| Connexion par mot de passe : « erreur inattendue » alors que le serveur l'accepte | le client OkHttp du SDK lit le corps de la réponse dans la coroutine appelante, après `enqueue` ; appelé depuis un modèle de vue (fil principal), Android lève `NetworkOnMainThreadException` dès que le corps n'arrive pas avec les en-têtes (Kestrel répond en morceaux, `Transfer-Encoding: chunked`) ; `jellyfinCall` en faisait un `SourceException.Unexpected`, sans journal | `TracingApiClient` enveloppe le client du SDK : chaque requête s'exécute sur `Dispatchers.IO`, le décodage sur `Dispatchers.Default` |
+| Quick Connect échoue d'emblée | même cause, dès `GET /QuickConnect/Enabled` (corps `true` en morceaux), que le serveur ne journalise pas | idem |
+| Erreur passagère au choix d'un serveur découvert | même cause sur `/System/Info/Public` : l'échec dépend de l'arrivée du dernier morceau dans le premier paquet ou non (et non de `AddressResolver`, que ce chemin n'emprunte pas) | idem |
+| « Plus d'infos » vide et hors de l'écran | le détail s'ouvrait sous le pli d'un écran qui ne défile pas, sans focus possible | `FormScreen` défile ; le détail est focalisable, est ramené à l'écran (`BringIntoViewRequester`) et reçoit le focus à l'ouverture et dit la classe de l'exception, son message, la requête (méthode et chemin, `SourceException.request`), le code HTTP (`httpStatus`) et chaque cause |
+| Aucun journal | les erreurs étaient converties sans trace | `FailureLog` (`:core:source`) : chaque échec attrapé y passe, avec sa pile ; l'appli l'envoie à logcat, balise `CineDoury` (W, ou E pour un échec local après la réponse du serveur : Keystore, Room, DataStore, désormais montré au lieu de fermer l'appli). Jamais de secret : une requête s'y nomme par sa méthode et son chemin |
+| Piège à focus dans les champs | Compose ne laisse sortir la croix d'un champ que pour un appareil qui se déclare « D-pad », ce que la télécommande Bluetooth ne fait pas ; le clavier s'ouvrait dès l'arrivée du focus et prenait la croix ; « Suivant » était remplacé par une action vide ; le clavier, ouvert à l'appui sur OK, recevait le relâchement et tapait la touche sous son focus (le « a ») | `CineTextField` à deux niveaux : le focus arrive sur le cadre, où la croix circule ; OK, au relâchement, ouvre la saisie ; en saisie, haut et bas quittent le champ, gauche et droite aux extrémités du texte ; « Suivant » passe au champ du dessous, « OK » / « Terminé » lance l'action (connexion, adresse). Champs sur `TextFieldState` |
+| Focus initial sur « Saisir une adresse » malgré un serveur trouvé | choix délibéré du J1 | le premier serveur trouvé prend le focus dès qu'il apparaît, tant qu'aucune touche n'a été pressée |
+| Compte masqué : seul « Autre compte » | Jellyfin cache les nouveaux utilisateurs, dont l'administrateur créé par l'assistant | « Votre compte n'apparaît pas ? Choisissez Autre compte. » sous le titre ; sans aucun profil listé, « Se connecter avec Quick Connect » et « Utiliser un mot de passe » directement |
+
+- **Serveur de test** : `bootstrap.sh` crée un utilisateur masqué `parent` (mot de passe
+  `cinedoury-parent`, serveur jetable), avec image, politique complète (bibliothèques choisies,
+  étiquettes, horaires, limites) et préférences : la forme des réponses d'un vrai serveur. Ses
+  réponses (`/Users/AuthenticateByName`, `/QuickConnect/*`) sont enregistrées dans
+  `source/jellyfin/src/test/resources/fixtures/` (jeton et adresse remplacés).
+- **Tests** : `RealServerAnswersTest` rejoue ces réponses en morceaux et lentement, vers un
+  connecteur appelé d'un fil « principal » dont les sockets refusent de lire, comme Android (il
+  échoue avec l'ancien code, exactement comme l'appareil) ; `JellyfinHiddenUserIntegrationTest`
+  contre le Jellyfin de la CI ; `SessionManagerTest` (Keystore en échec) ; `RemoteInputTest`
+  (champs, focus des serveurs, « Plus d'infos », compte masqué). Sur l'émulateur API 34 TV de la
+  CI (`ci/emulator-signin.sh`, après la lecture du J4) : `KeystoreTokenCipherTest` (vrai Keystore) et
+  `SignInJourneyTest`, le parcours du premier lancement à l'accueil, puis au lecteur par « Lire »,
+  contre le Jellyfin de la CI (`10.0.2.2:8096`), au
+  clavier virtuel par le vrai circuit d'entrée d'Android (touches de la croix et OK) et à l'IME
+  (texte, « OK »). Les journaux `CineDoury` de l'émulateur sont joints aux artefacts.
+- **Captures** (`docs/screenshots/j4/`, où la CI les copie) : erreur avec « Plus d'infos » déplié
+  (35), « Qui regarde ? » sans profil listé (36) ; « Qui regarde ? » (25) porte désormais la phrase sur les comptes masqués.
 
 ## 5. Tests et CI
 

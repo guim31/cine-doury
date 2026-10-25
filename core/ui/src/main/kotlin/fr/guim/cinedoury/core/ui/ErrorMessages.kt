@@ -1,10 +1,12 @@
 package fr.guim.cinedoury.core.ui
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.res.stringResource
 import fr.guim.cinedoury.core.designsystem.component.CineFocus
+import fr.guim.cinedoury.core.designsystem.component.InitialFocus
 import fr.guim.cinedoury.core.designsystem.component.MessagePanel
 import fr.guim.cinedoury.core.designsystem.component.rememberCineFocus
 import fr.guim.cinedoury.core.source.SourceException
@@ -67,10 +69,28 @@ fun SourceException.toErrorText(): ErrorText {
                 stringResource(R.string.error_unexpected_title) to stringResource(R.string.error_unexpected_message)
             }
         }
-    val origin = cause?.let { "${it::class.simpleName}: ${it.message.orEmpty()}" }
-    val details = listOfNotNull("${this::class.simpleName}: ${this.message.orEmpty()}", origin).joinToString("\n")
-    return ErrorText(title, message, details)
+    return ErrorText(title, message, details())
 }
+
+/**
+ * The technical detail of « Plus d'infos »: the failure, the request (method and path, never a
+ * token or a password: `SourceException.request`), the HTTP status and each cause with its class.
+ */
+@Composable
+private fun SourceException.details(): String {
+    val request = request?.let { stringResource(R.string.error_detail_request, it) }
+    val status = httpStatus?.let { stringResource(R.string.error_detail_status, it) }
+    val causes =
+        generateSequence(cause) { it.cause?.takeIf { next -> next !== it } }
+            .take(MAX_CAUSES)
+            .map { "${it.javaClass.name}: ${it.message.orEmpty()}" }
+            .toList()
+    val causeLines = causes.map { stringResource(R.string.error_detail_cause, it) }
+    val failure = "SourceException.${this::class.simpleName}: ${message.orEmpty()}"
+    return listOfNotNull(failure, request, status).plus(causeLines).joinToString("\n")
+}
+
+private const val MAX_CAUSES = 4
 
 /**
  * A source failure as a [MessagePanel]: « Réessayer » with the focus, an optional second way out,
@@ -86,8 +106,12 @@ fun SourceErrorPanel(
     onSecondary: () -> Unit = {},
     retryFocusRequester: FocusRequester? = null,
     retryFocus: CineFocus = rememberCineFocus(PREVIEW_RETRY),
+    showDetails: Boolean = false,
 ) {
     val text = error.toErrorText()
+    // « Réessayer » takes the focus, unless the screen places it itself.
+    val retry = retryFocusRequester ?: remember { FocusRequester() }
+    if (retryFocusRequester == null) InitialFocus(retry)
     MessagePanel(
         title = text.title,
         message = text.message,
@@ -98,10 +122,15 @@ fun SourceErrorPanel(
         onSecondary = onSecondary,
         detailsLabel = stringResource(R.string.action_more_info),
         details = text.details,
-        actionFocusRequester = retryFocusRequester,
+        showDetails = showDetails,
+        actionFocusRequester = retry,
         actionFocus = retryFocus,
+        detailsFocus = rememberCineFocus(PREVIEW_DETAILS),
     )
 }
 
 /** Preview tag of the « Réessayer » button of a [SourceErrorPanel]. */
 const val PREVIEW_RETRY = "retry"
+
+/** Preview tag of the detail of a [SourceErrorPanel], once « Plus d'infos » is open. */
+const val PREVIEW_DETAILS = "details"

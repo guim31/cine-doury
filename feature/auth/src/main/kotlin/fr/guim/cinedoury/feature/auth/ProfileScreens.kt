@@ -9,7 +9,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -33,6 +35,7 @@ import fr.guim.cinedoury.core.designsystem.component.KeypadKey
 import fr.guim.cinedoury.core.designsystem.component.PinDots
 import fr.guim.cinedoury.core.designsystem.component.ProfileAvatar
 import fr.guim.cinedoury.core.designsystem.component.ProfileTile
+import fr.guim.cinedoury.core.designsystem.component.SecondaryButton
 import fr.guim.cinedoury.core.designsystem.component.rememberCineFocus
 import fr.guim.cinedoury.core.designsystem.image.ImageSource
 import fr.guim.cinedoury.core.designsystem.image.RemoteImage
@@ -51,6 +54,7 @@ fun ProfilesRoute(
     onOpened: () -> Unit,
     onSignIn: (username: String?) -> Unit,
     onPin: (Profile) -> Unit,
+    onPassword: () -> Unit,
     viewModel: ProfilesViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -66,6 +70,7 @@ fun ProfilesRoute(
         avatarUrl = viewModel::avatarUrl,
         onChoose = viewModel::choose,
         onOtherAccount = viewModel::otherAccount,
+        onPassword = onPassword,
         onRetry = viewModel::refresh,
     )
 }
@@ -73,7 +78,9 @@ fun ProfilesRoute(
 /**
  * « Qui regarde ? » (`FONCTIONNALITES.md` § 1): the profiles of the server with their pictures (or
  * an initial on a coloured disc), a padlock on those with a PIN, and « Autre compte » for a user
- * the server does not list.
+ * the server does not list. Jellyfin hides new users, the administrator made by its startup wizard
+ * included: the line under the title says so, and when no profile is listed at all, Quick Connect
+ * and the password are offered right here.
  */
 @Composable
 fun ProfilesScreen(
@@ -81,14 +88,18 @@ fun ProfilesScreen(
     avatarUrl: (Profile) -> String?,
     onChoose: (Profile) -> Unit,
     onOtherAccount: () -> Unit,
+    onPassword: () -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val first = remember { FocusRequester() }
+    val other = remember { FocusRequester() }
     val error = state.error
     FormScreen(
         brand = stringResource(UiR.string.brand_name),
         title = stringResource(R.string.profiles_title),
+        // Hidden accounts (Jellyfin's default) are not listed: the line says where they are.
+        subtitle = stringResource(R.string.profiles_hidden_hint).takeIf { error == null },
         topEnd = if (state.remote) ({ RemoteIndicator() }) else null,
         modifier = modifier,
     ) {
@@ -100,11 +111,18 @@ fun ProfilesScreen(
                 onSecondary = onOtherAccount,
             )
         } else {
-            ProfileRow(state.profiles, avatarUrl, onChoose, onOtherAccount, first)
+            ProfileRow(state.profiles, avatarUrl, onChoose, onOtherAccount, first, other)
+            if (!state.loading && state.profiles.isEmpty()) {
+                DirectSignIn(onQuickConnect = onOtherAccount, onPassword = onPassword)
+            }
         }
     }
-    // Once the profiles known here are listed, the first one takes the focus.
-    InitialFocus(first, key = error == null to state.profiles.isEmpty(), enabled = error == null)
+    // The first profile, or « Autre compte » when none is listed. While the server is asked with no
+    // profile known here, no focus yet: moving it from « Autre compte » to a tile that arrives
+    // before it fails in a LazyRow (CLAUDE.md, « Pièges »).
+    val target = if (state.profiles.isEmpty()) other else first
+    val waiting = state.loading && state.profiles.isEmpty()
+    InitialFocus(target, key = error == null to state.profiles.isEmpty(), enabled = error == null && !waiting)
 }
 
 @Composable
@@ -114,8 +132,16 @@ private fun ProfileRow(
     onChoose: (Profile) -> Unit,
     onOtherAccount: () -> Unit,
     first: FocusRequester,
+    other: FocusRequester,
 ) {
+    val listState = rememberLazyListState()
+    // Profiles that arrive go before « Autre compte », which the list keeps in place by its key:
+    // back to the start, where the first profile is.
+    LaunchedEffect(profiles.isEmpty()) {
+        if (profiles.isNotEmpty()) listState.scrollToItem(0)
+    }
     LazyRow(
+        state = listState,
         // Room for the scale and the halo of the focused avatar.
         contentPadding = PaddingValues(vertical = CineSpacing.m, horizontal = CineSpacing.xs),
         horizontalArrangement = Arrangement.spacedBy(CineSpacing.l),
@@ -139,10 +165,31 @@ private fun ProfileRow(
                 name = stringResource(R.string.profiles_other),
                 onClick = onOtherAccount,
                 icon = CineIcons.Add,
-                focusRequester = if (profiles.isEmpty()) first else null,
+                focusRequester = other,
                 modifier = Modifier.testTag("profile-other"),
             )
         }
+    }
+}
+
+/** With no profile listed (hidden accounts only), the two ways to sign in, right here. */
+@Composable
+private fun DirectSignIn(
+    onQuickConnect: () -> Unit,
+    onPassword: () -> Unit,
+) {
+    Row(horizontalArrangement = Arrangement.spacedBy(CineSpacing.m)) {
+        SecondaryButton(
+            text = stringResource(R.string.profiles_quick_connect),
+            onClick = onQuickConnect,
+            focus = rememberCineFocus(AuthPreview.PROFILES_QUICK_CONNECT),
+            modifier = Modifier.testTag(AuthPreview.PROFILES_QUICK_CONNECT),
+        )
+        SecondaryButton(
+            text = stringResource(R.string.use_password),
+            onClick = onPassword,
+            modifier = Modifier.testTag("profiles-password"),
+        )
     }
 }
 

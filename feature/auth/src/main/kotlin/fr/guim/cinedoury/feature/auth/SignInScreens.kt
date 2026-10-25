@@ -193,6 +193,7 @@ fun PasswordScreen(
     onSubmit: () -> Unit,
     onDismissError: () -> Unit,
     modifier: Modifier = Modifier,
+    showErrorDetails: Boolean = false,
 ) {
     val usernameField = remember { FocusRequester() }
     val passwordField = remember { FocusRequester() }
@@ -209,6 +210,7 @@ fun PasswordScreen(
                 onRetry = onSubmit,
                 secondaryLabel = stringResource(UiR.string.action_back),
                 onSecondary = onDismissError,
+                showDetails = showErrorDetails,
             )
         } else {
             PasswordForm(state, onUsername, onPassword, onToggleShow, onSubmit, usernameField, passwordField)
