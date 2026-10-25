@@ -25,6 +25,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.core.net.toUri
@@ -74,7 +77,6 @@ import fr.guim.cinedoury.feature.settings.SettingsRoute
 import fr.guim.cinedoury.tv.catalog.CatalogScreen
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.emptyFlow
 import org.koin.compose.koinInject
 import fr.guim.cinedoury.core.ui.R as UiR
 
@@ -89,19 +91,16 @@ fun CineApp(
     showCatalog: Boolean,
     navigator: Navigator = remember { Navigator(Route.Startup) },
     sessions: SessionManager = koinInject(),
-    searchKeys: Flow<SearchKey> = emptyFlow(),
 ) {
     val voiceRequests = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
-    LaunchedEffect(searchKeys) {
-        searchKeys.collect { key ->
-            val route = navigator.current.route
-            val allowed =
-                route in SEARCHABLE_FROM || route is Route.Search || route is Route.Details || route is Route.Library
-            when {
-                !allowed -> Unit
-                route is Route.Search && key == SearchKey.Voice -> voiceRequests.tryEmit(Unit)
-                else -> navigator.openSearch(voice = key == SearchKey.Voice)
-            }
+    val onSearchKey: (SearchKey) -> Unit = { key ->
+        val route = navigator.current.route
+        val allowed =
+            route in SEARCHABLE_FROM || route is Route.Search || route is Route.Details || route is Route.Library
+        when {
+            !allowed -> Unit
+            route is Route.Search && key == SearchKey.Voice -> voiceRequests.tryEmit(Unit)
+            else -> navigator.openSearch(voice = key == SearchKey.Voice)
         }
     }
     val saveable = rememberSaveableStateHolder()
@@ -111,7 +110,14 @@ fun CineApp(
     // Opening a details screen is the one animated change of screen (`UI.md` § 7): the poster flies to
     // its place in 250 ms while the screens cross-fade. The new screen takes the focus at once, so the
     // animation never holds the remote back; every other change is instant.
-    SharedTransitionLayout {
+    // The « Recherche » keys of the remote, from any screen (`SPEC.md` § 4.12): no screen uses them.
+    SharedTransitionLayout(
+        Modifier.onPreviewKeyEvent { event ->
+            val key = searchKey(event.nativeKeyEvent.keyCode) ?: return@onPreviewKeyEvent false
+            if (event.type == KeyEventType.KeyUp) onSearchKey(key)
+            true
+        },
+    ) {
         AnimatedContent(
             targetState = navigator.current,
             transitionSpec = {
@@ -309,6 +315,16 @@ enum class SearchKey {
     /** The voice key, when the system lets the app have it: the search, listening. */
     Voice,
 }
+
+private fun searchKey(keyCode: Int): SearchKey? =
+    when (keyCode) {
+        android.view.KeyEvent.KEYCODE_SEARCH -> SearchKey.Search
+
+        // Most TVs keep the voice key for their assistant; when it reaches the app, the search listens.
+        android.view.KeyEvent.KEYCODE_VOICE_ASSIST -> SearchKey.Voice
+
+        else -> null
+    }
 
 /** The screens a « Recherche » key leads from: the navigation screens, never the player or sign-in. */
 private val SEARCHABLE_FROM = setOf(Route.Home, Route.Settings, Route.HomeSettings)
