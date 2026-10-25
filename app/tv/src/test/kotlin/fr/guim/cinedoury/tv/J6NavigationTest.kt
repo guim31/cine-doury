@@ -151,6 +151,26 @@ class J6NavigationTest {
         compose.waitForIdle()
     }
 
+    // TEMPORARY: what the focus does frame by frame after « Annuler », to find why Compose never idles.
+    private fun diagnose() {
+        compose.mainClock.autoAdvance = false
+        compose.onRoot().performKeyInput { pressKey(Key.DirectionCenter) }
+        val trace =
+            (1..40).map { frame ->
+                compose.mainClock.advanceTimeByFrame()
+                val nodes = compose.onAllNodes(androidx.compose.ui.test.isFocused(), useUnmergedTree = true).fetchSemanticsNodes()
+                "$frame:" +
+                    nodes.joinToString(",") {
+                        it.config.getOrElseNullable(androidx.compose.ui.semantics.SemanticsProperties.TestTag) { null }
+                            ?: it.config.getOrElseNullable(androidx.compose.ui.semantics.SemanticsProperties.Text) { null }
+                                ?.joinToString()
+                            ?: "id${it.id}"
+                    }
+            }
+        compose.mainClock.autoAdvance = true
+        throw AssertionError("DIAG " + trace.joinToString(" | "))
+    }
+
     /** From « Reprendre », right to « ⋯ »: Depuis le début, Bande-annonce, Pistes, Vu, Favori, ⋯. */
     private fun toMore() {
         focusable(DetailsPreview.PLAY).assertIsFocused()
@@ -176,7 +196,7 @@ class J6NavigationTest {
             ).assertExists()
         cancel().assertIsFocused()
         // OK on « Annuler » deletes nothing.
-        press(Key.DirectionCenter)
+        diagnose()
         assertEquals(0, details.deleted)
         compose.onNode(hasTestTag(ManagePreview.DIALOG)).assertDoesNotExist()
         // Again, then → « Supprimer » and OK: deleted.

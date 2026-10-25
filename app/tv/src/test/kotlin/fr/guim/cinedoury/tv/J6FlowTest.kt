@@ -166,7 +166,11 @@ class J6FlowTest {
             .assertIsFocused()
         assertTrue(source.manage.deleted.isEmpty())
         press(Key.DirectionRight)
+        compose
+            .onNode(hasClickAction() and hasText("Supprimer") and hasAnyAncestor(hasTestTag(ManagePreview.DIALOG)))
+            .assertIsFocused()
         press(Key.DirectionCenter)
+        compose.waitUntil(TIMEOUT) { source.manage.log.any { it.startsWith("delete") } }
         compose.waitUntil(TIMEOUT) { film.id in source.manage.deleted }
         compose.waitUntil(TIMEOUT) { navigator.current.route == Route.Home }
         assertEquals(listOf("delete ${film.id.value}"), source.manage.log.filter { it.startsWith("delete") })
