@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -36,6 +37,7 @@ import fr.guim.cinedoury.core.designsystem.theme.CineSizes
 import fr.guim.cinedoury.core.designsystem.theme.CineSpacing
 import fr.guim.cinedoury.core.designsystem.theme.CineTheme
 import fr.guim.cinedoury.core.model.ItemFilters
+import fr.guim.cinedoury.core.model.ItemId
 import fr.guim.cinedoury.core.model.LibraryId
 import fr.guim.cinedoury.core.model.MediaItem
 import fr.guim.cinedoury.core.ui.AppRail
@@ -46,9 +48,12 @@ import fr.guim.cinedoury.core.ui.RailTarget
 import fr.guim.cinedoury.core.ui.RemoteIndicator
 import fr.guim.cinedoury.core.ui.ambience
 import fr.guim.cinedoury.core.ui.imageSource
+import fr.guim.cinedoury.feature.manage.ManageErrorDialog
+import fr.guim.cinedoury.feature.manage.ManageNoticePill
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
+import fr.guim.cinedoury.feature.manage.R as ManageR
 
 /** What a library asks the app to open. */
 interface LibraryNavigation {
@@ -56,6 +61,12 @@ interface LibraryNavigation {
 
     /** The details of [item] (J3). */
     fun open(item: MediaItem)
+
+    /** « Éléments à problème » of the library (J6). */
+    fun problems(
+        library: LibraryId,
+        name: String,
+    ) {}
 
     fun sessionEnded()
 }
@@ -65,6 +76,9 @@ enum class LibraryPanel {
     Sort,
     Filters,
     View,
+
+    /** « Gestion », for an administrator (J6). */
+    Manage,
 }
 
 @Composable
@@ -91,6 +105,11 @@ object LibraryPreview {
     const val FILTERS = "library-filters"
     const val VIEW = "library-view"
     const val CLEAR = "library-clear"
+    const val MANAGE = "library-manage"
+    const val SELECTION_WATCHED = "selection-watched"
+    const val SELECTION_UNWATCHED = "selection-unwatched"
+    const val SELECTION_REFRESH = "selection-refresh"
+    const val SELECTION_DONE = "selection-done"
 
     fun item(index: Int) = "item-$index"
 
@@ -128,6 +147,10 @@ fun LibraryScreen(
     BackHandler(enabled = panel != null) {
         if (category != null) category = null else panel = null
     }
+    // « Retour » ends a selection, and closes a failure.
+    BackHandler(enabled = panel == null && (state.selection != null || state.manageError != null)) {
+        if (state.manageError != null) actions.dismissManageError() else actions.endSelection()
+    }
 
     val browse = state.browse
     val library = state.library
@@ -163,7 +186,11 @@ fun LibraryScreen(
                 Spacer(Modifier.weight(1f))
                 if (state.remote) RemoteIndicator()
             }
-            Toolbar(state, actions, onPanel = { panel = it }, buttons = buttons)
+            if (state.selection != null) {
+                SelectionBar(state.selection, actions)
+            } else {
+                Toolbar(state, actions, onPanel = { panel = it }, buttons = buttons)
+            }
             if (!browse.filters.isEmpty && browse.tab == LibraryTab.All) {
                 FilterSummary(browse.filters, onClear = actions::clearFilters)
             }
@@ -211,7 +238,10 @@ fun LibraryScreen(
                 panel = null
                 category = null
             },
+            onProblems = { library?.let { navigation.problems(it.id, it.name) } },
         )
+        ManageNoticePill(state.notice)
+        state.manageError?.let { ManageErrorDialog(it, onDismiss = actions::dismissManageError) }
     }
     // A closed panel gives the focus back to its button; an empty list gives it to the toolbar.
     val noGenre = state.browse.tab == LibraryTab.Genres && state.options?.genres.isNullOrEmpty()
@@ -289,6 +319,73 @@ private fun Toolbar(
             focusRequester = buttons.getValue(LibraryPanel.View),
             focus = rememberCineFocus(LibraryPreview.VIEW),
             modifier = Modifier.testTag(LibraryPreview.VIEW),
+        )
+        if (state.rights.canManage) {
+            SecondaryButton(
+                text = stringResource(ManageR.string.library_manage),
+                icon = CineIcons.More,
+                onClick = { onPanel(LibraryPanel.Manage) },
+                focusRequester = buttons.getValue(LibraryPanel.Manage),
+                focus = rememberCineFocus(LibraryPreview.MANAGE),
+                modifier = Modifier.testTag(LibraryPreview.MANAGE),
+            )
+        }
+    }
+}
+
+/**
+ * In place of the toolbar while a selection is on (J6): how many titles are ticked, and what to do
+ * with them. OK on a card ticks it; « Retour » or « Terminer » ends the selection.
+ */
+@Composable
+private fun SelectionBar(
+    selection: Set<ItemId>,
+    actions: LibraryActions,
+) {
+    // Started from « Gestion » (nothing ticked yet), the bar takes the focus; from a card held, the
+    // card keeps it.
+    val first = remember { FocusRequester() }
+    InitialFocus(first, enabled = remember { selection.isEmpty() })
+    Row(
+        modifier = Modifier.padding(end = CineSpacing.safeHorizontal),
+        horizontalArrangement = Arrangement.spacedBy(CineSpacing.xs),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = pluralStringResource(ManageR.plurals.selection_count, selection.size, selection.size),
+            style = CineTheme.typography.title2,
+            color = CineTheme.colors.text,
+            modifier = Modifier.testTag("selection-count"),
+        )
+        Spacer(Modifier.weight(1f))
+        SecondaryButton(
+            text = stringResource(ManageR.string.selection_watched),
+            icon = CineIcons.Watched,
+            onClick = { actions.markSelection(played = true) },
+            focusRequester = first,
+            focus = rememberCineFocus(LibraryPreview.SELECTION_WATCHED),
+            modifier = Modifier.testTag(LibraryPreview.SELECTION_WATCHED),
+        )
+        SecondaryButton(
+            text = stringResource(ManageR.string.selection_unwatched),
+            icon = CineIcons.Unwatched,
+            onClick = { actions.markSelection(played = false) },
+            focus = rememberCineFocus(LibraryPreview.SELECTION_UNWATCHED),
+            modifier = Modifier.testTag(LibraryPreview.SELECTION_UNWATCHED),
+        )
+        SecondaryButton(
+            text = stringResource(ManageR.string.selection_refresh),
+            icon = CineIcons.Retry,
+            onClick = actions::refreshSelection,
+            focus = rememberCineFocus(LibraryPreview.SELECTION_REFRESH),
+            modifier = Modifier.testTag(LibraryPreview.SELECTION_REFRESH),
+        )
+        SecondaryButton(
+            text = stringResource(ManageR.string.selection_done),
+            icon = CineIcons.Close,
+            onClick = actions::endSelection,
+            focus = rememberCineFocus(LibraryPreview.SELECTION_DONE),
+            modifier = Modifier.testTag(LibraryPreview.SELECTION_DONE),
         )
     }
 }

@@ -20,6 +20,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRestorer
@@ -38,14 +39,18 @@ import fr.guim.cinedoury.core.designsystem.component.MediaListRow
 import fr.guim.cinedoury.core.designsystem.component.MessagePanel
 import fr.guim.cinedoury.core.designsystem.component.PosterCard
 import fr.guim.cinedoury.core.designsystem.component.PosterSize
+import fr.guim.cinedoury.core.designsystem.component.SelectionMark
 import fr.guim.cinedoury.core.designsystem.component.SkeletonCard
 import fr.guim.cinedoury.core.designsystem.component.SkeletonListRow
 import fr.guim.cinedoury.core.designsystem.component.ThumbnailCard
+import fr.guim.cinedoury.core.designsystem.component.onLongPress
 import fr.guim.cinedoury.core.designsystem.component.rememberCineFocus
 import fr.guim.cinedoury.core.designsystem.theme.CineSizes
 import fr.guim.cinedoury.core.designsystem.theme.CineSpacing
 import fr.guim.cinedoury.core.model.ItemFilters
+import fr.guim.cinedoury.core.model.ItemId
 import fr.guim.cinedoury.core.model.LibraryKind
+import fr.guim.cinedoury.core.model.LibraryScan
 import fr.guim.cinedoury.core.model.MediaItem
 import fr.guim.cinedoury.core.model.SortField
 import fr.guim.cinedoury.core.ui.ImageSources
@@ -80,6 +85,24 @@ interface LibraryActions {
     fun jumpTo(letter: String)
 
     fun retry()
+
+    // Management (J6); nothing by default (screenshots).
+
+    fun scan(mode: LibraryScan) {}
+
+    /** Selection mode, with [item] ticked (OK held on it), or none (from « ⋯ »). */
+    fun startSelection(item: MediaItem?) {}
+
+    fun toggleSelected(item: MediaItem) {}
+
+    fun endSelection() {}
+
+    /** Marks the selection watched or not. */
+    fun markSelection(played: Boolean) {}
+
+    fun refreshSelection() {}
+
+    fun dismissManageError() {}
 }
 
 /** The content of the current tab: items, genres or episodes, or a message when there is none. */
@@ -141,6 +164,8 @@ internal fun LibraryContent(
             key(items.generation, browse.view) {
                 ItemGrid(
                     items = items,
+                    selection = state.selection,
+                    onLongPress = if (state.rights.canManage) actions::startSelection else null,
                     view = if (browse.tab == LibraryTab.Collections) LibraryView.Posters else browse.view,
                     position = browse.position,
                     sources = sources,
@@ -186,6 +211,8 @@ private const val GRID_PIVOT = 0.25f
 @Composable
 private fun ItemGrid(
     items: PagedItems,
+    selection: Set<ItemId>?,
+    onLongPress: ((MediaItem) -> Unit)?,
     view: LibraryView,
     position: Int,
     sources: ImageSources,
@@ -216,15 +243,21 @@ private fun ItemGrid(
                 index = index,
                 view = view,
                 sources = sources,
-                onClick = { onOpen(item) },
+                // In a selection, OK ticks the item instead of opening it.
+                onClick = { if (selection != null) actions.toggleSelected(item) else onOpen(item) },
                 focusRequester = if (index == focusIndex) target else null,
+                selected = selection?.let { item.id in it },
                 modifier =
-                    Modifier.testTag(LibraryPreview.item(index)).onFocusChanged {
-                        if (it.hasFocus) {
-                            actions.onFocused(index)
-                            focused(item)
-                        }
-                    },
+                    Modifier
+                        .testTag(
+                            LibraryPreview.item(index),
+                        ).onLongPress(onLongPress?.let { { it(item) } })
+                        .onFocusChanged {
+                            if (it.hasFocus) {
+                                actions.onFocused(index)
+                                focused(item)
+                            }
+                        },
             )
         }
     }
@@ -280,6 +313,23 @@ private fun GridItem(
     onClick: () -> Unit,
     focusRequester: FocusRequester?,
     modifier: Modifier = Modifier,
+    selected: Boolean? = null,
+) {
+    // The box of the selection over the card, in its top left corner.
+    Box(modifier) {
+        GridCard(item, index, view, sources, onClick, focusRequester)
+        if (selected != null) SelectionMark(selected, Modifier.align(Alignment.TopStart))
+    }
+}
+
+@Composable
+private fun GridCard(
+    item: MediaItem,
+    index: Int,
+    view: LibraryView,
+    sources: ImageSources,
+    onClick: () -> Unit,
+    focusRequester: FocusRequester?,
 ) {
     val focus = rememberCineFocus(LibraryPreview.item(index))
     when (view) {
@@ -295,7 +345,6 @@ private fun GridItem(
                 focusRequester = focusRequester,
                 focus = focus,
                 image = rememberArt(item.posterImage, sources),
-                modifier = modifier,
             )
         }
 
@@ -310,7 +359,6 @@ private fun GridItem(
                 focusRequester = focusRequester,
                 focus = focus,
                 image = rememberArt(item.landscapeImage, sources),
-                modifier = modifier,
             )
         }
 
@@ -327,7 +375,6 @@ private fun GridItem(
                 focus = focus,
                 sharedKey = item.id.value,
                 image = rememberArt(item.posterImage, sources),
-                modifier = modifier,
             )
         }
     }

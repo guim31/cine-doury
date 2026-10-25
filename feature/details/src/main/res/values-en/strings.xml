@@ -45,4 +45,8 @@
         <item quantity="one">%1$d season</item>
         <item quantity="other">%1$d seasons</item>
     </plurals>
+    <string name="file_item">The item</string>
+    <string name="file_added">Added on %1$s</string>
+    <string name="file_no_ids">No provider id</string>
+    <string name="file_id">%1$s: %2$s</string>
 </resources>

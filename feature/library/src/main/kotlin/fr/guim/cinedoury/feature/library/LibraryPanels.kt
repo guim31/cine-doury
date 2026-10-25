@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import fr.guim.cinedoury.core.data.index.IndexStatus
@@ -24,12 +25,14 @@ import fr.guim.cinedoury.core.model.AudioFormat
 import fr.guim.cinedoury.core.model.DynamicRange
 import fr.guim.cinedoury.core.model.FilterOptions
 import fr.guim.cinedoury.core.model.ItemFilters
+import fr.guim.cinedoury.core.model.LibraryScan
 import fr.guim.cinedoury.core.model.NamedId
 import fr.guim.cinedoury.core.model.Resolution
 import fr.guim.cinedoury.core.model.SortField
 import fr.guim.cinedoury.core.model.VideoCodec
 import fr.guim.cinedoury.core.model.WatchStatus
 import fr.guim.cinedoury.core.ui.label
+import fr.guim.cinedoury.feature.manage.R as ManageR
 
 /** The filters of the filter panel, in the order of `FONCTIONNALITES.md` § 3. */
 enum class FilterCategory {
@@ -93,6 +96,7 @@ private data class PanelEntry(
     val value: String? = null,
     val checked: Boolean = false,
     val description: String? = null,
+    val icon: ImageVector? = null,
 )
 
 @Composable
@@ -103,12 +107,14 @@ internal fun LibraryPanels(
     actions: LibraryActions,
     onCategory: (FilterCategory?) -> Unit,
     onClose: () -> Unit,
+    onProblems: () -> Unit = {},
 ) {
     val title =
         when (panel) {
             LibraryPanel.Sort -> stringResource(R.string.panel_sort)
             LibraryPanel.Filters -> category?.label() ?: stringResource(R.string.panel_filters)
             LibraryPanel.View -> stringResource(R.string.panel_view)
+            LibraryPanel.Manage -> stringResource(ManageR.string.library_manage)
             null -> ""
         }
     val entries =
@@ -116,6 +122,7 @@ internal fun LibraryPanels(
             LibraryPanel.Sort -> sortEntries(state, actions)
             LibraryPanel.View -> viewEntries(state, actions, onClose)
             LibraryPanel.Filters -> filterEntries(state, actions, category, onCategory)
+            LibraryPanel.Manage -> manageEntries(state, actions, onClose, onProblems)
             null -> emptyList()
         }
     SidePanel(visible = panel != null, title = title, modifier = Modifier.testTag("panel")) {
@@ -130,6 +137,7 @@ internal fun LibraryPanels(
                     title = entry.title,
                     value = entry.value,
                     description = entry.description,
+                    icon = entry.icon,
                     trailingIcon = if (entry.checked) CineIcons.Watched else null,
                     onClick = entry.onClick,
                     focusRequester = if (index == 0) first else null,
@@ -141,6 +149,68 @@ internal fun LibraryPanels(
         InitialFocus(first, key = panel to category, enabled = panel != null)
     }
 }
+
+/**
+ * The « ⋯ » of a library, for an administrator (`FONCTIONNALITES.md` § 9): scan for new files (its
+ * progress under it while it runs), refresh everything, the items with problems, the selection.
+ */
+@Composable
+private fun manageEntries(
+    state: LibraryUiState,
+    actions: LibraryActions,
+    onClose: () -> Unit,
+    onProblems: () -> Unit,
+): List<PanelEntry> {
+    val scan = state.scan
+    val progress = scan?.progress
+    val running =
+        when {
+            scan?.running != true -> null
+            progress != null -> stringResource(ManageR.string.scan_running, (progress * PERCENT).toInt())
+            else -> stringResource(ManageR.string.scan_running_unknown)
+        }
+    return listOf(
+        PanelEntry(
+            key = "scan",
+            title = stringResource(ManageR.string.scan_new_files),
+            onClick = { actions.scan(LibraryScan.NewFiles) },
+            description = running ?: stringResource(ManageR.string.scan_new_files_description),
+            icon = CineIcons.Retry,
+        ),
+        PanelEntry(
+            key = "refresh",
+            title = stringResource(ManageR.string.scan_refresh_all),
+            onClick = {
+                actions.scan(LibraryScan.RefreshAll)
+                onClose()
+            },
+            description = stringResource(ManageR.string.scan_refresh_all_description),
+            icon = CineIcons.Retry,
+        ),
+        PanelEntry(
+            key = "problems",
+            title = stringResource(ManageR.string.problems_title),
+            onClick = {
+                onClose()
+                onProblems()
+            },
+            description = stringResource(ManageR.string.library_problems_description),
+            icon = CineIcons.Warning,
+        ),
+        PanelEntry(
+            key = "select",
+            title = stringResource(ManageR.string.library_select),
+            onClick = {
+                onClose()
+                actions.startSelection(null)
+            },
+            description = stringResource(ManageR.string.library_select_description),
+            icon = CineIcons.Checked,
+        ),
+    )
+}
+
+private const val PERCENT = 100
 
 @Composable
 private fun sortEntries(

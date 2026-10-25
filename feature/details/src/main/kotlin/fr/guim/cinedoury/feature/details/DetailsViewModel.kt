@@ -7,10 +7,15 @@ import fr.guim.cinedoury.core.data.ActiveSession
 import fr.guim.cinedoury.core.data.SessionManager
 import fr.guim.cinedoury.core.data.UserDataUpdates
 import fr.guim.cinedoury.core.data.index.LibraryIndex
+import fr.guim.cinedoury.core.data.manage.ChangeKind
+import fr.guim.cinedoury.core.data.manage.ItemChange
+import fr.guim.cinedoury.core.data.manage.ManageUpdates
 import fr.guim.cinedoury.core.model.ItemId
 import fr.guim.cinedoury.core.model.ItemKind
+import fr.guim.cinedoury.core.model.ManageRights
 import fr.guim.cinedoury.core.model.MediaItem
 import fr.guim.cinedoury.core.model.MediaSource
+import fr.guim.cinedoury.core.model.MetadataRefresh
 import fr.guim.cinedoury.core.model.PlaybackPreferences
 import fr.guim.cinedoury.core.model.PlaybackRequest
 import fr.guim.cinedoury.core.model.SmartPlay
@@ -22,8 +27,13 @@ import fr.guim.cinedoury.core.model.UserData
 import fr.guim.cinedoury.core.source.LibrarySource
 import fr.guim.cinedoury.core.source.SourceException
 import fr.guim.cinedoury.core.ui.Events
+import fr.guim.cinedoury.feature.manage.Deletion
+import fr.guim.cinedoury.feature.manage.ItemManager
+import fr.guim.cinedoury.feature.manage.ManageNotice
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -55,6 +65,10 @@ sealed interface Trailer {
  * @param series the series of an episode, for « Aller à la série ».
  * @param saga the collection of a film and its films in release order; for a collection, itself.
  * @param selection the version and tracks chosen for playback, preset from the profile.
+ * @param rights what the profile may manage: the entries of « Gestion » in « ⋯ » (J6).
+ * @param deletion the confirmation of a deletion on screen.
+ * @param notice what the last management action did, at the bottom of the screen.
+ * @param manageError the failure of the last management action, in a dialog.
  */
 @Immutable
 data class DetailsState(
@@ -73,7 +87,14 @@ data class DetailsState(
     val trailer: Trailer? = null,
     val selection: TrackSelection? = null,
     val error: SourceException? = null,
+    val rights: ManageRights = ManageRights.NONE,
+    val deletion: Deletion? = null,
+    val notice: ManageNotice? = null,
+    val manageError: SourceException? = null,
 ) {
+    /** « Supprimer » in « ⋯ »: the right of the profile, and the server's answer for the item. */
+    val canDelete: Boolean get() = loaded && rights.canDelete(item)
+
     /** The version chosen, for the track panel. */
     val source: MediaSource? get() =
         item.mediaSources.firstOrNull { it.id == selection?.sourceId }
@@ -108,6 +129,20 @@ interface DetailsActions {
 
     /** The request to play the item of the screen: resumed, or [fromStart]. */
     fun playRequest(fromStart: Boolean = false): PlaybackRequest?
+
+    // Management (J6); nothing by default (screenshots).
+
+    fun refresh(mode: MetadataRefresh) {}
+
+    /** Opens the confirmation of the deletion, with the files and their size. */
+    fun askDelete() {}
+
+    /** The confirmation said « Supprimer »: a second time for a whole series, then the deletion. */
+    fun confirmDelete() {}
+
+    fun cancelDelete() {}
+
+    fun dismissManageError() {}
 }
 
 /**
@@ -121,16 +156,23 @@ class DetailsViewModel(
     private val sessions: SessionManager,
     private val index: LibraryIndex,
     private val updates: UserDataUpdates = UserDataUpdates(),
+    private val manager: ItemManager? = null,
+    manageUpdates: ManageUpdates? = null,
 ) : ViewModel(),
     DetailsActions {
     private val active: ActiveSession? = sessions.active.value
-    private val local = MutableStateFlow(DetailsState(initial))
+    private val local = MutableStateFlow(DetailsState(initial, rights = manager?.cachedRights ?: ManageRights.NONE))
     private var preferences = PlaybackPreferences()
 
     val state: StateFlow<DetailsState> = local.asStateFlow()
 
     /** The server rejected the token: the profile is signed out. */
     val sessionEnded = Events<Unit>()
+
+    /** The item of the screen was deleted: the screen closes (J6). */
+    val deleted = Events<Unit>()
+
+    private var noticeJob: Job? = null
 
     init {
         viewModelScope.launch {
@@ -139,6 +181,13 @@ class DetailsViewModel(
             local.update { if (it.badges.isEmpty()) it.copy(badges = summary.badges(language())) else it }
         }
         load()
+        if (manager != null) {
+            viewModelScope.launch {
+                optional { manager.rights() }?.let { rights -> local.update { it.copy(rights = rights) } }
+            }
+        }
+        // What management did, here or on another screen (J6).
+        manageUpdates?.let { flow -> viewModelScope.launch { flow.updates.collect(::onManaged) } }
         // Back from the player: the position and « vu » it left, at once (`SPEC.md` § 4.11).
         viewModelScope.launch {
             updates.updates.collect { (id, data) ->
@@ -359,6 +408,115 @@ class DetailsViewModel(
         }
     }
 
+    private fun onManaged(change: ItemChange) {
+        val state = local.value
+        when (change) {
+            is ItemChange.Deleted -> {
+                if (change.item == state.item.id) return
+                // An episode, a season, a film of the saga: gone from the lists at once.
+                local.update {
+                    it.copy(
+                        episodes =
+                            it.episodes?.filterNot { e ->
+                                e.id in change ||
+                                    e.episode?.seasonId?.let(change::contains) == true
+                            },
+                        seasons = it.seasons.filterNot { s -> s.id in change },
+                        sagaItems = it.sagaItems.filterNot { i -> i.id in change },
+                        similar = it.similar.filterNot { i -> i.id in change },
+                        filmography = it.filmography.filterNot { i -> i.id in change },
+                    )
+                }
+            }
+
+            is ItemChange.Changed -> {
+                if (change.item != state.item.id) return
+                when (change.kind) {
+                    ChangeKind.Identified -> show(ManageNotice.Identified)
+
+                    ChangeKind.Image -> show(ManageNotice.ImageChanged)
+
+                    // A refresh shows its own notice; « vu » shows on the button.
+                    ChangeKind.Refreshed, ChangeKind.Watched -> return
+                }
+                load()
+            }
+        }
+    }
+
+    /** [notice] at the bottom of the screen, for a few seconds. */
+    private fun show(notice: ManageNotice) {
+        local.update { it.copy(notice = notice) }
+        noticeJob?.cancel()
+        noticeJob =
+            viewModelScope.launch {
+                delay(NOTICE_MILLIS)
+                local.update { it.copy(notice = null) }
+            }
+    }
+
+    /** A management action: its failure in a dialog, never a false success. */
+    private suspend fun managed(block: suspend (ItemManager) -> Unit): Boolean {
+        val manager = manager ?: return false
+        return try {
+            block(manager)
+            true
+        } catch (_: SourceException.Unauthorized) {
+            sessions.sessionRejected()
+            sessionEnded.send(Unit)
+            false
+        } catch (error: SourceException) {
+            local.update { it.copy(manageError = error, deletion = null) }
+            false
+        }
+    }
+
+    /**
+     * Asks the server to refresh the item; it does it in the background. The notice says so, then
+     * the item is read again a few seconds later, with what the refresh found.
+     */
+    override fun refresh(mode: MetadataRefresh) {
+        val item = local.value.item
+        viewModelScope.launch {
+            if (!managed { it.refresh(item.id, mode) }) return@launch
+            show(ManageNotice.RefreshRequested)
+            delay(REFRESH_READ_MILLIS)
+            load()
+            show(ManageNotice.Refreshed)
+        }
+    }
+
+    override fun askDelete() {
+        val item = local.value.item
+        viewModelScope.launch {
+            managed { manager ->
+                val preview = manager.deletionPreview(item)
+                local.update { it.copy(deletion = Deletion(preview)) }
+            }
+        }
+    }
+
+    override fun confirmDelete() {
+        val deletion = local.value.deletion ?: return
+        if (deletion.running) return
+        // A whole series asks twice (`FONCTIONNALITES.md` § 9).
+        if (deletion.preview.needsSecondConfirmation && !deletion.second) {
+            local.update { it.copy(deletion = deletion.copy(second = true)) }
+            return
+        }
+        local.update { it.copy(deletion = deletion.copy(running = true)) }
+        viewModelScope.launch {
+            if (managed { it.delete(deletion.preview) }) {
+                local.update { it.copy(deletion = null) }
+                deleted.send(Unit)
+            }
+        }
+    }
+
+    override fun cancelDelete() = local.update { it.copy(deletion = null) }
+
+    override fun dismissManageError() = local.update { it.copy(manageError = null) }
+
     private suspend fun guarded(block: suspend () -> Unit) {
         try {
             block()
@@ -382,6 +540,10 @@ class DetailsViewModel(
 
     private companion object {
         const val SIMILAR = 12
+        const val NOTICE_MILLIS = 4_000L
+
+        /** How long the server usually takes to refresh one item before it is read again. */
+        const val REFRESH_READ_MILLIS = 5_000L
     }
 }
 

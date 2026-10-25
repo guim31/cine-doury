@@ -2,6 +2,7 @@ package fr.guim.cinedoury.tv
 
 import android.app.Application
 import android.content.pm.ApplicationInfo
+import android.util.Log
 import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
@@ -13,10 +14,12 @@ import fr.guim.cinedoury.core.designsystem.theme.CineMotion
 import fr.guim.cinedoury.core.playback.playbackModule
 import fr.guim.cinedoury.core.source.ServerDiscovery
 import fr.guim.cinedoury.core.source.SourceConnector
+import fr.guim.cinedoury.core.source.SourceLog
 import fr.guim.cinedoury.feature.auth.authModule
 import fr.guim.cinedoury.feature.details.detailsModule
 import fr.guim.cinedoury.feature.home.homeModule
 import fr.guim.cinedoury.feature.library.libraryModule
+import fr.guim.cinedoury.feature.manage.manageModule
 import fr.guim.cinedoury.feature.player.playerModule
 import fr.guim.cinedoury.feature.settings.settingsModule
 import fr.guim.cinedoury.source.jellyfin.ClientIdentity
@@ -46,6 +49,7 @@ class CineApplication :
                 homeModule,
                 libraryModule,
                 detailsModule,
+                manageModule,
                 playerModule,
                 settingsModule,
             )
@@ -74,9 +78,13 @@ val jellyfinModule =
                     .orEmpty()
             ClientIdentity(appVersion = version, deviceId = device.deviceId, deviceName = device.deviceName)
         }
-        single<SourceConnector> { JellyfinConnector(get()) }
+        // Every management call goes to logcat, without a secret (SPEC.md § 4.12).
+        single<SourceConnector> { JellyfinConnector(get(), log = SourceLog { Log.i(LOG_TAG, it) }) }
         single<ServerDiscovery> { JellyfinDiscovery() }
     }
+
+/** The tag of the lines of the app in logcat. */
+const val LOG_TAG = "CineDoury"
 
 /** Whether this is a debug build: the catalogue is offered in the settings. */
 val Application.isDebuggable: Boolean

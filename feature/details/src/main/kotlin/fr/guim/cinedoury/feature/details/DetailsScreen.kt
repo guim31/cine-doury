@@ -60,6 +60,9 @@ import fr.guim.cinedoury.core.ui.cardTitle
 import fr.guim.cinedoury.core.ui.imageSource
 import fr.guim.cinedoury.core.ui.label
 import fr.guim.cinedoury.core.ui.rememberArt
+import fr.guim.cinedoury.feature.manage.DeleteDialog
+import fr.guim.cinedoury.feature.manage.ManageErrorDialog
+import fr.guim.cinedoury.feature.manage.ManageNoticePill
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
@@ -76,6 +79,15 @@ interface DetailsNavigation {
     fun openTrailer(url: String)
 
     fun sessionEnded()
+
+    /** « Corriger l'identification » of [item] (J6). */
+    fun identify(item: MediaItem) {}
+
+    /** « Changer l'affiche, le fond ou le logo » of [item] (J6). */
+    fun images(item: MediaItem) {}
+
+    /** The item was deleted: back to the screen before (J6). */
+    fun close() {}
 }
 
 /** The side panels of a details screen. */
@@ -99,6 +111,7 @@ fun DetailsRoute(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     CollectEvents(viewModel.sessionEnded) { navigation.sessionEnded() }
+    CollectEvents(viewModel.deleted) { navigation.close() }
     DetailsScreen(state = state, sources = sessions::imageSource, actions = viewModel, navigation = navigation)
 }
 
@@ -159,6 +172,9 @@ fun DetailsScreen(
     }
     BackHandler(enabled = panel != null) {
         if (panel == DetailsPanel.FileInfo) panel = DetailsPanel.More else closePanel()
+    }
+    BackHandler(enabled = state.deletion != null || state.manageError != null) {
+        if (state.deletion != null) actions.cancelDelete() else actions.dismissManageError()
     }
 
     val play: () -> Unit = { actions.playRequest()?.let(navigation::play) }
@@ -221,7 +237,12 @@ fun DetailsScreen(
                 closePanel()
                 play()
             },
+            onIdentify = { navigation.identify(item) },
+            onImages = { navigation.images(item) },
         )
+        ManageNoticePill(state.notice)
+        state.deletion?.let { DeleteDialog(it, onConfirm = actions::confirmDelete, onCancel = actions::cancelDelete) }
+        state.manageError?.let { ManageErrorDialog(it, onDismiss = actions::dismissManageError) }
     }
     // The first focus: « Lire », or the element left when coming back (or that opened the panel just
     // closed); for a person or a collection, the first card, once read.
@@ -236,8 +257,10 @@ fun DetailsScreen(
         }
     val ready = target != null && (target == KEY_PLAY || state.loaded)
     if (target != null) {
-        LaunchedEffect(target, ready, panel == null) {
-            if (ready && panel == null) {
+        // A closed dialog gives the focus back as a closed panel does.
+        val dialog = state.deletion != null || state.manageError != null
+        LaunchedEffect(target, ready, panel == null, dialog) {
+            if (ready && panel == null && !dialog) {
                 withFrameNanos { }
                 runCatching { requesters[target].requestFocus() }
             }
@@ -521,7 +544,7 @@ private fun Buttons(
                 onFocused,
             )
         }
-        if (state.playable) {
+        if (state.playable || state.rights.canManage) {
             Round(CineIcons.More, stringResource(R.string.action_more), {
                 onPanel(DetailsPanel.More)
             }, DetailsPreview.MORE, requesters, onFocused)

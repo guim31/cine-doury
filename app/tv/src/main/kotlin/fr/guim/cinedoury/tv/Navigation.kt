@@ -67,6 +67,22 @@ sealed interface Route {
         val request: PlaybackRequest,
     ) : Route
 
+    /** « Corriger l'identification » (J6). */
+    data class Identify(
+        val item: MediaItem,
+    ) : Route
+
+    /** « Changer l'affiche, le fond ou le logo » (J6). */
+    data class Images(
+        val item: MediaItem,
+    ) : Route
+
+    /** « Éléments à problème » of a library (J6). */
+    data class Problems(
+        val library: LibraryId,
+        val name: String,
+    ) : Route
+
     data object Settings : Route
 
     /** « Lecture et son » (J4). */
