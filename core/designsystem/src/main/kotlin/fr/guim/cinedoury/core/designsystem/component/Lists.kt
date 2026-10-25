@@ -268,17 +268,6 @@ fun MessageDialog(
     buttonFocus: CineFocus = rememberCineFocus(),
 ) {
     val colors = CineTheme.colors
-    // While a button closes the box, the focus may leave it: the caller gives the focus back to the
-    // element the box came from before the box goes away.
-    val closing = remember { BooleanArray(1) }
-    val close: (() -> Unit) -> Unit = { action ->
-        closing[0] = true
-        try {
-            action()
-        } finally {
-            closing[0] = false
-        }
-    }
     Box(
         modifier =
             modifier
@@ -328,6 +317,17 @@ fun ConfirmDialog(
     destructive: Boolean = true,
 ) {
     val colors = CineTheme.colors
+    // While a button closes the box, the focus may leave it: the caller gives the focus back to the
+    // element the box came from before the box goes away.
+    val closing = remember { BooleanArray(1) }
+    val close: (() -> Unit) -> Unit = { action ->
+        closing[0] = true
+        try {
+            action()
+        } finally {
+            closing[0] = false
+        }
+    }
     Box(
         modifier =
             modifier
