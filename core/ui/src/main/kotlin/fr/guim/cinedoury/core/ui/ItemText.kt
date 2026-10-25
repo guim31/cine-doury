@@ -1,11 +1,11 @@
 package fr.guim.cinedoury.core.ui
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import fr.guim.cinedoury.core.model.ItemKind
 import fr.guim.cinedoury.core.model.MediaItem
 import java.text.NumberFormat
-import java.util.Locale
 import kotlin.time.Duration
 
 /** « 1 h 52 », « 42 min » (`UI.md` § 5), with non-breaking spaces. */
@@ -63,7 +63,7 @@ fun MediaItem.metadataLine(): String? {
 
 @Composable
 private fun ratingFormat(): NumberFormat =
-    NumberFormat.getNumberInstance(Locale.getDefault()).apply {
+    NumberFormat.getNumberInstance(LocalConfiguration.current.locales[0]).apply {
         minimumFractionDigits = 1
         maximumFractionDigits = 1
     }

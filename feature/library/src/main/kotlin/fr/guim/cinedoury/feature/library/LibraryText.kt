@@ -1,6 +1,7 @@
 package fr.guim.cinedoury.feature.library
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.booleanResource
 import androidx.compose.ui.res.stringResource
 import fr.guim.cinedoury.core.data.library.LibraryTab
@@ -138,5 +139,6 @@ internal fun ItemFilters.summary(): String {
     parts += tags.sorted()
     if (favorite) parts += stringResource(R.string.summary_favorites)
     // Only the first word of the line takes a capital (`UI.md` § 5).
-    return parts.joinToString(SEPARATOR).replaceFirstChar { it.titlecase(Locale.getDefault()) }
+    val locale = LocalConfiguration.current.locales[0]
+    return parts.joinToString(SEPARATOR).replaceFirstChar { it.titlecase(locale) }
 }

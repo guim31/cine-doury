@@ -212,7 +212,7 @@ fun HomeScreen(
                                 row = row,
                                 next = next,
                                 sources = sources,
-                                restore = rowRequesters.getOrPut(row.key) { FocusRequester() },
+                                restore = rowRequesters.requester(row.key),
                                 onFocused = { item ->
                                     focusedItem = item
                                     focusedRow = row.key
@@ -278,7 +278,7 @@ fun HomeScreen(
     }
     // The first focus, and the focus found again when coming back: the row left, else « Lire ».
     // Made here, not when the lazy row composes (later): the requester is the same for both.
-    val initial = focusedRow?.let { rowRequesters.getOrPut(it) { FocusRequester() } }
+    val initial = focusedRow?.let { rowRequesters.requester(it) }
     // Not keyed on the quit dialog: closing it gives the focus back to the rail, not to « Lire ».
     InitialFocus(initial ?: play, key = rows?.isEmpty())
 }
@@ -395,3 +395,8 @@ private fun MediaItem.toFeatured(sources: ImageSources): Featured {
         logo = logo,
     )
 }
+
+/** The requester of a row, made on first use: outside composition, where it may not be built. */
+private fun MutableMap<String, FocusRequester>.requester(
+    key: String,
+): FocusRequester = getOrPut(key) { FocusRequester() }
