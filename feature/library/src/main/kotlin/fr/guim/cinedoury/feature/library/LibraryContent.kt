@@ -325,6 +325,7 @@ private fun GridItem(
                 onClick = onClick,
                 focusRequester = focusRequester,
                 focus = focus,
+                sharedKey = item.id.value,
                 image = rememberArt(item.posterImage, sources),
                 modifier = modifier,
             )

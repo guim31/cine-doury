@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="episode_short" translatable="false">S%1$02dE%2$02d</string>
+    <string name="ends_at">se termine à %1$s</string>
+    <string name="years_since">depuis %1$d</string>
+    <string name="years_range" translatable="false">%1$d–%2$d</string>
+    <string name="status_continuing">En cours</string>
+    <string name="status_ended">Terminée</string>
+    <string name="person_born">Naissance : %1$s</string>
+    <string name="person_died">Décès : %1$s</string>
+    <string name="credits_directed">Réalisation : %1$s</string>
+    <string name="credits_written">Scénario : %1$s</string>
+    <string name="credits_created">Création : %1$s</string>
+    <string name="action_resume_remaining">Reprendre — %1$s restantes</string>
+    <string name="action_play">Lire</string>
+    <string name="action_resume_episode">Reprendre %1$s — %2$s restantes</string>
+    <string name="action_play_episode">Lire %1$s</string>
+    <string name="episode_numbered" translatable="false">%1$d. %2$s</string>
+    <string name="action_restart">Depuis le début</string>
+    <string name="action_trailer">Bande-annonce</string>
+    <string name="action_tracks">Audio et sous-titres</string>
+    <string name="action_watched">Marquer comme vu</string>
+    <string name="action_unwatched">Marquer comme non vu</string>
+    <string name="action_series_watched">Marquer la série comme vue</string>
+    <string name="action_series_unwatched">Marquer la série comme non vue</string>
+    <string name="action_season_watched">Marquer la saison comme vue</string>
+    <string name="action_season_unwatched">Marquer la saison comme non vue</string>
+    <string name="action_favorite">Ajouter aux favoris</string>
+    <string name="action_unfavorite">Retirer des favoris</string>
+    <string name="action_series">Aller à la série</string>
+    <string name="action_more">Plus d\'options</string>
+    <string name="row_movies">Films</string>
+    <string name="row_series">Séries</string>
+    <string name="row_cast">Distribution</string>
+    <string name="row_collection">Dans la saga</string>
+    <string name="row_similar">Titres similaires</string>
+    <string name="row_episodes">Épisodes</string>
+    <string name="panel_tracks">Audio et sous-titres</string>
+    <string name="panel_file">Informations sur le fichier</string>
+    <string name="panel_version">Version</string>
+    <string name="panel_audio">Audio</string>
+    <string name="panel_subtitles">Sous-titres</string>
+    <string name="subtitles_none">Sans sous-titres</string>
+    <string name="action_play_with_tracks">Lire avec ces choix</string>
+    <string name="action_file_info">Informations sur le fichier</string>
+    <string name="bitrate">%1$d Mb/s</string>
+    <string name="playback_version">Version</string>
+    <string name="playback_player_choice">Choix du lecteur</string>
+    <string name="playback_start">Début</string>
+    <string name="playback_resume_at">Reprise à %1$s</string>
+    <string name="playback_from_start">Depuis le début</string>
+    <plurals name="season_count">
+        <item quantity="one">%1$d saison</item>
+        <item quantity="many">%1$d saisons</item>
+        <item quantity="other">%1$d saisons</item>
+    </plurals>
+</resources>

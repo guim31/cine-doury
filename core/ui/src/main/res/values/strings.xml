@@ -41,4 +41,57 @@
     <string name="soon_message_details">La fiche de « %1$s » arrive avec une prochaine version.</string>
     <string name="soon_title_player">Lecture</string>
     <string name="soon_message_player">Le lecteur arrive avec une prochaine version. « %1$s » se lira ici.</string>
+    <string name="time_pattern">H\' h \'mm</string>
+    <string name="badge_uhd" translatable="false">4K</string>
+    <string name="badge_full_hd" translatable="false">1080p</string>
+    <string name="badge_hd" translatable="false">720p</string>
+    <string name="badge_sd" translatable="false">SD</string>
+    <string name="badge_dolby_vision" translatable="false">Dolby Vision</string>
+    <string name="badge_hdr10_plus" translatable="false">HDR10+</string>
+    <string name="badge_hdr10" translatable="false">HDR10</string>
+    <string name="badge_hlg" translatable="false">HLG</string>
+    <string name="badge_atmos" translatable="false">Atmos</string>
+    <string name="badge_dts_x" translatable="false">DTS:X</string>
+    <string name="badge_truehd" translatable="false">TrueHD</string>
+    <string name="badge_dts_hd" translatable="false">DTS-HD</string>
+    <string name="badge_dts" translatable="false">DTS</string>
+    <string name="badge_71" translatable="false">7.1</string>
+    <string name="badge_51" translatable="false">5.1</string>
+    <string name="badge_local_audio">VF</string>
+    <string name="badge_subtitled">VOST</string>
+    <string name="badge_original">VO</string>
+    <string name="range_sdr" translatable="false">SDR</string>
+    <string name="audio_stereo">Stéréo</string>
+    <string name="audio_mono" translatable="false">Mono</string>
+    <string name="audio_atmos" translatable="false">Dolby Atmos</string>
+    <string name="audio_dts" translatable="false">DTS</string>
+    <string name="audio_truehd" translatable="false">Dolby TrueHD</string>
+    <string name="audio_channels">%1$d canaux</string>
+    <string name="codec_h264" translatable="false">H.264</string>
+    <string name="codec_hevc" translatable="false">HEVC</string>
+    <string name="codec_av1" translatable="false">AV1</string>
+    <string name="codec_vp9" translatable="false">VP9</string>
+    <string name="codec_mpeg2" translatable="false">MPEG-2</string>
+    <string name="codec_vc1" translatable="false">VC-1</string>
+    <string name="codec_other">Autre</string>
+    <string name="codec_eac3" translatable="false">E-AC3</string>
+    <string name="codec_ac3" translatable="false">AC3</string>
+    <string name="codec_aac" translatable="false">AAC</string>
+    <string name="codec_flac" translatable="false">FLAC</string>
+    <string name="codec_opus" translatable="false">Opus</string>
+    <string name="codec_mp3" translatable="false">MP3</string>
+    <string name="codec_srt" translatable="false">SRT</string>
+    <string name="codec_ass" translatable="false">ASS</string>
+    <string name="codec_pgs" translatable="false">PGS</string>
+    <string name="codec_vobsub" translatable="false">VobSub</string>
+    <string name="codec_vtt" translatable="false">WebVTT</string>
+    <string name="track_unknown_language">Langue inconnue</string>
+    <string name="track_with_atmos" translatable="false">%1$s Atmos</string>
+    <string name="track_forced">forcés</string>
+    <string name="track_hearing_impaired">pour sourds et malentendants</string>
+    <string name="track_default">par défaut</string>
+    <string name="track_external">externe</string>
+    <string name="size_gb">%1$s Go</string>
+    <string name="size_mb">%1$s Mo</string>
+    <string name="date_pattern">d MMM yyyy</string>
 </resources>

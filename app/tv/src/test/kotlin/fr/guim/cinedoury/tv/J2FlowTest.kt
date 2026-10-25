@@ -6,7 +6,6 @@ import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasTestTag
-import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.pressKey
@@ -22,6 +21,7 @@ import fr.guim.cinedoury.core.source.ServerDiscovery
 import fr.guim.cinedoury.core.source.SourceConnector
 import fr.guim.cinedoury.core.source.fake.InMemorySource
 import fr.guim.cinedoury.feature.auth.authModule
+import fr.guim.cinedoury.feature.details.detailsModule
 import fr.guim.cinedoury.feature.home.HomePreview
 import fr.guim.cinedoury.feature.home.homeModule
 import fr.guim.cinedoury.feature.library.LibraryPreview
@@ -88,6 +88,7 @@ class J2FlowTest {
                 authModule,
                 homeModule,
                 libraryModule,
+                detailsModule,
                 settingsModule,
             )
         }
@@ -155,15 +156,8 @@ class J2FlowTest {
         focusable(LibraryPreview.item(6)).assertIsFocused()
     }
 
-    /** The provisional details screen (J3). */
-    private fun waitForDetails() =
-        compose.waitUntil(TIMEOUT) {
-            compose
-                .onAllNodes(
-                    hasText("arrive avec une prochaine version", substring = true),
-                ).fetchSemanticsNodes()
-                .isNotEmpty()
-        }
+    /** The details screen (J3). */
+    private fun waitForDetails() = waitForTag("details")
 
     private companion object {
         const val TIMEOUT = 10_000L

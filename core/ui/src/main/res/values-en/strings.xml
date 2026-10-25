@@ -40,4 +40,19 @@
     <string name="soon_message_details">The details of “%1$s” come with a future version.</string>
     <string name="soon_title_player">Playback</string>
     <string name="soon_message_player">The player comes with a future version. “%1$s” will play here.</string>
+    <string name="time_pattern">h:mm a</string>
+    <string name="badge_local_audio">French</string>
+    <string name="badge_subtitled">Subtitled</string>
+    <string name="badge_original">Original</string>
+    <string name="audio_stereo">Stereo</string>
+    <string name="audio_channels">%1$d channels</string>
+    <string name="codec_other">Other</string>
+    <string name="track_unknown_language">Unknown language</string>
+    <string name="track_forced">forced</string>
+    <string name="track_hearing_impaired">SDH</string>
+    <string name="track_default">default</string>
+    <string name="track_external">external</string>
+    <string name="size_gb">%1$s GB</string>
+    <string name="size_mb">%1$s MB</string>
+    <string name="date_pattern">MMM d, yyyy</string>
 </resources>

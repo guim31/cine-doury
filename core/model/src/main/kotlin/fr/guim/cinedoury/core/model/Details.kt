@@ -85,3 +85,13 @@ data class TrackSelection(
     val audioIndex: Int?,
     val subtitleIndex: Int?,
 )
+
+/**
+ * What the details screen asks the player to play (J4): the item, the version and tracks chosen
+ * before playback (null: the player's own choice), from the saved position or from the start.
+ */
+data class PlaybackRequest(
+    val item: MediaItem,
+    val selection: TrackSelection? = null,
+    val resume: Boolean = item.progress != null,
+)

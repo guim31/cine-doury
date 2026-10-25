@@ -50,6 +50,7 @@ dependencies {
     implementation(projects.core.designsystem)
     implementation(projects.core.ui)
     implementation(projects.feature.auth)
+    implementation(projects.feature.details)
     implementation(projects.feature.home)
     implementation(projects.feature.library)
     implementation(projects.feature.settings)

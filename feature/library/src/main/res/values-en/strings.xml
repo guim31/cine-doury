@@ -52,8 +52,6 @@
     <string name="filter_favorite">Favourites</string>
     <string name="filter_favorite_only">Favourites only</string>
     <string name="filter_none_available">No value in this library.</string>
-    <string name="filter_unavailable">HDR, Dolby Vision and audio format</string>
-    <string name="filter_unavailable_description">Jellyfin 12.3 cannot filter on these yet.</string>
     <string name="decade">%1$ss</string>
     <string name="decade_range">%1$d–%2$d</string>
     <string name="summary_unwatched">unwatched</string>
@@ -66,4 +64,9 @@
     <string name="empty_message">Remove a filter, or clear them all.</string>
     <string name="empty_library">This library is empty.</string>
     <string name="count_titles">%1$d titles</string>
+    <string name="filter_range">HDR and Dolby Vision</string>
+    <string name="filter_audio_format">Audio format</string>
+    <string name="filter_codec">Video codec</string>
+    <string name="filter_index_running">Indexing the library: %1$d of %2$d titles. Results will be complete afterwards.</string>
+    <string name="filter_index_pending">The library index is not built yet: this filter will be available in a few minutes.</string>
 </resources>

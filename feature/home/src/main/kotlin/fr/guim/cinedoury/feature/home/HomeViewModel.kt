@@ -11,6 +11,7 @@ import fr.guim.cinedoury.core.data.home.HomeRepository
 import fr.guim.cinedoury.core.data.home.HomeRowType
 import fr.guim.cinedoury.core.data.home.HomeRows
 import fr.guim.cinedoury.core.data.home.ProfileKey
+import fr.guim.cinedoury.core.data.library.LibraryIconRepository
 import fr.guim.cinedoury.core.model.Library
 import fr.guim.cinedoury.core.model.MediaItem
 import fr.guim.cinedoury.core.source.SourceException
@@ -57,6 +58,7 @@ data class HomeState(
 class HomeViewModel(
     private val sessions: SessionManager,
     private val home: HomeRepository,
+    icons: LibraryIconRepository,
 ) : ViewModel() {
     private val active: ActiveSession? = sessions.active.value
     private val profile = active?.let { ProfileKey(it.profile.serverId, it.profile.user.id.value) }
@@ -80,9 +82,10 @@ class HomeViewModel(
             combine(
                 cached,
                 home.railHidden(profile),
+                icons.chosen(profile.serverId),
                 refreshed,
                 error,
-            ) { (libraries, rows, specs), hidden, done, failure ->
+            ) { (libraries, rows, specs), hidden, chosen, done, failure ->
                 val shown =
                     specs.mapNotNull { spec ->
                         rows[spec.key]?.takeIf { it.isNotEmpty() }?.let { items ->
@@ -95,6 +98,7 @@ class HomeViewModel(
                             libraries = libraries.filterNot { it.id in hidden },
                             profileName = active.profile.user.name,
                             avatar = avatar,
+                            icons = chosen,
                         ),
                     remote = active.connection.mode == ConnectionMode.Remote,
                     rows = if (rows.isEmpty() && !done) null else shown,
