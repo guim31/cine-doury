@@ -18,6 +18,7 @@ import fr.guim.cinedoury.core.model.UserData
 import fr.guim.cinedoury.core.model.UserId
 import fr.guim.cinedoury.core.source.Credentials
 import fr.guim.cinedoury.core.source.LibrarySource
+import fr.guim.cinedoury.core.source.PlaybackSource
 import fr.guim.cinedoury.core.source.QuickConnectRequest
 import fr.guim.cinedoury.core.source.ServerAddress
 import fr.guim.cinedoury.core.source.Session
@@ -56,6 +57,8 @@ class InMemorySource(
     private val similar: Map<ItemId, List<ItemId>> = emptyMap(),
     private val trailers: Map<ItemId, List<ItemId>> = emptyMap(),
     var preferences: PlaybackPreferences = PlaybackPreferences(),
+    /** Playback, shared by every session. */
+    val playback: InMemoryPlayback = InMemoryPlayback(),
 ) : SourceConnector {
     private val items: Map<ItemId, MediaItem> = (contents.values.flatten() + extras).associateBy { it.id }
 
@@ -164,6 +167,8 @@ class InMemorySource(
         user.image?.let { "$server/user/${user.id.value}?tag=${it.tag}" }
 
     private inner class InMemoryLibrary(override val session: Session) : LibrarySource {
+        override val playback: PlaybackSource get() = this@InMemorySource.playback
+
         private fun checkSession() {
             check(session.server)
             if (session.accessToken in revokedTokens) throw SourceException.Unauthorized()

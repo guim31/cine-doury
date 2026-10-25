@@ -19,6 +19,8 @@
     <string name="error_session_message">Sign in again to go on.</string>
     <string name="error_forbidden_title">This profile has no access to it.</string>
     <string name="error_forbidden_message">Ask the server administrator, or choose another profile.</string>
+    <string name="error_unplayable_title">This title cannot be played on this device.</string>
+    <string name="error_unplayable_message">The server finds no way to send it. Check that transcoding is enabled on the server, then try again.</string>
     <string name="error_server_title">The server ran into an error.</string>
     <string name="error_server_message">Try again in a moment. If the error persists, restart the server.</string>
     <string name="error_unexpected_title">Something unexpected happened.</string>

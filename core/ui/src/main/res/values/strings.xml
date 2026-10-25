@@ -19,6 +19,8 @@
     <string name="error_session_message">Reconnectez-vous pour continuer.</string>
     <string name="error_forbidden_title">Ce profil n\'y a pas accès.</string>
     <string name="error_forbidden_message">Demandez à l\'administrateur du serveur, ou choisissez un autre profil.</string>
+    <string name="error_unplayable_title">Ce titre ne peut pas être lu sur cet appareil.</string>
+    <string name="error_unplayable_message">Le serveur ne trouve aucun moyen de le transmettre. Vérifiez que le transcodage est activé sur le serveur, puis réessayez.</string>
     <string name="error_server_title">Le serveur a rencontré une erreur.</string>
     <string name="error_server_message">Réessayez dans un instant. Si l\'erreur persiste, redémarrez le serveur.</string>
     <string name="error_unexpected_title">Une erreur inattendue s\'est produite.</string>

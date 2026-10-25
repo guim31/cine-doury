@@ -11,6 +11,8 @@ data class MediaSource(
     val path: String? = null,
     /** Bits per second, all streams together. */
     val bitrate: Int? = null,
+    /** The preview pictures of the version, at each width the server made (J4). */
+    val trickplay: List<TrickplayInfo> = emptyList(),
 ) {
     val video: MediaStream? get() = streams.firstOrNull { it.type == StreamType.Video }
     val audio: List<MediaStream> get() = streams.filter { it.type == StreamType.Audio }
@@ -64,4 +66,8 @@ data class MediaStream(
     val spatialAudio: SpatialAudio? = null,
     val isHearingImpaired: Boolean = false,
     val bitrate: Int? = null,
+    /** Pictures per second of a video stream. */
+    val frameRate: Float? = null,
+    /** The Dolby Vision profile of a video stream (5, 7, 8). */
+    val dolbyVisionProfile: Int? = null,
 )

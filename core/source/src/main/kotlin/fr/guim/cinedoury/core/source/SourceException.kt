@@ -30,6 +30,9 @@ sealed class SourceException(message: String, cause: Throwable? = null) : Except
     /** The Quick Connect request is no longer known to the server: a new code is needed. */
     class QuickConnectExpired : SourceException("Quick Connect request expired")
 
+    /** The server finds no way to play the item on this device, or the profile may not play it. */
+    class Unplayable(detail: String) : SourceException(detail)
+
     class Server(val status: Int) : SourceException("Server error $status")
 
     class Unexpected(cause: Throwable) : SourceException(cause.message ?: cause::class.simpleName.orEmpty(), cause)

@@ -55,6 +55,10 @@ fun SourceException.toErrorText(): ErrorText {
                 stringResource(R.string.error_forbidden_title) to stringResource(R.string.error_forbidden_message)
             }
 
+            is SourceException.Unplayable -> {
+                stringResource(R.string.error_unplayable_title) to stringResource(R.string.error_unplayable_message)
+            }
+
             is SourceException.Server -> {
                 stringResource(R.string.error_server_title) to stringResource(R.string.error_server_message)
             }
