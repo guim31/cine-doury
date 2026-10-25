@@ -10,7 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
@@ -284,48 +284,59 @@ private fun Hero(
         horizontalArrangement = Arrangement.spacedBy(CineSpacing.l),
     ) {
         Picture(item, sources)
+        // The text keeps a reading width; the buttons take the rest of the screen.
         Column(
-            modifier = Modifier.width(CineSizes.detailsTextWidth),
+            modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(CineSpacing.xs),
         ) {
-            Title(item, sources)
-            item.detailsLine()?.let {
-                Text(
-                    text = it,
-                    style = typography.caption.tabular(),
-                    color = colors.text2,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            item.genres.takeIf { it.isNotEmpty() }?.let {
-                Text(text = it.joinToString(SEPARATOR), style = typography.caption, color = colors.text2, maxLines = 1)
-            }
-            if (state.badges.isNotEmpty()) {
-                TechBadges(state.badges.map { it.label() }, Modifier.padding(vertical = CineSpacing.xs / 2))
-            }
-            item.overview?.takeIf { it.isNotBlank() }?.let { overview ->
-                ExpandableText(
-                    text = overview,
-                    expanded = expanded,
-                    onToggle = onExpand,
-                    focus = rememberCineFocus(DetailsPreview.OVERVIEW),
-                    focusRequester = requesters[KEY_OVERVIEW],
-                    modifier =
-                        Modifier
-                            .testTag(
-                                DetailsPreview.OVERVIEW,
-                            ).onFocusChanged { if (it.hasFocus) onFocused(KEY_OVERVIEW) },
-                )
-            }
-            item.crewLine()?.let {
-                Text(
-                    text = it,
-                    style = typography.caption,
-                    color = colors.text2,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
+            Column(
+                modifier = Modifier.widthIn(max = CineSizes.detailsTextWidth),
+                verticalArrangement = Arrangement.spacedBy(CineSpacing.xs),
+            ) {
+                Title(item, sources)
+                item.detailsLine()?.let {
+                    Text(
+                        text = it,
+                        style = typography.caption.tabular(),
+                        color = colors.text2,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                item.genres.takeIf { it.isNotEmpty() }?.let {
+                    Text(
+                        text = it.joinToString(SEPARATOR),
+                        style = typography.caption,
+                        color = colors.text2,
+                        maxLines = 1,
+                    )
+                }
+                if (state.badges.isNotEmpty()) {
+                    TechBadges(state.badges.map { it.label() }, Modifier.padding(vertical = CineSpacing.xs / 2))
+                }
+                item.overview?.takeIf { it.isNotBlank() }?.let { overview ->
+                    ExpandableText(
+                        text = overview,
+                        expanded = expanded,
+                        onToggle = onExpand,
+                        focus = rememberCineFocus(DetailsPreview.OVERVIEW),
+                        focusRequester = requesters[KEY_OVERVIEW],
+                        modifier =
+                            Modifier
+                                .testTag(
+                                    DetailsPreview.OVERVIEW,
+                                ).onFocusChanged { if (it.hasFocus) onFocused(KEY_OVERVIEW) },
+                    )
+                }
+                item.crewLine()?.let {
+                    Text(
+                        text = it,
+                        style = typography.caption,
+                        color = colors.text2,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
             val error = state.error
             if (error != null && !state.loaded) {

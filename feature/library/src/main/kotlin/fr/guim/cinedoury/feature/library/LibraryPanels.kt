@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -16,6 +17,7 @@ import fr.guim.cinedoury.core.designsystem.component.CineIcons
 import fr.guim.cinedoury.core.designsystem.component.InitialFocus
 import fr.guim.cinedoury.core.designsystem.component.ListRow
 import fr.guim.cinedoury.core.designsystem.component.SidePanel
+import fr.guim.cinedoury.core.designsystem.component.previewFirstVisible
 import fr.guim.cinedoury.core.designsystem.component.rememberCineFocus
 import fr.guim.cinedoury.core.designsystem.theme.CineSpacing
 import fr.guim.cinedoury.core.model.AudioFormat
@@ -119,6 +121,7 @@ internal fun LibraryPanels(
     SidePanel(visible = panel != null, title = title, modifier = Modifier.testTag("panel")) {
         val first = remember(panel, category) { FocusRequester() }
         LazyColumn(
+            state = rememberLazyListState(initialFirstVisibleItemIndex = previewFirstVisible("panel-")),
             contentPadding = PaddingValues(vertical = CineSpacing.xs, horizontal = CineSpacing.xs),
             verticalArrangement = Arrangement.spacedBy(CineSpacing.xs),
         ) {

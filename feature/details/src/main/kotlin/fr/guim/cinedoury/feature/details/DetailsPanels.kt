@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.SideEffect
@@ -21,6 +22,7 @@ import fr.guim.cinedoury.core.designsystem.component.InitialFocus
 import fr.guim.cinedoury.core.designsystem.component.ListRow
 import fr.guim.cinedoury.core.designsystem.component.ListSectionTitle
 import fr.guim.cinedoury.core.designsystem.component.SidePanel
+import fr.guim.cinedoury.core.designsystem.component.previewFirstVisible
 import fr.guim.cinedoury.core.designsystem.component.rememberCineFocus
 import fr.guim.cinedoury.core.designsystem.theme.CineSizes
 import fr.guim.cinedoury.core.designsystem.theme.CineSpacing
@@ -54,7 +56,9 @@ private sealed interface PanelLine {
 }
 
 /** Preview tag of the line of a panel at [index]. */
-fun panelLine(index: Int) = "details-panel-$index"
+fun panelLine(index: Int) = "$PANEL_LINE$index"
+
+private const val PANEL_LINE = "details-panel-"
 
 /**
  * The panels of a details screen, over its right side (`UI.md` § 7): the version and the tracks
@@ -98,6 +102,7 @@ internal fun DetailsPanels(
             lines.indexOfFirst { it is PanelLine.Choice && it.initial }.takeIf { it >= 0 }
                 ?: lines.indexOfFirst { it is PanelLine.Choice }
         LazyColumn(
+            state = rememberLazyListState(initialFirstVisibleItemIndex = previewFirstVisible(PANEL_LINE)),
             contentPadding = PaddingValues(vertical = CineSpacing.xs, horizontal = CineSpacing.xs),
             verticalArrangement = Arrangement.spacedBy(CineSpacing.xs),
         ) {

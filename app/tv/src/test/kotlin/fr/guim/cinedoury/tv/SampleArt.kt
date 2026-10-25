@@ -18,6 +18,7 @@ import coil3.compose.AsyncImagePreviewHandler
 import coil3.compose.LocalAsyncImagePreviewHandler
 import coil3.compose.asPainter
 import coil3.request.SuccessResult
+import coil3.request.crossfade
 import fr.guim.cinedoury.core.designsystem.component.artworkColors
 import fr.guim.cinedoury.core.designsystem.image.ImageSource
 import fr.guim.cinedoury.core.model.ImageRef
@@ -61,7 +62,9 @@ internal object SampleArt {
                 } else {
                     draw(ImageType.Backdrop, request.data.toString(), FALLBACK_SIZE, FALLBACK_SIZE)
                 }.asImage()
-            AsyncImagePainter.State.Success(image.asPainter(request.context), SuccessResult(image, request))
+            // Without a crossfade: Coil times it on the real clock, and a capture would catch it at its start.
+            val shown = request.newBuilder().crossfade(false).build()
+            AsyncImagePainter.State.Success(image.asPainter(request.context), SuccessResult(image, shown))
         }
 
     /** Lets [content] draw the sample artwork. */
