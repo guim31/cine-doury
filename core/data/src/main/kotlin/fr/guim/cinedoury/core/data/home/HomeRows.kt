@@ -49,10 +49,9 @@ object HomeRows {
         layout: List<HomeRowConfig>,
         libraries: List<Library>,
         exclusions: HomeExclusions,
-    ): List<HomeRowSpec> {
-        val visible = libraries.filter { it.id !in exclusions.fromHome && it.kind != LibraryKind.Collections }
-        return layout.flatMap { config ->
-            val eligible = visible.filter { it.kind in config.type.kinds }
+    ): List<HomeRowSpec> =
+        layout.flatMap { config ->
+            val eligible = eligible(config.type, libraries, exclusions)
             val scope = if (config.libraries.isEmpty()) eligible else eligible.filter { it.id in config.libraries }
             when {
                 scope.isEmpty() -> {
@@ -78,7 +77,13 @@ object HomeRows {
                 }
             }
         }
-    }
+
+    /** The libraries a row of [type] can draw from: the kinds that hold its items, not excluded. */
+    fun eligible(
+        type: HomeRowType,
+        libraries: List<Library>,
+        exclusions: HomeExclusions,
+    ): List<Library> = libraries.filter { it.id !in exclusions.fromHome && it.kind in type.kinds }
 
     private val HomeRowType.kinds: Set<LibraryKind>
         get() =

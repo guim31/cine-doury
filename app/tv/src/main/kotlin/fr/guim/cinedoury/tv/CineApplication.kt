@@ -13,6 +13,7 @@ import fr.guim.cinedoury.core.source.ServerDiscovery
 import fr.guim.cinedoury.core.source.SourceConnector
 import fr.guim.cinedoury.feature.auth.authModule
 import fr.guim.cinedoury.feature.home.homeModule
+import fr.guim.cinedoury.feature.library.libraryModule
 import fr.guim.cinedoury.feature.settings.settingsModule
 import fr.guim.cinedoury.source.jellyfin.ClientIdentity
 import fr.guim.cinedoury.source.jellyfin.JellyfinConnector
@@ -32,7 +33,7 @@ class CineApplication :
         stopKoin()
         startKoin {
             androidContext(this@CineApplication)
-            modules(dataModule, jellyfinModule, authModule, homeModule, settingsModule)
+            modules(dataModule, jellyfinModule, authModule, homeModule, libraryModule, settingsModule)
         }
     }
 

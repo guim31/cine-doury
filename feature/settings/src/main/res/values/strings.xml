@@ -30,4 +30,7 @@
     <string name="section_debug">Version de débogage</string>
     <string name="catalog">Catalogue</string>
     <string name="catalog_description">Les jetons et composants du design system.</string>
+    <string name="section_home">Accueil</string>
+    <string name="customize_home">Personnaliser l\'accueil</string>
+    <string name="customize_home_description">Rangées, ordre, bibliothèques et menu latéral de ce profil.</string>
 </resources>

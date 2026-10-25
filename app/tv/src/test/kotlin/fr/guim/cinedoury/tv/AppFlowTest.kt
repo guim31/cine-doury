@@ -20,6 +20,7 @@ import fr.guim.cinedoury.core.source.SourceConnector
 import fr.guim.cinedoury.core.source.fake.InMemorySource
 import fr.guim.cinedoury.feature.auth.authModule
 import fr.guim.cinedoury.feature.home.homeModule
+import fr.guim.cinedoury.feature.library.libraryModule
 import fr.guim.cinedoury.feature.settings.settingsModule
 import kotlinx.coroutines.flow.flowOf
 import org.junit.After
@@ -77,6 +78,7 @@ class AppFlowTest {
                 },
                 authModule,
                 homeModule,
+                libraryModule,
                 settingsModule,
             )
         }
@@ -126,7 +128,7 @@ class AppFlowTest {
         waitFor("482  913")
         source.approveQuickConnect("482913", "enfant")
         idleMainLooper(seconds = 3)
-        waitFor("Bonjour, enfant")
+        waitFor(EMPTY_HOME)
 
         compose.onNodeWithContentDescription("Réglages").performClick()
         click("Définir un code PIN")
@@ -137,7 +139,7 @@ class AppFlowTest {
         clickProfile(ENFANT)
         waitFor("Saisissez le code PIN")
         "2580".forEach { digit -> click(digit.toString()) }
-        waitFor("Bonjour, enfant")
+        waitFor(EMPTY_HOME)
     }
 
     private companion object {
@@ -145,5 +147,8 @@ class AppFlowTest {
 
         /** « admin », then « enfant ». */
         const val ENFANT = 1
+
+        /** The in-memory server has no library: the home says so. */
+        const val EMPTY_HOME = "Votre accueil est vide pour l'instant."
     }
 }

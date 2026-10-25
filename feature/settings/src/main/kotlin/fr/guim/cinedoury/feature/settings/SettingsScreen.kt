@@ -43,6 +43,8 @@ import fr.guim.cinedoury.core.ui.R as UiR
 
 /** What the settings ask the app to open. */
 interface SettingsNavigation {
+    fun customizeHome()
+
     fun pin(
         profile: Profile,
         remove: Boolean,
@@ -177,6 +179,16 @@ fun SettingsScreen(
                         description = stringResource(R.string.sign_out_description),
                         onClick = onSignOut,
                         modifier = Modifier.testTag("sign-out"),
+                    )
+                }
+                item { ListSectionTitle(stringResource(R.string.section_home)) }
+                item {
+                    ListRow(
+                        title = stringResource(R.string.customize_home),
+                        description = stringResource(R.string.customize_home_description),
+                        icon = CineIcons.Home,
+                        onClick = navigation::customizeHome,
+                        modifier = Modifier.testTag("customize-home"),
                     )
                 }
                 item { ListSectionTitle(stringResource(R.string.section_startup)) }

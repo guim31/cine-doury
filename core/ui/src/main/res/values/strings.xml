@@ -25,4 +25,20 @@
     <string name="error_unexpected_message">Réessayez. Le détail technique est dans « Plus d\'infos ».</string>
     <string name="remote_connection">À distance</string>
     <string name="brand_name" translatable="false">Ciné Doury</string>
+    <string name="rail_search">Recherche</string>
+    <string name="rail_home">Accueil</string>
+    <string name="rail_settings">Réglages</string>
+    <string name="rail_profiles">Changer de profil</string>
+    <string name="duration_hours">%1$d\u00A0h\u00A0%2$02d</string>
+    <string name="duration_minutes">%1$d\u00A0min</string>
+    <string name="episode_code">S%1$02d · E%2$02d</string>
+    <string name="episode_line">%1$s — %2$s</string>
+    <string name="resume_at">Reprendre à %1$s</string>
+    <string name="rating">★\u00A0%1$s</string>
+    <string name="soon_title_search">Recherche</string>
+    <string name="soon_message_search">La recherche arrive avec une prochaine version.</string>
+    <string name="soon_title_details">Fiche</string>
+    <string name="soon_message_details">La fiche de « %1$s » arrive avec une prochaine version.</string>
+    <string name="soon_title_player">Lecture</string>
+    <string name="soon_message_player">Le lecteur arrive avec une prochaine version. « %1$s » se lira ici.</string>
 </resources>

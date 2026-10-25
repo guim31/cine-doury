@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
@@ -25,7 +24,6 @@ import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.tv.material3.Text
 import fr.guim.cinedoury.core.designsystem.theme.CineMotion
 import fr.guim.cinedoury.core.designsystem.theme.CineSizes
@@ -52,20 +50,12 @@ data class Featured(
 )
 
 /**
- * The featured banner at the top of the home, on 60 % of the screen: the backdrop of the focused
- * title faded into the screen, its logo (its title in type otherwise), a line of metadata, one line
- * that sells it, and the [actions] (« Lire », « Fiche »). It follows the focus once it has rested
- * for 250 ms, with a 300 ms fade, like the ambient backdrop: never a carousel that moves alone.
- * The [actions] stay out of the fade, so that a button keeps the focus.
+ * [featured] once it has rested for 250 ms (the same title is always up to date), and the recent
+ * titles by key: the fades are keyed by title, not by value, since a value holds new lambdas at each
+ * composition.
  */
 @Composable
-fun FeaturedBanner(
-    featured: Featured?,
-    modifier: Modifier = Modifier,
-    startPadding: Dp = CineSizes.railCollapsed + CineSpacing.m,
-    actions: @Composable RowScope.() -> Unit = {},
-) {
-    // The title shown lags behind the focus by 250 ms; the same title is always shown up to date.
+private fun settledFeatured(featured: Featured?): Pair<String?, Map<String, Featured>> {
     var settled by remember { mutableStateOf(featured) }
     val latest by rememberUpdatedState(featured)
     LaunchedEffect(featured?.key) {
@@ -73,48 +63,66 @@ fun FeaturedBanner(
         settled = latest
     }
     val shown = if (settled?.key == featured?.key) featured else settled
-    // The fades are keyed by title, not by value: a value holds new lambdas at each composition.
     val recent = remember { LinkedHashMap<String, Featured>() }
     shown?.let { recent[it.key] = it }
     while (recent.size > RECENT_TITLES) recent.remove(recent.keys.first())
+    return shown?.key to recent
+}
+
+/**
+ * The picture of the featured title, full width at the top of the home, faded into the screen on the
+ * left and at the bottom (`UI.md` § 4 and § 8). It stays in place while the rows scroll, and follows
+ * the focus once it has rested for 250 ms, with a 300 ms fade: never a carousel that moves alone.
+ */
+@Composable
+fun FeaturedBackdrop(
+    featured: Featured?,
+    modifier: Modifier = Modifier,
+) {
+    val (shown, recent) = settledFeatured(featured)
     val background = CineTheme.colors.background
-    Box(modifier = modifier.fillMaxWidth()) {
+    Crossfade(
+        targetState = shown,
+        animationSpec = CineMotion.fade<Float>(CineMotion.BACKDROP_FADE_MILLIS),
+        modifier = modifier,
+        label = "featured-backdrop",
+    ) { key ->
+        Box(Modifier.fillMaxSize().bannerFade(background)) {
+            recent[key]?.backdrop?.invoke()
+        }
+    }
+}
+
+/**
+ * The featured banner of the home (`FONCTIONNALITES.md` § 2): the logo of the focused title (its
+ * title in type otherwise), a line of metadata, one line that sells it, and the [actions] (« Lire »,
+ * « Fiche »). It follows the focus like [FeaturedBackdrop]; the [actions] stay out of the fade, so
+ * that a button keeps the focus.
+ */
+@Composable
+fun FeaturedBanner(
+    featured: Featured?,
+    modifier: Modifier = Modifier,
+    actions: @Composable RowScope.() -> Unit = {},
+) {
+    val (shown, recent) = settledFeatured(featured)
+    Column(
+        modifier = modifier.width(CineSizes.heroTextWidth),
+        verticalArrangement = Arrangement.spacedBy(CineSpacing.s),
+    ) {
         Crossfade(
-            targetState = shown?.key,
+            targetState = shown,
             animationSpec = CineMotion.fade<Float>(CineMotion.BACKDROP_FADE_MILLIS),
-            label = "featured-backdrop",
+            label = "featured-text",
         ) { key ->
-            val current = recent[key]
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .bannerFade(background),
-            ) {
-                current?.backdrop?.invoke()
-            }
+            recent[key]?.let { FeaturedText(it) }
         }
-        Column(
-            modifier =
-                Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(start = startPadding, bottom = CineSpacing.m)
-                    .width(CineSizes.heroTextWidth),
-            verticalArrangement = Arrangement.spacedBy(CineSpacing.s),
-        ) {
-            Crossfade(
-                targetState = shown?.key,
-                animationSpec = CineMotion.fade<Float>(CineMotion.BACKDROP_FADE_MILLIS),
-                label = "featured-text",
-            ) { key ->
-                recent[key]?.let { FeaturedText(it) }
-            }
-            Row(
-                modifier = Modifier.padding(top = CineSpacing.xs),
-                horizontalArrangement = Arrangement.spacedBy(CineSpacing.m),
-                verticalAlignment = Alignment.CenterVertically,
-                content = actions,
-            )
-        }
+        Row(
+            modifier = Modifier.padding(top = CineSpacing.xs),
+            horizontalArrangement = Arrangement.spacedBy(CineSpacing.m),
+            verticalAlignment = Alignment.CenterVertically,
+            content = actions,
+        )
     }
 }
 
