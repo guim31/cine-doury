@@ -8,6 +8,7 @@ import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasClickAction
@@ -237,7 +238,7 @@ class RemoteInputTest {
     }
 
     @Test
-    fun `profiles that arrive from the server take the focus from Other account`() {
+    fun `profiles that arrive from the server get the first focus`() {
         var state by mutableStateOf(ProfilesState(emptyList(), loading = true))
         show {
             ProfilesScreen(
@@ -249,7 +250,8 @@ class RemoteInputTest {
                 onRetry = {},
             )
         }
-        compose.onNode(hasClickAction() and inside("profile-other")).assertIsFocused()
+        // The server is asked: no focus yet, rather than on « Autre compte ».
+        compose.onAllNodes(isFocused()).assertCountEquals(0)
 
         compose.runOnIdle { state = ProfilesState(J1Samples.profiles, loading = false) }
         compose.waitForIdle()

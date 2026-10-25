@@ -11,6 +11,7 @@ import fr.guim.cinedoury.core.ui.Events
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -64,8 +65,14 @@ class ProfilesViewModel(
                 } catch (error: SourceException) {
                     error
                 }
+            // The profiles just saved come with the end of the loading, in one state: the screen
+            // gives its first focus once, to the right tile (CLAUDE.md, « Pièges »).
+            val profiles = if (error == null) sessions.profiles().first() else null
             // Known profiles still open without the server's list.
-            mutableState.update { it.copy(loading = false, error = error?.takeIf { _ -> it.profiles.isEmpty() }) }
+            mutableState.update {
+                val listed = profiles ?: it.profiles
+                it.copy(profiles = listed, loading = false, error = error?.takeIf { _ -> listed.isEmpty() })
+            }
         }
     }
 

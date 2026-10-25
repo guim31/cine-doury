@@ -117,10 +117,12 @@ fun ProfilesScreen(
             }
         }
     }
-    // « Autre compte » while no profile is listed; once the profiles arrive (from the server, after
-    // the screen), the first one takes the focus.
+    // The first profile, or « Autre compte » when none is listed. While the server is asked with no
+    // profile known here, no focus yet: moving it from « Autre compte » to a tile that arrives
+    // before it fails in a LazyRow (CLAUDE.md, « Pièges »).
     val target = if (state.profiles.isEmpty()) other else first
-    InitialFocus(target, key = error == null to state.profiles.isEmpty(), enabled = error == null)
+    val waiting = state.loading && state.profiles.isEmpty()
+    InitialFocus(target, key = error == null to state.profiles.isEmpty(), enabled = error == null && !waiting)
 }
 
 @Composable
