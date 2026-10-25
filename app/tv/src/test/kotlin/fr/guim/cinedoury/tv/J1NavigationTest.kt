@@ -80,7 +80,9 @@ class J1NavigationTest {
         focusable("server-0").assertIsFocused()
         press(Key.DirectionDown)
         focusable("server-1").assertIsFocused()
+        // Down reaches the row of buttons (« Chercher à nouveau » may be the nearest), left its start.
         press(Key.DirectionDown)
+        press(Key.DirectionLeft)
         focusable("enter-address").assertIsFocused()
         repeat(2) { press(Key.DirectionUp) }
         press(Key.DirectionCenter)
