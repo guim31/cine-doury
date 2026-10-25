@@ -82,13 +82,14 @@ class HomeRepository(
             .distinctUntilChanged()
 
     /**
-     * Reads the libraries, then every row of the layout, and replaces the cache. Fails with a
-     * `SourceException` and leaves the cache as it was if the server cannot answer.
+     * Reads the libraries, then every row of the layout, and replaces the cache; returns the rows
+     * written. Fails with a `SourceException` and leaves the cache as it was if the server cannot
+     * answer.
      */
     suspend fun refresh(
         profile: ProfileKey,
         source: LibrarySource,
-    ) {
+    ): Map<String, List<MediaItem>> {
         val libraries =
             coroutineScope {
                 val list = async { source.libraries() }
@@ -109,6 +110,7 @@ class HomeRepository(
             profile.userId,
             rows.mapValues { (_, items) -> items.map { it.toEntity(profile) } },
         )
+        return rows
     }
 
     /** Forgets the cache of a profile (signed out), or of every profile of a server. */

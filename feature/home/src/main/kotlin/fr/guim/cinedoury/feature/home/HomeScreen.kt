@@ -279,7 +279,7 @@ fun HomeScreen(
     // The first focus, and the focus found again when coming back: the row left, else « Lire ».
     val initial = focusedRow?.let { rowRequesters[it] }
     // Not keyed on the quit dialog: closing it gives the focus back to the rail, not to « Lire ».
-    InitialFocus(initial ?: play, key = rows != null)
+    InitialFocus(initial ?: play, key = rows?.isEmpty())
 }
 
 private val LazyListState.isScrolled: Boolean get() = firstVisibleItemIndex > 0 || firstVisibleItemScrollOffset > 0

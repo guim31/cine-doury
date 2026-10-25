@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -114,7 +115,9 @@ class HomeViewModel(
         refreshing =
             viewModelScope.launch {
                 try {
-                    home.refresh(profile, source)
+                    val written = home.refresh(profile, source)
+                    // Room gives the new rows a moment later: until then the home is not « empty ».
+                    if (written.values.any { it.isNotEmpty() }) home.rows(profile).first { it.isNotEmpty() }
                     error.value = null
                 } catch (_: SourceException.Unauthorized) {
                     sessions.sessionRejected()
