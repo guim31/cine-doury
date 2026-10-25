@@ -8,9 +8,10 @@ import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isFocused
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performTextInput
+import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Rule
@@ -27,8 +28,9 @@ import org.junit.runner.RunWith
  */
 @RunWith(AndroidJUnit4::class)
 class SignInJourneyTest {
+    // The activity is launched by the test, once out of touch mode (see below).
     @get:Rule
-    val compose = createAndroidComposeRule<MainActivity>()
+    val compose = createEmptyComposeRule()
 
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private val server = InstrumentationRegistry.getArguments().getString("jellyfinUrl") ?: "http://10.0.2.2:8096"
@@ -61,6 +63,15 @@ class SignInJourneyTest {
 
     @Test
     fun fromTheFirstLaunchToTheHomeWithTheRemote() {
+        // An instrumented activity starts in touch mode, where Compose gives no focus to clickable
+        // elements; a TV has no touch screen. Out of touch mode first, then a key of the remote that
+        // does nothing on the first screen, as a key pressed in touch mode only leaves it.
+        instrumentation.setInTouchMode(false)
+        ActivityScenario.launch(MainActivity::class.java).use { journey() }
+    }
+
+    private fun journey() {
+        remote(KeyEvent.KEYCODE_DPAD_DOWN)
         waitFor(focusedText("Commencer"))
         remote(KeyEvent.KEYCODE_DPAD_CENTER)
 

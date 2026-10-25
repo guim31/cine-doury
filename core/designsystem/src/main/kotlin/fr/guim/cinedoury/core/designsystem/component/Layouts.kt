@@ -76,7 +76,11 @@ fun FormScreen(
                 Wordmark(brand, Modifier.weight(1f))
                 topEnd?.invoke()
             }
-            Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
+            // A gap under the brand: what scrolls away is cut there, never against the brand.
+            Box(
+                Modifier.weight(1f).fillMaxWidth().padding(top = CineSpacing.m),
+                contentAlignment = Alignment.CenterStart,
+            ) {
                 // Scrolls when the content outgrows the screen (the detail of an error): the focused
                 // element is always brought into view.
                 Column(
