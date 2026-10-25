@@ -173,7 +173,9 @@ fun DetailsScreen(
     BackHandler(enabled = panel != null) {
         if (panel == DetailsPanel.FileInfo) panel = DetailsPanel.More else closePanel()
     }
+    val restoreFocus = { focused?.let { runCatching { requesters[it].requestFocus() } } }
     BackHandler(enabled = state.deletion != null || state.manageError != null) {
+        restoreFocus()
         if (state.deletion != null) actions.cancelDelete() else actions.dismissManageError()
     }
 
@@ -241,8 +243,27 @@ fun DetailsScreen(
             onImages = { navigation.images(item) },
         )
         ManageNoticePill(state.notice)
-        state.deletion?.let { DeleteDialog(it, onConfirm = actions::confirmDelete, onCancel = actions::cancelDelete) }
-        state.manageError?.let { ManageErrorDialog(it, onDismiss = actions::dismissManageError) }
+        // A dialog that closes first gives the focus back to the element it came from, as a panel
+        // does: the focus never falls out of the screen.
+        state.deletion?.let {
+            DeleteDialog(
+                it,
+                onConfirm = actions::confirmDelete,
+                onCancel = {
+                    restoreFocus()
+                    actions.cancelDelete()
+                },
+            )
+        }
+        state.manageError?.let {
+            ManageErrorDialog(
+                it,
+                onDismiss = {
+                    restoreFocus()
+                    actions.dismissManageError()
+                },
+            )
+        }
     }
     // The first focus: « Lire », or the element left when coming back (or that opened the panel just
     // closed); for a person or a collection, the first card, once read.
@@ -257,10 +278,8 @@ fun DetailsScreen(
         }
     val ready = target != null && (target == KEY_PLAY || state.loaded)
     if (target != null) {
-        // A closed dialog gives the focus back as a closed panel does.
-        val dialog = state.deletion != null || state.manageError != null
-        LaunchedEffect(target, ready, panel == null, dialog) {
-            if (ready && panel == null && !dialog) {
+        LaunchedEffect(target, ready, panel == null) {
+            if (ready && panel == null) {
                 withFrameNanos { }
                 runCatching { requesters[target].requestFocus() }
             }
