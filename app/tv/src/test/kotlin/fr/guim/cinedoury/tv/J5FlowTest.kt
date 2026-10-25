@@ -1,5 +1,6 @@
 package fr.guim.cinedoury.tv
 
+import android.os.Looper
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
@@ -61,8 +62,10 @@ import org.koin.dsl.module
 import org.koin.java.KoinJavaComponent.getKoin
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import java.io.File
+import java.time.Duration
 import java.util.UUID
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.test.assertEquals
@@ -275,7 +278,11 @@ class J5FlowTest {
         showSearch()
         typePha()
         try {
-            compose.waitUntil(TIMEOUT) { "pha" in seerr.searched }
+            // The search waits for the typing to pause: the main looper's clock runs only when told.
+            compose.waitUntil(TIMEOUT) {
+                shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(LOOPER_STEP))
+                "pha" in seerr.searched
+            }
         } catch (timeout: androidx.compose.ui.test.ComposeTimeoutException) {
             val rows = compose.onAllNodes(hasTestTag("results")).fetchSemanticsNodes().size
             val failed = compose.onAllNodes(hasText("Seerr n'a pas répondu.")).fetchSemanticsNodes().size
@@ -303,5 +310,6 @@ class J5FlowTest {
 
     private companion object {
         const val TIMEOUT = 10_000L
+        const val LOOPER_STEP = 100L
     }
 }
