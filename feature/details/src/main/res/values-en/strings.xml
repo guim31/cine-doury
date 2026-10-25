@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="ends_at">ends at %1$s</string>
+    <string name="ends_at">ends\u00A0at\u00A0%1$s</string>
     <string name="years_since">since %1$d</string>
     <string name="status_continuing">Continuing</string>
     <string name="status_ended">Ended</string>

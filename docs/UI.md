@@ -96,6 +96,8 @@ Plex (`#E5A00D`).
 - Sur mobile, même échelle divisée par 1,4 environ (Titre 2 à 18, corps à 15).
 - **Logo plutôt que texte** : quand le titre a un logo (clearlogo de Fanart ou de TMDb), on l'affiche à sa place, en 360 × 140 dp au plus.
 - **Règles du français** : espace insécable avant « : ; ! ? » et dans « 22 h 47 », guillemets « », majuscule seulement en début de libellé (« Ajouts récents », pas « Ajouts Récents »), durées en « 1 h 52 », dates en « 24 oct. 2026 ».
+- **Groupes insécables** *(retouche du 25/10/2026)* : un groupe qui se lit d'un bloc ne se coupe jamais en fin de ligne : « se termine à 22 h 47 », « 1 h 49 », « 42 min », « S01 · E02 », « 10:47 PM ». Les espaces y sont insécables (`\u00A0`, dans les ressources) ; seuls les séparateurs entre groupes (« · ») permettent de passer à la ligne.
+- **Libellés de pistes** *(retouche du 25/10/2026)* : un libellé de piste n'est jamais tronqué, il passe à la ligne. Ses attributs (« par défaut », « forcés », « SDH », « externe ») sont de petites **pastilles** après lui (`TrackPill`), pas du texte qui le prolonge.
 
 ## 6. Images et cartes
 
@@ -138,6 +140,7 @@ Plex (`#E5A00D`).
 - En dessous : distribution, saga, similaires ; pour une série, les saisons et les épisodes.
 - Précisions du J3 :
   - l'**affiche** (190 × 285) est à gauche de la colonne de texte : c'est elle qui vole depuis la carte ouverte ; un épisode montre sa vignette (320 × 180), une personne sa photo ;
+  - **logo ou affiche** *(retouche du 25/10/2026)* : quand le titre a un **logo**, l'affiche est masquée (elle répéterait le titre) et la colonne de texte prend sa place, comme dans Plex ; l'affiche de la carte ouverte vole vers le logo en s'y fondant. Sans logo, l'affiche reste, avec le titre en texte (« Affiche ») ;
   - les **boutons** sont sous l'affiche et le texte, sur toute la largeur : « Reprendre — 1 h 09 restantes » et six boutons ronds ne tiennent pas dans la colonne de texte ;
   - la ligne de métadonnées finit par l'heure de fin (« se termine à 22 h 07 ») ; les genres, puis les badges, viennent dessous ; le synopsis tient sur 3 lignes et se déplie par OK (il ne prend le focus que s'il est plus long) ;
   - un titre entamé dit ce qui reste : « Reprendre — 1 h 09 restantes » ; une série dit l'épisode : « Reprendre S01E02 — 24 min restantes », « Lire S01E02 » ;

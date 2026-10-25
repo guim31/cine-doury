@@ -97,6 +97,11 @@ object CineSizes {
     /** The side panels with long lines: tracks, file information. */
     val widePanelWidth = 480.dp
 
+    // Player (J4).
+
+    /** Above and below the text of a pill (« par défaut »). */
+    val pillPadding = 2.dp
+
     /** The featured banner takes 60 % of the screen height (`UI.md` § 8). */
     const val HERO_HEIGHT_FRACTION = 0.6f
 }

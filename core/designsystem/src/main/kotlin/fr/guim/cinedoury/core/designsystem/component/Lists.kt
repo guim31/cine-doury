@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -32,6 +33,9 @@ private val RowOutlineShape =
 /**
  * A row of a list (servers found, settings): a title, a line of explanation under it, a value at
  * the end. It turns light with the focus. [destructive] writes the title in `danger`.
+ *
+ * @param pills short attributes after the title (« par défaut », « forcés », « SDH »).
+ * @param wrapTitle the title goes on as many lines as it needs, never cut (the tracks).
  */
 @Composable
 fun ListRow(
@@ -45,6 +49,8 @@ fun ListRow(
     trailingIcon: ImageVector? = null,
     focusRequester: FocusRequester? = null,
     focus: CineFocus = rememberCineFocus(),
+    pills: List<String> = emptyList(),
+    wrapTitle: Boolean = false,
 ) {
     val colors = CineTheme.colors
     val typography = CineTheme.typography
@@ -77,13 +83,20 @@ fun ListRow(
             )
         }
         Column(Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = typography.label,
-                color = primary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(CineSpacing.xs),
+                verticalArrangement = Arrangement.spacedBy(CineSpacing.xs / 2),
+                itemVerticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = title,
+                    style = typography.label,
+                    color = primary,
+                    maxLines = if (wrapTitle) Int.MAX_VALUE else 1,
+                    overflow = if (wrapTitle) TextOverflow.Clip else TextOverflow.Ellipsis,
+                )
+                pills.forEach { TrackPill(it, inverted = focused) }
+            }
             if (description != null) {
                 Text(
                     text = description,
@@ -113,6 +126,31 @@ fun ListRow(
         }
     }
 }
+
+/**
+ * A short attribute in a pill (« par défaut », « forcés », « SDH »), after the title of a row: on
+ * `surface-2`, and dark on a focused (light) row.
+ */
+@Composable
+fun TrackPill(
+    text: String,
+    modifier: Modifier = Modifier,
+    inverted: Boolean = false,
+) {
+    val colors = CineTheme.colors
+    Text(
+        text = text,
+        style = CineTheme.typography.minimum,
+        color = if (inverted) colors.text else colors.text2,
+        maxLines = 1,
+        modifier =
+            modifier
+                .background(if (inverted) colors.background else colors.surface2, PillShape)
+                .padding(horizontal = CineSpacing.xs, vertical = CineSizes.pillPadding),
+    )
+}
+
+private val PillShape = RoundedCornerShape(percent = 50)
 
 /** Title of a group of rows. */
 @Composable

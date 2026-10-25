@@ -199,7 +199,14 @@ fun MediaStream.channelsLabel(): String? =
  * « Anglais — ASS », « Français — SRT — forcés ».
  */
 @Composable
-fun MediaStream.describe(): String {
+fun MediaStream.describe(): String = (listOf(label()) + attributes()).joinToString(TRACK_SEPARATOR)
+
+/**
+ * What a track is, without its attributes: « Français — 5.1 — E-AC3 », « Anglais — ASS ». The
+ * attributes ([attributes]) go in pills after it (retouche du J3).
+ */
+@Composable
+fun MediaStream.label(): String {
     val parts = mutableListOf<String>()
     parts += language?.let { languageName(it) } ?: title ?: stringResource(R.string.track_unknown_language)
     if (type == StreamType.Audio) {
@@ -213,12 +220,18 @@ fun MediaStream.describe(): String {
     } else {
         codecLabel()?.let { parts += it }
     }
-    if (isForced) parts += stringResource(R.string.track_forced)
-    if (isHearingImpaired) parts += stringResource(R.string.track_hearing_impaired)
-    if (isDefault) parts += stringResource(R.string.track_default)
-    if (isExternal) parts += stringResource(R.string.track_external)
     return parts.joinToString(TRACK_SEPARATOR)
 }
+
+/** « forcés », « SDH », « par défaut », « externe »: the attributes of a track, for its pills. */
+@Composable
+fun MediaStream.attributes(): List<String> =
+    listOfNotNull(
+        stringResource(R.string.track_forced).takeIf { isForced },
+        stringResource(R.string.track_hearing_impaired_short).takeIf { isHearingImpaired },
+        stringResource(R.string.track_default).takeIf { isDefault },
+        stringResource(R.string.track_external).takeIf { isExternal },
+    )
 
 /** « 4K — HEVC — Dolby Vision — 12,3 Go »: a version of a film, for the choice of the version. */
 @Composable

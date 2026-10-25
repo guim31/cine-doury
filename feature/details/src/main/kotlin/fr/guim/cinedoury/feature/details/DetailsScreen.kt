@@ -285,13 +285,16 @@ private fun Hero(
         modifier = Modifier.padding(horizontal = CineSpacing.safeHorizontal),
         verticalArrangement = Arrangement.spacedBy(CineSpacing.xs),
     ) {
+        // A title with a logo shows no poster: the logo already says the title, and the text takes
+        // the place (`UI.md` § 8, retouche du J3).
+        val logoInPlace = item.showsLogoInPlaceOfPoster
         Row(horizontalArrangement = Arrangement.spacedBy(CineSpacing.l)) {
-            Picture(item, sources)
+            if (!logoInPlace) Picture(item, sources)
             Column(
                 modifier = Modifier.widthIn(max = CineSizes.detailsTextWidth),
                 verticalArrangement = Arrangement.spacedBy(CineSpacing.xs),
             ) {
-                Title(item, sources)
+                Title(item, sources, sharedKey = item.id.value.takeIf { logoInPlace })
                 item.detailsLine()?.let {
                     Text(
                         text = it,
@@ -367,11 +370,16 @@ private fun Picture(
     }
 }
 
+/** A film, a series or a collection with a logo: the logo stands in the place of the poster. */
+internal val MediaItem.showsLogoInPlaceOfPoster: Boolean
+    get() = kind !in setOf(ItemKind.Episode, ItemKind.Person) && images.anyLogo != null
+
 /** The logo of the title (`UI.md` § 5), its name in « Affiche » otherwise; for an episode, its series above. */
 @Composable
 private fun Title(
     item: MediaItem,
     sources: ImageSources,
+    sharedKey: String? = null,
 ) {
     val colors = CineTheme.colors
     val typography = CineTheme.typography
@@ -392,7 +400,12 @@ private fun Title(
             overflow = TextOverflow.Ellipsis,
         )
     } else if (logo != null) {
-        Box(Modifier.sizeIn(maxWidth = CineSizes.logoMax.width, maxHeight = CineSizes.logoMax.height)) { logo() }
+        // The poster of the card that was opened fades into the logo as it flies (`UI.md` § 7).
+        Box(
+            Modifier
+                .sharedPoster(sharedKey)
+                .sizeIn(maxWidth = CineSizes.logoMax.width, maxHeight = CineSizes.logoMax.height),
+        ) { logo() }
     } else {
         Text(
             text = item.title,

@@ -33,7 +33,7 @@
     <string name="rail_profiles">Changer de profil</string>
     <string name="duration_hours">%1$d\u00A0h\u00A0%2$02d</string>
     <string name="duration_minutes">%1$d\u00A0min</string>
-    <string name="episode_code">S%1$02d · E%2$02d</string>
+    <string name="episode_code">S%1$02d\u00A0·\u00A0E%2$02d</string>
     <string name="episode_line">%1$s — %2$s</string>
     <string name="resume_at">Reprendre à %1$s</string>
     <string name="rating">★\u00A0%1$s</string>
@@ -91,6 +91,7 @@
     <string name="track_with_atmos" translatable="false">%1$s Atmos</string>
     <string name="track_forced">forcés</string>
     <string name="track_hearing_impaired">pour sourds et malentendants</string>
+    <string name="track_hearing_impaired_short" translatable="false">SDH</string>
     <string name="track_default">par défaut</string>
     <string name="track_external">externe</string>
     <string name="size_gb">%1$s Go</string>
