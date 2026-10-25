@@ -3,7 +3,6 @@ package fr.guim.cinedoury.core.designsystem.component
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.defaultMinSize
@@ -63,13 +62,13 @@ fun PosterCard(
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     image: (@Composable () -> Unit)? = null,
 ) {
-    val focused by interactionSource.collectIsFocusedAsState()
+    val focus = rememberCineFocus()
     Column(modifier = modifier.width(size.dp.width)) {
         Box(
             modifier =
                 Modifier
                     .size(size.dp)
-                    .cineFocusable(interactionSource, CardShape, CineScale.POSTER, onClick, CardOutlineShape)
+                    .cineFocusable(focus, CardShape, CineScale.POSTER, onClick, CardOutlineShape, interactionSource)
                     .background(CineTheme.colors.surface1),
         ) {
             if (image != null) image() else GeneratedArtwork(title, compact = size == PosterSize.Small)
@@ -90,7 +89,7 @@ fun PosterCard(
         CardCaption(
             title = title,
             subtitle = subtitle,
-            visible = alwaysShowTitle || focused,
+            visible = alwaysShowTitle || focus.isFocused,
             modifier = Modifier.padding(top = CineSpacing.s),
         )
     }
@@ -115,8 +114,14 @@ fun ThumbnailCard(
             modifier =
                 Modifier
                     .size(CineSizes.thumbnail)
-                    .cineFocusable(interactionSource, CardShape, CineScale.THUMBNAIL, onClick, CardOutlineShape)
-                    .background(CineTheme.colors.surface1),
+                    .cineFocusable(
+                        rememberCineFocus(),
+                        CardShape,
+                        CineScale.THUMBNAIL,
+                        onClick,
+                        CardOutlineShape,
+                        interactionSource,
+                    ).background(CineTheme.colors.surface1),
         ) {
             if (image != null) image() else GeneratedArtwork(title)
             if (progress != null) CardProgressBar(progress, Modifier.align(Alignment.BottomStart))

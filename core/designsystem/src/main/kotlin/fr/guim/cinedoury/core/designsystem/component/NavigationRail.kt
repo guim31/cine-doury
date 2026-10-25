@@ -3,8 +3,6 @@ package fr.guim.cinedoury.core.designsystem.component
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusGroup
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -137,8 +135,8 @@ private fun RailItem(
     onClick: () -> Unit,
 ) {
     val colors = CineTheme.colors
-    val interactionSource = remember { MutableInteractionSource() }
-    val focused by interactionSource.collectIsFocusedAsState()
+    val focus = rememberCineFocus()
+    val focused = focus.isFocused
     val content =
         when {
             focused -> colors.background
@@ -150,7 +148,7 @@ private fun RailItem(
             Modifier
                 .fillMaxWidth()
                 .height(CineSizes.railItemHeight)
-                .cineFocusable(interactionSource, RailItemShape, CineScale.BUTTON, onClick)
+                .cineFocusable(focus, RailItemShape, CineScale.BUTTON, onClick)
                 .background(if (focused) colors.text else Color.Transparent)
                 .padding(horizontal = CineSpacing.s),
         verticalAlignment = Alignment.CenterVertically,

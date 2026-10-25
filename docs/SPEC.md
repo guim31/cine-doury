@@ -148,7 +148,7 @@ Décision du J0 : **SDK Kotlin officiel 1.9.3**, plutôt qu'un client généré 
 
 - `CineTheme(variant = ThemeVariant.Dark | OledBlack, reducedMotion)` fournit les jetons de
   `UI.md` § 4, 5 et 7 et alimente le `MaterialTheme` de Compose for TV.
-- Focus (`Modifier.cineFocusable`) : échelle 1,08 (affiches) ou 1,05 (boutons, vignettes), contour
+- Focus (`Modifier.cineFocusable`, état `CineFocus` lu de façon synchrone par `onFocusChanged`) : échelle 1,08 (affiches) ou 1,05 (boutons, vignettes), contour
   de 3 dp écarté de 2 dp, ombre ; 150 ms en décélération à l'arrivée, 120 ms en accélération au
   départ ; l'animation ne recompose pas l'élément (lecture dans `graphicsLayer` et au dessin).
 - Composants : `PosterCard` (3 tailles, progression, triangle « non vu », pastille d'épisodes,

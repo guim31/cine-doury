@@ -3,7 +3,6 @@ package fr.guim.cinedoury.core.designsystem.component
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -50,12 +49,13 @@ fun PrimaryButton(
 ) {
     val colors = CineTheme.colors
     val pressed by interactionSource.collectIsPressedAsState()
+    val focus = rememberCineFocus()
     Row(
         modifier =
             modifier
                 .height(CineSizes.buttonHeight)
                 .withFocusRequester(focusRequester)
-                .cineFocusable(interactionSource, PillShape, CineScale.BUTTON, onClick)
+                .cineFocusable(focus, PillShape, CineScale.BUTTON, onClick, interactionSource = interactionSource)
                 .background(if (pressed) colors.accentPressed else colors.accent)
                 .padding(start = if (icon != null) CineSpacing.m else CineSpacing.l, end = CineSpacing.l),
         verticalAlignment = Alignment.CenterVertically,
@@ -89,7 +89,8 @@ fun RoundIconButton(
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
 ) {
     val colors = CineTheme.colors
-    val focused by interactionSource.collectIsFocusedAsState()
+    val focus = rememberCineFocus()
+    val focused = focus.isFocused
     val labelAlpha by animateFloatAsState(
         targetValue = if (focused) 1f else 0f,
         animationSpec = CineMotion.fade(if (focused) CineMotion.FOCUS_IN_MILLIS else CineMotion.FOCUS_OUT_MILLIS),
@@ -101,7 +102,7 @@ fun RoundIconButton(
                 Modifier
                     .size(CineSizes.roundButton)
                     .withFocusRequester(focusRequester)
-                    .cineFocusable(interactionSource, CircleShape, CineScale.BUTTON, onClick)
+                    .cineFocusable(focus, CircleShape, CineScale.BUTTON, onClick, interactionSource = interactionSource)
                     .background(if (focused) colors.text else colors.surface2),
             contentAlignment = Alignment.Center,
         ) {
