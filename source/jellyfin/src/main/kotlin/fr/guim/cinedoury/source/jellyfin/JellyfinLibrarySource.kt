@@ -7,6 +7,7 @@ import fr.guim.cinedoury.core.model.ItemKind
 import fr.guim.cinedoury.core.model.ItemQuery
 import fr.guim.cinedoury.core.model.Library
 import fr.guim.cinedoury.core.model.LibraryId
+import fr.guim.cinedoury.core.model.MAX_IDS
 import fr.guim.cinedoury.core.model.MediaItem
 import fr.guim.cinedoury.core.model.NamedId
 import fr.guim.cinedoury.core.model.Page
@@ -23,6 +24,7 @@ import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.extensions.filterApi
 import org.jellyfin.sdk.api.client.extensions.libraryApi
 import org.jellyfin.sdk.api.client.extensions.personApi
+import org.jellyfin.sdk.api.client.extensions.searchApi
 import org.jellyfin.sdk.api.client.extensions.showApi
 import org.jellyfin.sdk.api.client.extensions.studioApi
 import org.jellyfin.sdk.api.client.extensions.userApi
@@ -398,6 +400,77 @@ internal class JellyfinLibrarySource(
                         limit = page.limit,
                         fields = listOf(ItemFields.MEDIA_SOURCES, ItemFields.SORT_NAME),
                         enableImages = false,
+                        enableUserData = false,
+                        enableTotalRecordCount = true,
+                    ).content
+            Page(result.items.map { it.toMediaItem() }, result.startIndex, result.totalRecordCount)
+        }
+
+    override suspend fun search(
+        term: String,
+        kinds: Set<ItemKind>,
+        limit: Int,
+    ): List<MediaItem> =
+        jellyfinCall(what = "search") {
+            // `/Search/Hints` ignores accents and finds the start of any word (`/Items?searchTerm=`
+            // and `/Persons` do not: « ines » finds no « Inès »); the cards come from `/Items`.
+            val hints =
+                api.searchApi
+                    .getSearchHints(
+                        searchTerm = term,
+                        limit = limit,
+                        userId = userId,
+                        includeItemTypes = kinds.mapNotNull { it.toBaseItemKind() },
+                        includePeople = ItemKind.Person in kinds,
+                        includeMedia = kinds.any { it != ItemKind.Person },
+                        includeGenres = false,
+                        includeStudios = false,
+                        includeArtists = false,
+                    ).content.searchHints
+                    .map { it.id }
+                    .distinct()
+            if (hints.isEmpty()) return@jellyfinCall emptyList()
+            val items =
+                hints
+                    .chunked(MAX_IDS)
+                    .flatMap { ids ->
+                        api.libraryApi
+                            .getItems(
+                                userId = userId,
+                                ids = ids,
+                                fields = LIST_FIELDS,
+                                enableUserData = true,
+                                enableImageTypes = IMAGE_TYPES,
+                                imageTypeLimit = 1,
+                                enableTotalRecordCount = false,
+                            ).content.items
+                    }.associateBy { it.id }
+            hints.mapNotNull { items[it]?.toMediaItem() }
+        }
+
+    override suspend fun titles(
+        library: LibraryId,
+        changedSince: Instant?,
+        page: PageRequest,
+    ): Page<MediaItem> =
+        jellyfinCall(what = "titles of ${library.value}") {
+            val result =
+                api.libraryApi
+                    .getItems(
+                        userId = userId,
+                        parentId = library.value.toJellyfinUuid(),
+                        recursive = true,
+                        includeItemTypes = listOf(BaseItemKind.MOVIE, BaseItemKind.SERIES),
+                        sortBy = listOf(ItemSortBy.SORT_NAME, ItemSortBy.DATE_CREATED),
+                        sortOrder = listOf(SortOrder.ASCENDING),
+                        // Films of a collection one by one (CLAUDE.md, « Pièges »).
+                        collapseBoxSetItems = false,
+                        minDateLastSaved = changedSince?.atZone(ZoneId.systemDefault())?.toLocalDateTime(),
+                        startIndex = page.startIndex,
+                        limit = page.limit,
+                        fields = listOf(ItemFields.SORT_NAME, ItemFields.ORIGINAL_TITLE, ItemFields.DATE_CREATED),
+                        enableImageTypes = listOf(ImageType.PRIMARY, ImageType.BACKDROP),
+                        imageTypeLimit = 1,
                         enableUserData = false,
                         enableTotalRecordCount = true,
                     ).content

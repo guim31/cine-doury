@@ -104,4 +104,28 @@ interface LibrarySource {
      * local index; [changedSince] keeps those saved by the server since then (null for all).
      */
     suspend fun technicalItems(library: LibraryId, changedSince: Instant?, page: PageRequest): Page<MediaItem>
+
+    // Search (J5, `SPEC.md` § 4.12).
+
+    /**
+     * Up to [limit] items of [kinds] whose name the server matches with [term], the best first.
+     * Jellyfin compares without accents nor case, from the start of each word; it forgives no typo
+     * (the local title index does).
+     */
+    suspend fun search(
+        term: String,
+        kinds: Set<ItemKind>,
+        limit: Int,
+    ): List<MediaItem>
+
+    /**
+     * One page of the films and series of [library] with their titles (title, original, sort) and
+     * the images of their cards, for the local title index; [changedSince] keeps those saved by the
+     * server since then (null for all).
+     */
+    suspend fun titles(
+        library: LibraryId,
+        changedSince: Instant?,
+        page: PageRequest,
+    ): Page<MediaItem>
 }
