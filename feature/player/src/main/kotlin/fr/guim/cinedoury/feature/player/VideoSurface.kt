@@ -166,7 +166,8 @@ fun MatchFrameRate(
 ) {
     DisposableEffect(activity, frameRate, enabled) {
         val window = activity?.window
-        val display = activity?.display
+        // The display of the window's view: `Activity.display` throws where the context has none.
+        val display = activity?.window?.decorView?.display
         val previous = window?.attributes?.preferredDisplayModeId ?: 0
         val rate = frameRate.takeIf { enabled }
         if (window != null && display != null && rate != null) {
