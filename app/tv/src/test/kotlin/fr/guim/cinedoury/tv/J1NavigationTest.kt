@@ -3,7 +3,6 @@ package fr.guim.cinedoury.tv
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.ExperimentalTestApi
-import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasClickAction
@@ -11,7 +10,6 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.onRoot
-import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.pressKey
 import fr.guim.cinedoury.core.data.ConnectionMode
@@ -152,10 +150,9 @@ class J1NavigationTest {
                 onSwitchProfile = {},
                 onSignOut = {},
                 onForgetServer = { forgotten = true },
+                confirmingForget = true,
             )
         }
-        focusable("pin-row").assertIsFocused()
-        focusable("forget-server").performClickAndWait()
         compose
             .onNode(
                 isFocused() and hasText("Annuler") and hasAnyAncestor(hasTestTag("forget-dialog")),
@@ -163,10 +160,5 @@ class J1NavigationTest {
         press(Key.DirectionCenter)
         assertEquals(false, forgotten)
         compose.onNode(hasTestTag("forget-dialog")).assertDoesNotExist()
-    }
-
-    private fun SemanticsNodeInteraction.performClickAndWait() {
-        performClick()
-        compose.waitForIdle()
     }
 }
