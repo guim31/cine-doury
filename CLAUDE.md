@@ -104,6 +104,7 @@ ci/jellyfin/run-local.sh down
 - Au démarrage, Jellyfin répond à `/System/Info/Public` avant d'être prêt (`Version` absente, puis 503 sur l'assistant) : attendre une version (fait dans `bootstrap.sh`).
 - Quick Connect : un administrateur peut valider un code pour un autre utilisateur (`POST /QuickConnect/Authorize?code=…&userId=…`), ce qui simule le téléphone dans les tests. Une demande inconnue ou expirée (10 min) répond 404 « Unknown secret » ; Quick Connect désactivé répond 401 à `Initiate`.
 - **HTTP en clair** : Android refuse `http://` par défaut ; un serveur de maison est en `http://…:8096`, d'où `android:usesCleartextTraffic="true"`.
+- **SDK Jellyfin sur Android** : Gradle donne à l'appli la variante **Android** du SDK, dont `createJellyfin { }` exige un `Context` (sinon `IllegalArgumentException` au démarrage, invisible dans les tests JVM et Robolectric qui ne créent pas le connecteur). `JellyfinConnector` construit donc ses clients avec `OkHttpFactory` (`jellyfin-api-okhttp`), identique partout. Le test de l'émulateur l'a révélé : regarder son journal (`logcat -b crash`).
 - **KSP 2.3.12** marche avec le Kotlin intégré d'AGP 9.4 (Room 2.8.5) sans réglage particulier.
 - **Robolectric n'a pas d'Android Keystore** : les tests remplacent `TokenCipher` (module Koin de test, ou faux chiffrement).
 - **DataStore** : une seule instance par fichier et par processus (sinon `IllegalStateException`) ; dans un test qui « redémarre » l'appli, partager l'instance.

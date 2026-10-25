@@ -10,7 +10,6 @@ import fr.guim.cinedoury.core.source.ServerAddress
 import fr.guim.cinedoury.core.source.Session
 import fr.guim.cinedoury.core.source.SourceConnector
 import fr.guim.cinedoury.core.source.SourceException
-import org.jellyfin.sdk.Jellyfin
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.HttpClientOptions
 import org.jellyfin.sdk.api.client.extensions.authenticateUserByName
@@ -19,7 +18,7 @@ import org.jellyfin.sdk.api.client.extensions.authenticationApi
 import org.jellyfin.sdk.api.client.extensions.sessionApi
 import org.jellyfin.sdk.api.client.extensions.systemApi
 import org.jellyfin.sdk.api.client.extensions.userApi
-import org.jellyfin.sdk.createJellyfin
+import org.jellyfin.sdk.api.okhttp.OkHttpFactory
 import org.jellyfin.sdk.model.ClientInfo
 import org.jellyfin.sdk.model.DeviceInfo
 import org.jellyfin.sdk.model.ServerVersion
@@ -44,18 +43,18 @@ class JellyfinConnector(
 ) : SourceConnector {
     private val httpOptions = HttpClientOptions(requestTimeout = requestTimeout)
 
-    private val jellyfin: Jellyfin =
-        createJellyfin {
-            // ASCII on purpose: the SDK copies the client name into User-Agent, where OkHttp rejects
-            // any non-ASCII character (CLAUDE.md, « Pièges »).
-            clientInfo = ClientInfo(name = CLIENT_NAME, version = identity.appVersion)
-            deviceInfo = DeviceInfo(id = identity.deviceId, name = identity.deviceName)
-        }
+    // The SDK's `createJellyfin` needs an Android Context in its Android variant, which Gradle picks
+    // for the app: the clients are built directly by the OkHttp factory, the same on every platform.
+    private val factory = OkHttpFactory()
+
+    // ASCII on purpose: the SDK copies the client name into User-Agent, where OkHttp rejects any
+    // non-ASCII character (CLAUDE.md, « Pièges »).
+    private val clientInfo = ClientInfo(name = CLIENT_NAME, version = identity.appVersion)
+    private val deviceInfo = DeviceInfo(id = identity.deviceId, name = identity.deviceName)
 
     override suspend fun serverInfo(address: ServerAddress): ServerInfo =
         jellyfinCall {
-            val api = jellyfin.createApi(baseUrl = address.url, httpClientOptions = httpOptions)
-            val info = api.systemApi.getPublicSystemInfo().content
+            val info = api(address).systemApi.getPublicSystemInfo().content
             val id = info.id ?: throw SourceException.NotAServer("No server id in /System/Info/Public")
             val version = info.version ?: throw SourceException.NotAServer("No server version in /System/Info/Public")
             val parsed = ServerVersion.fromString(version)
@@ -66,7 +65,14 @@ class JellyfinConnector(
         }
 
     private fun api(address: ServerAddress, token: String? = null): ApiClient =
-        jellyfin.createApi(baseUrl = address.url, accessToken = token, httpClientOptions = httpOptions)
+        factory.create(
+            baseUrl = address.url,
+            accessToken = token,
+            clientInfo = clientInfo,
+            deviceInfo = deviceInfo,
+            httpClientOptions = httpOptions,
+            socketConnectionFactory = factory,
+        )
 
     override suspend fun publicUsers(address: ServerAddress): List<User> =
         jellyfinCall(what = "public users") {

@@ -136,7 +136,9 @@ Décision du J0 : **SDK Kotlin officiel 1.9.3**, plutôt qu'un client généré 
   maintenir une (gabarits, sérialisation, cas particuliers de l'OpenAPI de Jellyfin).
 - Il envoie l'en-tête `Authorization: MediaBrowser …` exigé par Jellyfin 12, jamais `X-Emby-Token`
   ni `api_key` (vérifié dans ses sources et par les tests unitaires).
-- Sa variante JVM garde `:source:jellyfin` en Kotlin pur.
+- Sa variante JVM garde `:source:jellyfin` en Kotlin pur. Dans l'appli, Gradle choisit sa variante
+  Android, dont `createJellyfin` exige un `Context` : depuis le J1, les clients sont construits par
+  `OkHttpFactory` (`jellyfin-api-okhttp`), sans passer par `createJellyfin`.
 - Ses exceptions (`InvalidStatusException`, `TimeoutException`…) se traduisent une fois pour toutes
   en `SourceException` (`JellyfinCall.kt`).
 - **Licence : LGPL-3.0.** Ce n'est ni GPL ni AGPL (exclues par `CLAUDE.md`). Le code de l'appli
