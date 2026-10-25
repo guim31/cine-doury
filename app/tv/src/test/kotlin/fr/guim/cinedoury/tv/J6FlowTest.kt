@@ -130,6 +130,9 @@ class J6FlowTest {
     private fun waitFor(matcher: SemanticsMatcher) =
         compose.waitUntil(TIMEOUT) { compose.onAllNodes(matcher).fetchSemanticsNodes().isNotEmpty() }
 
+    private fun waitGone(matcher: SemanticsMatcher) =
+        compose.waitUntil(TIMEOUT) { compose.onAllNodes(matcher).fetchSemanticsNodes().isEmpty() }
+
     @Test
     fun `refresh, then delete a film from its details, the details close`() {
         val navigator = Navigator(Route.Home).apply { push(Route.Details(film)) }
@@ -172,17 +175,9 @@ class J6FlowTest {
         press(Key.DirectionCenter)
         compose.waitUntil(TIMEOUT) { source.manage.log.any { it.startsWith("delete") } }
         compose.waitUntil(TIMEOUT) { film.id in source.manage.deleted }
-        try {
-            compose.waitUntil(TIMEOUT) { navigator.current.route == Route.Home }
-        } catch (error: androidx.compose.ui.test.ComposeTimeoutException) {
-            // TEMPORARY: what the screen shows instead.
-            val texts =
-                compose
-                    .onAllNodes(androidx.compose.ui.test.hasTestTag(ManagePreview.DIALOG), useUnmergedTree = true)
-                    .fetchSemanticsNodes()
-                    .map { it.config.toString().replace('\n', ' ') }
-            throw AssertionError("DIAG routes=${navigator.routes} dialogs=$texts log=${source.manage.log}", error)
-        }
+        // The navigation happens once Compose is synchronised: wait on the tree, then on the route.
+        waitGone(hasTestTag(DetailsPreview.PLAY))
+        assertEquals(Route.Home, navigator.current.route)
         assertEquals(listOf("delete ${film.id.value}"), source.manage.log.filter { it.startsWith("delete") })
     }
 
