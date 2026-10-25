@@ -108,6 +108,24 @@ private fun Screen(
             )
         }
 
+        else -> {
+            SessionScreen(route, navigator, sessions, variant, onToggleVariant, showCatalog)
+        }
+    }
+}
+
+/** The screens once a server is in use: profiles, sign-in, PIN, home, settings. */
+@Composable
+private fun SessionScreen(
+    route: Route,
+    navigator: Navigator,
+    sessions: SessionManager,
+    variant: ThemeVariant,
+    onToggleVariant: () -> Unit,
+    showCatalog: Boolean,
+) {
+    val home = { navigator.replaceAll(Route.Home) }
+    when (route) {
         Route.Profiles -> {
             ProfilesRoute(
                 onOpened = home,
@@ -157,6 +175,10 @@ private fun Screen(
 
         Route.Catalog -> {
             CatalogScreen(variant = variant, onToggleVariant = onToggleVariant)
+        }
+
+        else -> {
+            Unit
         }
     }
 }
