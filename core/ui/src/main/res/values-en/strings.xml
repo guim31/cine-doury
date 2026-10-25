@@ -25,6 +25,9 @@
     <string name="error_server_message">Try again in a moment. If the error persists, restart the server.</string>
     <string name="error_unexpected_title">Something unexpected happened.</string>
     <string name="error_unexpected_message">Try again. The technical detail is under “More info”.</string>
+    <string name="error_detail_request">Request: %1$s</string>
+    <string name="error_detail_status">HTTP status: %1$d</string>
+    <string name="error_detail_cause">Cause: %1$s</string>
     <string name="remote_connection">Remote</string>
     <string name="rail_search">Search</string>
     <string name="rail_home">Home</string>

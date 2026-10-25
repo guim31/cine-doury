@@ -189,7 +189,7 @@ jobs:
           if-no-files-found: ignore
 
   emulator:
-    name: Install, start and play on an API 34 TV emulator
+    name: Install, start, play and sign in on an API 34 TV emulator
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 50
@@ -244,6 +244,7 @@ jobs:
           script: |
             ci/emulator-smoke.sh apk
             ci/emulator-playback.sh http://10.0.2.2:8096
+            ci/emulator-signin.sh http://10.0.2.2:8096
       - name: Failure summary
         if: failure()
         run: ci/failure-summary.sh gradle.log
@@ -255,4 +256,7 @@ jobs:
           path: |
             emulator-start.png
             emulator-playback.txt
+            emulator-signin.txt
+            emulator-signin.png
+            emulator-logcat.txt
           if-no-files-found: ignore

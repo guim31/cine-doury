@@ -25,6 +25,9 @@
     <string name="error_server_message">Réessayez dans un instant. Si l\'erreur persiste, redémarrez le serveur.</string>
     <string name="error_unexpected_title">Une erreur inattendue s\'est produite.</string>
     <string name="error_unexpected_message">Réessayez. Le détail technique est dans « Plus d\'infos ».</string>
+    <string name="error_detail_request">Requête\u00A0: %1$s</string>
+    <string name="error_detail_status">Code HTTP\u00A0: %1$d</string>
+    <string name="error_detail_cause">Cause\u00A0: %1$s</string>
     <string name="remote_connection">À distance</string>
     <string name="brand_name" translatable="false">Ciné Doury</string>
     <string name="rail_search">Recherche</string>

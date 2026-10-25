@@ -2,6 +2,7 @@ package fr.guim.cinedoury.core.data.security
 
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
+import fr.guim.cinedoury.core.source.FailureLog
 import java.security.GeneralSecurityException
 import java.security.KeyStore
 import java.util.Base64
@@ -43,6 +44,8 @@ class KeystoreTokenCipher(
             }.generateKey()
 
     override fun encrypt(token: String): String {
+        // No IV passed: the Keystore draws it (randomized encryption is required, and an IV given
+        // by the caller is refused); it is read back from the cipher.
         val cipher = Cipher.getInstance(TRANSFORMATION).apply { init(Cipher.ENCRYPT_MODE, key()) }
         val sealed = cipher.iv + cipher.doFinal(token.toByteArray(Charsets.UTF_8))
         return Base64.getEncoder().encodeToString(sealed)
@@ -56,9 +59,11 @@ class KeystoreTokenCipher(
                     init(Cipher.DECRYPT_MODE, key(), GCMParameterSpec(TAG_BITS, sealed, 0, IV_BYTES))
                 }
             String(cipher.doFinal(sealed, IV_BYTES, sealed.size - IV_BYTES), Charsets.UTF_8)
-        } catch (_: GeneralSecurityException) {
+        } catch (error: GeneralSecurityException) {
+            FailureLog.warn("Token cipher: cannot decrypt", error)
             null
-        } catch (_: IllegalArgumentException) {
+        } catch (error: IllegalArgumentException) {
+            FailureLog.warn("Token cipher: not a sealed token", error)
             null
         }
 

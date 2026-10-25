@@ -107,13 +107,17 @@ fun InitialFocus(
     enabled: Boolean = true,
 ) {
     LaunchedEffect(key, enabled) {
-        if (enabled) {
+        if (!enabled) return@LaunchedEffect
+        // An element just added to a lazy list is attached a frame or two later: try at each frame,
+        // a few times (nothing to focus if the element left the composition in the meantime).
+        repeat(FOCUS_ATTEMPTS) {
             withFrameNanos { }
-            // Nothing to focus if the element left the composition in the meantime.
-            runCatching { requester.requestFocus() }
+            if (runCatching { requester.requestFocus() }.getOrDefault(false)) return@LaunchedEffect
         }
     }
 }
+
+private const val FOCUS_ATTEMPTS = 10
 
 /**
  * Progress of the focus animation, from 0 (not focused) to 1 (focused): 150 ms on the way in,
