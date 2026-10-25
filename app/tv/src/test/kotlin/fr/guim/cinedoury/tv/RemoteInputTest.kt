@@ -5,6 +5,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.hasAnyAncestor
@@ -18,6 +20,7 @@ import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.pressKey
+import androidx.compose.ui.test.printToString
 import fr.guim.cinedoury.core.designsystem.component.MESSAGE_DETAILS
 import fr.guim.cinedoury.core.designsystem.component.MESSAGE_DETAILS_BUTTON
 import fr.guim.cinedoury.core.designsystem.theme.CineTheme
@@ -250,7 +253,9 @@ class RemoteInputTest {
 
         compose.runOnIdle { state = ProfilesState(J1Samples.profiles, loading = false) }
         compose.waitForIdle()
-        compose.onNode(hasClickAction() and inside("profile-0")).assertIsFocused()
+        val first = compose.onNode(hasClickAction() and inside("profile-0"))
+        val focused = first.fetchSemanticsNode().config.getOrNull(SemanticsProperties.Focused) == true
+        assertTrue(focused, compose.onRoot().printToString())
     }
 
     @Test
