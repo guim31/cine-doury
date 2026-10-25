@@ -9,7 +9,6 @@ android {
 
 dependencies {
     implementation(projects.core.ui)
-    implementation(projects.feature.manage)
 
     testImplementation(testFixtures(projects.core.source))
     testImplementation(libs.junit)
