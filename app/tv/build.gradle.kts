@@ -72,6 +72,7 @@ dependencies {
     testImplementation(testFixtures(projects.core.source))
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.koin.test)
+    testImplementation(libs.androidx.datastore.preferences)
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
     testImplementation(libs.roborazzi)

@@ -11,6 +11,7 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.pressKey
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import fr.guim.cinedoury.core.data.SessionManager
 import fr.guim.cinedoury.core.data.di.dataModule
 import fr.guim.cinedoury.core.data.home.ProfileKey
@@ -61,6 +62,8 @@ import org.koin.java.KoinJavaComponent.getKoin
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
+import java.io.File
+import java.util.UUID
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -91,6 +94,7 @@ class J5FlowTest {
     private class FakeSeerr : MediaRequests {
         val requested = CopyOnWriteArrayList<RequestCandidate>()
         val searched = CopyOnWriteArrayList<String>()
+        val opened = CopyOnWriteArrayList<String>()
 
         override suspend fun check() = "2.7.3"
 
@@ -136,13 +140,28 @@ class J5FlowTest {
                     single<SourceConnector> { source }
                     single<ServerDiscovery> { ServerDiscovery { emptyFlow() } }
                     single<TokenCipher> { PlainCipher }
+                    // A file of its own per test: one DataStore per file and per process.
+                    single {
+                        RequestSettings(
+                            PreferenceDataStoreFactory.create {
+                                File(
+                                    RuntimeEnvironment.getApplication().filesDir,
+                                    "requests-${UUID.randomUUID()}.preferences_pb",
+                                )
+                            },
+                            PlainCipher,
+                        )
+                    }
                     single<RequestConnector> {
                         object : RequestConnector {
                             override fun open(
                                 address: String,
                                 apiKey: String,
                                 mediaUserId: String?,
-                            ): MediaRequests = seerr
+                            ): MediaRequests {
+                                seerr.opened += address
+                                return seerr
+                            }
                         }
                     }
                 },
@@ -259,7 +278,11 @@ class J5FlowTest {
             compose.waitUntil(TIMEOUT) { "pha" in seerr.searched }
         } catch (timeout: androidx.compose.ui.test.ComposeTimeoutException) {
             val rows = compose.onAllNodes(hasTestTag("results")).fetchSemanticsNodes().size
-            throw AssertionError("Seerr asked for ${seerr.searched}, results shown: $rows", timeout)
+            val failed = compose.onAllNodes(hasText("Seerr n'a pas répondu.")).fetchSemanticsNodes().size
+            throw AssertionError(
+                "Seerr opened at ${seerr.opened}, asked for ${seerr.searched}, results: $rows, failed: $failed",
+                timeout,
+            )
         }
         waitFor(hasTestTag(SearchPreview.card(SearchRows.of(SearchGroup.Collections), 0)))
         // Right into the results, then down to the last row (composed once in view): « Demander ».
