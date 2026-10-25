@@ -106,7 +106,7 @@ class AppFlowTest {
     }
 
     /** Lets the main looper run its delayed work (the Quick Connect polling). */
-    private fun wait(seconds: Long) {
+    private fun idleMainLooper(seconds: Long) {
         shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(seconds))
         compose.waitForIdle()
     }
@@ -125,7 +125,7 @@ class AppFlowTest {
         // Quick Connect: the code of the in-memory server, approved from the « phone ».
         waitFor("482  913")
         source.approveQuickConnect("482913", "enfant")
-        wait(seconds = 3)
+        idleMainLooper(seconds = 3)
         waitFor("Bonjour, enfant")
 
         compose.onNodeWithContentDescription("Réglages").performClick()

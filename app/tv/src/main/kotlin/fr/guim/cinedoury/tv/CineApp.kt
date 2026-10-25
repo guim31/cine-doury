@@ -184,9 +184,8 @@ private fun SessionScreen(
             CatalogScreen(variant = variant, onToggleVariant = onToggleVariant)
         }
 
-        else -> {
-            Unit
-        }
+        // The routes before a server is in use are drawn by Screen.
+        else -> {}
     }
 }
 
