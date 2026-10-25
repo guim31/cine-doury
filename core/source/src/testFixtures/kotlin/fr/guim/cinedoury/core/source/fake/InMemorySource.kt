@@ -62,6 +62,10 @@ class InMemorySource(
 ) : SourceConnector {
     private val items: Map<ItemId, MediaItem> = (contents.values.flatten() + extras).associateBy { it.id }
 
+    init {
+        playback.lookup = { id -> items[id]?.mediaSources?.takeIf { it.isNotEmpty() } }
+    }
+
     /** What the user changed (watched, favourite), over the data the items came with. */
     private val changes = mutableMapOf<ItemId, UserData>()
 

@@ -10,12 +10,14 @@ import fr.guim.cinedoury.core.data.DeviceIdentity
 import fr.guim.cinedoury.core.data.di.dataModule
 import fr.guim.cinedoury.core.data.index.IndexScheduler
 import fr.guim.cinedoury.core.designsystem.theme.CineMotion
+import fr.guim.cinedoury.core.playback.playbackModule
 import fr.guim.cinedoury.core.source.ServerDiscovery
 import fr.guim.cinedoury.core.source.SourceConnector
 import fr.guim.cinedoury.feature.auth.authModule
 import fr.guim.cinedoury.feature.details.detailsModule
 import fr.guim.cinedoury.feature.home.homeModule
 import fr.guim.cinedoury.feature.library.libraryModule
+import fr.guim.cinedoury.feature.player.playerModule
 import fr.guim.cinedoury.feature.settings.settingsModule
 import fr.guim.cinedoury.source.jellyfin.ClientIdentity
 import fr.guim.cinedoury.source.jellyfin.JellyfinConnector
@@ -36,7 +38,17 @@ class CineApplication :
         stopKoin()
         startKoin {
             androidContext(this@CineApplication)
-            modules(dataModule, jellyfinModule, authModule, homeModule, libraryModule, detailsModule, settingsModule)
+            modules(
+                dataModule,
+                playbackModule,
+                jellyfinModule,
+                authModule,
+                homeModule,
+                libraryModule,
+                detailsModule,
+                playerModule,
+                settingsModule,
+            )
         }
         // The local index follows the open profile, in the background (SPEC.md § 4.10).
         GlobalContext.get().get<IndexScheduler>().start()

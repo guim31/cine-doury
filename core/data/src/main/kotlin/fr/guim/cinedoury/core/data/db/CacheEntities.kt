@@ -111,6 +111,24 @@ abstract class HomeCacheDao {
         userId: String,
     ): Flow<List<CachedRowItem>>
 
+    /** What the user did with an item, wherever the home shows it (J4: at the end of playback). */
+    @Query(
+        """
+        UPDATE cached_items SET played = :played, position_ms = :positionMs, play_count = :playCount,
+        last_played = :lastPlayed
+        WHERE server_id = :serverId AND user_id = :userId AND item_id = :itemId
+        """,
+    )
+    abstract suspend fun updateUserData(
+        serverId: String,
+        userId: String,
+        itemId: String,
+        played: Boolean,
+        positionMs: Long,
+        playCount: Int,
+        lastPlayed: Long?,
+    )
+
     @Query("SELECT * FROM cached_libraries WHERE server_id = :serverId AND user_id = :userId ORDER BY position")
     abstract fun observeLibraries(
         serverId: String,

@@ -44,11 +44,6 @@
     <string name="action_play_with_tracks">Lire avec ces choix</string>
     <string name="action_file_info">Informations sur le fichier</string>
     <string name="bitrate">%1$d Mb/s</string>
-    <string name="playback_version">Version</string>
-    <string name="playback_player_choice">Choix du lecteur</string>
-    <string name="playback_start">Début</string>
-    <string name="playback_resume_at">Reprise à %1$s</string>
-    <string name="playback_from_start">Depuis le début</string>
     <plurals name="season_count">
         <item quantity="one">%1$d saison</item>
         <item quantity="many">%1$d saisons</item>

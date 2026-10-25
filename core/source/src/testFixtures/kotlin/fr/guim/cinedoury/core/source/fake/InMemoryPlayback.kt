@@ -32,6 +32,9 @@ class InMemoryPlayback(
     /** Every request for a stream. */
     val requests: MutableList<PlaybackInfoRequest> = mutableListOf()
 
+    /** The versions of an item missing from [sources]: the source in memory gives its items'. */
+    var lookup: (ItemId) -> List<MediaSource>? = { null }
+
     /** When set, every report fails with it (the server went away). */
     var failure: SourceException? = null
 
@@ -40,7 +43,8 @@ class InMemoryPlayback(
     override suspend fun playbackInfo(request: PlaybackInfoRequest): PlaybackStream {
         requests += request
         failure?.let { throw it }
-        val versions = sources[request.item] ?: throw SourceException.NotFound(request.item.value)
+        val versions =
+            sources[request.item] ?: lookup(request.item) ?: throw SourceException.NotFound(request.item.value)
         val source = versions.firstOrNull { it.id == request.sourceId } ?: versions.first()
         val reasons =
             transcode[request.item] ?: if (request.allowDirect) emptySet() else setOf(TranscodeReason.DirectPlayError)

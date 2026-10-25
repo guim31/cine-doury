@@ -202,6 +202,8 @@ fun AlphabetBar(
 /**
  * A panel sliding in from the right over the screen, which stays visible behind (`UI.md` § 7:
  * 200 ms, slide and fade). For the filters and the sort of a library.
+ *
+ * @param scrim darkens the screen behind; the player keeps its picture ([CineColors.playerScrim]).
  */
 @Composable
 fun SidePanel(
@@ -209,6 +211,7 @@ fun SidePanel(
     title: String,
     modifier: Modifier = Modifier,
     width: Dp = CineSizes.panelWidth,
+    scrim: Boolean = true,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val reduced = CineTheme.reducedMotion
@@ -218,7 +221,11 @@ fun SidePanel(
             enter = fadeIn(CineMotion.fade(CineMotion.PANEL_MILLIS)),
             exit = fadeOut(CineMotion.fade(CineMotion.PANEL_MILLIS)),
         ) {
-            Box(Modifier.fillMaxSize().background(CineTheme.colors.dialogScrim))
+            Box(
+                Modifier.fillMaxSize().background(
+                    if (scrim) CineTheme.colors.dialogScrim else CineTheme.colors.playerScrim,
+                ),
+            )
         }
         AnimatedVisibility(
             visible = visible,
@@ -248,7 +255,7 @@ fun SidePanel(
                     Modifier
                         .width(width)
                         .fillMaxHeight()
-                        .background(CineTheme.colors.surface2)
+                        .background(if (scrim) CineTheme.colors.surface2 else CineTheme.colors.playerPanel)
                         .padding(
                             horizontal = CineSpacing.m,
                             vertical = CineSpacing.safeVertical + CineSpacing.s,

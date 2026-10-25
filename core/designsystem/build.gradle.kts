@@ -13,6 +13,8 @@ dependencies {
     api(libs.tv.material)
     api(libs.compose.material.icons.core)
     implementation(libs.coil.compose)
+    // The headers of a picture the server only gives with a token (trickplay).
+    implementation(libs.coil.network.okhttp)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlin.test)

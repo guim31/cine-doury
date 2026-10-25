@@ -192,7 +192,7 @@ fun DetailsScreen(
                         onTrailer = {
                             when (val trailer = state.trailer) {
                                 is Trailer.Local -> {
-                                    navigation.play(PlaybackRequest(trailer.item, resume = false))
+                                    navigation.play(PlaybackRequest(trailer.item, resume = false, trailer = true))
                                 }
 
                                 is Trailer.Remote -> {

@@ -40,8 +40,6 @@
     <string name="soon_message_search">Search comes with a future version.</string>
     <string name="soon_title_details">Details</string>
     <string name="soon_message_details">The details of “%1$s” come with a future version.</string>
-    <string name="soon_title_player">Playback</string>
-    <string name="soon_message_player">The player comes with a future version. “%1$s” will play here.</string>
     <string name="time_pattern">h:mm a</string>
     <string name="badge_local_audio">French</string>
     <string name="badge_subtitled">Subtitled</string>

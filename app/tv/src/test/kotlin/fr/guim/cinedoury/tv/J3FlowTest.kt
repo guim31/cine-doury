@@ -17,6 +17,8 @@ import fr.guim.cinedoury.core.data.security.TokenCipher
 import fr.guim.cinedoury.core.designsystem.theme.CineTheme
 import fr.guim.cinedoury.core.designsystem.theme.ThemeVariant
 import fr.guim.cinedoury.core.model.ServerInfo
+import fr.guim.cinedoury.core.playback.VideoPlayerFactory
+import fr.guim.cinedoury.core.playback.playbackModule
 import fr.guim.cinedoury.core.source.Credentials
 import fr.guim.cinedoury.core.source.ServerAddress
 import fr.guim.cinedoury.core.source.ServerDiscovery
@@ -28,6 +30,7 @@ import fr.guim.cinedoury.feature.details.detailsModule
 import fr.guim.cinedoury.feature.details.panelLine
 import fr.guim.cinedoury.feature.home.homeModule
 import fr.guim.cinedoury.feature.library.libraryModule
+import fr.guim.cinedoury.feature.player.playerModule
 import fr.guim.cinedoury.feature.settings.settingsModule
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.runBlocking
@@ -44,6 +47,7 @@ import org.koin.java.KoinJavaComponent.getKoin
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
@@ -68,6 +72,8 @@ class J3FlowTest {
             collections = mapOf(J3Samples.saga.id to listOf(J3Samples.phare.id, J3Samples.retour.id)),
         )
 
+    private val players = FakeVideoPlayers()
+
     private object PlainCipher : TokenCipher {
         override fun encrypt(token: String) = token
 
@@ -91,6 +97,9 @@ class J3FlowTest {
                 homeModule,
                 libraryModule,
                 detailsModule,
+                playbackModule,
+                playerModule,
+                module { single<VideoPlayerFactory> { players } },
                 settingsModule,
             )
         }
@@ -148,9 +157,24 @@ class J3FlowTest {
         press(Key.DirectionUp, times = 3)
         focusable(panelLine(0)).assertIsFocused()
         press(Key.DirectionCenter)
-        waitFor(hasTestTag("playback-back"))
-        compose.onNode(hasText("Anglais", substring = true)).assertExists()
-        compose.onNode(hasText("Reprise à 40\u00A0min", substring = true)).assertExists()
+        waitFor(hasTestTag("player"))
+        // The player asks the server for the English track, from the saved position.
+        compose.waitUntil(TIMEOUT) { players.player.loads.isNotEmpty() }
+        val english =
+            J3Samples.phare.mediaSources
+                .first()
+                .audio
+                .first { it.language == "eng" }
+                .index
+        val asked = source.playback.requests.last()
+        assertEquals(english, asked.audioIndex)
+        assertEquals(40, asked.start.inWholeMinutes.toInt())
+        assertEquals(
+            english,
+            players.player.loads
+                .last()
+                .audioIndex,
+        )
 
         compose.pressBack()
         waitFor(hasTestTag(DetailsPreview.TRACKS))

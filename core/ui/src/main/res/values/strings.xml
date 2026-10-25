@@ -41,8 +41,6 @@
     <string name="soon_message_search">La recherche arrive avec une prochaine version.</string>
     <string name="soon_title_details">Fiche</string>
     <string name="soon_message_details">La fiche de « %1$s » arrive avec une prochaine version.</string>
-    <string name="soon_title_player">Lecture</string>
-    <string name="soon_message_player">Le lecteur arrive avec une prochaine version. « %1$s » se lira ici.</string>
     <string name="time_pattern">H\' h \'mm</string>
     <string name="badge_uhd" translatable="false">4K</string>
     <string name="badge_full_hd" translatable="false">1080p</string>
