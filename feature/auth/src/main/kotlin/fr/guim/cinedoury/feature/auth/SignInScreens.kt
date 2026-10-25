@@ -200,7 +200,7 @@ fun PasswordScreen(
     FormScreen(
         brand = stringResource(UiR.string.brand_name),
         title = stringResource(R.string.sign_in_title),
-        subtitle = stringResource(R.string.password_subtitle).takeIf { error == null },
+        subtitle = stringResource(R.string.password_subtitle).takeIf { error == null && !state.refused },
         modifier = modifier,
     ) {
         if (error != null) {
