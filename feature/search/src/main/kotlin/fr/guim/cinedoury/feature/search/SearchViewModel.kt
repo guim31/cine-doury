@@ -159,13 +159,22 @@ class SearchViewModel(
     private val profile = active?.let { ProfileKey(it.profile.serverId, it.profile.user.id.value) }
     private val local = MutableStateFlow(SearchState())
     private val input = MutableStateFlow(Input("", null))
-    private var requests: MediaRequests? = null
+
+    /** The request server, once its settings are read: a search waits for it, or runs again. */
+    private val requests = MutableStateFlow<MediaRequests?>(null)
     private var sending: Job? = null
 
     val state: StateFlow<SearchState> = local.asStateFlow()
 
     /** The server rejected the token: the profile is signed out. */
     val sessionEnded = Events<Unit>()
+
+    private data class Run(
+        val input: Input,
+        val titles: List<IndexedTitle>,
+        val libraries: Set<LibraryId>,
+        val requests: MediaRequests?,
+    )
 
     private data class Input(
         val query: String,
@@ -188,7 +197,7 @@ class SearchViewModel(
             }
             viewModelScope.launch {
                 requestSettings.server(profile.serverId).collect { server ->
-                    requests = server?.let { requestConnector.open(it.address, it.apiKey, profile.userId) }
+                    requests.value = server?.let { requestConnector.open(it.address, it.apiKey, profile.userId) }
                     local.update { it.copy(requests = if (server == null) null else it.requests ?: RequestsState()) }
                 }
             }
@@ -199,8 +208,9 @@ class SearchViewModel(
                     .distinctUntilChanged()
             viewModelScope.launch { suggest(active) }
             viewModelScope.launch {
-                combine(input, search.titles(profile.serverId), libraries) { a, b, c -> Triple(a, b, c) }
-                    .collectLatest { (query, titles, shown) -> run(active, query, titles, shown) }
+                combine(input, search.titles(profile.serverId), libraries, requests) { query, titles, shown, client ->
+                    Run(query, titles, shown, client)
+                }.collectLatest { run(active, it) }
             }
         }
     }
@@ -219,10 +229,9 @@ class SearchViewModel(
 
     private suspend fun run(
         active: ActiveSession,
-        input: Input,
-        titles: List<IndexedTitle>,
-        libraries: Set<LibraryId>,
+        run: Run,
     ) {
+        val input = run.input
         val genre = input.genre
         when {
             genre != null -> {
@@ -242,11 +251,11 @@ class SearchViewModel(
             }
 
             else -> {
-                val found = withContext(Dispatchers.Default) { search.local(input.query, titles, libraries) }
+                val found = withContext(Dispatchers.Default) { search.local(input.query, run.titles, run.libraries) }
                 local.update { it.copy(rows = SearchRanking.rows(found), pending = true, error = null) }
                 delay(DEBOUNCE_MILLIS)
                 coroutineScope {
-                    launch { askSeerr(input.query) }
+                    run.requests?.let { client -> launch { askSeerr(client, input.query) } }
                     serverStep { search.complete(active.library, input.query, found) }
                 }
             }
@@ -267,8 +276,10 @@ class SearchViewModel(
         }
     }
 
-    private suspend fun askSeerr(query: String) {
-        val client = requests ?: return
+    private suspend fun askSeerr(
+        client: MediaRequests,
+        query: String,
+    ) {
         val found =
             try {
                 RequestsState(client.search(query, Locale.getDefault().language))
@@ -349,7 +360,7 @@ class SearchViewModel(
             return
         }
         local.update { it.copy(dialog = RequestDialog.Seasons(candidate)) }
-        val client = requests ?: return
+        val client = requests.value ?: return
         viewModelScope.launch {
             try {
                 val seasons = client.seasons(candidate.tmdbId, Locale.getDefault().language)
@@ -415,7 +426,7 @@ class SearchViewModel(
         seasons: List<Int>,
         sendingDialog: () -> RequestDialog,
     ) {
-        val client = requests ?: return
+        val client = requests.value ?: return
         if (dialog.sending || sending?.isActive == true) return
         local.update { it.copy(dialog = sendingDialog()) }
         sending =
