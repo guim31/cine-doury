@@ -98,6 +98,7 @@ val requestsModule =
     module {
         single<RequestConnector> { SeerrConnector() }
     }
+
 /** The logcat tag of the app (`SPEC.md` § 4.13). */
 const val LOG_TAG = "CineDoury"
 
