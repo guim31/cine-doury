@@ -12,7 +12,7 @@ son domaine :
 
 | Jalon | État | PR |
 |---|---|---|
-| J0 — Fondations | en revue | [#1](https://github.com/guim31/cine-doury/pull/1) |
+| J0 — Fondations | terminé, en revue (CI verte, captures dans `docs/screenshots/j0/`) | [#1](https://github.com/guim31/cine-doury/pull/1) |
 
 *(Chaque jalon met à jour ce tableau et ajoute ses contrats au § 4.)*
 
@@ -157,7 +157,9 @@ Décision du J0 : **SDK Kotlin officiel 1.9.3**, plutôt qu'un client généré 
   (72 dp fermé, 240 dp ouvert au focus, par-dessus le contenu), `Modifier.readabilityScrims`,
   `CineIcons`.
 - Captures de référence : `app/tv/src/test/screenshots/` (vérifiées par la CI), copiées dans
-  `docs/screenshots/j0/`.
+  `docs/screenshots/j0/` : 9 vues du catalogue × 2 thèmes (sombre, noir OLED), en 1920 × 1080.
+  L'élément focalisé y est dessiné par `CineFocus.preview()` (Robolectric ne donne pas le focus en
+  rendu natif) ; la navigation réelle à la croix est testée par `CatalogNavigationTest`.
 
 ### 4.6 Contrats Jellyfin
 
