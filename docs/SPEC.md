@@ -853,15 +853,28 @@ ASS), `DeviceProfilesTest` (forme Jellyfin), `PlaybackReporterTest` et `DisplayM
 transcodage HLS et sa raison pour le profil limité, repli, la reprise déplacée par un rapport de
 progression, « vu » posé, segments), `J3FlowTest` (de la fiche au lecteur avec les pistes choisies),
 `PlaybackOnDeviceTest` sur l'émulateur de la CI (H.264 lu directement, HEVC HDR transcodé : la
-position avance de 2 s). Captures : `J4ScreenshotTest`.
+position avance de 2 s), `SubtitleStyleTest` (crans, fraction de l'image, images agrandies) et
+`PlayerSettingsStoreTest` (apparence par profil, le reste par appareil). Captures :
+`J4ScreenshotTest`, `J4Screenshot4kTest`.
 
 **Captures** (`docs/screenshots/j4/`, 1920 × 1080, sombre et noir OLED, image vidéo générée) :
 interface du lecteur (90), recherche et vignette (91), audio et sous-titres (92), qualité (93),
 réglages et aperçu des sous-titres (94), « Passer l'intro » (95), « Épisode suivant » (96),
 « Vous êtes toujours là ? » (97), informations en lecture directe (98) et en transcodage avec sa
 raison (99), erreur (100), « Lecture et son » (101), « Apparence des sous-titres » (102), profil de
-l'appareil (103) ; les retouches du J3 se voient sur la fiche (75 : logo sans affiche, heure de fin
+l'appareil (103), barre de taille des sous-titres (104), un même sous-titre à 100 % (105) et à
+160 % (106), sous-titres incrustés (107), 160 % sur une sortie 4K, 3840 × 2160 (108) ; les retouches du J3 se voient sur la fiche (75 : logo sans affiche, heure de fin
 d'un bloc) et les pistes (78, 79 : pastilles). Le lecteur provisoire (86) disparaît.
+
+**Limites connues** (à reprendre plus tard) :
+- Le mode des sous-titres (désactivés, forcés, toujours, intelligent) suit la pré-sélection du J3
+  et les préférences du profil sur le serveur ; son réglage dans l'appli arrive avec les pages de
+  réglages du J7, comme la langue préférée.
+- La qualité choisie pendant la lecture vaut pour la séance ; le réglage par défaut est au J7.
+- Le passage d'un Dolby Vision profil 5 sur un appareil qui ne le décode pas passe par le
+  transcodage du serveur (tone mapping) ; seul le profil 8 se replie sur HEVC dans l'appareil.
+- Rien n'a encore été mesuré sur la Shield (60 images/s, cadence, passthrough réel) : c'est le J8.
+- Sous-titres incrustés par le serveur : ni taille ni position ne changent (voir plus haut).
 
 **Retouches du J3** :
 - **Pastilles** : « par défaut », « forcés », « SDH », « externe » suivent le libellé d'une piste
