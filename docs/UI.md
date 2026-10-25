@@ -160,6 +160,13 @@ Plex (`#E5A00D`).
   - On y arrive aussi par la ligne « Taille, position et fond » (panneaux Audio et sous-titres, Réglages) et par le bouton « Taille des sous-titres » de l'interface.
   - Sous-titres incrustés par le serveur : le − / + est éteint, la barre dit « La taille de ces sous-titres ne peut pas être modifiée. Le serveur les incruste dans l'image. »
 
+### Recherche *(J5)*
+- Le rail à gauche ; puis la **ligne de la requête** (non focalisable, curseur dans la couleur d'accent) et le **clavier à l'écran** : 7 touches par rangée, l'alphabet dans l'ordre, les chiffres, espace et effacer, puis la page des accents, le micro, le clavier du système et « Tout effacer ». Focus initial sur « a ».
+- À droite, les **rangées de résultats** (Films, Séries, Épisodes, Personnes, Collections), en petites affiches (vignettes pour les épisodes), la mieux classée en haut ; en dernier, « Pas dans la bibliothèque ? Demander » quand Seerr est configuré. Le fond d'ambiance suit la carte focalisée.
+- Sans requête : recherches récentes et genres en **puces** (40 dp), « Ajouts récents » en affiches.
+- **Écoute vocale** : l'écran s'assombrit, le micro dans la couleur d'accent au centre, un anneau qui suit la voix, « Je vous écoute… » et les mots compris au fur et à mesure. « Retour » arrête.
+- « Demander » un film passe par une confirmation, focus sur « Annuler » ; une série ouvre le panneau de ses saisons.
+
 ### Gestion
 - Même langage visuel que le reste : pas de formulaire d'administration gris. Une correction d'affiche est une **galerie d'affiches**, une correction d'identification une **liste de résultats avec affiches et année**.
 - **Action destructrice** :

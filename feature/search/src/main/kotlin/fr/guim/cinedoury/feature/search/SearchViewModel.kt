@@ -390,11 +390,7 @@ class SearchViewModel(
     }
 
     override fun confirmRequest() {
-        when (val dialog = local.value.dialog) {
-            null -> {
-                Unit
-            }
-
+        when (val dialog = local.value.dialog ?: return) {
             // « Réessayer »: from the start (the seasons are read again).
             is RequestDialog.Failed -> {
                 ask(dialog.candidate)

@@ -34,11 +34,8 @@ internal fun RequestDialogs(
     dialog: RequestDialog?,
     actions: SearchActions,
 ) {
+    if (dialog == null) return
     when (dialog) {
-        null -> {
-            Unit
-        }
-
         is RequestDialog.Confirm -> {
             val cancel = remember { FocusRequester() }
             InitialFocus(cancel)
