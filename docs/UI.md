@@ -138,6 +138,7 @@ Plex (`#E5A00D`).
 - En dessous : distribution, saga, similaires ; pour une série, les saisons et les épisodes.
 - Précisions du J3 :
   - l'**affiche** (190 × 285) est à gauche de la colonne de texte : c'est elle qui vole depuis la carte ouverte ; un épisode montre sa vignette (320 × 180), une personne sa photo ;
+  - les **boutons** sont sous l'affiche et le texte, sur toute la largeur : « Reprendre — 1 h 09 restantes » et six boutons ronds ne tiennent pas dans la colonne de texte ;
   - la ligne de métadonnées finit par l'heure de fin (« se termine à 22 h 07 ») ; les genres, puis les badges, viennent dessous ; le synopsis tient sur 3 lignes et se déplie par OK (il ne prend le focus que s'il est plus long) ;
   - un titre entamé dit ce qui reste : « Reprendre — 1 h 09 restantes » ; une série dit l'épisode : « Reprendre S01E02 — 24 min restantes », « Lire S01E02 » ;
   - les saisons sont des onglets, avec « Marquer la saison comme vue » ; une série à saison unique n'en a pas : ses épisodes suivent, sous « Épisodes » ;

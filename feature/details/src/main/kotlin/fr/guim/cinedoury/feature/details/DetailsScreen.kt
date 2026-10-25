@@ -279,16 +279,14 @@ private fun Hero(
     val item = state.item
     val colors = CineTheme.colors
     val typography = CineTheme.typography
-    Row(
+    // The picture and the text, which keeps a reading width; under them, the buttons take the whole
+    // width: « Reprendre — 1 h 09 restantes » and six round buttons do not fit beside the poster.
+    Column(
         modifier = Modifier.padding(horizontal = CineSpacing.safeHorizontal),
-        horizontalArrangement = Arrangement.spacedBy(CineSpacing.l),
+        verticalArrangement = Arrangement.spacedBy(CineSpacing.xs),
     ) {
-        Picture(item, sources)
-        // The text keeps a reading width; the buttons take the rest of the screen.
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(CineSpacing.xs),
-        ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(CineSpacing.l)) {
+            Picture(item, sources)
             Column(
                 modifier = Modifier.widthIn(max = CineSizes.detailsTextWidth),
                 verticalArrangement = Arrangement.spacedBy(CineSpacing.xs),
@@ -338,12 +336,12 @@ private fun Hero(
                     )
                 }
             }
-            val error = state.error
-            if (error != null && !state.loaded) {
-                SourceErrorPanel(error = error, onRetry = actions::retry, retryFocusRequester = requesters[KEY_PLAY])
-            } else {
-                Buttons(state, actions, onPlay, onRestart, onTrailer, onPanel, onSeries, requesters, onFocused)
-            }
+        }
+        val error = state.error
+        if (error != null && !state.loaded) {
+            SourceErrorPanel(error = error, onRetry = actions::retry, retryFocusRequester = requesters[KEY_PLAY])
+        } else {
+            Buttons(state, actions, onPlay, onRestart, onTrailer, onPanel, onSeries, requesters, onFocused)
         }
     }
 }

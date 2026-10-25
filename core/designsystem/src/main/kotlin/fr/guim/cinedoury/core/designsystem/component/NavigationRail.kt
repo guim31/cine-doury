@@ -25,13 +25,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
@@ -123,9 +126,11 @@ fun NavigationRail(
                 .padding(vertical = CineSpacing.safeVertical + CineSpacing.m, horizontal = CineSpacing.xs),
         verticalArrangement = Arrangement.spacedBy(CineSpacing.xs),
     ) {
-        // Many libraries: the top of the rail scrolls, « Profil » and « Réglages » stay at the bottom.
+        // Many libraries: the top of the rail scrolls, « Profil » and « Réglages » stay at the bottom;
+        // what goes on below fades out instead of being cut.
+        val scroll = rememberScrollState()
         Column(
-            modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()),
+            modifier = Modifier.weight(1f).fadeBottom(scroll.canScrollForward).verticalScroll(scroll),
             verticalArrangement = Arrangement.spacedBy(CineSpacing.xs),
         ) {
             destinations.forEachIndexed { index, destination ->
@@ -213,3 +218,19 @@ private fun RailItem(
         }
     }
 }
+
+/** Fades out the bottom of a list that goes on below, over [CineSpacing.l]. */
+private fun Modifier.fadeBottom(enabled: Boolean): Modifier =
+    if (!enabled) {
+        this
+    } else {
+        graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+            .drawWithContent {
+                drawContent()
+                val fade = CineSpacing.l.toPx() / size.height
+                drawRect(
+                    Brush.verticalGradient(0f to Color.Black, (1f - fade) to Color.Black, 1f to Color.Transparent),
+                    blendMode = BlendMode.DstIn,
+                )
+            }
+    }
