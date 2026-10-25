@@ -170,7 +170,11 @@ private fun LibraryRow(
             val image = library.image
             ThumbnailCard(
                 title = library.name,
-                subtitle = stringResource(library.kind.label()),
+                // « Films » under a library named « Films » says nothing.
+                subtitle =
+                    stringResource(
+                        library.kind.label(),
+                    ).takeUnless { it.equals(library.name, ignoreCase = true) },
                 onClick = {},
                 focus = focuses[index],
                 focusRequester = if (index == 0) first else null,

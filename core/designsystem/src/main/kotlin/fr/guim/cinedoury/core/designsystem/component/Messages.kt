@@ -83,7 +83,7 @@ fun MessagePanel(
                 style = CineTheme.typography.caption,
                 color = colors.text3,
                 modifier =
-                    Modifier
+                    reading
                         .padding(top = CineSpacing.s)
                         .background(colors.surface1, RoundedCornerShape(CineSizes.cardCorner))
                         .padding(CineSpacing.s),

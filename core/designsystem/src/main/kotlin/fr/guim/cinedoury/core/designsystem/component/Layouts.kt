@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
@@ -57,52 +58,40 @@ fun FormScreen(
                 .fillMaxSize()
                 .background(colors.background),
     ) {
-        Row(
-            modifier =
-                Modifier
-                    .align(Alignment.TopStart)
-                    .padding(
-                        horizontal = CineSpacing.safeHorizontal * 2,
-                        vertical =
-                            CineSpacing.safeVertical + CineSpacing.m,
-                    ),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(CineSpacing.m),
-        ) {
-            Wordmark(brand)
-        }
-        if (topEnd != null) {
-            Box(
-                Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(
-                        horizontal = CineSpacing.safeHorizontal,
-                        vertical =
-                            CineSpacing.safeVertical + CineSpacing.m,
-                    ),
-            ) { topEnd() }
-        }
+        // The brand on top, the reading column centred in the rest: they never overlap.
         Column(
             modifier =
                 Modifier
-                    .align(Alignment.CenterStart)
-                    .padding(start = CineSpacing.safeHorizontal * 2, end = CineSpacing.safeHorizontal),
-            verticalArrangement = Arrangement.spacedBy(CineSpacing.s),
+                    .fillMaxSize()
+                    .padding(
+                        start = CineSpacing.safeHorizontal * 2,
+                        end = CineSpacing.safeHorizontal,
+                        top = CineSpacing.safeVertical + CineSpacing.m,
+                        bottom = CineSpacing.safeVertical,
+                    ),
         ) {
-            Text(text = title, style = CineTheme.typography.title1, color = colors.text)
-            if (subtitle != null) {
-                Text(
-                    text = subtitle,
-                    style = CineTheme.typography.body,
-                    color = colors.text2,
-                    modifier = Modifier.width(CineSizes.settingsWidth),
-                )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Wordmark(brand, Modifier.weight(1f))
+                topEnd?.invoke()
             }
-            Column(
-                modifier = Modifier.padding(top = CineSpacing.l),
-                verticalArrangement = Arrangement.spacedBy(CineSpacing.m),
-                content = content,
-            )
+            Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
+                Column(verticalArrangement = Arrangement.spacedBy(CineSpacing.s)) {
+                    Text(text = title, style = CineTheme.typography.title1, color = colors.text)
+                    if (subtitle != null) {
+                        Text(
+                            text = subtitle,
+                            style = CineTheme.typography.body,
+                            color = colors.text2,
+                            modifier = Modifier.width(CineSizes.settingsWidth),
+                        )
+                    }
+                    Column(
+                        modifier = Modifier.padding(top = CineSpacing.m),
+                        verticalArrangement = Arrangement.spacedBy(CineSpacing.m),
+                        content = content,
+                    )
+                }
+            }
         }
         overlay?.invoke(this)
     }
