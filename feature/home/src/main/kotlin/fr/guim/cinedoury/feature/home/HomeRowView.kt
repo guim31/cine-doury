@@ -193,4 +193,4 @@ internal fun SkeletonRow(modifier: Modifier = Modifier) {
     }
 }
 
-private const val SKELETON_CARDS = 4
+private const val SKELETON_CARDS = 5

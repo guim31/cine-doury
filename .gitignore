@@ -6,5 +6,7 @@ local.properties
 .DS_Store
 captures/
 *.keystore
+# The debug key is versioned on purpose: it is not a secret (README.md).
+!app/tv/debug.keystore
 *.jks
 keystore.properties

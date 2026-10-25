@@ -13,8 +13,22 @@ android {
         versionName = "0.1.0"
     }
 
+    signingConfigs {
+        // A fixed debug key, versioned (app/tv/debug.keystore): every debug APK, from the CI or from
+        // any machine, installs over the previous one. A debug key is not a secret (README.md).
+        getByName("debug") {
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
-        // The release APK is signed outside the CI by the maintainer (SPEC.md § 4).
+        debug {
+            signingConfig = signingConfigs.getByName("debug")
+        }
+        // The release APK is signed outside the repository by the maintainer (SPEC.md § 4).
         release {
             isMinifyEnabled = false
         }

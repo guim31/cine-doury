@@ -29,7 +29,11 @@ object CineSizes {
     val posterSmall = DpSize(120.dp, 180.dp)
     val posterNormal = DpSize(150.dp, 225.dp)
     val posterLarge = DpSize(190.dp, 285.dp)
-    val thumbnail = DpSize(300.dp, 169.dp)
+    /**
+     * 16:9, for « Reprendre », episodes and chapters: four whole thumbnails and the start of a fifth
+     * in a row of a 1080p screen (`UI.md` § 6, retouched on 25/10/2026).
+     */
+    val thumbnail = DpSize(176.dp, 99.dp)
     val cardCorner = 8.dp
     val hairline = 1.dp
     val swatch = DpSize(104.dp, 64.dp)

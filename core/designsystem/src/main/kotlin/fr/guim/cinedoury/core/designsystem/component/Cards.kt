@@ -124,7 +124,8 @@ fun ThumbnailCard(
                         interactionSource,
                     ).background(CineTheme.colors.surface1),
         ) {
-            if (image != null) image() else GeneratedArtwork(title)
+            // A thumbnail is small (`UI.md` § 6): the title of a generated card in « Légende ».
+            if (image != null) image() else GeneratedArtwork(title, compact = true)
             UnwatchedMark(unwatched, unwatchedCount)
             if (progress != null) CardProgressBar(progress, Modifier.align(Alignment.BottomStart))
         }
