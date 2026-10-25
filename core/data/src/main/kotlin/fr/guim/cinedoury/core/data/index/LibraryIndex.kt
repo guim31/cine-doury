@@ -204,6 +204,14 @@ class LibraryIndex(
 
     suspend fun clear(serverId: String) = dao.clearServer(serverId)
 
+    /** Forgets [items], deleted on the server (J6): a filter of the index never offers them again. */
+    suspend fun forget(
+        serverId: String,
+        items: Collection<ItemId>,
+    ) {
+        if (items.isNotEmpty()) dao.forget(serverId, items.map { it.value })
+    }
+
     companion object {
         const val PAGE_SIZE = 100
 

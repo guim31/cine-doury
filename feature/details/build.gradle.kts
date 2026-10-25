@@ -9,6 +9,7 @@ android {
 
 dependencies {
     implementation(projects.core.ui)
+    implementation(projects.feature.manage)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
 

@@ -57,6 +57,12 @@ data class MediaItem(
     val productionLocations: List<String> = emptyList(),
     /** The chapters of a video, in order (J4). */
     val chapters: List<Chapter> = emptyList(),
+    /** Where the item is on the server: the file of a film, the folder of a series (J6). */
+    val path: String? = null,
+    /** The ids of the title at the metadata providers (`Tmdb` → `603`), empty when unidentified (J6). */
+    val providerIds: Map<String, String> = emptyMap(),
+    /** The server would delete it for this profile: its files are within reach (J6). */
+    val canDelete: Boolean = false,
 ) {
     /** Playback progress between 0 and 1, or null when not started. */
     val progress: Float?

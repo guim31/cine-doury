@@ -24,6 +24,7 @@ import java.time.Clock
  * Room holds at once, [refresh] asks the server and replaces the cache in one transaction, and Room
  * gives the screens the new rows.
  */
+@Suppress("TooManyFunctions") // One function per use of the cache by the screens.
 class HomeRepository(
     private val cache: HomeCacheDao,
     private val preferences: PreferencesDao,
@@ -133,6 +134,14 @@ class HomeRepository(
             playCount = data.playCount,
             lastPlayed = data.lastPlayed?.toEpochMilli(),
         )
+    }
+
+    /** Forgets [items], deleted on the server, from the rows of every profile of the server (J6). */
+    suspend fun forget(
+        serverId: String,
+        items: Collection<ItemId>,
+    ) {
+        items.forEach { cache.forgetItem(serverId, it.value) }
     }
 
     /** Forgets the cache of a profile (signed out), or of every profile of a server. */

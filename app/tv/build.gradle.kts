@@ -55,6 +55,7 @@ dependencies {
     implementation(projects.feature.details)
     implementation(projects.feature.home)
     implementation(projects.feature.library)
+    implementation(projects.feature.manage)
     implementation(projects.feature.player)
     implementation(projects.core.playback)
     implementation(projects.feature.settings)

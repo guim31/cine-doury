@@ -10,6 +10,7 @@ import fr.guim.cinedoury.core.source.ServerAddress
 import fr.guim.cinedoury.core.source.Session
 import fr.guim.cinedoury.core.source.SourceConnector
 import fr.guim.cinedoury.core.source.SourceException
+import fr.guim.cinedoury.core.source.SourceLog
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.HttpClientOptions
 import org.jellyfin.sdk.api.client.extensions.authenticateUserByName
@@ -36,10 +37,14 @@ data class ClientIdentity(
     val deviceName: String,
 )
 
-/** [SourceConnector] for a Jellyfin 12.3 server, built on the official Kotlin SDK. */
+/**
+ * [SourceConnector] for a Jellyfin 12.3 server, built on the official Kotlin SDK. [log] receives a
+ * line for each management call (logcat in the app).
+ */
 class JellyfinConnector(
     identity: ClientIdentity,
     requestTimeout: Duration = 30.seconds,
+    private val log: SourceLog = SourceLog.NONE,
 ) : SourceConnector {
     private val httpOptions = HttpClientOptions(requestTimeout = requestTimeout)
 
@@ -155,7 +160,7 @@ class JellyfinConnector(
     }
 
     override fun open(session: Session): LibrarySource =
-        JellyfinLibrarySource(api = api(session.server, session.accessToken), session = session)
+        JellyfinLibrarySource(api = api(session.server, session.accessToken), session = session, log = log)
 
     override fun imageUrl(server: ServerAddress, image: ImageRef, width: Int, height: Int): String =
         imageUrlOf(server, image, width, height)

@@ -157,6 +157,13 @@ internal fun BaseItemDto.toMediaItem(): MediaItem =
             },
     ).withDetailsOf(this)
 
+/** The ids of the item at the providers, without the empty ones the server sometimes sends. */
+private fun BaseItemDto.knownProviderIds(): Map<String, String> =
+    providerIds
+        .orEmpty()
+        .mapNotNull { (key, value) -> value?.takeIf { it.isNotBlank() }?.let { key to it } }
+        .toMap()
+
 /** The preview pictures of a version, at each width (`Trickplay`: version → width → pictures). */
 private fun BaseItemDto.trickplayOf(sourceId: String?): List<TrickplayInfo> {
     val key = sourceId?.replace("-", "")?.lowercase() ?: return emptyList()
@@ -181,7 +188,7 @@ private fun BaseItemDto.trickplayOf(sourceId: String?): List<TrickplayInfo> {
         }.sortedBy { it.width }
 }
 
-/** What only a details screen shows: credits, studios, status, trailers. */
+/** What only a details screen shows: credits, studios, status, trailers; what management needs (J6). */
 private fun MediaItem.withDetailsOf(dto: BaseItemDto): MediaItem =
     with(dto) {
         this@withDetailsOf.copy(
@@ -200,6 +207,9 @@ private fun MediaItem.withDetailsOf(dto: BaseItemDto): MediaItem =
                 },
             localTrailerCount = localTrailerCount ?: 0,
             productionLocations = productionLocations.orEmpty(),
+            path = path,
+            providerIds = knownProviderIds(),
+            canDelete = canDelete == true,
         )
     }
 

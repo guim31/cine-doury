@@ -14,6 +14,8 @@ import fr.guim.cinedoury.core.data.index.IndexScheduler
 import fr.guim.cinedoury.core.data.index.LibraryIndex
 import fr.guim.cinedoury.core.data.library.LibraryIconRepository
 import fr.guim.cinedoury.core.data.library.LibraryStateRepository
+import fr.guim.cinedoury.core.data.manage.ManageRepository
+import fr.guim.cinedoury.core.data.manage.ManageUpdates
 import fr.guim.cinedoury.core.data.prefs.AppPreferences
 import fr.guim.cinedoury.core.data.security.KeystoreTokenCipher
 import fr.guim.cinedoury.core.data.security.TokenCipher
@@ -36,6 +38,8 @@ val dataModule =
         single { HomeRepository(get(), get()) }
         single { LibraryStateRepository(get()) }
         single { UserDataUpdates() }
+        single { ManageUpdates() }
+        single { ManageRepository(get(), get(), get()) }
         single<TokenCipher> { KeystoreTokenCipher() }
         single {
             AppPreferences(

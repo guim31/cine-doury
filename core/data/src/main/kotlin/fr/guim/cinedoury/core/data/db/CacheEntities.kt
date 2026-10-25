@@ -176,6 +176,42 @@ abstract class HomeCacheDao {
         clearLibraries(serverId, userId)
     }
 
+    /**
+     * Forgets an item deleted on the server, for every profile (J6): its cards leave the rows at
+     * once, with those of its seasons and episodes.
+     */
+    @Transaction
+    open suspend fun forgetItem(
+        serverId: String,
+        itemId: String,
+    ) {
+        deleteRowItemsOf(serverId, itemId)
+        deleteItemsOf(serverId, itemId)
+    }
+
+    @Query(
+        """
+        DELETE FROM home_row_items WHERE server_id = :serverId AND item_id IN
+        (SELECT item_id FROM cached_items WHERE server_id = :serverId
+        AND (item_id = :itemId OR series_id = :itemId OR season_id = :itemId))
+        """,
+    )
+    protected abstract suspend fun deleteRowItemsOf(
+        serverId: String,
+        itemId: String,
+    )
+
+    @Query(
+        """
+        DELETE FROM cached_items WHERE server_id = :serverId
+        AND (item_id = :itemId OR series_id = :itemId OR season_id = :itemId)
+        """,
+    )
+    protected abstract suspend fun deleteItemsOf(
+        serverId: String,
+        itemId: String,
+    )
+
     @Upsert
     protected abstract suspend fun upsertItems(items: List<CachedItemEntity>)
 

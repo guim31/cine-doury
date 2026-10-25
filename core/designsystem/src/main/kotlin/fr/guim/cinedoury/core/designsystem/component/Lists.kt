@@ -251,6 +251,50 @@ fun ListSectionTitle(
 }
 
 /**
+ * A message over the screen, with one button that closes it (a failure in two sentences): the same
+ * `surface-2` box as [ConfirmDialog].
+ */
+@Composable
+fun MessageDialog(
+    title: String,
+    message: String,
+    buttonLabel: String,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+    buttonFocusRequester: FocusRequester? = null,
+    buttonFocus: CineFocus = rememberCineFocus(),
+) {
+    val colors = CineTheme.colors
+    Box(
+        modifier =
+            modifier
+                .fillMaxSize()
+                .background(colors.dialogScrim),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .width(CineSizes.dialogWidth)
+                    .background(colors.surface2, RowShape)
+                    .padding(CineSpacing.l),
+            verticalArrangement = Arrangement.spacedBy(CineSpacing.s),
+        ) {
+            Text(text = title, style = CineTheme.typography.title1, color = colors.text)
+            Text(text = message, style = CineTheme.typography.body, color = colors.text2)
+            Row(modifier = Modifier.padding(top = CineSpacing.m)) {
+                PrimaryButton(
+                    text = buttonLabel,
+                    onClick = onDismiss,
+                    focusRequester = buttonFocusRequester,
+                    focus = buttonFocus,
+                )
+            }
+        }
+    }
+}
+
+/**
  * A confirmation over the screen (`UI.md` § 8, « Action destructrice »): a `surface-2` box that
  * says exactly what will happen, « Annuler » with the initial focus, the action in `danger` (in the
  * accent when it destroys nothing: « Quitter »).
