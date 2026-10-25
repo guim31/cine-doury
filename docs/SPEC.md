@@ -434,8 +434,10 @@ un seul fond d'ambiance (BlurHash 32 × 18). Mesures sur la Shield au J8 (Macrob
 épisode à reprendre (40) et sur un film (41), rail ouvert (42), squelettes (43), « Quitter » (44),
 personnalisation (45) ; bibliothèque en grille (50), petites affiches (51), liste (52), vignettes
 (53), filtres et résumé (54), valeurs d'un filtre (55), tri (56), A–Z (57), Collections (58), Genres
-(59), squelettes (60). Les réglages (33, 34) gagnent la section « Accueil ». Tests :
-`J2ScreenshotTest`, `J2NavigationTest` (croix directionnelle et « Retour »), `HomeRepositoryTest`,
+(59), squelettes (60). Les réglages (33, 34) gagnent la section « Accueil ». En bas du rail, l'entrée du
+profil porte son nom et son avatar (« Changer de profil » ne tient pas dans le rail ouvert). Tests :
+`J2ScreenshotTest`, `J2NavigationTest` (croix directionnelle et « Retour »), `J2FlowTest` (« Retour »
+depuis une fiche rend la carte quittée, sur l'appli entière), `HomeRepositoryTest`,
 `HomeRowsTest`, `HomeLayoutsTest`, `ItemPagerTest`, `FiltersCodecTest`, `CineDatabaseMigrationTest`,
 `JellyfinBrowseIntegrationTest` (rangées, filtres, tri, pagination, exclusions, A–Z).
 
