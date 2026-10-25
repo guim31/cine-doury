@@ -47,8 +47,10 @@ fun MessagePanel(
 ) {
     val colors = CineTheme.colors
     var detailsShown by rememberSaveable { mutableStateOf(showDetails) }
+    // Only the text keeps to the reading width: the buttons take what they need.
+    val reading = Modifier.width(CineSizes.formWidth)
     Column(
-        modifier = modifier.width(CineSizes.formWidth),
+        modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(CineSpacing.s),
     ) {
         Icon(
@@ -58,8 +60,8 @@ fun MessagePanel(
             modifier =
                 Modifier.size(CineSizes.icon * 2),
         )
-        Text(text = title, style = CineTheme.typography.title1, color = colors.text)
-        Text(text = message, style = CineTheme.typography.body, color = colors.text2)
+        Text(text = title, style = CineTheme.typography.title1, color = colors.text, modifier = reading)
+        Text(text = message, style = CineTheme.typography.body, color = colors.text2, modifier = reading)
         Row(
             modifier = Modifier.padding(top = CineSpacing.m),
             horizontalArrangement = Arrangement.spacedBy(CineSpacing.m),
