@@ -69,4 +69,7 @@
     <string name="subtitle_settings_description">Size, colour, edge, background and position.</string>
     <string name="device_profile">Playback profile of the device</string>
     <string name="device_profile_description">What the device plays, and what the server is asked for.</string>
+    <string name="section_search">Search</string>
+    <string name="seerr_settings">Requests (Seerr)</string>
+    <string name="seerr_settings_description">Offer to request from Seerr the titles the library lacks.</string>
 </resources>

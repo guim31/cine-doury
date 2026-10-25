@@ -1,6 +1,7 @@
 package fr.guim.cinedoury.core.designsystem.component
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -280,6 +282,9 @@ fun ConfirmDialog(
         Column(
             modifier =
                 Modifier
+                    // The focus stays in the box: the screen behind it is out of reach.
+                    .focusProperties { onExit = { cancelFocusChange() } }
+                    .focusGroup()
                     .width(CineSizes.dialogWidth)
                     .background(colors.surface2, RowShape)
                     .padding(CineSpacing.l),

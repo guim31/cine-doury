@@ -71,4 +71,7 @@
     <string name="subtitle_settings_description">Taille, couleur, contour, fond et position.</string>
     <string name="device_profile">Profil de lecture de l\'appareil</string>
     <string name="device_profile_description">Ce que l\'appareil sait lire, et ce qui est demandé au serveur.</string>
+    <string name="section_search">Recherche</string>
+    <string name="seerr_settings">Demandes (Seerr)</string>
+    <string name="seerr_settings_description">Proposer de demander à Seerr les titres absents de la bibliothèque.</string>
 </resources>

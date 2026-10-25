@@ -13,6 +13,7 @@ import fr.guim.cinedoury.core.data.index.IndexScheduler
 import fr.guim.cinedoury.core.designsystem.theme.CineMotion
 import fr.guim.cinedoury.core.playback.playbackModule
 import fr.guim.cinedoury.core.source.FailureLog
+import fr.guim.cinedoury.core.source.RequestConnector
 import fr.guim.cinedoury.core.source.ServerDiscovery
 import fr.guim.cinedoury.core.source.SourceConnector
 import fr.guim.cinedoury.feature.auth.authModule
@@ -20,10 +21,12 @@ import fr.guim.cinedoury.feature.details.detailsModule
 import fr.guim.cinedoury.feature.home.homeModule
 import fr.guim.cinedoury.feature.library.libraryModule
 import fr.guim.cinedoury.feature.player.playerModule
+import fr.guim.cinedoury.feature.search.searchModule
 import fr.guim.cinedoury.feature.settings.settingsModule
 import fr.guim.cinedoury.source.jellyfin.ClientIdentity
 import fr.guim.cinedoury.source.jellyfin.JellyfinConnector
 import fr.guim.cinedoury.source.jellyfin.JellyfinDiscovery
+import fr.guim.cinedoury.source.seerr.SeerrConnector
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.GlobalContext
 import org.koin.core.context.startKoin
@@ -57,7 +60,9 @@ class CineApplication :
                 libraryModule,
                 detailsModule,
                 playerModule,
+                searchModule,
                 settingsModule,
+                requestsModule,
             )
         }
         // The local index follows the open profile, in the background (SPEC.md § 4.10).
@@ -88,7 +93,13 @@ val jellyfinModule =
         single<ServerDiscovery> { JellyfinDiscovery() }
     }
 
-/** The logcat tag of the app (`SPEC.md` § 4.12). */
+/** The request server behind `:core:source` (Seerr, J5), optional. */
+val requestsModule =
+    module {
+        single<RequestConnector> { SeerrConnector() }
+    }
+
+/** The logcat tag of the app (`SPEC.md` § 4.13). */
 const val LOG_TAG = "CineDoury"
 
 /** Whether this is a debug build: the catalogue is offered in the settings. */

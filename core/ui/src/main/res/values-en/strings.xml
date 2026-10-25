@@ -39,8 +39,6 @@
     <string name="episode_line">%1$s — %2$s</string>
     <string name="resume_at">Resume at %1$s</string>
     <string name="rating">★ %1$s</string>
-    <string name="soon_title_search">Search</string>
-    <string name="soon_message_search">Search comes with a future version.</string>
     <string name="soon_title_details">Details</string>
     <string name="soon_message_details">The details of “%1$s” come with a future version.</string>
     <string name="time_pattern">h:mm a</string>

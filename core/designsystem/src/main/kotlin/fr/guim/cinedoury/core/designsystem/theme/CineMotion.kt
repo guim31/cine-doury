@@ -28,6 +28,9 @@ object CineMotion {
     const val OSD_HIDE_AFTER_MILLIS = 4_000
     const val IMAGE_FADE_MILLIS = 200
 
+    /** The microphone of the voice search breathes while it listens (J5). */
+    const val VOICE_PULSE_MILLIS = 800
+
     /** Focus arriving (150 ms, deceleration) or leaving (120 ms, acceleration). */
     fun <T> focus(gained: Boolean, reduced: Boolean = false): AnimationSpec<T> =
         when {
