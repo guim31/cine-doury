@@ -59,10 +59,10 @@ fun PosterCard(
     unwatched: Boolean = false,
     unwatchedCount: Int? = null,
     alwaysShowTitle: Boolean = false,
+    focus: CineFocus = rememberCineFocus(),
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     image: (@Composable () -> Unit)? = null,
 ) {
-    val focus = rememberCineFocus()
     Column(modifier = modifier.width(size.dp.width)) {
         Box(
             modifier =
@@ -106,6 +106,7 @@ fun ThumbnailCard(
     modifier: Modifier = Modifier,
     subtitle: String? = null,
     progress: Float? = null,
+    focus: CineFocus = rememberCineFocus(),
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     image: (@Composable () -> Unit)? = null,
 ) {
@@ -115,7 +116,7 @@ fun ThumbnailCard(
                 Modifier
                     .size(CineSizes.thumbnail)
                     .cineFocusable(
-                        rememberCineFocus(),
+                        focus,
                         CardShape,
                         CineScale.THUMBNAIL,
                         onClick,

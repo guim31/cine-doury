@@ -21,7 +21,6 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.pressKey
-import androidx.test.platform.app.InstrumentationRegistry
 
 internal typealias TvComposeRule = AndroidComposeTestRule<*, ComponentActivity>
 
@@ -53,10 +52,6 @@ internal fun TvComposeRule.setTvContent(content: @Composable () -> Unit) {
             LaunchedEffect(Unit) { requester.requestFocus() }
         }
     }
-    // With native graphics, Robolectric keeps the window in touch mode, and a key injected by the
-    // Compose test bypasses the ViewRootImpl that would leave it: leave it explicitly.
-    InstrumentationRegistry.getInstrumentation().setInTouchMode(false)
-    runOnUiThread { activity.window.decorView.dispatchWindowFocusChanged(true) }
     waitForIdle()
     onNodeWithTag(PLACEHOLDER).performKeyInput { pressKey(Key.ShiftLeft) }
     runOnIdle { ready = true }

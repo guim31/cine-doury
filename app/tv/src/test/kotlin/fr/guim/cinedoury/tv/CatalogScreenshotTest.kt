@@ -1,26 +1,17 @@
 package fr.guim.cinedoury.tv
 
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.ui.test.SemanticsNodeInteraction
-import androidx.compose.ui.test.assertIsFocused
-import androidx.compose.ui.test.hasAnyAncestor
-import androidx.compose.ui.test.hasClickAction
-import androidx.compose.ui.test.hasContentDescription
-import androidx.compose.ui.test.hasTestTag
-import androidx.compose.ui.test.junit4.ComposeContentTestRule
-import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onRoot
-import androidx.compose.ui.test.requestFocus
 import com.github.takahirom.roborazzi.captureRoboImage
 import fr.guim.cinedoury.core.designsystem.theme.CineTheme
 import fr.guim.cinedoury.core.designsystem.theme.ThemeVariant
 import fr.guim.cinedoury.tv.catalog.CatalogScreen
 import fr.guim.cinedoury.tv.catalog.CatalogSection
+import fr.guim.cinedoury.tv.catalog.PREVIEW_RAIL
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.ParameterizedRobolectricTestRunner
-import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
@@ -39,28 +30,22 @@ class CatalogScreenshotTest(
     val compose = createTvComposeRule()
 
     @Test
-    fun colors() = shoot("01-couleurs", CatalogSection.HEADER)
+    fun colors() = shoot("01-couleurs", CatalogSection.HEADER, "theme-toggle")
 
     @Test
     fun typography() = shoot("02-typographie", CatalogSection.TYPOGRAPHY)
 
     @Test
-    fun posters() = shoot("03-affiches", CatalogSection.POSTERS) { clickable(inside = "poster-1") }
+    fun posters() = shoot("03-affiches", CatalogSection.POSTERS, "poster-1")
 
     @Test
-    fun thumbnails() = shoot("04-vignettes", CatalogSection.THUMBNAILS) { clickable(inside = "thumbnail-0") }
+    fun thumbnails() = shoot("04-vignettes", CatalogSection.THUMBNAILS, "thumbnail-0")
 
     @Test
-    fun buttons() =
-        shoot("05-boutons", CatalogSection.BUTTONS) {
-            onNode(hasClickAction() and hasContentDescription(string(R.string.button_watched)))
-        }
+    fun buttons() = shoot("05-boutons", CatalogSection.BUTTONS, "button-watched")
 
     @Test
-    fun railOpen() =
-        shoot("06-rail-ouvert", CatalogSection.POSTERS) {
-            onAllNodes(hasClickAction() and hasContentDescription(string(R.string.rail_movies))).onLast()
-        }
+    fun railOpen() = shoot("06-rail-ouvert", CatalogSection.POSTERS, PREVIEW_RAIL)
 
     @Test
     fun railSpecimens() = shoot("07-rail", CatalogSection.RAIL)
@@ -71,34 +56,28 @@ class CatalogScreenshotTest(
     @Test
     fun spacingAndMotion() = shoot("09-espacements-mouvement", CatalogSection.SPACING)
 
-    private fun string(id: Int): String = RuntimeEnvironment.getApplication().getString(id)
-
-    private fun ComposeContentTestRule.clickable(inside: String): SemanticsNodeInteraction =
-        onNode(hasClickAction() and (hasTestTag(inside) or hasAnyAncestor(hasTestTag(inside))))
-
+    /**
+     * Under native graphics Robolectric never gives the focus (`CLAUDE.md`, « Pièges »): the
+     * focused element is drawn with `CineFocus.preview()`, through the same code. Real focus and
+     * D-pad navigation are covered by [CatalogNavigationTest].
+     */
     private fun shoot(
         name: String,
         firstSection: Int,
-        focus: (ComposeContentTestRule.() -> SemanticsNodeInteraction)? = null,
+        focused: String? = null,
     ) {
-        compose.setTvContent {
+        compose.setContent {
             CineTheme(variant = variant) {
                 CatalogScreen(
                     variant = variant,
                     onToggleVariant = {},
                     listState = rememberLazyListState(initialFirstVisibleItemIndex = firstSection),
-                    requestInitialFocus = firstSection == CatalogSection.HEADER,
+                    requestInitialFocus = false,
+                    previewFocus = focused,
                 )
             }
         }
-        val target =
-            focus?.invoke(compose) ?: compose.clickable(inside = "theme-toggle").takeIf {
-                firstSection == CatalogSection.HEADER
-            }
-        if (focus != null) target?.requestFocus()
         compose.waitForIdle()
-        // A screenshot without its focus would be a wrong reference.
-        target?.assertIsFocused()
         compose.onRoot().captureRoboImage("src/test/screenshots/$name-${variant.slug}.png")
     }
 

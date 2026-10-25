@@ -12,11 +12,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,6 +26,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.tv.material3.Text
+import fr.guim.cinedoury.core.designsystem.component.CineFocus
 import fr.guim.cinedoury.core.designsystem.component.CineIcons
 import fr.guim.cinedoury.core.designsystem.component.NavigationRail
 import fr.guim.cinedoury.core.designsystem.component.RailDestination
@@ -58,45 +61,52 @@ fun CatalogScreen(
     modifier: Modifier = Modifier,
     listState: LazyListState = rememberLazyListState(),
     requestInitialFocus: Boolean = true,
+    previewFocus: String? = null,
 ) {
     val colors = CineTheme.colors
     var selected by remember { mutableIntStateOf(1) }
     val firstFocus = remember { FocusRequester() }
-    Box(
-        modifier =
-            modifier
-                .fillMaxSize()
-                .background(colors.background),
-    ) {
-        LazyColumn(
-            state = listState,
-            modifier = Modifier.fillMaxSize(),
-            contentPadding =
-                PaddingValues(
-                    start = CineSizes.railCollapsed + CineSpacing.m,
-                    end = CineSpacing.safeHorizontal,
-                    top = CineSpacing.safeVertical + CineSpacing.m,
-                    bottom = CineSpacing.safeVertical + CineSpacing.xxl,
-                ),
-            verticalArrangement = Arrangement.spacedBy(CineSpacing.xxl),
+    CompositionLocalProvider(LocalPreviewFocus provides previewFocus) {
+        Box(
+            modifier =
+                modifier
+                    .fillMaxSize()
+                    .background(colors.background),
         ) {
-            item(key = "header") { CatalogHeader(variant, onToggleVariant, firstFocus) }
-            item(key = "colors") { ColorsSection() }
-            item(key = "typography") { TypographySection() }
-            item(key = "posters") { PostersSection() }
-            item(key = "thumbnails") { ThumbnailsSection() }
-            item(key = "buttons") { ButtonsSection() }
-            item(key = "rail") { RailSection() }
-            item(key = "scrims") { ScrimsSection() }
-            item(key = "spacing") { SpacingSection() }
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding =
+                    PaddingValues(
+                        start = CineSizes.railCollapsed + CineSpacing.m,
+                        end = CineSpacing.safeHorizontal,
+                        top = CineSpacing.safeVertical + CineSpacing.m,
+                        bottom = CineSpacing.safeVertical + CineSpacing.xxl,
+                    ),
+                verticalArrangement = Arrangement.spacedBy(CineSpacing.xxl),
+            ) {
+                item(key = "header") { CatalogHeader(variant, onToggleVariant, firstFocus) }
+                item(key = "colors") { ColorsSection() }
+                item(key = "typography") { TypographySection() }
+                item(key = "posters") { PostersSection() }
+                item(key = "thumbnails") { ThumbnailsSection() }
+                item(key = "buttons") { ButtonsSection() }
+                item(key = "rail") { RailSection() }
+                item(key = "scrims") { ScrimsSection() }
+                item(key = "spacing") { SpacingSection() }
+            }
+            NavigationRail(
+                destinations = railDestinations(),
+                bottomDestinations =
+                    listOf(
+                        RailDestination(CineIcons.Settings, stringResource(R.string.rail_settings)),
+                    ),
+                selectedIndex = selected,
+                onSelect = { selected = it },
+                modifier = Modifier.testTag("rail"),
+                previewFocusedIndex = RAIL_MOVIES.takeIf { previewFocus == PREVIEW_RAIL },
+            )
         }
-        NavigationRail(
-            destinations = railDestinations(),
-            bottomDestinations = listOf(RailDestination(CineIcons.Settings, stringResource(R.string.rail_settings))),
-            selectedIndex = selected,
-            onSelect = { selected = it },
-            modifier = Modifier.testTag("rail"),
-        )
     }
     if (requestInitialFocus) {
         LaunchedEffect(Unit) {
@@ -105,6 +115,22 @@ fun CatalogScreen(
             firstFocus.requestFocus()
         }
     }
+}
+
+/**
+ * Tag of the element drawn as focused, for the reference screenshots: Robolectric cannot give the
+ * focus under native graphics (`CLAUDE.md`, « Pièges »).
+ */
+internal val LocalPreviewFocus = staticCompositionLocalOf<String?> { null }
+
+/** Tag that draws the side rail open, its « Films » destination focused. */
+const val PREVIEW_RAIL = "rail"
+private const val RAIL_MOVIES = 2
+
+@Composable
+internal fun focusFor(tag: String): CineFocus {
+    val preview = LocalPreviewFocus.current == tag
+    return remember(preview) { if (preview) CineFocus.preview() else CineFocus() }
 }
 
 @Composable
@@ -152,6 +178,7 @@ private fun CatalogHeader(
                 label = switch,
                 onClick = onToggleVariant,
                 focusRequester = toggleFocus,
+                focus = focusFor("theme-toggle"),
                 modifier = Modifier.testTag("theme-toggle"),
             )
         }

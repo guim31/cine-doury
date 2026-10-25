@@ -45,11 +45,11 @@ fun PrimaryButton(
     modifier: Modifier = Modifier,
     icon: ImageVector? = null,
     focusRequester: FocusRequester? = null,
+    focus: CineFocus = rememberCineFocus(),
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
 ) {
     val colors = CineTheme.colors
     val pressed by interactionSource.collectIsPressedAsState()
-    val focus = rememberCineFocus()
     Row(
         modifier =
             modifier
@@ -86,10 +86,10 @@ fun RoundIconButton(
     modifier: Modifier = Modifier,
     selected: Boolean = false,
     focusRequester: FocusRequester? = null,
+    focus: CineFocus = rememberCineFocus(),
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
 ) {
     val colors = CineTheme.colors
-    val focus = rememberCineFocus()
     val focused = focus.isFocused
     val labelAlpha by animateFloatAsState(
         targetValue = if (focused) 1f else 0f,

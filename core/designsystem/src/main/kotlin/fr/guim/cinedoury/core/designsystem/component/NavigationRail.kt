@@ -57,6 +57,8 @@ private const val RAIL_SCRIM_ALPHA = 0.72f
  *
  * @param bottomDestinations pinned to the bottom (« Réglages »); their indices follow [destinations].
  * @param expanded forces a state, for specimens; null lets the focus decide.
+ * @param previewFocusedIndex draws that destination as focused and the rail open, for previews
+ * and screenshots ([CineFocus.preview]).
  */
 @Composable
 fun NavigationRail(
@@ -66,9 +68,10 @@ fun NavigationRail(
     modifier: Modifier = Modifier,
     bottomDestinations: List<RailDestination> = emptyList(),
     expanded: Boolean? = null,
+    previewFocusedIndex: Int? = null,
 ) {
     var hasFocus by remember { mutableStateOf(false) }
-    val open = expanded ?: hasFocus
+    val open = expanded ?: (hasFocus || previewFocusedIndex != null)
     val expansion by animateFloatAsState(
         targetValue = if (open) 1f else 0f,
         animationSpec = CineMotion.panel(reduced = CineTheme.reducedMotion),
@@ -112,6 +115,7 @@ fun NavigationRail(
                 selected = index == selectedIndex,
                 labelAlpha = expansion,
                 onClick = { onSelect(index) },
+                preview = index == previewFocusedIndex,
             )
         }
         Spacer(Modifier.weight(1f))
@@ -122,6 +126,7 @@ fun NavigationRail(
                 selected = index == selectedIndex,
                 labelAlpha = expansion,
                 onClick = { onSelect(index) },
+                preview = index == previewFocusedIndex,
             )
         }
     }
@@ -133,9 +138,10 @@ private fun RailItem(
     selected: Boolean,
     labelAlpha: Float,
     onClick: () -> Unit,
+    preview: Boolean,
 ) {
     val colors = CineTheme.colors
-    val focus = rememberCineFocus()
+    val focus = if (preview) remember { CineFocus.preview() } else rememberCineFocus()
     val focused = focus.isFocused
     val content =
         when {

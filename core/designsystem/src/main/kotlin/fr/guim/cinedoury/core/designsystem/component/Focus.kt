@@ -27,11 +27,29 @@ import fr.guim.cinedoury.core.designsystem.theme.CineTheme
 /**
  * Whether an element holds the focus, updated synchronously by the focus system. Components read
  * it rather than the focus interactions of an `InteractionSource`, which arrive a frame later.
+ * Hoist it to know, from a parent, which element has the focus (to change the backdrop, say).
  */
 @Stable
-class CineFocus {
-    var isFocused: Boolean by mutableStateOf(false)
-        internal set
+class CineFocus private constructor(
+    private val shownAsFocused: Boolean,
+) {
+    constructor() : this(shownAsFocused = false)
+
+    private var focused by mutableStateOf(false)
+
+    val isFocused: Boolean get() = shownAsFocused || focused
+
+    internal fun update(isFocused: Boolean) {
+        focused = isFocused
+    }
+
+    companion object {
+        /**
+         * Draws the element as focused whatever the focus system says: for previews and reference
+         * screenshots, where Robolectric cannot give the focus (`CLAUDE.md`, « Pièges »).
+         */
+        fun preview(): CineFocus = CineFocus(shownAsFocused = true)
+    }
 }
 
 @Composable
@@ -96,6 +114,6 @@ fun Modifier.cineFocusable(
                 }
             }
         }.clip(shape)
-        .onFocusChanged { focus.isFocused = it.isFocused }
+        .onFocusChanged { focus.update(it.isFocused) }
         .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
 }

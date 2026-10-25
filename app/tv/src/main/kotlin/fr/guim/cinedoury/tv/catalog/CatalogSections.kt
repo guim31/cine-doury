@@ -241,6 +241,7 @@ internal fun PostersSection() {
                     progress = poster.progress,
                     unwatched = poster.unwatched,
                     unwatchedCount = poster.unwatchedCount,
+                    focus = focusFor("poster-$index"),
                     modifier = Modifier.testTag("poster-$index"),
                 )
             }
@@ -292,6 +293,7 @@ internal fun ThumbnailsSection() {
                         ),
                     progress = 0.65f,
                     onClick = {},
+                    focus = focusFor("thumbnail-0"),
                     modifier = Modifier.testTag("thumbnail-0"),
                 )
             }
@@ -330,7 +332,12 @@ internal fun ButtonsSection() {
                 modifier = Modifier.testTag("primary-button"),
             )
             RoundIconButton(CineIcons.Restart, stringResource(R.string.button_restart), onClick = {})
-            RoundIconButton(CineIcons.Watched, stringResource(R.string.button_watched), onClick = {})
+            RoundIconButton(
+                CineIcons.Watched,
+                stringResource(R.string.button_watched),
+                onClick = {},
+                focus = focusFor("button-watched"),
+            )
             RoundIconButton(
                 icon = if (favorite % 2 == 1) CineIcons.Favorite else CineIcons.NotFavorite,
                 label = stringResource(R.string.button_favorite),
