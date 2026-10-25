@@ -178,7 +178,10 @@ private fun Modifier.bannerFade(): Modifier =
                     0f to Color.Black.copy(alpha = 1f - BANNER_SIDE_ALPHA),
                     BANNER_SIDE_EXTENT to Color.Black,
                 )
+
             // A gentle curve rather than a straight ramp: a linear fade still shows where it starts.
+            // Built once per size: the spread costs nothing.
+            @Suppress("SpreadOperator")
             val bottom =
                 Brush.verticalGradient(
                     *BANNER_BOTTOM_STOPS.map { (at, alpha) -> at to Color.Black.copy(alpha = alpha) }.toTypedArray(),

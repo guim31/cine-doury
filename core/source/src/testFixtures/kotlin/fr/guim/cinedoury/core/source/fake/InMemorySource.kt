@@ -11,8 +11,10 @@ import fr.guim.cinedoury.core.model.LibraryId
 import fr.guim.cinedoury.core.model.MediaItem
 import fr.guim.cinedoury.core.model.Page
 import fr.guim.cinedoury.core.model.PageRequest
+import fr.guim.cinedoury.core.model.PlaybackPreferences
 import fr.guim.cinedoury.core.model.ServerInfo
 import fr.guim.cinedoury.core.model.User
+import fr.guim.cinedoury.core.model.UserData
 import fr.guim.cinedoury.core.model.UserId
 import fr.guim.cinedoury.core.source.Credentials
 import fr.guim.cinedoury.core.source.LibrarySource
@@ -22,6 +24,8 @@ import fr.guim.cinedoury.core.source.Session
 import fr.guim.cinedoury.core.source.SourceConnector
 import fr.guim.cinedoury.core.source.SourceException
 import java.time.Instant
+import java.time.LocalDate
+import kotlin.time.Duration
 
 /**
  * A source held in memory, for screen and logic tests: the screens are tested against it, never
@@ -32,6 +36,11 @@ import java.time.Instant
  * @param serverAt the server that answers at an address, to simulate another server on the
  * same address.
  * @param nextUp what « À suivre » gives: the fake does not follow series.
+ * @param extras items outside the lists of the libraries: seasons, episodes, people, collections,
+ * trailers. Episodes and seasons are found by their [fr.guim.cinedoury.core.model.EpisodeInfo].
+ * @param collections the items of each collection.
+ * @param similar what [LibrarySource.similar] gives for an item.
+ * @param trailers the local trailers of an item.
  */
 class InMemorySource(
     private val server: ServerInfo = ServerInfo(id = "in-memory", name = "En mémoire", version = "12.3.0"),
@@ -42,8 +51,21 @@ class InMemorySource(
     private val serverAt: (ServerAddress) -> ServerInfo = { server },
     private val exclusions: HomeExclusions = HomeExclusions(),
     private val nextUp: Map<LibraryId, List<MediaItem>> = emptyMap(),
+    private val extras: List<MediaItem> = emptyList(),
+    private val collections: Map<ItemId, List<ItemId>> = emptyMap(),
+    private val similar: Map<ItemId, List<ItemId>> = emptyMap(),
+    private val trailers: Map<ItemId, List<ItemId>> = emptyMap(),
+    var preferences: PlaybackPreferences = PlaybackPreferences(),
 ) : SourceConnector {
-    private val items: Map<ItemId, MediaItem> = contents.values.flatten().associateBy { it.id }
+    private val items: Map<ItemId, MediaItem> = (contents.values.flatten() + extras).associateBy { it.id }
+
+    /** What the user changed (watched, favourite), over the data the items came with. */
+    private val changes = mutableMapOf<ItemId, UserData>()
+
+    /** Number of calls of each function of the libraries, by name, for tests that count requests. */
+    val calls: MutableMap<String, Int> = mutableMapOf()
+
+    private fun MediaItem.current(): MediaItem = changes[id]?.let { copy(userData = it) } ?: this
 
     /** Addresses that do not answer. */
     val unreachable: MutableSet<ServerAddress> = mutableSetOf()
@@ -173,8 +195,13 @@ class InMemorySource(
 
         /** The items of [query]: filters on what a [MediaItem] carries, then the sort. */
         private fun run(query: ItemQuery): List<MediaItem> {
+            if (query.ids.isNotEmpty()) {
+                checkSession()
+                return query.ids.mapNotNull { items[it]?.current() }
+            }
             val matching =
                 pool(query.library)
+                    .map { it.current() }
                     .filter { query.kinds.isEmpty() || it.kind in query.kinds }
                     .filter { InMemoryQueries.matches(it, query.filters) }
                     .filter { item ->
@@ -225,15 +252,153 @@ class InMemorySource(
             )
         }
 
+        private fun count(name: String) {
+            checkSession()
+            calls[name] = (calls[name] ?: 0) + 1
+        }
+
+        override suspend fun itemIds(query: ItemQuery): List<ItemId> {
+            count("itemIds")
+            return run(query).map { it.id }
+        }
+
+        private fun episodesOf(series: ItemId): List<MediaItem> =
+            items.values
+                .filter { it.kind == ItemKind.Episode && it.episode?.seriesId == series }
+                .sortedWith(compareBy({ it.episode?.seasonNumber }, { it.episode?.episodeNumber }))
+                .map { it.current() }
+
+        override suspend fun seasons(series: ItemId): List<MediaItem> {
+            count("seasons")
+            return items.values
+                .filter { it.kind == ItemKind.Season && it.episode?.seriesId == series }
+                .sortedBy { it.episode?.seasonNumber }
+                .map { season ->
+                    val episodes = episodesOf(series).filter { it.episode?.seasonId == season.id }
+                    val unplayed = episodes.count { it.userData?.played != true }
+                    season.current().let {
+                        it.copy(
+                            userData =
+                                (it.userData ?: UserData(false, Duration.ZERO, 0, false)).copy(
+                                    played = episodes.isNotEmpty() && unplayed == 0,
+                                    unplayedCount = unplayed,
+                                ),
+                        )
+                    }
+                }
+        }
+
+        override suspend fun episodes(series: ItemId): List<MediaItem> {
+            count("episodes")
+            return episodesOf(series)
+        }
+
+        override suspend fun similar(
+            item: ItemId,
+            limit: Int,
+        ): List<MediaItem> {
+            count("similar")
+            return similar[item].orEmpty().mapNotNull { items[it]?.current() }.take(limit)
+        }
+
+        override suspend fun collectionsOf(item: ItemId): List<MediaItem> {
+            count("collectionsOf")
+            return collections.filterValues { item in it }.keys.mapNotNull { items[it]?.current() }
+        }
+
+        override suspend fun collectionItems(collection: ItemId): List<MediaItem> {
+            count("collectionItems")
+            return collections[collection]
+                .orEmpty()
+                .mapNotNull { items[it]?.current() }
+                .sortedWith(compareBy({ it.premiereDate ?: LocalDate.MAX }, { it.year }))
+        }
+
+        override suspend fun filmography(person: ItemId): List<MediaItem> {
+            count("filmography")
+            return items.values
+                .filter { item ->
+                    item.kind in setOf(ItemKind.Movie, ItemKind.Series) &&
+                        item.people.any { it.id == person }
+                }.sortedByDescending { it.premiereDate ?: LocalDate.MIN }
+                .map { it.current() }
+        }
+
+        override suspend fun localTrailers(item: ItemId): List<MediaItem> {
+            count("localTrailers")
+            return trailers[item].orEmpty().mapNotNull { items[it] }
+        }
+
+        override suspend fun setPlayed(
+            item: ItemId,
+            played: Boolean,
+        ): UserData {
+            count("setPlayed")
+            val target = items[item] ?: throw SourceException.NotFound("item ${item.value}")
+            val children =
+                when (target.kind) {
+                    ItemKind.Series -> {
+                        episodesOf(item)
+                    }
+
+                    ItemKind.Season -> {
+                        items.values.filter {
+                            it.kind == ItemKind.Episode && it.episode?.seasonId == item
+                        }
+                    }
+
+                    else -> {
+                        emptyList()
+                    }
+                }
+            (children + target).forEach { child ->
+                val data = child.current().userData ?: UserData(false, Duration.ZERO, 0, false)
+                changes[child.id] = data.copy(played = played, playbackPosition = Duration.ZERO)
+            }
+            return changes.getValue(item)
+        }
+
+        override suspend fun setFavorite(
+            item: ItemId,
+            favorite: Boolean,
+        ): UserData {
+            count("setFavorite")
+            val target = items[item] ?: throw SourceException.NotFound("item ${item.value}")
+            val data = target.current().userData ?: UserData(false, Duration.ZERO, 0, false)
+            return data.copy(isFavorite = favorite).also { changes[item] = it }
+        }
+
+        override suspend fun playbackPreferences(): PlaybackPreferences {
+            count("playbackPreferences")
+            return preferences
+        }
+
+        override suspend fun technicalItems(
+            library: LibraryId,
+            changedSince: Instant?,
+            page: PageRequest,
+        ): Page<MediaItem> {
+            count("technicalItems")
+            val pool = pool(library)
+            val playable =
+                (pool + pool.flatMap { if (it.kind == ItemKind.Series) episodesOf(it.id) else emptyList() })
+                    .filter { it.kind == ItemKind.Movie || it.kind == ItemKind.Episode }
+                    .filter { item -> changedSince == null || (item.dateAdded ?: Instant.EPOCH) >= changedSince }
+                    .sortedBy { InMemoryQueries.sortKey(it) }
+            return Page(playable.drop(page.startIndex).take(page.limit), page.startIndex, playable.size)
+        }
+
         private fun pool(library: LibraryId?): List<MediaItem> {
             checkSession()
-            return library?.let { contents[it] ?: throw SourceException.NotFound("library ${it.value}") }
-                ?: contents.values.flatten()
+            return (
+                library?.let { contents[it] ?: throw SourceException.NotFound("library ${it.value}") }
+                    ?: contents.values.flatten()
+            ).map { it.current() }
         }
 
         override suspend fun item(id: ItemId): MediaItem {
-            checkSession()
-            return items[id] ?: throw SourceException.NotFound("item ${id.value}")
+            count("item")
+            return items[id]?.current() ?: throw SourceException.NotFound("item ${id.value}")
         }
     }
 

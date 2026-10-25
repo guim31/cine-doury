@@ -11,6 +11,9 @@ import fr.guim.cinedoury.core.model.MediaItem
 import fr.guim.cinedoury.core.model.NamedId
 import fr.guim.cinedoury.core.model.Page
 import fr.guim.cinedoury.core.model.PageRequest
+import fr.guim.cinedoury.core.model.PlaybackPreferences
+import fr.guim.cinedoury.core.model.SubtitleMode
+import fr.guim.cinedoury.core.model.UserData
 import fr.guim.cinedoury.core.source.LibrarySource
 import fr.guim.cinedoury.core.source.Session
 import kotlinx.coroutines.async
@@ -22,13 +25,17 @@ import org.jellyfin.sdk.api.client.extensions.personApi
 import org.jellyfin.sdk.api.client.extensions.showApi
 import org.jellyfin.sdk.api.client.extensions.studioApi
 import org.jellyfin.sdk.api.client.extensions.userApi
+import org.jellyfin.sdk.api.client.extensions.userDataApi
 import org.jellyfin.sdk.api.client.extensions.userViewApi
 import org.jellyfin.sdk.model.UUID
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ImageType
 import org.jellyfin.sdk.model.api.ItemFields
+import org.jellyfin.sdk.model.api.ItemSortBy
 import org.jellyfin.sdk.model.api.MediaType
+import org.jellyfin.sdk.model.api.SortOrder
+import org.jellyfin.sdk.model.api.SubtitlePlaybackMode
 import java.time.Instant
 import java.time.ZoneId
 
@@ -36,6 +43,7 @@ import java.time.ZoneId
  * [LibrarySource] over the Jellyfin API (`SPEC.md` § 4.9). Lists ask for the few fields the screens
  * show; [item] asks for everything.
  */
+@Suppress("TooManyFunctions") // One function per call of LibrarySource.
 internal class JellyfinLibrarySource(
     private val api: ApiClient,
     override val session: Session,
@@ -208,6 +216,189 @@ internal class JellyfinLibrarySource(
                     collections = collections.await(),
                 )
             }
+        }
+
+    override suspend fun itemIds(query: ItemQuery): List<ItemId> =
+        jellyfinCall(what = "ids of ${query.library?.value}") {
+            api.libraryApi
+                .getItems(query.toRequest(userId, startIndex = 0, limit = null, fields = emptyList(), images = false))
+                .content.items
+                .map { ItemId(it.id.toJellyfinId()) }
+        }
+
+    override suspend fun seasons(series: ItemId): List<MediaItem> =
+        jellyfinCall(what = "seasons of ${series.value}") {
+            api.showApi
+                .getSeasons(
+                    seriesId = series.value.toJellyfinUuid(),
+                    userId = userId,
+                    fields = LIST_FIELDS,
+                    enableImages = true,
+                    imageTypeLimit = 1,
+                    enableImageTypes = IMAGE_TYPES,
+                    enableUserData = true,
+                ).content.items
+                .map { it.toMediaItem() }
+        }
+
+    override suspend fun episodes(series: ItemId): List<MediaItem> =
+        jellyfinCall(what = "episodes of ${series.value}") {
+            api.showApi
+                .getEpisodes(
+                    seriesId = series.value.toJellyfinUuid(),
+                    userId = userId,
+                    fields = LIST_FIELDS,
+                    enableImages = true,
+                    imageTypeLimit = 1,
+                    enableImageTypes = IMAGE_TYPES,
+                    enableUserData = true,
+                ).content.items
+                .map { it.toMediaItem() }
+        }
+
+    override suspend fun similar(
+        item: ItemId,
+        limit: Int,
+    ): List<MediaItem> =
+        jellyfinCall(what = "similar to ${item.value}") {
+            api.libraryApi
+                .getSimilarItems(
+                    itemId = item.value.toJellyfinUuid(),
+                    userId = userId,
+                    limit = limit,
+                    fields = LIST_FIELDS,
+                ).content.items
+                .map { it.toMediaItem() }
+        }
+
+    override suspend fun collectionsOf(item: ItemId): List<MediaItem> =
+        jellyfinCall(what = "collections of ${item.value}") {
+            api.libraryApi
+                .getItemCollections(itemId = item.value.toJellyfinUuid(), userId = userId, fields = LIST_FIELDS)
+                .content.items
+                .map { it.toMediaItem() }
+        }
+
+    override suspend fun collectionItems(collection: ItemId): List<MediaItem> =
+        jellyfinCall(what = "items of ${collection.value}") {
+            api.libraryApi
+                .getItems(
+                    userId = userId,
+                    parentId = collection.value.toJellyfinUuid(),
+                    sortBy = listOf(ItemSortBy.PREMIERE_DATE, ItemSortBy.PRODUCTION_YEAR, ItemSortBy.SORT_NAME),
+                    sortOrder = listOf(SortOrder.ASCENDING),
+                    fields = LIST_FIELDS,
+                    enableUserData = true,
+                    enableImageTypes = IMAGE_TYPES,
+                    imageTypeLimit = 1,
+                    enableTotalRecordCount = false,
+                ).content.items
+                .map { it.toMediaItem() }
+        }
+
+    override suspend fun filmography(person: ItemId): List<MediaItem> =
+        jellyfinCall(what = "filmography of ${person.value}") {
+            api.libraryApi
+                .getItems(
+                    userId = userId,
+                    personIds = listOf(person.value.toJellyfinUuid()),
+                    recursive = true,
+                    includeItemTypes = listOf(BaseItemKind.MOVIE, BaseItemKind.SERIES),
+                    sortBy = listOf(ItemSortBy.PREMIERE_DATE, ItemSortBy.PRODUCTION_YEAR, ItemSortBy.SORT_NAME),
+                    sortOrder = listOf(SortOrder.DESCENDING),
+                    fields = LIST_FIELDS,
+                    enableUserData = true,
+                    enableImageTypes = IMAGE_TYPES,
+                    imageTypeLimit = 1,
+                    enableTotalRecordCount = false,
+                ).content.items
+                .map { it.toMediaItem() }
+        }
+
+    override suspend fun localTrailers(item: ItemId): List<MediaItem> =
+        jellyfinCall(what = "trailers of ${item.value}") {
+            api.libraryApi
+                .getLocalTrailers(itemId = item.value.toJellyfinUuid(), userId = userId)
+                .content
+                .map { it.toMediaItem() }
+        }
+
+    override suspend fun setPlayed(
+        item: ItemId,
+        played: Boolean,
+    ): UserData =
+        jellyfinCall(what = "item ${item.value}") {
+            val id = item.value.toJellyfinUuid()
+            val data =
+                if (played) {
+                    api.userDataApi.markPlayedItem(itemId = id, userId = userId)
+                } else {
+                    api.userDataApi.markUnplayedItem(itemId = id, userId = userId)
+                }
+            data.content.toModel()
+        }
+
+    override suspend fun setFavorite(
+        item: ItemId,
+        favorite: Boolean,
+    ): UserData =
+        jellyfinCall(what = "item ${item.value}") {
+            val id = item.value.toJellyfinUuid()
+            val data =
+                if (favorite) {
+                    api.userDataApi.markFavoriteItem(itemId = id, userId = userId)
+                } else {
+                    api.userDataApi.unmarkFavoriteItem(itemId = id, userId = userId)
+                }
+            data.content.toModel()
+        }
+
+    override suspend fun playbackPreferences(): PlaybackPreferences =
+        jellyfinCall(what = "user configuration") {
+            val configuration =
+                api.userApi
+                    .getCurrentUser()
+                    .content.configuration ?: return@jellyfinCall PlaybackPreferences()
+            PlaybackPreferences(
+                audioLanguage = configuration.audioLanguagePreference?.takeIf { it.isNotBlank() },
+                subtitleLanguage = configuration.subtitleLanguagePreference?.takeIf { it.isNotBlank() },
+                subtitleMode =
+                    when (configuration.subtitleMode) {
+                        SubtitlePlaybackMode.DEFAULT -> SubtitleMode.Default
+                        SubtitlePlaybackMode.ALWAYS -> SubtitleMode.Always
+                        SubtitlePlaybackMode.ONLY_FORCED -> SubtitleMode.OnlyForced
+                        SubtitlePlaybackMode.NONE -> SubtitleMode.None
+                        SubtitlePlaybackMode.SMART -> SubtitleMode.Smart
+                    },
+                playDefaultAudio = configuration.playDefaultAudioTrack,
+            )
+        }
+
+    override suspend fun technicalItems(
+        library: LibraryId,
+        changedSince: Instant?,
+        page: PageRequest,
+    ): Page<MediaItem> =
+        jellyfinCall(what = "index of ${library.value}") {
+            val result =
+                api.libraryApi
+                    .getItems(
+                        userId = userId,
+                        parentId = library.value.toJellyfinUuid(),
+                        recursive = true,
+                        includeItemTypes = listOf(BaseItemKind.MOVIE, BaseItemKind.EPISODE),
+                        // Within one sort title, the date the item was added: a stable order for paging.
+                        sortBy = listOf(ItemSortBy.SORT_NAME, ItemSortBy.DATE_CREATED),
+                        sortOrder = listOf(SortOrder.ASCENDING),
+                        minDateLastSaved = changedSince?.atZone(ZoneId.systemDefault())?.toLocalDateTime(),
+                        startIndex = page.startIndex,
+                        limit = page.limit,
+                        fields = listOf(ItemFields.MEDIA_SOURCES, ItemFields.SORT_NAME),
+                        enableImages = false,
+                        enableUserData = false,
+                        enableTotalRecordCount = true,
+                    ).content
+            Page(result.items.map { it.toMediaItem() }, result.startIndex, result.totalRecordCount)
         }
 
     private suspend fun studios(

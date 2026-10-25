@@ -39,6 +39,15 @@ enum class Resolution(
     Hd(minWidth = 1200, maxWidth = 1899),
     FullHd(minWidth = 1900, maxWidth = 3799),
     Uhd(minWidth = 3800, maxWidth = null),
+    ;
+
+    companion object {
+        fun of(width: Int): Resolution =
+            entries.first {
+                (it.minWidth == null || width >= it.minWidth) &&
+                    (it.maxWidth == null || width <= it.maxWidth)
+            }
+    }
 }
 
 /** A value of a filter known to the server by an id: a studio, a person, a collection. */
@@ -70,6 +79,9 @@ data class ItemFilters(
     val collection: NamedId? = null,
     val tags: Set<String> = emptySet(),
     val favorite: Boolean = false,
+    val ranges: Set<DynamicRange> = emptySet(),
+    val audioFormats: Set<AudioFormat> = emptySet(),
+    val videoCodecs: Set<VideoCodec> = emptySet(),
 ) {
     /** Number of filters in use, for the summary. */
     val count: Int
@@ -88,7 +100,19 @@ data class ItemFilters(
                 collection != null,
                 tags.isNotEmpty(),
                 favorite,
+                ranges.isNotEmpty(),
+                audioFormats.isNotEmpty(),
+                videoCodecs.isNotEmpty(),
             ).count { it }
+
+    /**
+     * Whether some filters are applied by the local index: Jellyfin 12.3 cannot filter on the dynamic
+     * range, the audio format or the codec (`SPEC.md` § 4.10).
+     */
+    val usesIndex: Boolean get() = ranges.isNotEmpty() || audioFormats.isNotEmpty() || videoCodecs.isNotEmpty()
+
+    /** The filters the server applies: these minus the ones of the local index. */
+    val forServer: ItemFilters get() = copy(ranges = emptySet(), audioFormats = emptySet(), videoCodecs = emptySet())
 
     val isEmpty: Boolean get() = this == NONE
 
@@ -110,6 +134,7 @@ data class ItemFilters(
  * @param titleBelow only the items whose sort title comes before this one (for the A–Z jump: their
  * count is the index of the first item at that letter).
  * @param releasedBefore only items released on that day or before.
+ * @param ids only these items (at most [MAX_IDS], the length of a URL).
  */
 data class ItemQuery(
     val library: LibraryId? = null,
@@ -119,7 +144,12 @@ data class ItemQuery(
     val groupCollections: Boolean = false,
     val titleBelow: String? = null,
     val releasedBefore: LocalDate? = null,
+    /** Only these items, whatever the library; the order of the answer is the server's. */
+    val ids: List<ItemId> = emptyList(),
 )
+
+/** The most items an [ItemQuery] can name by id: the server refuses longer addresses. */
+const val MAX_IDS = 100
 
 /** The values the filters of a library can take, as the server lists them. */
 data class FilterOptions(

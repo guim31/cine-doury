@@ -1,5 +1,7 @@
 package fr.guim.cinedoury.source.jellyfin
 
+import fr.guim.cinedoury.core.model.Credit
+import fr.guim.cinedoury.core.model.CreditType
 import fr.guim.cinedoury.core.model.EpisodeInfo
 import fr.guim.cinedoury.core.model.ImageRef
 import fr.guim.cinedoury.core.model.ItemId
@@ -11,6 +13,9 @@ import fr.guim.cinedoury.core.model.LibraryKind
 import fr.guim.cinedoury.core.model.MediaItem
 import fr.guim.cinedoury.core.model.MediaSource
 import fr.guim.cinedoury.core.model.MediaStream
+import fr.guim.cinedoury.core.model.RemoteTrailer
+import fr.guim.cinedoury.core.model.SeriesStatus
+import fr.guim.cinedoury.core.model.SpatialAudio
 import fr.guim.cinedoury.core.model.StreamType
 import fr.guim.cinedoury.core.model.User
 import fr.guim.cinedoury.core.model.UserData
@@ -18,11 +23,14 @@ import fr.guim.cinedoury.core.model.UserId
 import fr.guim.cinedoury.core.model.VideoRange
 import org.jellyfin.sdk.model.DateTime
 import org.jellyfin.sdk.model.UUID
+import org.jellyfin.sdk.model.api.AudioSpatialFormat
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
+import org.jellyfin.sdk.model.api.BaseItemPerson
 import org.jellyfin.sdk.model.api.CollectionType
 import org.jellyfin.sdk.model.api.MediaSourceInfo
 import org.jellyfin.sdk.model.api.MediaStreamType
+import org.jellyfin.sdk.model.api.PersonKind
 import org.jellyfin.sdk.model.api.UserDto
 import org.jellyfin.sdk.model.api.UserItemDataDto
 import org.jellyfin.sdk.model.api.VideoRangeType
@@ -140,7 +148,58 @@ internal fun BaseItemDto.toMediaItem(): MediaItem =
             },
         childCount = childCount,
         mediaSources = mediaSources.orEmpty().map { it.toModel() },
+    ).withDetailsOf(this)
+
+/** What only a details screen shows: credits, studios, status, trailers. */
+private fun MediaItem.withDetailsOf(dto: BaseItemDto): MediaItem =
+    with(dto) {
+        this@withDetailsOf.copy(
+            people = people.orEmpty().map { it.toCredit() },
+            studios = studios.orEmpty().mapNotNull { it.name },
+            seriesStatus =
+                when (status?.lowercase()) {
+                    "continuing" -> SeriesStatus.Continuing
+                    "ended" -> SeriesStatus.Ended
+                    else -> null
+                },
+            endDate = endDate?.toLocalDate(),
+            remoteTrailers =
+                remoteTrailers.orEmpty().mapNotNull { trailer ->
+                    trailer.url?.let { RemoteTrailer(it, trailer.name) }
+                },
+            localTrailerCount = localTrailerCount ?: 0,
+            productionLocations = productionLocations.orEmpty(),
+        )
+    }
+
+private fun BaseItemPerson.toCredit(): Credit {
+    val personId = ItemId(id.toJellyfinId())
+    return Credit(
+        id = personId,
+        name = name.orEmpty(),
+        type =
+            when (type) {
+                PersonKind.ACTOR -> CreditType.Actor
+                PersonKind.GUEST_STAR -> CreditType.GuestStar
+                PersonKind.DIRECTOR -> CreditType.Director
+                PersonKind.WRITER -> CreditType.Writer
+                PersonKind.PRODUCER -> CreditType.Producer
+                PersonKind.CREATOR -> CreditType.Creator
+                PersonKind.COMPOSER -> CreditType.Composer
+                else -> CreditType.Other
+            },
+        role = role?.takeIf { it.isNotBlank() },
+        image =
+            primaryImageTag?.let { tag ->
+                ImageRef(
+                    personId,
+                    ModelImageType.Primary,
+                    tag,
+                    blurHash = imageBlurHashes?.get(JellyfinImageType.PRIMARY)?.get(tag),
+                )
+            },
     )
+}
 
 private fun BaseItemDto.image(type: JellyfinImageType): ImageRef? {
     val tag = imageTags?.get(type) ?: return null
@@ -176,7 +235,7 @@ private fun BaseItemKind.toItemKind(): ItemKind =
         else -> ItemKind.Other
     }
 
-private fun UserItemDataDto.toModel() =
+internal fun UserItemDataDto.toModel() =
     UserData(
         played = played,
         playbackPosition = playbackPositionTicks.ticksToDuration(),
@@ -193,6 +252,8 @@ private fun MediaSourceInfo.toModel() =
         container = container,
         sizeBytes = size,
         streams = mediaStreams.orEmpty().map { it.toModel() },
+        path = path,
+        bitrate = bitrate,
     )
 
 private fun JellyfinMediaStream.toModel(): MediaStream {
@@ -217,6 +278,17 @@ private fun JellyfinMediaStream.toModel(): MediaStream {
         height = height,
         bitDepth = bitDepth,
         videoRange = if (streamType == StreamType.Video) videoRangeType.toModel() else null,
+        profile = profile,
+        displayTitle = displayTitle,
+        channelLayout = channelLayout,
+        spatialAudio =
+            when (audioSpatialFormat) {
+                AudioSpatialFormat.DOLBY_ATMOS -> SpatialAudio.DolbyAtmos
+                AudioSpatialFormat.DTSX -> SpatialAudio.DtsX
+                AudioSpatialFormat.NONE -> null
+            },
+        isHearingImpaired = isHearingImpaired,
+        bitrate = bitRate,
     )
 }
 
