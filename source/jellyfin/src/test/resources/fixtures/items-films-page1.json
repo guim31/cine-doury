@@ -1,0 +1,73 @@
+{
+  "Items": [
+    {
+      "Name": "Double jeu",
+      "ServerId": "39269645be834a498a3797235c8d8856",
+      "Id": "d5db4ce822b517de5a54bf290618dc52",
+      "Container": "mkv",
+      "SortName": "double jeu",
+      "ChannelId": null,
+      "RunTimeTicks": 60000000,
+      "ProductionYear": 2012,
+      "IsFolder": false,
+      "Type": "Movie",
+      "UserData": {
+        "PlaybackPositionTicks": 0,
+        "PlayCount": 0,
+        "IsFavorite": false,
+        "Played": false,
+        "Key": "d5db4ce8-22b5-17de-5a54-bf290618dc52",
+        "ItemId": "d5db4ce822b517de5a54bf290618dc52"
+      },
+      "PrimaryImageAspectRatio": 1.7777777777777777,
+      "VideoType": "VideoFile",
+      "ImageTags": {
+        "Primary": "d103a600fb4bfc275c7c7a0d77fd7315"
+      },
+      "BackdropImageTags": [],
+      "ImageBlurHashes": {
+        "Primary": {
+          "d103a600fb4bfc275c7c7a0d77fd7315": "W~LEf=;sosz6mt}S%2n#j?nTafs.jZjbf8jZa}bHx[oHfjerjIso"
+        }
+      },
+      "LocationType": "FileSystem",
+      "MediaType": "Video"
+    },
+    {
+      "Name": "Le Phare",
+      "ServerId": "39269645be834a498a3797235c8d8856",
+      "Id": "31225919a214e99a43b9a75b6f581ca5",
+      "HasSubtitles": true,
+      "Container": "mkv",
+      "SortName": "le phare",
+      "ChannelId": null,
+      "RunTimeTicks": 60210000,
+      "ProductionYear": 2001,
+      "IsFolder": false,
+      "Type": "Movie",
+      "UserData": {
+        "PlaybackPositionTicks": 0,
+        "PlayCount": 0,
+        "IsFavorite": false,
+        "Played": false,
+        "Key": "31225919-a214-e99a-43b9-a75b6f581ca5",
+        "ItemId": "31225919a214e99a43b9a75b6f581ca5"
+      },
+      "PrimaryImageAspectRatio": 1.7777777777777777,
+      "VideoType": "VideoFile",
+      "ImageTags": {
+        "Primary": "f25e0c66bcf5af12bae1164f130eb1b8"
+      },
+      "BackdropImageTags": [],
+      "ImageBlurHashes": {
+        "Primary": {
+          "f25e0c66bcf5af12bae1164f130eb1b8": "W~LEWq;sorz6d|]~xvnzW.j1WBs-jZW;ayazW;f6tRs8bFaOjIoe"
+        }
+      },
+      "LocationType": "FileSystem",
+      "MediaType": "Video"
+    }
+  ],
+  "TotalRecordCount": 4,
+  "StartIndex": 0
+}

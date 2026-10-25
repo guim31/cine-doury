@@ -1,0 +1,9 @@
+{
+  "LocalAddress": "http://192.0.2.10:8096",
+  "ServerName": "cine-doury-ci",
+  "Version": "12.3.0",
+  "ProductName": "Jellyfin Server",
+  "OperatingSystem": "",
+  "Id": "39269645be834a498a3797235c8d8856",
+  "StartupWizardCompleted": true
+}

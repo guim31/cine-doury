@@ -1,0 +1,193 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build, static analysis, unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: false
+      - name: Robolectric cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.m2/repository/org/robolectric
+          key: robolectric-${{ hashFiles('gradle/libs.versions.toml') }}
+      - name: Spotless, Detekt, Android Lint, unit tests, debug APK
+        run: ./gradlew check :app:tv:assembleDebug --continue
+      - name: Debug APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: cine-doury-debug-apk
+          path: app/tv/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+      - name: Reports
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: build-reports
+          path: |
+            **/build/reports/
+            **/build/test-results/
+
+  screenshots:
+    name: Roborazzi screenshots
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      # Only used to commit references when the head commit asks for it with [record-screenshots].
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: false
+      - name: Robolectric cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.m2/repository/org/robolectric
+          key: robolectric-${{ hashFiles('gradle/libs.versions.toml') }}
+      - name: Mode
+        id: mode
+        run: |
+          if git log -1 --format=%B | grep -qF '[record-screenshots]' \
+             && [ "${{ github.event_name }}" = "pull_request" ] \
+             && [ "${{ github.event.pull_request.head.repo.full_name }}" = "${{ github.repository }}" ]; then
+            echo "record=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "record=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Verify against the references
+        if: steps.mode.outputs.record != 'true'
+        run: ./gradlew :app:tv:verifyRoborazziDebug
+      - name: Record the references
+        if: steps.mode.outputs.record == 'true'
+        run: ./gradlew :app:tv:recordRoborazziDebug
+      - name: Commit the references
+        if: steps.mode.outputs.record == 'true'
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          mkdir -p docs/screenshots/j0
+          cp app/tv/src/test/screenshots/*.png docs/screenshots/j0/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/tv/src/test/screenshots docs/screenshots/j0
+          if git diff --cached --quiet; then
+            echo "Screenshots unchanged."
+          else
+            git commit -m "chore: record reference screenshots"
+            git push origin "HEAD:refs/heads/$HEAD_REF"
+          fi
+      - name: Screenshots and diffs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: screenshots
+          path: |
+            app/tv/src/test/screenshots/
+            app/tv/build/outputs/roborazzi/
+          if-no-files-found: ignore
+
+  integration:
+    name: Integration tests against Jellyfin 12.3
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      jellyfin:
+        image: jellyfin/jellyfin:12.3.20261023-013714
+        ports:
+          - 8096:8096
+        volumes:
+          - /tmp/cine-doury-media:/media
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: false
+      - name: ffmpeg
+        run: sudo apt-get update -q && sudo apt-get install -y -q ffmpeg
+      - name: Generate the test media
+        run: |
+          sudo chown -R "$(id -u):$(id -g)" /tmp/cine-doury-media
+          ci/jellyfin/generate-media.sh /tmp/cine-doury-media
+      - name: Bootstrap Jellyfin
+        run: ci/jellyfin/bootstrap.sh http://localhost:8096
+      - name: OpenAPI matches docs/api
+        run: |
+          curl -fsS http://localhost:8096/api-docs/openapi.json > /tmp/openapi.json
+          python3 ci/jellyfin/check-openapi.py docs/api/jellyfin-openapi-12.3.json /tmp/openapi.json \
+            || { echo "::error::docs/api/jellyfin-openapi-12.3.json differs from the server"; exit 1; }
+      - name: Integration tests
+        env:
+          JELLYFIN_URL: http://localhost:8096
+        run: ./gradlew :source:jellyfin:integrationTest
+      - name: Reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: integration-reports
+          path: source/jellyfin/build/reports/tests/integrationTest/
+          if-no-files-found: ignore
+
+  emulator:
+    name: Install and start on an API 34 TV emulator
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: cine-doury-debug-apk
+          path: apk
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Start the app
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: android-tv
+          arch: x86
+          profile: tv_1080p
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: ci/emulator-smoke.sh apk
+      - name: Emulator screenshot
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: emulator-screenshot
+          path: emulator-catalog.png
+          if-no-files-found: ignore
