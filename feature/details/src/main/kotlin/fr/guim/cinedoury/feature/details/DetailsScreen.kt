@@ -244,8 +244,8 @@ fun DetailsScreen(
         )
         ManageNoticePill(state.notice)
         // A dialog that closes gives the focus back to the element it came from, as a panel does:
-        // the focus never falls out of the screen. Only once the dialog is gone: while it is
-        // composed, `ConfirmDialog` keeps the focus inside it and refuses any request from outside.
+        // the focus never falls out of the screen. Its buttons do it at once (`ConfirmDialog` lets
+        // the focus leave while a button closes it); Back does it once the dialog is gone.
         val dialogShown = state.deletion != null || state.manageError != null
         var hadDialog by remember { mutableStateOf(false) }
         LaunchedEffect(dialogShown) {
@@ -261,13 +261,19 @@ fun DetailsScreen(
             DeleteDialog(
                 it,
                 onConfirm = actions::confirmDelete,
-                onCancel = actions::cancelDelete,
+                onCancel = {
+                    restoreFocus()
+                    actions.cancelDelete()
+                },
             )
         }
         state.manageError?.let {
             ManageErrorDialog(
                 it,
-                onDismiss = actions::dismissManageError,
+                onDismiss = {
+                    restoreFocus()
+                    actions.dismissManageError()
+                },
             )
         }
     }

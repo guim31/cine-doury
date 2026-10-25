@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -267,6 +268,17 @@ fun MessageDialog(
     buttonFocus: CineFocus = rememberCineFocus(),
 ) {
     val colors = CineTheme.colors
+    // While a button closes the box, the focus may leave it: the caller gives the focus back to the
+    // element the box came from before the box goes away.
+    val closing = remember { BooleanArray(1) }
+    val close: (() -> Unit) -> Unit = { action ->
+        closing[0] = true
+        try {
+            action()
+        } finally {
+            closing[0] = false
+        }
+    }
     Box(
         modifier =
             modifier
@@ -327,7 +339,7 @@ fun ConfirmDialog(
             modifier =
                 Modifier
                     // The focus stays in the box: the screen behind it is out of reach.
-                    .focusProperties { onExit = { cancelFocusChange() } }
+                    .focusProperties { onExit = { if (!closing[0]) cancelFocusChange() } }
                     .focusGroup()
                     .width(CineSizes.dialogWidth)
                     .background(colors.surface2, RowShape)
@@ -342,11 +354,16 @@ fun ConfirmDialog(
             ) {
                 SecondaryButton(
                     text = cancelLabel,
-                    onClick = onCancel,
+                    onClick = { close(onCancel) },
                     focusRequester = cancelFocusRequester,
                     focus = cancelFocus,
                 )
-                PrimaryButton(text = confirmLabel, onClick = onConfirm, destructive = destructive, focus = confirmFocus)
+                PrimaryButton(
+                    text = confirmLabel,
+                    onClick = { close(onConfirm) },
+                    destructive = destructive,
+                    focus = confirmFocus,
+                )
             }
         }
     }
