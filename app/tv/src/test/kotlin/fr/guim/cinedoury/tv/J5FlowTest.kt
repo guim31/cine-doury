@@ -90,13 +90,17 @@ class J5FlowTest {
     /** A Seerr that finds one film whatever the query, and records the requests. */
     private class FakeSeerr : MediaRequests {
         val requested = CopyOnWriteArrayList<RequestCandidate>()
+        val searched = CopyOnWriteArrayList<String>()
 
         override suspend fun check() = "2.7.3"
 
         override suspend fun search(
             query: String,
             language: String,
-        ) = listOf(RequestCandidate(120, RequestKind.Movie, "La Communauté de l'anneau", 2001))
+        ): List<RequestCandidate> {
+            searched += query
+            return listOf(RequestCandidate(120, RequestKind.Movie, "La Communauté de l'anneau", 2001))
+        }
 
         override suspend fun seasons(
             tmdbId: Int,
@@ -222,7 +226,7 @@ class J5FlowTest {
         press(Key.DirectionRight)
         focusable(SearchPreview.card(movies, 1)).assertIsFocused()
         press(Key.DirectionCenter)
-        waitFor(hasTestTag(DetailsPreview.TRACKS))
+        waitFor(hasTestTag(DetailsPreview.PLAY))
 
         compose.pressBack()
         waitFor(hasTestTag("keyboard"))
@@ -249,10 +253,12 @@ class J5FlowTest {
         }
         showSearch()
         typePha()
-        waitFor(hasText("La Communauté de l'anneau"))
-        // Right into the results, then down to the last row: « Demander ».
+        compose.waitUntil(TIMEOUT) { "pha" in seerr.searched }
+        waitFor(hasTestTag(SearchPreview.card(SearchRows.of(SearchGroup.Collections), 0)))
+        // Right into the results, then down to the last row (composed once in view): « Demander ».
         press(Key.DirectionRight, times = 7)
         press(Key.DirectionDown, times = 2)
+        waitFor(hasTestTag(SearchPreview.card(SearchRows.REQUESTS, 0)))
         focusable(SearchPreview.card(SearchRows.REQUESTS, 0)).assertIsFocused()
         press(Key.DirectionCenter)
         waitFor(hasTestTag("request-dialog"))
