@@ -12,6 +12,7 @@ import fr.guim.cinedoury.core.model.MediaItem
 import fr.guim.cinedoury.core.model.Page
 import fr.guim.cinedoury.core.model.PageRequest
 import fr.guim.cinedoury.core.model.PlaybackPreferences
+import fr.guim.cinedoury.core.model.SearchText
 import fr.guim.cinedoury.core.model.ServerInfo
 import fr.guim.cinedoury.core.model.User
 import fr.guim.cinedoury.core.model.UserData
@@ -413,6 +414,40 @@ class InMemorySource(
                     .filter { item -> changedSince == null || (item.dateAdded ?: Instant.EPOCH) >= changedSince }
                     .sortedBy { InMemoryQueries.sortKey(it) }
             return Page(playable.drop(page.startIndex).take(page.limit), page.startIndex, playable.size)
+        }
+
+        /** As Jellyfin does: every word of [term] starts a word of the name, accents and case aside. */
+        override suspend fun search(
+            term: String,
+            kinds: Set<ItemKind>,
+            limit: Int,
+        ): List<MediaItem> {
+            count("search")
+            checkSession()
+            val words = SearchText.words(term)
+            if (words.isEmpty()) return emptyList()
+            return items.values
+                .map { it.current() }
+                .filter { it.kind in kinds }
+                .filter { item ->
+                    val name = SearchText.words(item.title)
+                    words.all { word -> name.any { it.startsWith(word) } }
+                }.sortedBy { InMemoryQueries.sortKey(it) }
+                .take(limit)
+        }
+
+        override suspend fun titles(
+            library: LibraryId,
+            changedSince: Instant?,
+            page: PageRequest,
+        ): Page<MediaItem> {
+            count("titles")
+            val titles =
+                pool(library)
+                    .filter { it.kind == ItemKind.Movie || it.kind == ItemKind.Series }
+                    .filter { item -> changedSince == null || (item.dateAdded ?: Instant.EPOCH) >= changedSince }
+                    .sortedBy { InMemoryQueries.sortKey(it) }
+            return Page(titles.drop(page.startIndex).take(page.limit), page.startIndex, titles.size)
         }
 
         private fun pool(library: LibraryId?): List<MediaItem> {

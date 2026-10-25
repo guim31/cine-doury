@@ -5,6 +5,7 @@ import androidx.room.Room
 import fr.guim.cinedoury.core.data.home.HomeRepository
 import fr.guim.cinedoury.core.data.home.ProfileKey
 import fr.guim.cinedoury.core.data.library.LibraryIconRepository
+import fr.guim.cinedoury.core.data.search.SearchRepository
 import fr.guim.cinedoury.core.model.LibraryId
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -108,11 +109,30 @@ class CineDatabaseMigrationTest {
         }
 
     @Test
+    fun `version 3 of J3 keeps its index in version 4, with an empty title index and no recent search`() =
+        runTest {
+            create("migration-3.db", 3).use { v3 ->
+                v3.execSQL(
+                    "INSERT INTO library_icons (server_id, library_id, icon) VALUES ('home', 'films', 'Kids')",
+                )
+            }
+            val database = Room.databaseBuilder(context, CineDatabase::class.java, "migration-3.db").build()
+            try {
+                assertEquals("Kids", database.index().icon("home", "films"))
+                assertEquals(0, database.search().count("home", "films"))
+                val search = SearchRepository(database.search())
+                assertEquals(emptyList(), search.recent(ProfileKey("home", "u1")).first())
+            } finally {
+                database.close()
+            }
+        }
+
+    @Test
     fun `the exported schema is the one of the code`() {
         val latest =
             File("schemas/${CineDatabase::class.java.name}").listFiles().orEmpty().maxOf {
                 it.nameWithoutExtension.toInt()
             }
-        assertEquals(3, latest, "export the schema of the new version (CineDatabase.version)")
+        assertEquals(4, latest, "export the schema of the new version (CineDatabase.version)")
     }
 }

@@ -53,7 +53,7 @@ import java.net.URI
 import fr.guim.cinedoury.core.model.ImageType as ModelImageType
 
 /**
- * [ManageSource] over the Jellyfin API (`SPEC.md` § 4.12). The server checks the rights of every
+ * [ManageSource] over the Jellyfin API (`SPEC.md` § 4.14). The server checks the rights of every
  * call; [rights] only lets the screens hide what the profile may not do.
  */
 @Suppress("TooManyFunctions") // One function per call of ManageSource.

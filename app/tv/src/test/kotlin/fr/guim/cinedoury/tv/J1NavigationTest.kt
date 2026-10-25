@@ -64,7 +64,7 @@ class J1NavigationTest {
     }
 
     @Test
-    fun `servers found are reached from the address button`() {
+    fun `the first server found has the focus, the address button below`() {
         var chosen: ServerAddress? = null
         var typed = false
         show {
@@ -77,10 +77,14 @@ class J1NavigationTest {
                 onDismissError = {},
             )
         }
-        focusable("enter-address").assertIsFocused()
-        press(Key.DirectionUp)
+        focusable("server-0").assertIsFocused()
+        press(Key.DirectionDown)
         focusable("server-1").assertIsFocused()
-        press(Key.DirectionUp)
+        // Down reaches the row of buttons (« Chercher à nouveau » may be the nearest), left its start.
+        press(Key.DirectionDown)
+        press(Key.DirectionLeft)
+        focusable("enter-address").assertIsFocused()
+        repeat(2) { press(Key.DirectionUp) }
         press(Key.DirectionCenter)
         assertEquals(J1Samples.local, chosen)
         assertEquals(false, typed)
@@ -96,6 +100,7 @@ class J1NavigationTest {
                 avatarUrl = { null },
                 onChoose = { chosen = it.user.name },
                 onOtherAccount = { other = true },
+                onPassword = {},
                 onRetry = {},
             )
         }

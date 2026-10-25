@@ -1,0 +1,137 @@
+{
+  "User": {
+    "Name": "parent",
+    "ServerId": "60dd7b7a980c44b5af36237a01a5cecf",
+    "Id": "6739748de54642598df912acc0827eb8",
+    "PrimaryImageTag": "c341d58b9b0563aad8e90a19d550eac6",
+    "HasPassword": true,
+    "HasConfiguredPassword": true,
+    "HasConfiguredEasyPassword": false,
+    "EnableAutoLogin": false,
+    "LastLoginDate": "2026-10-25T17:13:39.2269538Z",
+    "LastActivityDate": "2026-10-25T17:13:39.2269538Z",
+    "Configuration": {
+      "AudioLanguagePreference": "fre",
+      "PlayDefaultAudioTrack": false,
+      "SubtitleLanguagePreference": "fre",
+      "DisplayMissingEpisodes": false,
+      "GroupedFolders": [
+        "d565273fd114d77bdf349a2896867069"
+      ],
+      "SubtitleMode": "Smart",
+      "DisplayCollectionsView": false,
+      "EnableLocalPassword": false,
+      "OrderedViews": [
+        "db4c1708cbb5dd1676284a40f2950aba",
+        "d565273fd114d77bdf349a2896867069"
+      ],
+      "LatestItemsExcludes": [
+        "d565273fd114d77bdf349a2896867069"
+      ],
+      "MyMediaExcludes": [],
+      "HidePlayedInLatest": true,
+      "RememberAudioSelections": true,
+      "RememberSubtitleSelections": true,
+      "EnableNextEpisodeAutoPlay": true,
+      "CastReceiverId": "F007D354"
+    },
+    "Policy": {
+      "IsAdministrator": false,
+      "IsHidden": true,
+      "EnableCollectionManagement": false,
+      "EnableSubtitleManagement": false,
+      "EnableLyricManagement": false,
+      "IsDisabled": false,
+      "MaxParentalRating": 16,
+      "BlockedTags": [
+        "horreur"
+      ],
+      "AllowedTags": [
+        "famille"
+      ],
+      "EnableUserPreferenceAccess": true,
+      "AccessSchedules": [
+        {
+          "Id": 2,
+          "UserId": "6739748de54642598df912acc0827eb8",
+          "DayOfWeek": "Everyday",
+          "StartHour": 0,
+          "EndHour": 24
+        }
+      ],
+      "BlockUnratedItems": [
+        "Book"
+      ],
+      "EnableRemoteControlOfOtherUsers": false,
+      "EnableSharedDeviceControl": true,
+      "EnableRemoteAccess": true,
+      "EnableLiveTvManagement": false,
+      "EnableLiveTvAccess": true,
+      "EnableMediaPlayback": true,
+      "EnableAudioPlaybackTranscoding": true,
+      "EnableVideoPlaybackTranscoding": true,
+      "EnablePlaybackRemuxing": true,
+      "ForceRemoteSourceTranscoding": false,
+      "EnableContentDeletion": false,
+      "EnableContentDeletionFromFolders": [],
+      "EnableContentDownloading": true,
+      "EnableSyncTranscoding": true,
+      "EnableMediaConversion": true,
+      "EnabledDevices": [],
+      "EnableAllDevices": true,
+      "EnabledChannels": [],
+      "EnableAllChannels": true,
+      "EnabledFolders": [
+        "db4c1708cbb5dd1676284a40f2950aba",
+        "d565273fd114d77bdf349a2896867069"
+      ],
+      "EnableAllFolders": false,
+      "InvalidLoginAttemptCount": 0,
+      "LoginAttemptsBeforeLockout": 5,
+      "MaxActiveSessions": 4,
+      "EnablePublicSharing": true,
+      "BlockedMediaFolders": [],
+      "BlockedChannels": [],
+      "RemoteClientBitrateLimit": 8000000,
+      "AuthenticationProviderId": "Jellyfin.Server.Implementations.Users.DefaultAuthenticationProvider",
+      "PasswordResetProviderId": "Jellyfin.Server.Implementations.Users.DefaultPasswordResetProvider",
+      "SyncPlayAccess": "JoinGroups"
+    }
+  },
+  "SessionInfo": {
+    "PlayState": {
+      "CanSeek": false,
+      "IsPaused": false,
+      "IsMuted": false,
+      "RepeatMode": "RepeatNone",
+      "PlaybackOrder": "Default"
+    },
+    "AdditionalUsers": [],
+    "Capabilities": {
+      "PlayableMediaTypes": [],
+      "SupportedCommands": [],
+      "SupportsMediaControl": false,
+      "SupportsPersistentIdentifier": true
+    },
+    "PlayableMediaTypes": [],
+    "Id": "9bfab9f414488814f83a85d1069e2623",
+    "UserId": "6739748de54642598df912acc0827eb8",
+    "UserName": "parent",
+    "Client": "Cine Doury",
+    "LastActivityDate": "2026-10-25T17:13:39.470067Z",
+    "LastPlaybackCheckIn": "0001-01-01T00:00:00.0000000Z",
+    "DeviceName": "Chambre",
+    "DeviceId": "0123456789abcdef0123456789abcdef",
+    "ApplicationVersion": "0.1.0",
+    "IsActive": true,
+    "SupportsMediaControl": false,
+    "SupportsRemoteControl": false,
+    "NowPlayingQueue": [],
+    "HasCustomDeviceName": false,
+    "ServerId": "60dd7b7a980c44b5af36237a01a5cecf",
+    "UserPrimaryImageTag": "c341d58b9b0563aad8e90a19d550eac6",
+    "SupportedCommands": []
+  },
+  "AccessToken": "00000000000000000000000000000001",
+  "ServerId": "60dd7b7a980c44b5af36237a01a5cecf"
+}

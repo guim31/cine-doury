@@ -32,7 +32,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.time.Duration.Companion.minutes
 
-/** What a deletion leaves of an item in the app: nothing in the home, nothing in the index (`SPEC.md` § 4.12). */
+/** What a deletion leaves of an item in the app: nothing in the home, nothing in the index (`SPEC.md` § 4.14). */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class ManageRepositoryTest {

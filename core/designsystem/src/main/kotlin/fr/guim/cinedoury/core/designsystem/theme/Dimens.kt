@@ -137,6 +137,21 @@ object CineSizes {
     val subtitlePreview = DpSize(320.dp, 180.dp)
     val subtitlePreviewTop = 120.dp
 
+    // Search (J5).
+
+    /** A key of the on-screen keyboard: seven in a row fill the left column of the search. */
+    val keyboardKey = 40.dp
+
+    /** The line of the query, above the keyboard. */
+    val searchFieldHeight = 52.dp
+
+    /** A chip: a recent search, a genre. */
+    val chipHeight = 40.dp
+
+    /** The microphone of the voice search, and the ring that follows the voice around it. */
+    val voiceMic = 96.dp
+    val voiceRing = 160.dp
+
     /** The featured banner takes 60 % of the screen height (`UI.md` § 8). */
     const val HERO_HEIGHT_FRACTION = 0.6f
 }

@@ -38,6 +38,8 @@
     <string name="profiles_title">Qui regarde ?</string>
     <string name="profiles_other">Autre compte</string>
     <string name="profiles_to_sign_in">À connecter</string>
+    <string name="profiles_hidden_hint">Votre compte n\'apparaît pas\u00A0? Choisissez Autre compte.</string>
+    <string name="profiles_quick_connect">Se connecter avec Quick Connect</string>
     <string name="pin_unlock_title">Saisissez le code PIN</string>
     <string name="pin_create_title">Choisissez un code PIN</string>
     <string name="pin_create_subtitle">Quatre chiffres, demandés à l\'ouverture de ce profil sur cette télévision.</string>

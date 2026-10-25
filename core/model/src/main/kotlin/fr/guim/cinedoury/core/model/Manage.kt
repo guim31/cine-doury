@@ -3,7 +3,7 @@ package fr.guim.cinedoury.core.model
 import java.time.LocalDate
 
 /**
- * What the profile may manage on the server (`SPEC.md` § 4.12): every management action is for an
+ * What the profile may manage on the server (`SPEC.md` § 4.14): every management action is for an
  * administrator; deleting also needs the right to delete, everywhere or in some libraries (Jellyfin:
  * `Policy.IsAdministrator`, `EnableContentDeletion`, `EnableContentDeletionFromFolders`).
  *

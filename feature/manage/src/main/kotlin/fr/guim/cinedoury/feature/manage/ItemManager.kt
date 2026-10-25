@@ -21,7 +21,7 @@ import fr.guim.cinedoury.core.source.ManageSource
 import fr.guim.cinedoury.core.source.SourceException
 
 /**
- * Every management action of the screens (`SPEC.md` § 4.12), through the source of the open
+ * Every management action of the screens (`SPEC.md` § 4.14), through the source of the open
  * profile, and what the app keeps of the item afterwards: a deleted item leaves the cache of the
  * home and the local index, a changed one is read again by whoever shows it.
  */

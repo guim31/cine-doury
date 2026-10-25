@@ -16,7 +16,7 @@ import fr.guim.cinedoury.core.model.RemoteImages
 import fr.guim.cinedoury.core.model.ScanStatus
 
 /**
- * Management of the server from the app (`SPEC.md` § 4.12, `FONCTIONNALITES.md` § 9): refresh,
+ * Management of the server from the app (`SPEC.md` § 4.14, `FONCTIONNALITES.md` § 9): refresh,
  * identify, change the images, delete, scan a library, find the items that need a hand. Every
  * action but [rights] is for an administrator; the server refuses it otherwise
  * ([SourceException.Forbidden]). Every failure is a [SourceException].
@@ -105,7 +105,7 @@ fun interface SourceLog {
 }
 
 /**
- * [delegate], each call written to [log] with its outcome (`SPEC.md` § 4.12): « manage delete
+ * [delegate], each call written to [log] with its outcome (`SPEC.md` § 4.14): « manage delete
  * item=… ok », « manage refresh item=… failed: Forbidden ». Ids and modes only: no token, no path.
  */
 @Suppress("TooManyFunctions") // ManageSource, one call at a time.

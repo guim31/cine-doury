@@ -25,6 +25,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.core.net.toUri
@@ -44,7 +47,6 @@ import fr.guim.cinedoury.core.model.LibraryId
 import fr.guim.cinedoury.core.model.MediaItem
 import fr.guim.cinedoury.core.model.PlaybackRequest
 import fr.guim.cinedoury.core.model.RemoteTrailer
-import fr.guim.cinedoury.core.ui.ComingSoonScreen
 import fr.guim.cinedoury.core.ui.RailTarget
 import fr.guim.cinedoury.core.ui.avatarSource
 import fr.guim.cinedoury.feature.auth.AddressMode
@@ -71,9 +73,14 @@ import fr.guim.cinedoury.feature.player.DeviceProfileRoute
 import fr.guim.cinedoury.feature.player.PlaybackSettingsRoute
 import fr.guim.cinedoury.feature.player.PlayerRoute
 import fr.guim.cinedoury.feature.player.SubtitleSettingsRoute
+import fr.guim.cinedoury.feature.search.SearchNavigation
+import fr.guim.cinedoury.feature.search.SearchRoute
+import fr.guim.cinedoury.feature.search.SeerrSettingsRoute
 import fr.guim.cinedoury.feature.settings.SettingsNavigation
 import fr.guim.cinedoury.feature.settings.SettingsRoute
 import fr.guim.cinedoury.tv.catalog.CatalogScreen
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import org.koin.compose.koinInject
 import fr.guim.cinedoury.core.ui.R as UiR
 
@@ -89,6 +96,17 @@ fun CineApp(
     navigator: Navigator = remember { Navigator(Route.Startup) },
     sessions: SessionManager = koinInject(),
 ) {
+    val voiceRequests = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
+    val onSearchKey: (SearchKey) -> Unit = { key ->
+        val route = navigator.current.route
+        val allowed =
+            route in SEARCHABLE_FROM || route is Route.Search || route is Route.Details || route is Route.Library
+        when {
+            !allowed -> Unit
+            route is Route.Search && key == SearchKey.Voice -> voiceRequests.tryEmit(Unit)
+            else -> navigator.openSearch(voice = key == SearchKey.Voice)
+        }
+    }
     val saveable = rememberSaveableStateHolder()
     navigator.onRemoved = { saveable.removeState(it.id) }
     val reduced = CineTheme.reducedMotion
@@ -96,7 +114,14 @@ fun CineApp(
     // Opening a details screen is the one animated change of screen (`UI.md` § 7): the poster flies to
     // its place in 250 ms while the screens cross-fade. The new screen takes the focus at once, so the
     // animation never holds the remote back; every other change is instant.
-    SharedTransitionLayout {
+    // The « Recherche » keys of the remote, from any screen (`SPEC.md` § 4.12): no screen uses them.
+    SharedTransitionLayout(
+        Modifier.onPreviewKeyEvent { event ->
+            val key = searchKey(event.nativeKeyEvent.keyCode) ?: return@onPreviewKeyEvent false
+            if (event.type == KeyEventType.KeyUp) onSearchKey(key)
+            true
+        },
+    ) {
         AnimatedContent(
             targetState = navigator.current,
             transitionSpec = {
@@ -115,7 +140,7 @@ fun CineApp(
                 LocalSharedElements provides SharedElements(this@SharedTransitionLayout, this@AnimatedContent),
             ) {
                 saveable.SaveableStateProvider(entry.id) {
-                    Screen(entry.route, navigator, sessions, variant, onToggleVariant, showCatalog)
+                    Screen(entry.route, navigator, sessions, variant, onToggleVariant, showCatalog, voiceRequests)
                 }
             }
         }
@@ -130,6 +155,7 @@ private fun Screen(
     variant: ThemeVariant,
     onToggleVariant: () -> Unit,
     showCatalog: Boolean,
+    voiceRequests: Flow<Unit>,
 ) {
     when (route) {
         Route.Startup -> {
@@ -174,7 +200,7 @@ private fun Screen(
         }
 
         else -> {
-            SessionScreen(route, navigator, sessions, variant, onToggleVariant, showCatalog)
+            SessionScreen(route, navigator, sessions, variant, onToggleVariant, showCatalog, voiceRequests)
         }
     }
 }
@@ -188,6 +214,7 @@ private fun SessionScreen(
     variant: ThemeVariant,
     onToggleVariant: () -> Unit,
     showCatalog: Boolean,
+    voiceRequests: Flow<Unit>,
 ) {
     val home = { navigator.replaceAll(Route.Home) }
     when (route) {
@@ -196,6 +223,7 @@ private fun SessionScreen(
                 onOpened = home,
                 onSignIn = { username -> navigator.push(Route.QuickConnect(username)) },
                 onPin = { profile -> navigator.push(Route.Pin(profile, PinPurpose.Unlock)) },
+                onPassword = { navigator.push(Route.Password(null)) },
             )
         }
 
@@ -235,12 +263,16 @@ private fun SessionScreen(
             HomeSettingsRoute()
         }
 
-        Route.Search -> {
-            ComingSoonScreen(
-                title = stringResource(UiR.string.soon_title_search),
-                message = stringResource(UiR.string.soon_message_search),
-                onBack = { navigator.pop() },
+        is Route.Search -> {
+            SearchRoute(
+                navigation = searchNavigation(navigator, sessions),
+                voiceAtStart = route.voice,
+                voiceRequests = voiceRequests,
             )
+        }
+
+        Route.SeerrSettings -> {
+            SeerrSettingsRoute()
         }
 
         is Route.Details -> {
@@ -292,6 +324,28 @@ private fun SessionScreen(
     }
 }
 
+/** The « Recherche » keys of the remote (`SPEC.md` § 4.12). */
+enum class SearchKey {
+    /** « Recherche » (`KEYCODE_SEARCH`): the search screen. */
+    Search,
+
+    /** The voice key, when the system lets the app have it: the search, listening. */
+    Voice,
+}
+
+private fun searchKey(keyCode: Int): SearchKey? =
+    when (keyCode) {
+        android.view.KeyEvent.KEYCODE_SEARCH -> SearchKey.Search
+
+        // Most TVs keep the voice key for their assistant; when it reaches the app, the search listens.
+        android.view.KeyEvent.KEYCODE_VOICE_ASSIST -> SearchKey.Voice
+
+        else -> null
+    }
+
+/** The screens a « Recherche » key leads from: the navigation screens, never the player or sign-in. */
+private val SEARCHABLE_FROM = setOf(Route.Home, Route.Settings, Route.HomeSettings)
+
 /** The rail, from any navigation screen: one screen per destination, « Retour » goes home. */
 private fun Navigator.navigate(
     target: RailTarget,
@@ -303,7 +357,7 @@ private fun Navigator.navigate(
         }
 
         RailTarget.Search -> {
-            push(Route.Search)
+            openSearch(voice = false)
         }
 
         is RailTarget.Library -> {
@@ -324,6 +378,26 @@ private fun Navigator.navigate(
             push(Route.Settings)
         }
     }
+}
+
+/**
+ * The search, from anywhere a session is open (`SPEC.md` § 4.12): the one already in the stack (its
+ * query and results kept), else a new one.
+ */
+internal fun Navigator.openSearch(voice: Boolean) {
+    if (current.route is Route.Search) return
+    if (!popTo { it is Route.Search }) push(Route.Search(voice))
+}
+
+private fun searchNavigation(
+    navigator: Navigator,
+    sessions: SessionManager,
+) = object : SearchNavigation {
+    override fun navigate(target: RailTarget) = navigator.navigate(target, sessions)
+
+    override fun open(item: MediaItem) = navigator.push(Route.Details(item))
+
+    override fun sessionEnded() = navigator.replaceAll(Route.Profiles)
 }
 
 private fun homeNavigation(
@@ -422,6 +496,8 @@ private fun settingsNavigation(navigator: Navigator) =
         override fun subtitles() = navigator.push(Route.SubtitleSettings)
 
         override fun deviceProfile() = navigator.push(Route.DeviceProfile)
+
+        override fun seerr() = navigator.push(Route.SeerrSettings)
 
         override fun profileClosed() = navigator.replaceAll(Route.Profiles)
 

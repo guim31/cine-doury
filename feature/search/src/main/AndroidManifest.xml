@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- The voice search (SPEC.md § 4.12): the speech recognizer of the TV listens in the app. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <!-- A TV without a microphone still installs the app. -->
+    <uses-feature
+        android:name="android.hardware.microphone"
+        android:required="false" />
+
+    <!-- From Android 11, the recognizer and the voice activity are only visible when declared. -->
+    <queries>
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
+        <intent>
+            <action android:name="android.speech.action.RECOGNIZE_SPEECH" />
+        </intent>
+    </queries>
+</manifest>

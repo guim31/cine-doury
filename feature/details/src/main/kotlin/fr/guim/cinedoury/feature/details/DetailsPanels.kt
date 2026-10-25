@@ -216,7 +216,7 @@ private fun trackLines(
 }
 
 /**
- * « ⋯ »: « Marquer comme vu », the file, then for an administrator « Gestion » (`SPEC.md` § 4.12):
+ * « ⋯ »: « Marquer comme vu », the file, then for an administrator « Gestion » (`SPEC.md` § 4.14):
  * each action is one press away, « Supprimer » included (`FONCTIONNALITES.md` § 9).
  */
 @Composable

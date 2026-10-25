@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 
-/** What a management action changed on the server (`SPEC.md` § 4.12). */
+/** What a management action changed on the server (`SPEC.md` § 4.14). */
 sealed interface ItemChange {
     val item: ItemId
 
@@ -56,7 +56,7 @@ class ManageUpdates {
 }
 
 /**
- * What the app keeps of an item once management changed it (`SPEC.md` § 4.12): a deleted item
+ * What the app keeps of an item once management changed it (`SPEC.md` § 4.14): a deleted item
  * leaves the cache of the home (every profile of the server) and the local index at once, before
  * any refresh; then every screen hears of it through [updates].
  */

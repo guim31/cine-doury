@@ -11,6 +11,9 @@ import fr.guim.cinedoury.core.source.Session
 import fr.guim.cinedoury.core.source.SourceConnector
 import fr.guim.cinedoury.core.source.SourceException
 import fr.guim.cinedoury.core.source.SourceLog
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import okhttp3.OkHttpClient
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.HttpClientOptions
 import org.jellyfin.sdk.api.client.extensions.authenticateUserByName
@@ -38,19 +41,30 @@ data class ClientIdentity(
 )
 
 /**
- * [SourceConnector] for a Jellyfin 12.3 server, built on the official Kotlin SDK. [log] receives a
- * line for each management call (logcat in the app).
+ * [SourceConnector] for a Jellyfin 12.3 server, built on the official Kotlin SDK.
+ *
+ * @param http the OkHttp client every request is built on (tests watch it).
+ * @param io where requests run: never the main thread (see [TracingApiClient]).
+ * @param log receives a line for each management call (logcat in the app).
  */
-class JellyfinConnector(
+class JellyfinConnector internal constructor(
     identity: ClientIdentity,
-    requestTimeout: Duration = 30.seconds,
+    requestTimeout: Duration,
+    http: OkHttpClient,
+    private val io: CoroutineDispatcher,
     private val log: SourceLog = SourceLog.NONE,
 ) : SourceConnector {
+    constructor(
+        identity: ClientIdentity,
+        requestTimeout: Duration = 30.seconds,
+        log: SourceLog = SourceLog.NONE,
+    ) : this(identity, requestTimeout, OkHttpClient(), Dispatchers.IO, log)
+
     private val httpOptions = HttpClientOptions(requestTimeout = requestTimeout)
 
     // The SDK's `createJellyfin` needs an Android Context in its Android variant, which Gradle picks
     // for the app: the clients are built directly by the OkHttp factory, the same on every platform.
-    private val factory = OkHttpFactory()
+    private val factory = OkHttpFactory(http)
 
     // ASCII on purpose: the SDK copies the client name into User-Agent, where OkHttp rejects any
     // non-ASCII character (CLAUDE.md, « Pièges »).
@@ -70,13 +84,16 @@ class JellyfinConnector(
         }
 
     private fun api(address: ServerAddress, token: String? = null): ApiClient =
-        factory.create(
-            baseUrl = address.url,
-            accessToken = token,
-            clientInfo = clientInfo,
-            deviceInfo = deviceInfo,
-            httpClientOptions = httpOptions,
-            socketConnectionFactory = factory,
+        TracingApiClient(
+            factory.create(
+                baseUrl = address.url,
+                accessToken = token,
+                clientInfo = clientInfo,
+                deviceInfo = deviceInfo,
+                httpClientOptions = httpOptions,
+                socketConnectionFactory = factory,
+            ),
+            io,
         )
 
     override suspend fun publicUsers(address: ServerAddress): List<User> =

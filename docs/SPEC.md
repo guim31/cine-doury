@@ -16,8 +16,10 @@ son domaine :
 | J1 — Connexion et profils (et retouches du design system) | terminé, fusionné | [#2](https://github.com/guim31/cine-doury/pull/2) |
 | J2 — Accueil et navigation | terminé, fusionné | [#3](https://github.com/guim31/cine-doury/pull/3) |
 | J3 — Fiches (et retouches du J2 : raccord du bandeau, vignettes, index local et filtres HDR/audio, icônes de bibliothèque, clé de débogage) | terminé, fusionné | [#4](https://github.com/guim31/cine-doury/pull/4) |
-| J4 — Lecteur (et retouches du J3 : pastilles des pistes, groupes insécables, logo à la place de l'affiche) | terminé, en revue (captures dans `docs/screenshots/j4/`, numéros 90 à 108 ; ajout : taille des sous-titres en cours de lecture) | [#5](https://github.com/guim31/cine-doury/pull/5) |
-| J6 — Gestion (P0, plus éléments à problème et actions en série) | terminé, en revue (captures dans `docs/screenshots/j6/`, numéros 130 à 147) | [#8](https://github.com/guim31/cine-doury/pull/8) |
+| J4 — Lecteur (et retouches du J3 : pastilles des pistes, groupes insécables, logo à la place de l'affiche) | terminé, fusionné (captures dans `docs/screenshots/j4/`, numéros 90 à 108 ; ajout : taille des sous-titres en cours de lecture) | [#5](https://github.com/guim31/cine-doury/pull/5) |
+| J5 — Recherche (index des titres, clavier à l'écran, recherche vocale, Seerr) | terminé, fusionné (captures dans `docs/screenshots/j5/`, numéros 110 à 120) | [#7](https://github.com/guim31/cine-doury/pull/7) |
+| Essai réel 1 (25/10/2026, Chromecast avec Google TV) : connexion, Quick Connect, saisie à la télécommande, « Plus d'infos », journal | terminé, fusionné (§ 4.13 ; captures 35 et 36) | [#6](https://github.com/guim31/cine-doury/pull/6) |
+| J6 — Gestion (P0, plus éléments à problème et actions en série) | terminé, en revue (§ 4.14 ; captures dans `docs/screenshots/j6/`, numéros 130 à 147) | [#8](https://github.com/guim31/cine-doury/pull/8) |
 
 *(Chaque jalon met à jour ce tableau et ajoute ses contrats au § 4.)*
 
@@ -103,12 +105,12 @@ Ajoutés au J1 :
 
 Ajouté au J2 : `:feature:library` (`cinedoury.android.library` + `.compose`), une bibliothèque :
 onglets, vues, tri, filtres, saut A–Z. Ajouté au J3 : `:feature:details`, les fiches (§ 4.10).
-Ajoutés au J4 (§ 4.11) : `:core:playback` (`cinedoury.android.library`, sans Compose) — lecture
+Ajoutés au J5 (§ 4.12) : `:feature:search` et `:source:seerr`. Ajoutés au J4 (§ 4.11) : `:core:playback` (`cinedoury.android.library`, sans Compose) — lecture
 des capacités de l'appareil, ExoPlayer derrière l'interface `VideoPlayer`, rapports, réglages de
 l'appareil, modes de l'écran — et `:feature:player` (`.compose`) — l'écran du lecteur, ses
 panneaux, les pages « Lecture et son », « Apparence des sous-titres » et le profil de l'appareil.
 Le profil, la décision et les règles (vu, épisode suivant, « toujours là ») sont du Kotlin pur dans
-`:core:model`, testés sans Android. Ajouté au J6 (§ 4.12) : `:feature:manage` (`.compose`), la
+`:core:model`, testés sans Android. Ajouté au J6 (§ 4.14) : `:feature:manage` (`.compose`), la
 gestion depuis l'appli ; `ManageSource` dans `:core:source`, `ManageRepository` dans `:core:data`.
 
 `:core:ui` n'était pas prévu au § 3 : les messages d'erreur servent à tous les écrans, mais
@@ -467,8 +469,8 @@ focus à son entrée choisie, `ConfirmDialog(destructive = false)`, `ListRow(tra
 `alphabetWidth`, `panelWidth`, `listRowPoster`, `listRowHeight`, `skeletonLine`,
 `HERO_HEIGHT_FRACTION`.
 
-**Écrans provisoires** : Recherche (J5) s'ouvre sur un écran « arrive avec une prochaine version »
-(`ComingSoonScreen`), avec « Retour ». Le lecteur provisoire du J3 a laissé la place au vrai lecteur
+**Écrans provisoires** : Recherche (J5) s'ouvrait sur un écran « arrive avec une prochaine
+version » (`ComingSoonScreen`) ; remplacée au J5 (§ 4.12). Le lecteur provisoire du J3 a laissé la place au vrai lecteur
 au J4 (§ 4.11).
 
 ### 4.10 Fiches (J3)
@@ -886,7 +888,7 @@ d'un bloc) et les pistes (78, 79 : pastilles). Le lecteur provisoire (86) dispar
 - **Logo ou affiche** : un film, une série ou une collection qui a un logo n'affiche plus son
   affiche ; l'affiche de la carte vole vers le logo en s'y fondant (`sharedBounds`, des deux côtés).
 
-### 4.12 Gestion (J6)
+### 4.14 Gestion (J6)
 
 **Module** : `:feature:manage` (`cinedoury.android.library` + `.compose`) : `ItemManager` (toutes les
 actions, par la source du profil ouvert), « Corriger l'identification », « Changer les images »,
@@ -1022,6 +1024,203 @@ fichiers (144), sélection multiple (145), actualisation demandée (146), échec
 **Pour le J7** : les réglages « Bibliothèques » peuvent reprendre `ItemManager.scan` et
 `ManageRights` ; les utilisateurs, tâches planifiées et journal d'activité (FONCTIONNALITES § 9,
 « Serveur ») ont leur place dans `ManageSource`.
+### 4.12 Recherche (J5)
+
+**Modules** : `:feature:search` (`cinedoury.android.library` + `.compose`) — l'écran, le clavier à
+l'écran, la recherche vocale, la rangée Seerr et la page « Demandes (Seerr) » ; `:source:seerr`
+(`cinedoury.jvm.library`, OkHttp et kotlinx.serialization JSON, sans greffon de compilation) — le
+client Seerr derrière l'interface `MediaRequests` de `:core:source`. Le moteur (normalisation,
+tolérance, classement) est du Kotlin pur dans `:core:model` (`Search.kt`), testé sans Android.
+
+**Source** (`:core:source`, `LibrarySource`) :
+
+| Fonction | Appel Jellyfin | Notes |
+|---|---|---|
+| `search(terme, types, n)` | `GET /Search/Hints?searchTerm=…&includeItemTypes=…`, puis `GET /Items?ids=…` | `/Search/Hints` ignore accents et casse et trouve le début de n'importe quel mot (« ines » → « Inès Garnier », « degel » → « Le dégel ») ; `/Items?searchTerm=` et `/Persons?searchTerm=` ne trouvent pas « ines ». Les cartes (images, données utilisateur) viennent de `/Items?ids=`, remises dans l'ordre du serveur |
+| `titles(bibliothèque, depuis, page)` | `GET /Items?parentId=…&recursive=true&includeItemTypes=Movie,Series&fields=SortName,OriginalTitle,DateCreated&enableImageTypes=Primary,Backdrop&collapseBoxSetItems=false[&minDateLastSaved=…]` | les pages de l'index des titres, sans sources média (≈ 1 Ko par titre) |
+
+**Index des titres** (Room, version 4, `:core:data`, `TitleIndex`) :
+
+| Table | Clé | Contenu |
+|---|---|---|
+| `search_titles` | serveur, élément | bibliothèque, `Movie` ou `Series`, titre, titre original, titre de tri, année, date d'ajout, affiche et fond (avec leur BlurHash) |
+| `search_state` | serveur, bibliothèque | début de la dernière mise à jour, fin de la dernière lecture complète |
+| `recent_searches` | serveur, utilisateur, texte normalisé | le texte tel que tapé, date |
+
+- Rempli **avec l'index technique** du J3 (`IndexScheduler`, en arrière-plan, 5 s après l'ouverture
+  d'un profil puis toutes les 6 h), avant lui (il est plus léger), et de la même façon : lecture
+  complète la première fois et tous les 7 jours, sinon par différence (`minDateLastSaved` − 1 h),
+  relecture complète si les nombres diffèrent. Par serveur ; oublier le serveur l'efface.
+- Les épisodes, les personnes et les collections n'y sont pas : 10 000 épisodes pèseraient pour peu
+  de recherches, et les personnes et collections ne sont pas sous les bibliothèques. Le serveur les
+  trouve.
+- **Migration 3 → 4** : automatique (`@AutoMigration`, trois tables), testée par
+  `CineDatabaseMigrationTest`. Le schéma 4 a été produit par KSP sur la JVM (projet jetable, voir
+  `CLAUDE.md`) ; la CI vérifie qu'il correspond.
+
+**Normalisation** (`SearchText`) : minuscules (`Locale.ROOT`), ligatures écrites en toutes lettres
+(œ → oe, æ → ae, ß → ss, ø → o…), décomposition NFD et suppression des diacritiques (« Amélie » →
+« amelie »), tout autre caractère qu'une lettre ou un chiffre devient une espace, espaces réduites.
+« L'Éclipse » donne les mots « l », « eclipse » ; « Spider-Man » « spider », « man ».
+
+**Tolérance et score** (`SearchMatcher`, plus haut = meilleur, rien = pas de correspondance) :
+1. titre identique à la requête : 1 000 ; titre qui commence par la requête : 900 moins un point par
+   caractère de plus (40 au plus) ;
+2. sinon, mot à mot : chaque mot de la requête doit trouver un mot du titre (chaque mot du titre
+   servant une fois) — entier, ou son début (le mot en train d'être tapé), ou **avec des fautes** :
+   distance d'édition de Damerau (insertion, suppression, substitution, deux lettres inversées : une
+   faute chacune), **0 faute jusqu'à 2 lettres, 1 de 3 à 4, 2 à partir de 5**, et la première lettre
+   juste (« marée » ne trouve pas « durée »). Un mot en train d'être tapé se compare aux débuts du mot
+   du titre de longueur voisine (« frequan » → « fréquences »). Les petits mots de liaison de la
+   requête (« le », « la », « les », « l », « un », « une », « des », « de », « du », « d », « au »,
+   « aux », « et », « en », « the », « a », « an », « of », « and ») peuvent ne rien trouver. Une
+   requête d'un mot se compare aussi au titre écrit d'un bloc (« spiderman » → « Spider-Man ») ;
+3. score : 700 − 60 par faute − 10 par mot seulement commencé − 15 par mot de liaison sans
+   correspondance − 5 par mot du titre resté seul (50 au plus), + 20 quand le premier mot de la
+   requête est le premier mot du titre (articles mis à part).
+« seigneur anaux » trouve « Le Seigneur des anneaux » (590 : deux fautes sur « anaux ») ;
+« amelie » trouve « Amélie » (1 000). Un élément est comparé par son titre, puis son titre original,
+son titre de tri et, pour un épisode, « série + titre », chacun 5 points de moins que le précédent.
+
+**Classement** (`SearchRanking.rows`) : un élément une fois (son meilleur score) ; une rangée par
+groupe — Films (et vidéos), Séries, Épisodes, Personnes, Collections ; dans une rangée, le meilleur
+score, puis le plus récent, puis le titre ; les rangées dans l'ordre de leur meilleur élément, à
+égalité dans l'ordre ci-dessus ; 24 éléments par rangée. Ce que le serveur trouve sans que le moteur
+le reconnaisse (il a cherché sur autre chose) prend le score 1, en fin de rangée.
+
+**Part de l'index et part du serveur** (`SearchRepository`, `SearchViewModel`) :
+1. **À chaque frappe**, sans réseau : l'index des titres du serveur, gardé en mémoire déjà
+   normalisé (quelques milliers de titres, quelques millisecondes), contre la requête, limité aux
+   bibliothèques que le profil voit (celles du cache de l'accueil) ; les 100 meilleurs s'affichent
+   tout de suite, depuis la première lettre.
+2. **Après 250 ms sans frappe** (la frappe suivante annule) : en parallèle, le serveur **recoupe**
+   ces titres (`/Items?ids=`, qui applique les droits du profil : un titre interdit, par exemple par
+   la classification d'un profil enfant, disparaît ; les cartes reviennent avec ce que le profil a vu)
+   et **complète** par `/Search/Hints`, une requête par groupe pour qu'aucun n'en évince un autre
+   (films et séries : 40 ; épisodes, personnes, collections : 24). Les clés des cartes ne changent
+   pas : rien ne saute.
+3. Un échec du serveur garde les résultats de l'index (« Le serveur n'a pas répondu… », « Réessayer »).
+
+**Écran** (`UI.md` § 8, « Recherche ») : le rail (entrée « Recherche ») ; à gauche, la ligne de la requête
+(non focalisable, un curseur jaune) et le **clavier à l'écran** ; à droite, les rangées. Le fond
+d'ambiance suit la carte focalisée. Sans requête : **recherches récentes** (puces, « Effacer
+l'historique »), **Ajouts récents** (les derniers ajouts des bibliothèques de films et de séries,
+18) et **Genres** (puces : un genre montre ses films et séries, les plus récents d'abord). « Retour »
+ferme le dialogue, l'écoute ou le clavier du système, sinon revient à l'écran d'avant ; revenir d'une
+fiche retrouve la requête, les résultats et la carte quittée (état du modèle de vue et de la pile).
+
+**Clavier à l'écran** (`SearchKeyboard`) : 7 touches par rangée (40 dp, `CineSizes.keyboardKey`),
+l'alphabet dans l'ordre (plus rapide à la croix qu'un AZERTY), « ' » et « - », les chiffres ; puis
+8, 9, 0, espace, effacer ; puis la **page des accents** (à â ä ç é è ê ë î ï ô ö ù û ü ÿ œ æ ñ et
+quelques signes, à la place des lettres), le micro, le **clavier du système**, « Tout effacer ».
+Focus initial sur « a » ; chaque touche a un voisin dans les quatre directions ; à droite de la
+dernière colonne, les résultats ; à gauche de la première, le rail. Le clavier du système remplace la
+ligne de la requête par un champ (`CineTextField`) qu'il ouvre aussitôt ; ↑ et ↓ en sortent (un champ
+garde le focus sur ↓ : contourné dans l'écran, en attendant la correction de `fix/essai-reel-1`).
+**Écart** : pas d'accents en appui long, la page des accents en tient lieu (le cahier laissait le
+choix).
+
+**Recherche vocale** (`rememberVoiceSearch`) : `SpeechRecognizer` dans l'appli, dans la langue de
+l'interface (`fr-FR`), résultats partiels affichés pendant l'écoute (micro jaune, anneau qui suit le
+volume), après une demande de `RECORD_AUDIO` la première fois ; sans reconnaisseur dans l'appli,
+l'activité vocale du système (`RecognizerIntent`) ; sans l'un ni l'autre, pas de touche micro. Le
+manifeste déclare `<queries>` (`RecognitionService`, `RECOGNIZE_SPEECH`, nécessaires depuis
+Android 11) et le micro comme facultatif. **Touches de la télécommande** (`MainActivity.dispatchKeyEvent`) :
+`KEYCODE_SEARCH` ouvre la recherche (celle de la pile si elle y est) depuis l'accueil, une
+bibliothèque, une fiche, les réglages ; `KEYCODE_VOICE_ASSIST`, quand le système la laisse à
+l'appli, l'ouvre en écoute. Jamais depuis le lecteur ni la connexion.
+
+**Recherches récentes** : les 10 dernières **par profil** (Room `recent_searches`), enregistrées quand
+un résultat est ouvert, une fois chacune (texte normalisé), la plus récente d'abord ; « Effacer
+l'historique » ; se déconnecter les efface ; oublier le serveur aussi.
+
+**Seerr** (facultatif) :
+- **Réglages** (« Recherche » → « Demandes (Seerr) ») : adresse (`http://` supposé) et clé d'API,
+  vérifiées avant d'être gardées (`GET /api/v1/status` sans clé : la version ; `GET /api/v1/auth/me`
+  avec : la clé), **par serveur Jellyfin**, dans le DataStore `requests` ; la clé **chiffrée comme les
+  jetons** (AES-256-GCM, clé du Keystore `cinedoury.tokens`). « Retirer Seerr » efface ; oublier le
+  serveur aussi. Sans réglage, rien de Seerr ne s'affiche.
+- **Contrat** (`SeerrClient`, en-tête `X-Api-Key`, délais 3 s / 10 s) :
+
+| Fonction | Appel | Notes |
+|---|---|---|
+| `check()` | `GET /api/v1/status`, `GET /api/v1/auth/me` | 401/403 → clé refusée ; 404 ou réponse non JSON → pas un Seerr |
+| `search(requête, langue)` | `GET /api/v1/search?query=…&page=1&language=fr` | requête entièrement encodée (`%20`, apostrophes : Seerr refuse le reste) ; `mediaType` `movie` ou `tv` (les personnes sont écartées) ; `mediaInfo.status` : 2, 3 → demandé, 4 → en partie disponible, 5 → disponible, 6 (liste noire) → écarté ; `mediaInfo.jellyfinMediaId` |
+| `seasons(id, langue)` | `GET /api/v1/tv/{id}` | `seasons` sans la saison 0, état de chacune dans `mediaInfo.seasons` |
+| `request(titre, saisons)` | `POST /api/v1/request` `{"mediaType":"movie"\|"tv","mediaId":id[,"seasons":[…]]}` | 201 → demandé ; 409 (déjà demandé) → demandé |
+| utilisateur | `GET /api/v1/user?take=100` | l'utilisateur Seerr dont `jellyfinUserId` est celui du profil : les demandes partent en son nom (`X-Api-User`), sinon au nom du propriétaire de la clé |
+
+- **Affiches** : `/imageproxy/tmdb/t/p/w300_and_h450_face/<chemin>` **sur le serveur Seerr** : la TV
+  ne parle qu'aux serveurs de la maison (§ 7), jamais à TMDb. Sans affiche, la carte générée.
+- **Rangée « Pas dans la bibliothèque ? Demander »**, en fin de résultats, une fois la frappe arrêtée :
+  les titres de Seerr **absents des résultats** de la bibliothèque (par `jellyfinMediaId`, sinon titre
+  normalisé et année), avec affiche, année et état sous la carte (« 2001 · Demandé », « Disponible »).
+  OK sur un film : « Demander « … » ? », **focus sur « Annuler »** (aucune demande par mégarde) ; sur
+  une série : le panneau des saisons, celles qui manquent cochées d'avance, « Demander 2 saisons ». Un
+  titre déjà demandé ou disponible ne s'ouvre pas. Échec : « La demande n'a pas abouti », « Réessayer ».
+  Seerr injoignable : une ligne « Seerr n'a pas répondu. », la recherche continue.
+
+**Tests** : unitaires `SearchTest` (`:core:model` : normalisation, première lettre, fautes, mots de
+liaison, classement, distance), `SeerrClientTest` (`:source:seerr`, contre une **fausse API Seerr**
+MockWebServer : vérification, clé refusée, autre serveur, injoignable, recherche et états, encodage,
+`X-Api-User`, saisons, demandes et 409), `SearchRepositoryTest` (`:core:data` : index des titres et
+suppressions, recherche locale, recoupement par le serveur, personnes, collections, épisodes,
+recherches récentes, suggestions), `CineDatabaseMigrationTest` (3 → 4) ; intégration
+`JellyfinSearchIntegrationTest` (titres accentués sans accents et avec fautes, personnes, collections,
+épisodes, types demandés) ; interface `J5NavigationTest` (clavier à la croix, accents, résultats),
+`J5FlowTest` (appli entière : saisie à la télécommande, fiche, « Retour » qui retrouve requête et
+carte, recherche récente ; demande à un faux Seerr après confirmation).
+
+**Captures** (`docs/screenshots/j5/`, 1920 × 1080, sombre et noir OLED) : recherche vide avec récents
+et suggestions (110), page des accents (111), saisie partielle et résultats groupés (112), faute
+corrigée (113), personne (114), rangée Seerr (115), sa confirmation (116), ses saisons (117), écoute
+vocale (118), rail ouvert sur « Recherche » (119), réglages Seerr (120) ; les réglages (33) gagnent
+la section « Recherche ».
+
+**Limites connues** :
+- Fautes de frappe : seulement sur les films et séries de l'index. Personnes, collections et épisodes
+  viennent du serveur, qui tolère accents et casse mais pas les fautes.
+- Un profil enfant voit un instant, avant le recoupement par le serveur (≈ 250 ms), un titre de ses
+  bibliothèques que sa classification lui interdit.
+- La touche micro des télécommandes Shield et Google TV est gardée par l'assistant du système : elle
+  n'arrive à l'appli que sur certaines télécommandes ; le bouton micro de l'écran marche partout où un
+  reconnaisseur existe.
+- L'image proxy de Seerr (`/imageproxy/tmdb`) n'existe pas sur un Overseerr ancien : les cartes y sont
+  générées. À vérifier sur le Seerr de la maison.
+- Rien n'est mesuré sur la Shield (temps de la recherche locale sur 11 500 titres, J8).
+### 4.13 Essai réel 1 : diagnostic et saisie (25/10/2026)
+
+Premier essai sur un appareil réel (Chromecast avec Google TV, Android 14, Gboard) branché au
+Jellyfin 12.3 de la maison, avec l'APK du J3. Défauts et corrections :
+
+| Défaut | Cause | Correction |
+|---|---|---|
+| Connexion par mot de passe : « erreur inattendue » alors que le serveur l'accepte | le client OkHttp du SDK lit le corps de la réponse dans la coroutine appelante, après `enqueue` ; appelé depuis un modèle de vue (fil principal), Android lève `NetworkOnMainThreadException` dès que le corps n'arrive pas avec les en-têtes (Kestrel répond en morceaux, `Transfer-Encoding: chunked`) ; `jellyfinCall` en faisait un `SourceException.Unexpected`, sans journal | `TracingApiClient` enveloppe le client du SDK : chaque requête s'exécute sur `Dispatchers.IO`, le décodage sur `Dispatchers.Default` |
+| Quick Connect échoue d'emblée | même cause, dès `GET /QuickConnect/Enabled` (corps `true` en morceaux), que le serveur ne journalise pas | idem |
+| Erreur passagère au choix d'un serveur découvert | même cause sur `/System/Info/Public` : l'échec dépend de l'arrivée du dernier morceau dans le premier paquet ou non (et non de `AddressResolver`, que ce chemin n'emprunte pas) | idem |
+| « Plus d'infos » vide et hors de l'écran | le détail s'ouvrait sous le pli d'un écran qui ne défile pas, sans focus possible | `FormScreen` défile ; le détail est focalisable, est ramené à l'écran (`BringIntoViewRequester`) et reçoit le focus à l'ouverture et dit la classe de l'exception, son message, la requête (méthode et chemin, `SourceException.request`), le code HTTP (`httpStatus`) et chaque cause |
+| Aucun journal | les erreurs étaient converties sans trace | `FailureLog` (`:core:source`) : chaque échec attrapé y passe, avec sa pile ; l'appli l'envoie à logcat, balise `CineDoury` (W, ou E pour un échec local après la réponse du serveur : Keystore, Room, DataStore, désormais montré au lieu de fermer l'appli). Jamais de secret : une requête s'y nomme par sa méthode et son chemin |
+| Piège à focus dans les champs | Compose ne laisse sortir la croix d'un champ que pour un appareil qui se déclare « D-pad », ce que la télécommande Bluetooth ne fait pas ; le clavier s'ouvrait dès l'arrivée du focus et prenait la croix ; « Suivant » était remplacé par une action vide ; le clavier, ouvert à l'appui sur OK, recevait le relâchement et tapait la touche sous son focus (le « a ») | `CineTextField` à deux niveaux : le focus arrive sur le cadre, où la croix circule ; OK, au relâchement, ouvre la saisie ; en saisie, haut et bas quittent le champ, gauche et droite aux extrémités du texte ; « Suivant » passe au champ du dessous, « OK » / « Terminé » lance l'action (connexion, adresse). Champs sur `TextFieldState` |
+| Focus initial sur « Saisir une adresse » malgré un serveur trouvé | choix délibéré du J1 | le premier serveur trouvé prend le focus dès qu'il apparaît, tant qu'aucune touche n'a été pressée |
+| Compte masqué : seul « Autre compte » | Jellyfin cache les nouveaux utilisateurs, dont l'administrateur créé par l'assistant | « Votre compte n'apparaît pas ? Choisissez Autre compte. » sous le titre ; sans aucun profil listé, « Se connecter avec Quick Connect » et « Utiliser un mot de passe » directement |
+
+- **Serveur de test** : `bootstrap.sh` crée un utilisateur masqué `parent` (mot de passe
+  `cinedoury-parent`, serveur jetable), avec image, politique complète (bibliothèques choisies,
+  étiquettes, horaires, limites) et préférences : la forme des réponses d'un vrai serveur. Ses
+  réponses (`/Users/AuthenticateByName`, `/QuickConnect/*`) sont enregistrées dans
+  `source/jellyfin/src/test/resources/fixtures/` (jeton et adresse remplacés).
+- **Tests** : `RealServerAnswersTest` rejoue ces réponses en morceaux et lentement, vers un
+  connecteur appelé d'un fil « principal » dont les sockets refusent de lire, comme Android (il
+  échoue avec l'ancien code, exactement comme l'appareil) ; `JellyfinHiddenUserIntegrationTest`
+  contre le Jellyfin de la CI ; `SessionManagerTest` (Keystore en échec) ; `RemoteInputTest`
+  (champs, focus des serveurs, « Plus d'infos », compte masqué). Sur l'émulateur API 34 TV de la
+  CI (`ci/emulator-signin.sh`, après la lecture du J4) : `KeystoreTokenCipherTest` (vrai Keystore) et
+  `SignInJourneyTest`, le parcours du premier lancement à l'accueil, puis au lecteur par « Lire »,
+  contre le Jellyfin de la CI (`10.0.2.2:8096`), au
+  clavier virtuel par le vrai circuit d'entrée d'Android (touches de la croix et OK) et à l'IME
+  (texte, « OK »). Les journaux `CineDoury` de l'émulateur sont joints aux artefacts.
+- **Captures** (`docs/screenshots/j4/`, où la CI les copie) : erreur avec « Plus d'infos » déplié
+  (35), « Qui regarde ? » sans profil listé (36) ; « Qui regarde ? » (25) porte désormais la phrase sur les comptes masqués.
 
 ## 5. Tests et CI
 

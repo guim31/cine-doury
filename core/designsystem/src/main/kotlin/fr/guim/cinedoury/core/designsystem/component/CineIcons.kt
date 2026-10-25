@@ -348,6 +348,46 @@ object CineIcons {
         )
     }
 
+    // Search (J5).
+
+    /** Voice search. */
+    val Mic: ImageVector by lazy {
+        icon(
+            "Mic",
+            "M12,14c1.66,0 2.99,-1.34 2.99,-3L15,5c0,-1.66 -1.34,-3 -3,-3S9,3.34 9,5v6c0,1.66 1.34,3 3,3zM17.3,11" +
+                "c0,3 -2.54,5.1 -5.3,5.1S6.7,14 6.7,11L5,11c0,3.41 2.72,6.23 6,6.72L11,21h2v-3.28c3.28,-0.48 6,-3.3" +
+                " 6,-6.72h-1.7z",
+        )
+    }
+
+    /** The keyboard of the system. */
+    val Keyboard: ImageVector by lazy {
+        icon(
+            "Keyboard",
+            "M20,5H4c-1.1,0 -1.99,0.9 -1.99,2L2,17c0,1.1 0.9,2 2,2h16c1.1,0 2,-0.9 2,-2V7c0,-1.1 -0.9,-2 -2,-2z" +
+                "M11,8h2v2h-2V8zM11,11h2v2h-2v-2zM8,8h2v2H8V8zM8,11h2v2H8v-2zM7,13H5v-2h2v2zM7,10H5V8h2v2zM16,17H8" +
+                "v-2h8v2zM16,13h-2v-2h2v2zM16,10h-2V8h2v2zM19,13h-2v-2h2v2zM19,10h-2V8h2v2z",
+        )
+    }
+
+    /** The space bar of the on-screen keyboard. */
+    val Space: ImageVector by lazy { icon("Space", "M18,9v4H6V9H4v6h16V9z") }
+
+    /** A recent search. */
+    val History: ImageVector by lazy {
+        icon(
+            "History",
+            "M13,3c-4.97,0 -9,4.03 -9,9H1l3.89,3.89 0.07,0.14L9,12H6c0,-3.87 3.13,-7 7,-7s7,3.13 7,7 -3.13,7 -7,7" +
+                "c-1.93,0 -3.68,-0.79 -4.94,-2.06l-1.42,1.42C8.27,19.99 10.51,21 13,21c4.97,0 9,-4.03 9,-9s-4.03,-9" +
+                " -9,-9zM12,8v5l4.28,2.54 0.72,-1.21 -3.5,-2.08V8H12z",
+        )
+    }
+
+    /** « Demander » (Seerr). */
+    val Request: ImageVector by lazy {
+        icon("Request", "M19,9h-4V3H9v6H5l7,7 7,-7zM5,18v2h14v-2H5z")
+    }
+
     private fun icon(name: String, path: String): ImageVector =
         ImageVector
             .Builder(

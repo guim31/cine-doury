@@ -10,4 +10,8 @@ echo "===== failure summary ====="
 grep -E '^e: |FAILED|What went wrong|^> |: Error: |Error:|error:|\.kt:[0-9]+:[0-9]+|Exception|expected:|AssertionError|Unresolved|^\s+at fr\.guim' "$log" \
   | awk '/^> Task / && !/FAILED/ { next } !seen[$0]++' \
   | head -120
+# Gradle prints only the first lint error: the text reports hold all of them.
+for report in $(find . -path '*/build/*' -name 'lint-results-*.txt' 2> /dev/null); do
+  grep -E ': Error: ' "$report" | sed "s|^|[lint] |" | head -40
+done
 echo "===== end of summary ====="
