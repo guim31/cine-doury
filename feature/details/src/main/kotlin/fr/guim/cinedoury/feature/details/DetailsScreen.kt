@@ -18,6 +18,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
@@ -277,11 +278,13 @@ fun DetailsScreen(
             else -> state.firstRowKey()?.let(::rowKey) ?: DetailsPreview.FAVORITE.takeIf { state.loaded }
         }
     val ready = target != null && (target == KEY_PLAY || state.loaded)
+    // A dialog keeps the focus: the page does not take it back under it.
+    val dialog by rememberUpdatedState(state.deletion != null || state.manageError != null)
     if (target != null) {
         LaunchedEffect(target, ready, panel == null) {
             if (ready && panel == null) {
                 withFrameNanos { }
-                runCatching { requesters[target].requestFocus() }
+                if (!dialog) runCatching { requesters[target].requestFocus() }
             }
         }
     }
