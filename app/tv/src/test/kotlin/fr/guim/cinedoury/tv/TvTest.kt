@@ -59,3 +59,12 @@ internal fun TvComposeRule.setTvContent(content: @Composable () -> Unit) {
 }
 
 private const val PLACEHOLDER = "keyboard-mode-placeholder"
+
+/**
+ * « Retour » on the remote. A Back key sent by `performKeyInput` stops at Compose and never reaches
+ * the activity's `OnBackPressedDispatcher`, where `BackHandler` listens: go through the dispatcher.
+ */
+internal fun TvComposeRule.pressBack() {
+    runOnUiThread { activity.onBackPressedDispatcher.onBackPressed() }
+    waitForIdle()
+}

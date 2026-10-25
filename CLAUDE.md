@@ -80,6 +80,20 @@ ci/jellyfin/run-local.sh down
 - Schéma Room : exporté dans `core/data/schemas/` par KSP à chaque compilation ; la CI échoue s'il diffère de ce qui est versionné. Sans Gradle 9 en session, le projet jetable (voir plus haut) peut compiler le paquet `core/data/.../db` sur la JVM (Room KMP, `room-runtime` + `room-compiler` en KSP, `sqlite-bundled`) et produire le JSON.
 - OpenAPI : `curl http://localhost:8096/api-docs/openapi.json | python3 -m json.tool --indent 2 > docs/api/jellyfin-openapi-12.3.json`. La CI vérifie qu'il correspond au serveur (descriptions exclues).
 
+## Performances (J2)
+
+Ce qui compte pour garder 60 images/s au défilement (à mesurer sur la Shield au J8) :
+- des **clés stables** et un `contentType` dans chaque `LazyRow`/`LazyColumn`/`LazyVerticalGrid` ;
+- des états **immuables** (`@Immutable`, `data class`) recréés seulement quand ils changent : le
+  cache Room passe par `distinctUntilChanged()`, et l'avatar du rail est calculé une fois ;
+- aucune lambda neuve par composition vers une carte : `rememberArt(image, sources)` mémorise le
+  contenu d'image d'une carte ;
+- l'animation du focus est lue au dessin (`graphicsLayer`, `drawWithCache`), jamais en composition ;
+- un `Crossfade` indexé par une clé stable, pas par une valeur qui porte des lambdas ;
+- les pages de la grille arrivent dans un `PagedItems` immuable (une `Map` de pages, pas une liste
+  recopiée) ; les cases non lues sont des squelettes de même taille : aucune remise en page ;
+- les premières images de la rangée suivante sont préchargées (`PrefetchImages`).
+
 ## Pièges
 
 - Jellyfin 12 n'accepte que l'en-tête `Authorization: MediaBrowser …, Token="…"`. `X-Emby-Token` et `?api_key=` reçoivent un 401.

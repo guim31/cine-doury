@@ -18,11 +18,13 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -138,6 +140,8 @@ fun HomeScreen(
     var focusedRow by rememberSaveable { mutableStateOf<String?>(null) }
     var railFocused by remember { mutableStateOf(false) }
     var quitAsked by rememberSaveable { mutableStateOf(previewQuit) }
+    // « Annuler » gives the focus back to the rail, where « Retour » asked to quit.
+    var quitCancelled by remember { mutableIntStateOf(0) }
     val featuredItem = focusedItem ?: previewFeatured ?: rows?.firstOrNull()?.items?.firstOrNull()
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
@@ -149,6 +153,7 @@ fun HomeScreen(
         when {
             quitAsked -> {
                 quitAsked = false
+                quitCancelled++
             }
 
             railFocused -> {
@@ -254,12 +259,21 @@ fun HomeScreen(
                 confirmLabel = stringResource(R.string.quit_confirm),
                 cancelLabel = stringResource(R.string.quit_cancel),
                 onConfirm = navigation::quit,
-                onCancel = { quitAsked = false },
+                onCancel = {
+                    quitAsked = false
+                    quitCancelled++
+                },
                 destructive = false,
                 cancelFocusRequester = cancel,
                 cancelFocus = rememberCineFocus(HomePreview.QUIT_CANCEL),
                 modifier = Modifier.testTag("quit-dialog"),
             )
+        }
+    }
+    LaunchedEffect(quitCancelled) {
+        if (quitCancelled > 0) {
+            withFrameNanos { }
+            runCatching { rail.requestFocus() }
         }
     }
     // The first focus, and the focus found again when coming back: the row left, else « Lire ».

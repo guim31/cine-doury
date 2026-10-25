@@ -13,7 +13,8 @@ son domaine :
 | Jalon | État | PR |
 |---|---|---|
 | J0 — Fondations | terminé, fusionné | [#1](https://github.com/guim31/cine-doury/pull/1) |
-| J1 — Connexion et profils (et retouches du design system) | en revue (captures dans `docs/screenshots/j1/`) | [#2](https://github.com/guim31/cine-doury/pull/2) |
+| J1 — Connexion et profils (et retouches du design system) | terminé, fusionné | [#2](https://github.com/guim31/cine-doury/pull/2) |
+| J2 — Accueil et navigation | en revue (captures dans `docs/screenshots/j2/`) | [#3](https://github.com/guim31/cine-doury/pull/3) |
 
 *(Chaque jalon met à jour ce tableau et ajoute ses contrats au § 4.)*
 
@@ -94,8 +95,11 @@ Ajoutés au J1 :
 | `:core:data` | `cinedoury.android.library` + KSP | Room (serveurs, profils), DataStore (préférences), Keystore (jetons), `PinHasher`, `AddressInput`, `AddressResolver`, `SessionManager`, `DeviceIdentity`, module Koin `dataModule` |
 | `:core:ui` | `cinedoury.android.library` + `.compose` | ce que partagent les écrans et qui connaît `:core:source` : messages d'erreur lisibles (`toErrorText`, `SourceErrorPanel`), événements ponctuels (`Events`), indicateur « À distance », images de la session |
 | `:feature:auth` | idem | premier lancement, serveurs du réseau, saisie d'adresse, Quick Connect, identifiants, choix du profil, PIN, serveur injoignable |
-| `:feature:home` | idem | accueil **provisoire** (rail et tuiles des bibliothèques), remplacé au J2 |
+| `:feature:home` | idem | accueil **provisoire** (rail et tuiles des bibliothèques), remplacé au J2 par l'accueil réel et sa personnalisation |
 | `:feature:settings` | idem | réglages du J1 (profil, PIN, démarrage, adresses, oubli du serveur, catalogue en débogage), complétés au J7 |
+
+Ajouté au J2 : `:feature:library` (`cinedoury.android.library` + `.compose`), une bibliothèque :
+onglets, vues, tri, filtres, saut A–Z.
 
 `:core:ui` n'était pas prévu au § 3 : les messages d'erreur servent à tous les écrans, mais
 `:core:designsystem` ne doit pas connaître `:core:source`. Le design system reste sans dépendance
@@ -216,8 +220,8 @@ Décision du J0 : **SDK Kotlin officiel 1.9.3**, plutôt qu'un client généré 
 | DataStore `settings` | dernier serveur, dernier profil, mode de démarrage |
 | `noBackupFilesDir/device-id` | le `DeviceId` |
 
-- La base n'est pas sauvegardée (`allowBackup="false"`) et le schéma n'est pas encore exporté
-  (`exportSchema = false`, version 1) : les migrations viendront avec le cache du J2.
+- La base n'est pas sauvegardée (`allowBackup="false"`). Version 1 au J1 ; version 2 et schéma
+  exporté depuis le J2 (§ 4.9).
 - **`DeviceId`** : 32 chiffres hexadécimaux tirés au hasard au premier lancement (UUID sans tirets),
   gardés dans `noBackupFilesDir` : stable pour toute la vie de l'installation, jamais copié sur un
   autre appareil, effacé avec l'appli. **Nom d'appareil** : le nom donné à la TV dans ses réglages
@@ -297,6 +301,155 @@ achevé (connecté, serveur oublié) remplace toute la pile.
 - **Requêtes de films** : un serveur qui a des collections **regroupe** les films par défaut. Passer `CollapseBoxSetItems=false` pour lister ou compter les films.
 - **Textes** : aucune chaîne en dur ; ressources `fr` (langue par défaut) et `en`.
 - **Versions** : semver, étiquettes `vX.Y.Z`. L'APK de release est **signé hors de la CI** par le mainteneur ; la clé n'entre jamais dans le dépôt. La CI produit un APK de débogage.
+
+### 4.9 Accueil et navigation (J2)
+
+**Source** (`:core:source`, `LibrarySource`) :
+
+| Fonction | Appel Jellyfin | Paramètres notables |
+|---|---|---|
+| `libraries()` | `GET /UserViews` | `includeHidden=true` : toutes les bibliothèques, dans l'ordre `OrderedViews` de l'utilisateur ; celles de `MyMediaExcludes` restent joignables par le rail |
+| `homeExclusions()` | `GET /Users/Me` | `Configuration.MyMediaExcludes` (exclues de l'accueil) et `LatestItemsExcludes` (pas d'« Ajouts récents ») |
+| `items(ItemQuery, PageRequest)` / `count(ItemQuery)` | `GET /Items` | voir ci-dessous ; `count` envoie `limit=0` et lit `TotalRecordCount` |
+| `resume(bibliothèque?, n)` | `GET /UserItems/Resume` | `mediaTypes=Video` (sinon saisons et séries entamées s'y ajoutent), `parentId` |
+| `nextUp(bibliothèque?, depuis?, n)` | `GET /Shows/NextUp` | `nextUpDateCutoff`, `enableResumable=false` (les épisodes entamés sont dans « Reprendre »), `enableRewatching=false` |
+| `latest(bibliothèque, n)` | `GET /Items/Latest` | `parentId`, `groupItems=true` (les épisodes se regroupent en série) |
+| `filterOptions(bibliothèque, types)` | `GET /Items/Filters`, `/Items/Filters2`, `/Studios`, `/Persons`, `/Items?includeItemTypes=BoxSet` | genres, années, classifications, étiquettes ; langues audio et de sous-titres ; studios ; 200 personnes (acteurs, réalisateurs) ; collections |
+
+Les listes demandent `SortName`, `Overview`, `Genres`, `DateCreated`, `Taglines`, `ChildCount`,
+`PrimaryImageAspectRatio`, une image par type (Primary, Backdrop, Logo, Thumb) et les données
+utilisateur. Un épisode porte aussi les images de sa série (`ParentBackdropImageTags`,
+`ParentLogoImageTag`, `SeriesPrimaryImageTag`), lues dans `ItemImages`.
+
+**Requête** (`ItemQuery`, `:core:model`) → `GET /Items` :
+- sans type, les enfants directs de la bibliothèque ; avec types (`Movie`, `Series`, `BoxSet`), toute
+  la bibliothèque (`recursive=true`) ;
+- **tri** : `SortName`, `DateCreated`, `PremiereDate`, `CommunityRating`, `Runtime`, `DatePlayed`,
+  `PlayCount`, `Random`, croissant ou décroissant ; à égalité, par titre, pour que deux pages ne se
+  recoupent jamais ;
+- **films regroupés en collections** : `collapseBoxSetItems=true` (avec `recursive`), sinon `false` ;
+- **saut A–Z** : `nameLessThan=<lettre>` et `limit=0` donnent le nombre de titres avant la lettre,
+  donc l'index où sauter ; « # » est l'index 0 (les titres à chiffre précèdent « A ») ;
+- **« Récemment sortis »** : `maxPremiereDate` = aujourd'hui, tri par date de sortie décroissante.
+
+**Filtres** (`ItemFilters`), tous appliqués par le serveur ; les valeurs d'un filtre s'additionnent,
+les filtres se combinent :
+
+| Filtre | Paramètre |
+|---|---|
+| vu / non vu / en cours | `isPlayed=true` / `isPlayed=false` / `filters=IsResumable` |
+| genre, classification, étiquette | `genres`, `officialRatings`, `tags` (clé répétée) |
+| année ou décennie | `years` (une décennie donne ses dix années) |
+| note minimale | `minCommunityRating` |
+| résolution | `minWidth` / `maxWidth` sur la largeur de l'image : SD < 1200, 720p < 1900, 1080p < 3800, 4K au-delà (un film en 2,39:1 en 4K fait 3840 × 1608) |
+| langue audio, sous-titres | `audioLanguages`, `subtitleLanguages` (ISO 639-2) |
+| studio, personne | `studioIds`, `personIds` |
+| collection | `parentId` = la collection (au lieu de la bibliothèque) |
+| favori | `isFavorite=true` |
+
+**Écart** : les filtres **HDR / Dolby Vision** et **format audio** (stéréo, 5.1, Atmos, DTS) ne
+sont pas proposés. Jellyfin 12.3 n'a aucun paramètre de `/Items` pour la plage dynamique ni pour les
+canaux ou le codec audio, et le contournement (lire les pistes de chaque film, `fields=MediaStreams`)
+revient à tout charger. Le panneau de filtres le dit (« Jellyfin 12.3 ne sait pas encore filtrer
+sur ces critères »). Ils viendront avec un index local des pistes (cache du J3, quand les fiches
+lisent les sources média) ou une version du serveur qui sait filtrer.
+
+**Rangées** (`:core:data`, `home`) :
+- `HomeRowConfig(id, type, bibliothèques, style, fenêtre)` ; `type` ∈ `Resume`, `NextUp`, `Latest`,
+  `RecentlyReleased` ; `style` ∈ `Poster`, `Thumbnail` ; `bibliothèques` vide = toutes ; `fenêtre`
+  (« À suivre » seulement) : 7, 14 (défaut, comme le `OnDeckWindow = 2` de Plex), 30, 90 jours ou
+  sans limite.
+- Accueil par défaut : Reprendre (vignettes), À suivre (vignettes), Ajouts récents (affiches, **une
+  rangée par bibliothèque**), Récemment sortis (affiches).
+- `HomeRows.plan` déroule la disposition en rangées affichées (`HomeRowSpec`, clé stable
+  `id` ou `id:bibliothèque`) : les bibliothèques de `MyMediaExcludes` n'apparaissent dans aucune
+  rangée, celles de `LatestItemsExcludes` n'ont pas d'« Ajouts récents », la vue « Collections »
+  n'a pas de rangée. Une rangée sans bibliothèque possible disparaît. Types de bibliothèques par
+  rangée : À suivre → séries ; Récemment sortis → films et séries ; Reprendre, Ajouts récents →
+  films, séries, vidéos personnelles.
+- Lecture : sans exclusion ni choix de bibliothèques, un appel pour tout le serveur ; sinon un appel
+  par bibliothèque, en parallèle, fusionnés (Reprendre par dernière lecture, Récemment sortis par
+  date de sortie). 24 éléments par rangée.
+- **Personnalisation** (écran « Personnaliser l'accueil », depuis l'accueil ou les réglages) :
+  ajouter, retirer, monter, descendre une rangée ; affiches ou vignettes ; bibliothèques de la
+  rangée ; fenêtre d'« À suivre » ; rétablir l'accueil par défaut ; bibliothèques **cachées du
+  rail** (FONCTIONNALITES § 3, « visibilité réglable »). Gardée **par profil, sur l'appareil**.
+
+**Rail** : Recherche, Accueil, une entrée par bibliothèque (ordre `OrderedViews`, moins celles
+cachées par l'utilisateur), puis le profil (avatar, « Changer de profil ») et Réglages. Fermé
+(72 dp) avec les icônes, il s'ouvre au focus ; y entrer redonne le focus à la dernière entrée
+choisie, sinon à l'écran courant. **Écart** : les bibliothèques de `MyMediaExcludes` restent dans le
+rail (exclues de l'accueil seulement), parce que FONCTIONNALITES § 2 veut qu'elles « restent
+accessibles par la navigation » ; les cacher du rail est un choix local.
+
+**Mémoire du focus et de la position** :
+- une rangée garde l'index de la carte quittée (`rememberSaveable`, qui survit à la sortie de la
+  rangée de l'écran) et le rend quand le focus y revient (`focusRestorer`, sur la carte de cet
+  index) ; elle défile pour garder la carte focalisée à une place fixe : deuxième colonne pour les
+  affiches, première pour les vignettes (`FocusPivot`) ;
+- l'accueil garde la rangée focalisée et la position de défilement ; « Retour » depuis une fiche ou
+  une bibliothèque y ramène exactement (état sauvegardé par entrée de la pile) ;
+- une bibliothèque garde **en base**, par profil : onglet, vue, tri, filtres, regroupement des
+  collections et **index** de l'élément focalisé (écrit 500 ms après le dernier déplacement) ; elle
+  rouvre la grille à cet index, sa page lue en premier ;
+- « Retour » sur l'accueil : en haut de page (focus sur « Lire »), puis le rail, puis « Quitter
+  Ciné Doury ? » (focus sur « Annuler »).
+
+**Pagination** : `ItemPager` lit des pages de 60 ; la première donne le total et la grille pose
+d'emblée toutes ses cases (squelettes de la forme exacte des cartes) : rien ne bouge quand une page
+arrive. Une case qui entre à l'écran demande sa page, et la suivante passé le milieu de la page.
+
+**Stockage** (Room, version 2, schéma exporté dans `core/data/schemas/` et contrôlé par la CI) :
+
+| Table | Clé | Contenu |
+|---|---|---|
+| `cached_items` | serveur, utilisateur, élément | ce qu'une carte et le bandeau montrent (titre, années, durée, notes, genres, images avec leur BlurHash, données utilisateur, épisode), jamais les sources média |
+| `home_row_items` | serveur, utilisateur, rangée, position | l'élément à cette place de la rangée |
+| `cached_libraries` | serveur, utilisateur, bibliothèque | position, nom, type, image, exclusions |
+| `home_layout` | serveur, utilisateur, rangée | position, type, bibliothèques, style, fenêtre |
+| `library_state` | serveur, utilisateur, bibliothèque | onglet, vue, tri, filtres (`FiltersCodec`), regroupement, position |
+| `rail_hidden` | serveur, utilisateur, bibliothèque | bibliothèque cachée du rail |
+
+- **Migration 1 → 2** : automatique (`@AutoMigration`), testée par `CineDatabaseMigrationTest`, qui
+  crée la base du J1 d'après `1.json` (reconstitué à l'identique du J1 : même hachage d'identité) et
+  l'ouvre en version 2.
+- **Politique du cache** : l'accueil s'affiche depuis Room tout de suite, puis
+  `HomeRepository.refresh` relit bibliothèques, exclusions et rangées et **remplace tout le cache du
+  profil dans une transaction** ; Room rend les nouvelles rangées à l'écran, aux mêmes clés, donc
+  sans saut ni perte du focus. Rafraîchi à l'ouverture de l'accueil et à chaque retour sur lui. Un
+  échec laisse le cache en place ; l'erreur ne s'affiche que s'il n'y a rien à montrer. Les éléments
+  qu'aucune rangée n'utilise sont supprimés à chaque remplacement. Se déconnecter oublie le cache du
+  profil ; oublier le serveur oublie aussi ses préférences. Les pages d'une bibliothèque ne sont pas
+  mises en cache (la première arrive en une requête).
+- **Images** : les premières images de la rangée suivante sont chargées d'avance, à la taille des
+  cartes (`PrefetchImages`, mêmes URL que `RemoteImage`).
+
+**Performances** (60 images/s visées) : clés stables et `contentType` dans toutes les listes ;
+états immuables (`@Immutable`), un nouvel objet seulement quand il change ; images des cartes
+mémorisées (`rememberArt`) pour ne pas passer une lambda neuve à chaque composition ; animation du
+focus lue au dessin, jamais en composition ; fondus du bandeau et du fond indexés par identifiant ;
+un seul fond d'ambiance (BlurHash 32 × 18). Mesures sur la Shield au J8 (Macrobenchmark).
+
+**Captures** (`docs/screenshots/j2/`, 1920 × 1080, sombre et noir OLED) : accueil, bandeau sur un
+épisode à reprendre (40) et sur un film (41), rail ouvert (42), squelettes (43), « Quitter » (44),
+personnalisation (45) ; bibliothèque en grille (50), petites affiches (51), liste (52), vignettes
+(53), filtres et résumé (54), valeurs d'un filtre (55), tri (56), A–Z (57), Collections (58), Genres
+(59), squelettes (60). Les réglages (33, 34) gagnent la section « Accueil ». Tests :
+`J2ScreenshotTest`, `J2NavigationTest` (croix directionnelle et « Retour »), `HomeRepositoryTest`,
+`HomeRowsTest`, `HomeLayoutsTest`, `ItemPagerTest`, `FiltersCodecTest`, `CineDatabaseMigrationTest`,
+`JellyfinBrowseIntegrationTest` (rangées, filtres, tri, pagination, exclusions, A–Z).
+
+**Design system** (ajouts du J2) : `FeaturedBanner` et `FeaturedBackdrop` (bandeau qui suit le
+focus après 250 ms d'arrêt), `FocusPivot` (place fixe du focus dans une liste), `SkeletonCard`,
+`SkeletonLine`, `SkeletonListRow`, `RowTitle`, `CineTab`, `AlphabetBar`, `SidePanel` (glissement et
+fondu de 200 ms), `MediaListRow`, `PrefetchImages` ; `RailDestination.avatar`, le rail qui rend le
+focus à son entrée choisie, `ConfirmDialog(destructive = false)`, `ListRow(trailingIcon)`, le
+« non vu » sur les vignettes. Jetons : `heroTextWidth`, `tabHeight`, `alphabetKey`,
+`alphabetWidth`, `panelWidth`, `listRowPoster`, `listRowHeight`, `skeletonLine`,
+`HERO_HEIGHT_FRACTION`.
+
+**Écrans provisoires** : Recherche (J5), Fiche (J3) et Lecteur (J4) s'ouvrent sur un écran « arrive
+avec une prochaine version » (`ComingSoonScreen`), avec « Retour ».
 
 ## 5. Tests et CI
 

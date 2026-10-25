@@ -130,16 +130,17 @@ class J2NavigationTest {
         home()
         press(Key.DirectionDown, times = 2)
         focusable(HomePreview.card("next-up", 0)).assertIsFocused()
-        press(Key.Back)
+        compose.pressBack()
         focusable(HomePreview.PLAY).assertIsFocused()
-        press(Key.Back)
+        compose.pressBack()
         compose.onNode(isFocused() and hasAnyAncestor(hasTestTag("rail"))).assertExists()
-        press(Key.Back)
+        compose.pressBack()
         compose.onNode(isFocused() and hasText("Annuler") and hasAnyAncestor(hasTestTag("quit-dialog"))).assertExists()
         press(Key.DirectionCenter)
         compose.onNode(hasTestTag("quit-dialog")).assertDoesNotExist()
         assertEquals(false, recorder.quit)
-        press(Key.Back)
+        compose.onNode(isFocused() and hasAnyAncestor(hasTestTag("rail"))).assertExists()
+        compose.pressBack()
         press(Key.DirectionRight)
         press(Key.DirectionCenter)
         assertEquals(true, recorder.quit)
@@ -181,18 +182,21 @@ class J2NavigationTest {
         val actions = LibraryRecorder()
         show {
             LibraryScreen(
-                state = J2Samples.library(LibraryState(position = 7)),
+                state = J2Samples.library(LibraryState(position = 5)),
                 sources = J2Samples.noImages,
                 actions = actions,
                 navigation = recorder,
             )
         }
-        focusable(LibraryPreview.item(7)).assertIsFocused()
+        // Four columns: 5 is the second of the second row.
+        focusable(LibraryPreview.item(5)).assertIsFocused()
         press(Key.DirectionRight)
-        focusable(LibraryPreview.item(8)).assertIsFocused()
-        assertEquals(8, actions.focused.last())
+        focusable(LibraryPreview.item(6)).assertIsFocused()
+        assertEquals(6, actions.focused.last())
+        press(Key.DirectionUp)
+        focusable(LibraryPreview.item(2)).assertIsFocused()
         press(Key.DirectionCenter)
-        assertEquals(J2Samples.movies[8], recorder.opened.single())
+        assertEquals(J2Samples.movies[2], recorder.opened.single())
     }
 
     @Test
