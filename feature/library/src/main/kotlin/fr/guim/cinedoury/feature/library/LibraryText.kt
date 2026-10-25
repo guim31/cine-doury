@@ -12,6 +12,7 @@ import fr.guim.cinedoury.core.model.Resolution
 import fr.guim.cinedoury.core.model.SortField
 import fr.guim.cinedoury.core.model.WatchStatus
 import fr.guim.cinedoury.core.ui.SEPARATOR
+import fr.guim.cinedoury.core.ui.label
 import java.util.Locale
 
 @Composable
@@ -90,23 +91,10 @@ internal fun decadeLabel(decade: Int): String {
 private const val SHORT_DECADES_BEFORE = 2000
 private const val CENTURY = 100
 
-/**
- * The name of a language from its ISO 639-2 code (« fra » → « français »), in the language of the
- * device; the code itself when unknown.
- */
-internal fun languageName(code: String): String {
-    val twoLetters = BIBLIOGRAPHIC[code] ?: ISO3[code] ?: code
-    val name = Locale.forLanguageTag(twoLetters).getDisplayLanguage(Locale.getDefault())
-    return name.ifEmpty { code }.replaceFirstChar { it.titlecase(Locale.getDefault()) }
-}
-
-private val ISO3: Map<String, String> by lazy {
-    Locale.getISOLanguages().associateBy { Locale.forLanguageTag(it).isO3Language }
-}
-
-/** ISO 639-2/B codes some files carry instead of the 639-2/T ones Java knows. */
-private val BIBLIOGRAPHIC =
-    mapOf("fre" to "fr", "ger" to "de", "chi" to "zh", "dut" to "nl", "gre" to "el", "cze" to "cs", "rum" to "ro")
+/** The name of a language from its ISO 639-2 code, in the language of the device. */
+internal fun languageName(code: String): String =
+    fr.guim.cinedoury.core.ui
+        .languageName(code, Locale.getDefault())
 
 /** « Comédie · années 80 · non vus »: the filters in use, in a line. */
 @Composable
@@ -127,6 +115,9 @@ internal fun ItemFilters.summary(): String {
     parts += years.sorted().map { it.toString() }
     minRating?.let { parts += stringResource(R.string.summary_rating, it) }
     resolution?.let { parts += it.label }
+    ranges.sortedBy { it.ordinal }.forEach { parts += it.label() }
+    audioFormats.sortedBy { it.ordinal }.forEach { parts += it.label() }
+    videoCodecs.sortedBy { it.ordinal }.forEach { parts += it.label() }
     parts += audioLanguages.sorted().map(::languageName)
     subtitleLanguages.sorted().forEach {
         parts +=

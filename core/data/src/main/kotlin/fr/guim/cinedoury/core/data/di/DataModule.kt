@@ -9,6 +9,9 @@ import fr.guim.cinedoury.core.data.ServerRepository
 import fr.guim.cinedoury.core.data.SessionManager
 import fr.guim.cinedoury.core.data.db.CineDatabase
 import fr.guim.cinedoury.core.data.home.HomeRepository
+import fr.guim.cinedoury.core.data.index.IndexScheduler
+import fr.guim.cinedoury.core.data.index.LibraryIndex
+import fr.guim.cinedoury.core.data.library.LibraryIconRepository
 import fr.guim.cinedoury.core.data.library.LibraryStateRepository
 import fr.guim.cinedoury.core.data.prefs.AppPreferences
 import fr.guim.cinedoury.core.data.security.KeystoreTokenCipher
@@ -25,6 +28,10 @@ val dataModule =
         single { get<CineDatabase>().profiles() }
         single { get<CineDatabase>().homeCache() }
         single { get<CineDatabase>().preferences() }
+        single { get<CineDatabase>().index() }
+        single { LibraryIndex(get()) }
+        single { LibraryIconRepository(get()) }
+        single { IndexScheduler(get(), get()) }
         single { HomeRepository(get(), get()) }
         single { LibraryStateRepository(get()) }
         single<TokenCipher> { KeystoreTokenCipher() }
@@ -39,6 +46,11 @@ val dataModule =
         single { AddressResolver(get()) }
         single {
             val home = get<HomeRepository>()
-            SessionManager(get(), get(), get(), get(), get(), forgetCache = home::clear)
+            val index = get<LibraryIndex>()
+            SessionManager(get(), get(), get(), get(), get()) { serverId, userId ->
+                home.clear(serverId, userId)
+                // The index and the icons belong to the server, not to a profile.
+                if (userId == null) index.clear(serverId)
+            }
         }
     }

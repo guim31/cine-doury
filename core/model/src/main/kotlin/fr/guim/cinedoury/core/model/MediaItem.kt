@@ -42,6 +42,19 @@ data class MediaItem(
     val episode: EpisodeInfo? = null,
     val childCount: Int? = null,
     val mediaSources: List<MediaSource> = emptyList(),
+    /** Cast and crew, in the server's order (the main roles first). */
+    val people: List<Credit> = emptyList(),
+    val studios: List<String> = emptyList(),
+    /** A series: still airing or ended. */
+    val seriesStatus: SeriesStatus? = null,
+    /** The last day a series aired; a person's death. */
+    val endDate: LocalDate? = null,
+    /** Trailers on the web (YouTube), when the server has no local one. */
+    val remoteTrailers: List<RemoteTrailer> = emptyList(),
+    /** Trailers stored next to the file, played like the film. */
+    val localTrailerCount: Int = 0,
+    /** Where a film was made; where a person was born. */
+    val productionLocations: List<String> = emptyList(),
 ) {
     /** Playback progress between 0 and 1, or null when not started. */
     val progress: Float?

@@ -93,6 +93,13 @@ nfo() {
   } > "$file"
 }
 
+# nfo_extra FILE XML: adds lines before the closing tag of an .nfo.
+nfo_extra() {
+  local file="$1" xml="$2" closing
+  closing="$(tail -n 1 "$file")"
+  { sed '$d' "$file"; printf '%s\n%s\n' "$xml" "$closing"; } > "$file.tmp" && mv "$file.tmp" "$file"
+}
+
 # clip SIZE OUTPUT: a still colour at one frame every 10 s, as long as the longest film. It weighs a
 # few kilobytes even in 4K, and each film is a stream copy of it cut at its runtime, so that the
 # server reads the real duration (it ignores the runtime of a .nfo). The audio lasts 2 s: only its
@@ -122,6 +129,21 @@ mkdir -p "$dir"
   -metadata:s:a:0 language=fra -metadata title="Le Phare" "$dir/Le Phare (2001).mkv"
 cp "$WORK/fr.srt" "$dir/Le Phare (2001).fr.srt"
 nfo "$dir/movie.nfo" movie "Le Phare" 2001 "Un gardien de phare consigne chaque nuit ce que la mer lui rapporte." Drame
+# Credits for the details screen (J3), and a trailer on the web: the official trailer of « Big Buck
+# Bunny », an open film of the Blender Foundation.
+nfo_extra "$dir/movie.nfo" '  <director>Marie Duval</director>
+  <credits>Claire Fontaine</credits>
+  <actor>
+    <name>Camille Martin</name>
+    <role>Yann, le gardien</role>
+    <type>Actor</type>
+  </actor>
+  <actor>
+    <name>Louis Bernard</name>
+    <role>Le capitaine</role>
+    <type>Actor</type>
+  </actor>
+  <trailer>plugin://plugin.video.youtube/?action=play_video&amp;videoid=aqz-KE-bpKQ</trailer>'
 
 # 2. « Retour au phare » (2004): sequel, grouped with the first film into a collection by the bootstrap.
 dir="$OUT/films/Retour au phare (2004)"
@@ -152,6 +174,8 @@ mkdir -p "$dir"
   -disposition:a:0 default -disposition:s:0 forced -disposition:s:1 0 -disposition:s:2 0 -disposition:s:3 0 \
   "$dir/Nuit polaire (2020).mkv"
 nfo "$dir/movie.nfo" movie "Nuit polaire" 2020 "Six mois sans soleil dans une station scientifique." "Science-fiction" Thriller
+# A local trailer, found by its « -trailer » suffix (J3).
+"${FFMPEG[@]}" -i "$WORK/v720.mkv" -c copy "$dir/Nuit polaire (2020)-trailer.mkv"
 
 # 4. « Double jeu » (2012): two versions of the same film, merged by Jellyfin into one item.
 dir="$OUT/films/Double jeu (2012)"
@@ -175,15 +199,23 @@ episode() {
 # 5. « Les Marées » (2015): two seasons of two episodes.
 for s in 1 2; do for e in 1 2; do episode "$OUT/series/Les Marées (2015)" "$s" "$e"; done; done
 nfo "$OUT/series/Les Marées (2015)/tvshow.nfo" tvshow "Les Marées" 2015 "Une famille de pêcheurs, au rythme des coefficients." Drame
+nfo_extra "$OUT/series/Les Marées (2015)/tvshow.nfo" '  <premiered>2015-03-02</premiered>
+  <enddate>2016-03-14</enddate>
+  <status>Ended</status>'
 
 # 6. « Une saison » (2018): a single season of three episodes.
 for e in 1 2 3; do episode "$OUT/series/Une saison (2018)" 1 "$e"; done
 nfo "$OUT/series/Une saison (2018)/tvshow.nfo" tvshow "Une saison" 2018 "Une série courte, à saison unique." Comédie
+nfo_extra "$OUT/series/Une saison (2018)/tvshow.nfo" '  <premiered>2018-04-01</premiered>
+  <enddate>2018-04-15</enddate>
+  <status>Ended</status>'
 
 # 7. « Brume » (2019): a single season of four episodes, watched long ago (outside the « À suivre »
 #    window of the bootstrap).
 for e in 1 2 3 4; do episode "$OUT/series/Brume (2019)" 1 "$e"; done
 nfo "$OUT/series/Brume (2019)/tvshow.nfo" tvshow "Brume" 2019 "Un village de montagne disparaît chaque matin dans la brume." Policier Drame
+nfo_extra "$OUT/series/Brume (2019)/tvshow.nfo" '  <premiered>2019-10-01</premiered>
+  <status>Continuing</status>'
 
 # Episode titles, so that rows and banners have something to say.
 # episode_nfo SERIES_DIR SEASON EPISODE TITLE AIRED
@@ -234,7 +266,7 @@ film() {
     for genre in "${list[@]}"; do printf '  <genre>%s</genre>\n' "$genre"; done
     IFS=';' read -ra list <<< "$tags"
     for tag in "${list[@]}"; do [ -n "$tag" ] && printf '  <tag>%s</tag>\n' "$tag"; done
-    printf '  <director>%s</director>\n' "${directors[$((index % 2))]}"
+    printf '  <director>%s</director>\n  <credits>Claire Fontaine</credits>\n' "${directors[$((index % 2))]}"
     for offset in 0 2; do
       printf '  <actor>\n    <name>%s</name>\n    <role>Rôle %s</role>\n    <type>Actor</type>\n  </actor>\n' \
         "${actors[$(((index + offset) % 5))]}" "$((offset + 1))"

@@ -4,6 +4,7 @@ import fr.guim.cinedoury.core.model.ItemFilters
 import fr.guim.cinedoury.core.model.ItemSort
 import fr.guim.cinedoury.core.model.MediaItem
 import fr.guim.cinedoury.core.model.SortField
+import fr.guim.cinedoury.core.model.TechnicalSummary
 import fr.guim.cinedoury.core.model.WatchStatus
 import java.text.Normalizer
 import java.time.Instant
@@ -42,10 +43,19 @@ internal object InMemoryQueries {
                 (wanted.minWidth == null || width >= wanted.minWidth!!) &&
                     (wanted.maxWidth == null || width <= wanted.maxWidth!!)
             } ?: true
+        val technical = TechnicalSummary.of(item.mediaSources)
+        val index =
+            (filters.ranges.isEmpty() || technical.ranges.any { it in filters.ranges }) &&
+                (
+                    filters.audioFormats.isEmpty() ||
+                        filters.audioFormats.any { format -> format.features.any { it in technical.audio } }
+                ) &&
+                (filters.videoCodecs.isEmpty() || technical.videoCodecs.any { it in filters.videoCodecs })
         val audio = item.mediaSources.flatMap { source -> source.audio.mapNotNull { it.language } }
         val subtitles = item.mediaSources.flatMap { source -> source.subtitles.mapNotNull { it.language } }
         return watch &&
             resolution &&
+            index &&
             (filters.genres.isEmpty() || item.genres.any { it in filters.genres }) &&
             (years.isEmpty() || item.year in years) &&
             (filters.minRating == null || (item.communityRating ?: 0f) >= filters.minRating!!) &&

@@ -10,9 +10,12 @@ import fr.guim.cinedoury.core.model.LibraryId
 import fr.guim.cinedoury.core.model.MediaItem
 import fr.guim.cinedoury.core.model.Page
 import fr.guim.cinedoury.core.model.PageRequest
+import fr.guim.cinedoury.core.model.PlaybackPreferences
+import fr.guim.cinedoury.core.model.UserData
 import java.time.Instant
 
 /** The libraries of a signed-in user. Every failure is a [SourceException]. */
+@Suppress("TooManyFunctions") // One function per call the screens make.
 interface LibrarySource {
     val session: Session
 
@@ -56,4 +59,46 @@ interface LibrarySource {
 
     /** The values the filters of [library] can take, for items of [kinds]. */
     suspend fun filterOptions(library: LibraryId, kinds: Set<ItemKind>): FilterOptions
+
+    // Details (J3, `SPEC.md` § 4.10).
+
+    /** The ids of every item that matches [query], in its order: for the filters of the local index. */
+    suspend fun itemIds(query: ItemQuery): List<ItemId>
+
+    /** The seasons of a series, in order, with what the user watched. */
+    suspend fun seasons(series: ItemId): List<MediaItem>
+
+    /** Every episode of a series, every season, in order, with what the user watched. */
+    suspend fun episodes(series: ItemId): List<MediaItem>
+
+    /** Items of the libraries that look like [item] (same genres, people), the closest first. */
+    suspend fun similar(item: ItemId, limit: Int): List<MediaItem>
+
+    /** The collections (sagas) that hold [item]. */
+    suspend fun collectionsOf(item: ItemId): List<MediaItem>
+
+    /** The items of a collection, in release order. */
+    suspend fun collectionItems(collection: ItemId): List<MediaItem>
+
+    /** The films and series of the libraries where [person] appears, the newest first. */
+    suspend fun filmography(person: ItemId): List<MediaItem>
+
+    /** The trailers stored with [item] on the server. */
+    suspend fun localTrailers(item: ItemId): List<MediaItem>
+
+    /** Marks [item] watched or not; for a series or a season, every episode. Returns the new data. */
+    suspend fun setPlayed(item: ItemId, played: Boolean): UserData
+
+    suspend fun setFavorite(item: ItemId, favorite: Boolean): UserData
+
+    /** How the profile chooses its audio and subtitle tracks. */
+    suspend fun playbackPreferences(): PlaybackPreferences
+
+    // The local index (J3, `SPEC.md` § 4.10).
+
+    /**
+     * One page of the films and episodes of [library] with their media sources and tracks, for the
+     * local index; [changedSince] keeps those saved by the server since then (null for all).
+     */
+    suspend fun technicalItems(library: LibraryId, changedSince: Instant?, page: PageRequest): Page<MediaItem>
 }

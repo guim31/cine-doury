@@ -7,7 +7,11 @@ import fr.guim.cinedoury.core.data.ConnectionMode
 import fr.guim.cinedoury.core.data.SessionManager
 import fr.guim.cinedoury.core.data.home.HomeRepository
 import fr.guim.cinedoury.core.data.home.ProfileKey
+import fr.guim.cinedoury.core.data.index.IndexStatus
+import fr.guim.cinedoury.core.data.index.IndexedQuery
+import fr.guim.cinedoury.core.data.index.LibraryIndex
 import fr.guim.cinedoury.core.data.library.ItemPager
+import fr.guim.cinedoury.core.data.library.LibraryIconRepository
 import fr.guim.cinedoury.core.data.library.LibraryState
 import fr.guim.cinedoury.core.data.library.LibraryStateRepository
 import fr.guim.cinedoury.core.data.library.LibraryTab
@@ -46,6 +50,8 @@ import kotlinx.coroutines.launch
  * @param options the values of the filters; null until read.
  * @param restored false until the remembered state is read: the screen waits for it, so that the
  * grid opens at the right place.
+ * @param index where the local index stands: its filters (HDR, audio, codec) are complete once it is
+ * [IndexStatus.ready].
  */
 @Immutable
 data class LibraryUiState(
@@ -58,6 +64,7 @@ data class LibraryUiState(
     val options: FilterOptions? = null,
     val restored: Boolean = false,
     val error: SourceException? = null,
+    val index: IndexStatus? = null,
 ) {
     val tabs: List<LibraryTab> get() = library?.kind.tabs()
 
@@ -90,6 +97,8 @@ class LibraryViewModel(
     private val sessions: SessionManager,
     home: HomeRepository,
     private val states: LibraryStateRepository,
+    icons: LibraryIconRepository,
+    private val index: LibraryIndex,
 ) : ViewModel(),
     LibraryActions {
     private val active = sessions.active.value
@@ -118,11 +127,15 @@ class LibraryViewModel(
         combine(
             local,
             pager.items,
-            home.railState(sessions),
+            home.railState(sessions, icons),
             library ?: MutableStateFlow(null),
-        ) { state, items, rail, library ->
-            state.copy(items = items, rail = rail, library = library ?: state.library)
+            profile?.let { index.status(it.serverId) } ?: MutableStateFlow(null),
+        ) { state, items, rail, library, index ->
+            state.copy(items = items, rail = rail, library = library ?: state.library, index = index)
         }.stateIn(viewModelScope, SharingStarted.Eagerly, local.value)
+
+    /** The query of the « Tout » or « Collections » tab, as read now: through the index for its filters. */
+    private var reading: IndexedQuery? = null
 
     init {
         viewModelScope.launch {
@@ -162,8 +175,9 @@ class LibraryViewModel(
         val source = active?.library ?: return
         when (browse.tab) {
             LibraryTab.All, LibraryTab.Collections -> {
-                val query = query()
-                pager.load(around) { page -> guarded { source.items(query, page) } }
+                val serverId = profile?.serverId ?: return
+                val query = IndexedQuery(source, index, serverId, query()).also { reading = it }
+                pager.load(around) { page -> guarded { query.page(page) } }
             }
 
             LibraryTab.NextUp -> {
@@ -276,7 +290,8 @@ class LibraryViewModel(
                 ) {
                     0
                 } else {
-                    guardedOrNull { source.count(query().copy(titleBelow = letter)) } ?: return@launch
+                    guardedOrNull { reading?.countBelow(letter) ?: source.count(query().copy(titleBelow = letter)) }
+                        ?: return@launch
                 }
             val total = pager.items.value.total ?: return@launch
             val target = index.coerceAtMost((total - 1).coerceAtLeast(0))

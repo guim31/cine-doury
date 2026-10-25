@@ -208,6 +208,7 @@ fun SidePanel(
     visible: Boolean,
     title: String,
     modifier: Modifier = Modifier,
+    width: Dp = CineSizes.panelWidth,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val reduced = CineTheme.reducedMotion
@@ -245,7 +246,7 @@ fun SidePanel(
             Column(
                 modifier =
                     Modifier
-                        .width(CineSizes.panelWidth)
+                        .width(width)
                         .fillMaxHeight()
                         .background(CineTheme.colors.surface2)
                         .padding(

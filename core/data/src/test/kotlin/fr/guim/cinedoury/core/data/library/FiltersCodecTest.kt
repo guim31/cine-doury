@@ -1,11 +1,16 @@
 package fr.guim.cinedoury.core.data.library
 
+import fr.guim.cinedoury.core.model.AudioFormat
+import fr.guim.cinedoury.core.model.DynamicRange
 import fr.guim.cinedoury.core.model.ItemFilters
 import fr.guim.cinedoury.core.model.NamedId
 import fr.guim.cinedoury.core.model.Resolution
+import fr.guim.cinedoury.core.model.VideoCodec
 import fr.guim.cinedoury.core.model.WatchStatus
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class FiltersCodecTest {
     @Test
@@ -26,9 +31,14 @@ class FiltersCodecTest {
                 collection = NamedId("c1", "Le Phare : la saga"),
                 tags = setOf("Coup de cœur"),
                 favorite = true,
+                ranges = setOf(DynamicRange.DolbyVision, DynamicRange.Hdr10),
+                audioFormats = setOf(AudioFormat.Atmos),
+                videoCodecs = setOf(VideoCodec.Hevc),
             )
         assertEquals(filters, FiltersCodec.decode(FiltersCodec.encode(filters)))
-        assertEquals(13, filters.count)
+        assertEquals(16, filters.count)
+        assertTrue(filters.usesIndex)
+        assertFalse(filters.forServer.usesIndex)
     }
 
     @Test

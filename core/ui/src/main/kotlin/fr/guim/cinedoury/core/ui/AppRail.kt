@@ -5,8 +5,10 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import fr.guim.cinedoury.core.data.library.icon
 import fr.guim.cinedoury.core.designsystem.component.CineIcons
 import fr.guim.cinedoury.core.designsystem.component.NavigationRail
 import fr.guim.cinedoury.core.designsystem.component.ProfileAvatar
@@ -15,8 +17,8 @@ import fr.guim.cinedoury.core.designsystem.image.ImageSource
 import fr.guim.cinedoury.core.designsystem.image.RemoteImage
 import fr.guim.cinedoury.core.designsystem.theme.CineSizes
 import fr.guim.cinedoury.core.model.Library
+import fr.guim.cinedoury.core.model.LibraryIcon
 import fr.guim.cinedoury.core.model.LibraryId
-import fr.guim.cinedoury.core.model.LibraryKind
 
 /** Where the rail leads (`UI.md` § 2, `FONCTIONNALITES.md` § 3). */
 sealed interface RailTarget {
@@ -33,12 +35,16 @@ sealed interface RailTarget {
     data object Settings : RailTarget
 }
 
-/** What the rail shows: the libraries in the user's order and the open profile. */
+/**
+ * What the rail shows: the libraries in the user's order, the icons the user picked for some of them
+ * (the others get the one their name suggests), and the open profile.
+ */
 @Immutable
 data class RailState(
     val libraries: List<Library> = emptyList(),
     val profileName: String = "",
     val avatar: ImageSource? = null,
+    val icons: Map<LibraryId, LibraryIcon> = emptyMap(),
 )
 
 /**
@@ -69,7 +75,7 @@ fun AppRail(
             listOf(
                 RailDestination(CineIcons.Search, stringResource(R.string.rail_search)),
                 RailDestination(CineIcons.Home, stringResource(R.string.rail_home)),
-            ) + state.libraries.map { RailDestination(it.kind.icon, it.name) },
+            ) + state.libraries.map { RailDestination(it.icon(state.icons).vector, it.name) },
         bottomDestinations =
             listOf(
                 RailDestination(
@@ -94,10 +100,19 @@ fun AppRail(
     )
 }
 
-private val LibraryKind.icon
+/** The picture of a library icon. */
+val LibraryIcon.vector: ImageVector
     get() =
         when (this) {
-            LibraryKind.Shows -> CineIcons.Shows
-            LibraryKind.Collections -> CineIcons.Collections
-            LibraryKind.Movies, LibraryKind.HomeVideos, LibraryKind.Mixed, LibraryKind.Other -> CineIcons.Movies
+            LibraryIcon.Movies -> CineIcons.Movies
+            LibraryIcon.Shows -> CineIcons.Shows
+            LibraryIcon.Animation -> CineIcons.Animation
+            LibraryIcon.Anime -> CineIcons.Anime
+            LibraryIcon.Documentaries -> CineIcons.Documentaries
+            LibraryIcon.Stage -> CineIcons.Stage
+            LibraryIcon.Sport -> CineIcons.Sport
+            LibraryIcon.OnlineVideo -> CineIcons.OnlineVideo
+            LibraryIcon.Kids -> CineIcons.Kids
+            LibraryIcon.Collections -> CineIcons.Collections
+            LibraryIcon.Folder -> CineIcons.Folder
         }

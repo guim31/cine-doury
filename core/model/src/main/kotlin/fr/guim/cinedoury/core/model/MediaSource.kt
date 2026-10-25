@@ -7,6 +7,10 @@ data class MediaSource(
     val container: String?,
     val sizeBytes: Long?,
     val streams: List<MediaStream>,
+    /** Where the file is on the server, for « Informations sur le fichier ». */
+    val path: String? = null,
+    /** Bits per second, all streams together. */
+    val bitrate: Int? = null,
 ) {
     val video: MediaStream? get() = streams.firstOrNull { it.type == StreamType.Video }
     val audio: List<MediaStream> get() = streams.filter { it.type == StreamType.Audio }
@@ -29,6 +33,17 @@ enum class VideoRange {
     Unknown,
 }
 
+/** Object-based audio carried by a track (Jellyfin: `AudioSpatialFormat`). */
+enum class SpatialAudio {
+    DolbyAtmos,
+    DtsX,
+}
+
+/**
+ * @param profile the codec profile: « Main 10 » for a video, « DTS-HD MA » or « Dolby TrueHD + Dolby
+ * Atmos » for an audio track.
+ * @param displayTitle the server's own description of the track, for the file information.
+ */
 data class MediaStream(
     val index: Int,
     val type: StreamType,
@@ -43,4 +58,10 @@ data class MediaStream(
     val height: Int? = null,
     val bitDepth: Int? = null,
     val videoRange: VideoRange? = null,
+    val profile: String? = null,
+    val displayTitle: String? = null,
+    val channelLayout: String? = null,
+    val spatialAudio: SpatialAudio? = null,
+    val isHearingImpaired: Boolean = false,
+    val bitrate: Int? = null,
 )

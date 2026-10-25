@@ -29,7 +29,12 @@ object CineSizes {
     val posterSmall = DpSize(120.dp, 180.dp)
     val posterNormal = DpSize(150.dp, 225.dp)
     val posterLarge = DpSize(190.dp, 285.dp)
-    val thumbnail = DpSize(300.dp, 169.dp)
+
+    /**
+     * 16:9, for « Reprendre », episodes and chapters: four whole thumbnails and the start of a fifth
+     * in a row of a 1080p screen (`UI.md` § 6, retouched on 25/10/2026).
+     */
+    val thumbnail = DpSize(176.dp, 99.dp)
     val cardCorner = 8.dp
     val hairline = 1.dp
     val swatch = DpSize(104.dp, 64.dp)
@@ -78,6 +83,19 @@ object CineSizes {
     val listRowPoster = DpSize(64.dp, 96.dp)
     val listRowHeight = 112.dp
     val skeletonLine = 16.dp
+
+    // Details screens (J3).
+
+    /** The text column of a details screen: 45 % of the screen (`UI.md` § 8, « Fiche »). */
+    val detailsTextWidth = 432.dp
+    val badgeHeight = 28.dp
+    val episodeRowHeight = 131.dp
+
+    /** The frame of an episode on its details screen, in place of a poster. */
+    val episodePicture = DpSize(320.dp, 180.dp)
+
+    /** The side panels with long lines: tracks, file information. */
+    val widePanelWidth = 480.dp
 
     /** The featured banner takes 60 % of the screen height (`UI.md` § 8). */
     const val HERO_HEIGHT_FRACTION = 0.6f

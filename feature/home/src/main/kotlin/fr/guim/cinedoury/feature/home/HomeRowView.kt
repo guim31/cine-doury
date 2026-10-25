@@ -48,11 +48,13 @@ import fr.guim.cinedoury.core.ui.rememberArt
  *
  * @param restore attached to the card to give the focus back to.
  * @param next the row below, whose first images are loaded in advance.
+ * @param shared the items whose poster flies to the details screen from this row.
  */
 @Composable
 internal fun HomeRowView(
     row: HomeRow,
     next: HomeRow?,
+    shared: Set<String>,
     sources: ImageSources,
     restore: FocusRequester,
     onFocused: (MediaItem) -> Unit,
@@ -97,6 +99,7 @@ internal fun HomeRowView(
                         onClick = { onOpen(item) },
                         focusRequester = requester,
                         previewTag = HomePreview.card(row.key, index),
+                        sharedKey = item.id.value.takeIf { it in shared },
                         modifier = cardModifier,
                     )
                 }
@@ -126,6 +129,7 @@ private fun HomeCard(
     onClick: () -> Unit,
     focusRequester: FocusRequester?,
     previewTag: String,
+    sharedKey: String?,
     modifier: Modifier = Modifier,
 ) {
     val focus = rememberCineFocus(previewTag)
@@ -139,6 +143,7 @@ private fun HomeCard(
             unwatchedCount = item.unwatchedEpisodes,
             focusRequester = focusRequester,
             focus = focus,
+            sharedKey = sharedKey,
             image = rememberArt(item.posterImage, sources),
             modifier = modifier,
         )
@@ -193,4 +198,4 @@ internal fun SkeletonRow(modifier: Modifier = Modifier) {
     }
 }
 
-private const val SKELETON_CARDS = 4
+private const val SKELETON_CARDS = 5

@@ -4,25 +4,32 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import fr.guim.cinedoury.core.data.index.IndexStatus
 import fr.guim.cinedoury.core.data.library.LibraryView
 import fr.guim.cinedoury.core.designsystem.component.CineIcons
 import fr.guim.cinedoury.core.designsystem.component.InitialFocus
 import fr.guim.cinedoury.core.designsystem.component.ListRow
 import fr.guim.cinedoury.core.designsystem.component.SidePanel
+import fr.guim.cinedoury.core.designsystem.component.previewFirstVisible
 import fr.guim.cinedoury.core.designsystem.component.rememberCineFocus
 import fr.guim.cinedoury.core.designsystem.theme.CineSpacing
+import fr.guim.cinedoury.core.model.AudioFormat
+import fr.guim.cinedoury.core.model.DynamicRange
 import fr.guim.cinedoury.core.model.FilterOptions
 import fr.guim.cinedoury.core.model.ItemFilters
 import fr.guim.cinedoury.core.model.NamedId
 import fr.guim.cinedoury.core.model.Resolution
 import fr.guim.cinedoury.core.model.SortField
+import fr.guim.cinedoury.core.model.VideoCodec
 import fr.guim.cinedoury.core.model.WatchStatus
+import fr.guim.cinedoury.core.ui.label
 
 /** The filters of the filter panel, in the order of `FONCTIONNALITES.md` § 3. */
 enum class FilterCategory {
@@ -32,6 +39,15 @@ enum class FilterCategory {
     Year,
     Rating,
     Resolution,
+
+    /** HDR10, HDR10+, HLG, Dolby Vision: from the local index. */
+    Range,
+
+    /** Stereo, 5.1, 7.1, Atmos, DTS, TrueHD: from the local index. */
+    AudioFormat,
+
+    /** H.264, HEVC, AV1…: from the local index. */
+    Codec,
     Audio,
     Subtitles,
     Certification,
@@ -44,6 +60,27 @@ enum class FilterCategory {
 
 /** Preview tag of the first row of a panel. */
 const val PREVIEW_PANEL_FIRST = "panel-0"
+
+/** The dynamic ranges offered: HDR first, SDR last. */
+private val RANGES =
+    listOf(DynamicRange.DolbyVision, DynamicRange.Hdr10Plus, DynamicRange.Hdr10, DynamicRange.Hlg, DynamicRange.Sdr)
+
+/** The filters the local index applies. */
+private val INDEXED = setOf(FilterCategory.Range, FilterCategory.AudioFormat, FilterCategory.Codec)
+
+/**
+ * Under a filter of the index: nothing once the index is complete, its progress while it fills
+ * (« Index en cours : 1 200 sur 11 500 titres »), else that it has not started.
+ */
+@Composable
+private fun IndexStatus?.note(): String? {
+    val total = this?.total
+    return when {
+        this == null || (ready && !running) -> null
+        running && total != null -> stringResource(R.string.filter_index_running, read, total)
+        else -> stringResource(R.string.filter_index_pending)
+    }
+}
 
 /** Minimal ratings offered, out of 10. */
 private val RATINGS = (5..9).toList()
@@ -84,6 +121,7 @@ internal fun LibraryPanels(
     SidePanel(visible = panel != null, title = title, modifier = Modifier.testTag("panel")) {
         val first = remember(panel, category) { FocusRequester() }
         LazyColumn(
+            state = rememberLazyListState(initialFirstVisibleItemIndex = previewFirstVisible("panel-")),
             contentPadding = PaddingValues(vertical = CineSpacing.xs, horizontal = CineSpacing.xs),
             verticalArrangement = Arrangement.spacedBy(CineSpacing.xs),
         ) {
@@ -163,14 +201,14 @@ private fun filterEntries(
     val options = state.options ?: FilterOptions()
     if (category == null) {
         return FilterCategory.entries.map { entry ->
-            PanelEntry(entry.name, entry.label(), { onCategory(entry) }, value = filters.valueOf(entry))
-        } +
             PanelEntry(
-                key = "unavailable",
-                title = stringResource(R.string.filter_unavailable),
-                onClick = {},
-                description = stringResource(R.string.filter_unavailable_description),
+                entry.name,
+                entry.label(),
+                { onCategory(entry) },
+                value = filters.valueOf(entry),
+                description = if (entry in INDEXED) state.index.note() else null,
             )
+        }
     }
     val none = PanelEntry("none", stringResource(R.string.filter_none_available), {})
 
@@ -227,6 +265,24 @@ private fun filterEntries(
         FilterCategory.Resolution -> {
             choices(Resolution.entries, { it.label }, { filters.resolution == it }) {
                 filters.copy(resolution = if (filters.resolution == it) null else it)
+            }
+        }
+
+        FilterCategory.Range -> {
+            choices(RANGES, { it.label() }, { it in filters.ranges }) {
+                filters.copy(ranges = filters.ranges.toggle(it))
+            }
+        }
+
+        FilterCategory.AudioFormat -> {
+            choices(AudioFormat.entries, { it.label() }, { it in filters.audioFormats }) {
+                filters.copy(audioFormats = filters.audioFormats.toggle(it))
+            }
+        }
+
+        FilterCategory.Codec -> {
+            choices(VideoCodec.entries, { it.label() }, { it in filters.videoCodecs }) {
+                filters.copy(videoCodecs = filters.videoCodecs.toggle(it))
             }
         }
 
@@ -299,6 +355,9 @@ internal fun FilterCategory.label(): String =
             FilterCategory.Year -> R.string.filter_year
             FilterCategory.Rating -> R.string.filter_rating
             FilterCategory.Resolution -> R.string.filter_resolution
+            FilterCategory.Range -> R.string.filter_range
+            FilterCategory.AudioFormat -> R.string.filter_audio_format
+            FilterCategory.Codec -> R.string.filter_codec
             FilterCategory.Audio -> R.string.filter_audio
             FilterCategory.Subtitles -> R.string.filter_subtitles
             FilterCategory.Certification -> R.string.filter_certification
@@ -348,6 +407,30 @@ private fun ItemFilters.valueOf(category: FilterCategory): String? {
 
         FilterCategory.Resolution -> {
             resolution?.label
+        }
+
+        FilterCategory.Range -> {
+            ranges
+                .sortedBy { it.ordinal }
+                .map { it.label() }
+                .joinToString(", ")
+                .ifEmpty { null }
+        }
+
+        FilterCategory.AudioFormat -> {
+            audioFormats
+                .sortedBy { it.ordinal }
+                .map { it.label() }
+                .joinToString(", ")
+                .ifEmpty { null }
+        }
+
+        FilterCategory.Codec -> {
+            videoCodecs
+                .sortedBy { it.ordinal }
+                .map { it.label() }
+                .joinToString(", ")
+                .ifEmpty { null }
         }
 
         FilterCategory.Audio -> {

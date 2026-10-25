@@ -1,8 +1,11 @@
 package fr.guim.cinedoury.core.data.library
 
+import fr.guim.cinedoury.core.model.AudioFormat
+import fr.guim.cinedoury.core.model.DynamicRange
 import fr.guim.cinedoury.core.model.ItemFilters
 import fr.guim.cinedoury.core.model.NamedId
 import fr.guim.cinedoury.core.model.Resolution
+import fr.guim.cinedoury.core.model.VideoCodec
 import fr.guim.cinedoury.core.model.WatchStatus
 
 /**
@@ -32,6 +35,9 @@ object FiltersCodec {
             filters.collection?.let { add("collection" to listOf("${it.id}$PAIR${it.name}")) }
             add("tags" to filters.tags.sorted())
             if (filters.favorite) add("favorite" to listOf("true"))
+            add("ranges" to filters.ranges.map { it.name }.sorted())
+            add("audioFormats" to filters.audioFormats.map { it.name }.sorted())
+            add("codecs" to filters.videoCodecs.map { it.name }.sorted())
         }.filter { (_, values) -> values.isNotEmpty() }
             .joinToString(FIELD) { (key, values) -> key + EQUALS + values.joinToString(VALUE) }
 
@@ -55,6 +61,11 @@ object FiltersCodec {
                 id.takeIf { it.isNotEmpty() }?.let { NamedId(it, value.substringAfter(PAIR)) }
             }
 
+        fun <E : Enum<E>> enums(
+            key: String,
+            values: Array<E>,
+        ) = fields[key].orEmpty().mapNotNull { name -> values.firstOrNull { it.name == name } }.toSet()
+
         return ItemFilters(
             watch = fields["watch"]?.firstOrNull()?.let { name -> WatchStatus.entries.firstOrNull { it.name == name } },
             genres = strings("genres"),
@@ -76,6 +87,9 @@ object FiltersCodec {
             collection = named("collection").firstOrNull(),
             tags = strings("tags"),
             favorite = fields["favorite"]?.firstOrNull() == "true",
+            ranges = enums("ranges", DynamicRange.entries.toTypedArray()),
+            audioFormats = enums("audioFormats", AudioFormat.entries.toTypedArray()),
+            videoCodecs = enums("codecs", VideoCodec.entries.toTypedArray()),
         )
     }
 }

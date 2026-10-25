@@ -9,6 +9,7 @@
 set -euo pipefail
 
 BASE="${1:-${JELLYFIN_URL:-http://localhost:8096}}"
+HERE="$(cd "$(dirname "$0")" && pwd)"
 MEDIA_ROOT="${JF_MEDIA_ROOT:-/media}"
 ADMIN_USER="${JELLYFIN_ADMIN_USER:-admin}"
 ADMIN_PASSWORD="${JELLYFIN_ADMIN_PASSWORD:-cinedoury-test}"
@@ -185,6 +186,11 @@ if [ "$(api GET "/Items?Recursive=true&IncludeItemTypes=Episode&IsPlayed=true&us
   for film in "Zéphyr" "L'Odyssée des sables"; do
     api POST "/UserFavoriteItems/$(id_of Movie "$film")?userId=$admin_id" > /dev/null
   done
+fi
+
+# Generated artwork for a few films, series and people (J3): posters, backdrops, logos, photos.
+if command -v ffmpeg > /dev/null; then
+  "$HERE/images.sh" "$BASE" "$TOKEN"
 fi
 
 log "done"

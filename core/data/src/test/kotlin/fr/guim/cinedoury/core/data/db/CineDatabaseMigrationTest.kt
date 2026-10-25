@@ -4,8 +4,11 @@ import android.database.sqlite.SQLiteDatabase
 import androidx.room.Room
 import fr.guim.cinedoury.core.data.home.HomeRepository
 import fr.guim.cinedoury.core.data.home.ProfileKey
+import fr.guim.cinedoury.core.data.library.LibraryIconRepository
+import fr.guim.cinedoury.core.model.LibraryId
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
+import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -43,7 +46,15 @@ class CineDatabaseMigrationTest {
         val entities = schema.getJSONArray("entities")
         for (index in 0 until entities.length()) {
             val entity = entities.getJSONObject(index)
-            database.execSQL(entity.getString("createSql").replace("\${TABLE_NAME}", entity.getString("tableName")))
+            val table = entity.getString("tableName")
+            database.execSQL(entity.getString("createSql").replace("\${TABLE_NAME}", table))
+            // The indices of the table (from version 2 on).
+            val indices = entity.optJSONArray("indices") ?: JSONArray()
+            for (position in 0 until indices.length()) {
+                database.execSQL(
+                    indices.getJSONObject(position).getString("createSql").replace("\${TABLE_NAME}", table),
+                )
+            }
         }
         val setup = schema.getJSONArray("setupQueries")
         for (index in 0 until setup.length()) database.execSQL(setup.getString(index))
@@ -78,11 +89,30 @@ class CineDatabaseMigrationTest {
         }
 
     @Test
+    fun `version 2 of J2 keeps its preferences in version 3, with an empty index`() =
+        runTest {
+            create("migration-2.db", 2).use { v2 ->
+                v2.execSQL(
+                    "INSERT INTO rail_hidden (server_id, user_id, library_id) VALUES ('home', 'u1', 'films')",
+                )
+            }
+            val database = Room.databaseBuilder(context, CineDatabase::class.java, "migration-2.db").build()
+            try {
+                val home = HomeRepository(database.homeCache(), database.preferences())
+                assertEquals(setOf(LibraryId("films")), home.railHidden(ProfileKey("home", "u1")).first())
+                assertEquals(0, database.index().count("home", "films"))
+                assertEquals(emptyMap(), LibraryIconRepository(database.index()).chosen("home").first())
+            } finally {
+                database.close()
+            }
+        }
+
+    @Test
     fun `the exported schema is the one of the code`() {
         val latest =
             File("schemas/${CineDatabase::class.java.name}").listFiles().orEmpty().maxOf {
                 it.nameWithoutExtension.toInt()
             }
-        assertEquals(2, latest, "export the schema of the new version (CineDatabase.version)")
+        assertEquals(3, latest, "export the schema of the new version (CineDatabase.version)")
     }
 }

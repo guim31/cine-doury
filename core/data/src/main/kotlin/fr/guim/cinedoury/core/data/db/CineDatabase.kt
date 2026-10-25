@@ -14,7 +14,8 @@ import kotlinx.coroutines.flow.Flow
 
 /**
  * The local store (`SPEC.md` § 4.7 and § 4.9): servers and profiles (J1), the cache of the home and
- * the home and library preferences (J2). Tokens are stored encrypted by a key of the Android
+ * the home and library preferences (J2), the local index of the libraries and the icons of the
+ * libraries (J3). Tokens are stored encrypted by a key of the Android
  * Keystore, PINs as salted hashes. The schema of each version is exported to `core/data/schemas/`,
  * and every migration is tested from it (`CineDatabaseMigrationTest`).
  */
@@ -28,10 +29,13 @@ import kotlinx.coroutines.flow.Flow
         HomeRowConfigEntity::class,
         LibraryStateEntity::class,
         RailHiddenEntity::class,
+        IndexedItemEntity::class,
+        IndexStateEntity::class,
+        LibraryIconEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
-    autoMigrations = [AutoMigration(from = 1, to = 2)],
+    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3)],
 )
 @TypeConverters(Converters::class)
 abstract class CineDatabase : RoomDatabase() {
@@ -42,6 +46,8 @@ abstract class CineDatabase : RoomDatabase() {
     abstract fun homeCache(): HomeCacheDao
 
     abstract fun preferences(): PreferencesDao
+
+    abstract fun index(): IndexDao
 
     companion object {
         const val NAME = "cine-doury.db"

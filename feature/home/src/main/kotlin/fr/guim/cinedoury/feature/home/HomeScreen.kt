@@ -175,6 +175,7 @@ fun HomeScreen(
     }
 
     val featured = featuredItem?.toFeatured(sources)
+    val shared = remember(rows) { rows.orEmpty().firstAppearances() }
     Box(modifier = modifier.fillMaxSize()) {
         AmbientBackdrop(ambience = featuredItem?.ambience)
         BoxWithConstraints(Modifier.fillMaxSize()) {
@@ -211,6 +212,7 @@ fun HomeScreen(
                             HomeRowView(
                                 row = row,
                                 next = next,
+                                shared = shared[row.key].orEmpty(),
                                 sources = sources,
                                 restore = rowRequesters.requester(row.key),
                                 onFocused = { item ->
@@ -394,6 +396,21 @@ private fun MediaItem.toFeatured(sources: ImageSources): Featured {
         backdrop = backdrop,
         logo = logo,
     )
+}
+
+/**
+ * For each row, the items seen there first: only their card flies to the details screen, so that a
+ * title in two rows has a single shared poster on the screen.
+ */
+private fun List<HomeRow>.firstAppearances(): Map<String, Set<String>> {
+    val seen = mutableSetOf<String>()
+    return associate { row ->
+        row.key to
+            row.items
+                .map { it.id.value }
+                .filter(seen::add)
+                .toSet()
+    }
 }
 
 /** The requester of a row, made on first use: outside composition, where it may not be built. */

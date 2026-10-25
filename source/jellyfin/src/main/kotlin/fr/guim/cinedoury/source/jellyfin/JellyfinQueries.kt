@@ -22,9 +22,22 @@ import org.jellyfin.sdk.model.api.request.GetItemsRequest
 internal fun ItemQuery.toRequest(
     userId: UUID,
     startIndex: Int,
-    limit: Int,
+    limit: Int?,
     fields: List<ItemFields>,
+    images: Boolean = true,
 ): GetItemsRequest {
+    if (ids.isNotEmpty()) {
+        return GetItemsRequest(
+            userId = userId,
+            ids = ids.map { it.value.toJellyfinUuid() },
+            fields = fields,
+            enableUserData = true,
+            enableImages = images,
+            enableImageTypes = IMAGE_TYPES,
+            imageTypeLimit = 1,
+            enableTotalRecordCount = false,
+        )
+    }
     val parent = filters.collection?.id ?: library?.value
     val types = kinds.mapNotNull { it.toBaseItemKind() }
     val resolution = filters.resolution
@@ -61,12 +74,15 @@ internal fun ItemQuery.toRequest(
         nameLessThan = titleBelow,
         maxPremiereDate = releasedBefore?.atTime(LAST_HOUR, 0),
         fields = fields,
-        enableUserData = true,
-        enableImageTypes = listOf(ImageType.PRIMARY, ImageType.BACKDROP, ImageType.LOGO, ImageType.THUMB),
+        enableUserData = images,
+        enableImages = images,
+        enableImageTypes = if (images) IMAGE_TYPES else emptyList(),
         imageTypeLimit = 1,
         enableTotalRecordCount = true,
     )
 }
+
+private val IMAGE_TYPES = listOf(ImageType.PRIMARY, ImageType.BACKDROP, ImageType.LOGO, ImageType.THUMB)
 
 private const val LAST_HOUR = 23
 

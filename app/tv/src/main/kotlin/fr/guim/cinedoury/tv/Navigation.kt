@@ -10,6 +10,7 @@ import fr.guim.cinedoury.core.data.Profile
 import fr.guim.cinedoury.core.data.SavedServer
 import fr.guim.cinedoury.core.model.LibraryId
 import fr.guim.cinedoury.core.model.MediaItem
+import fr.guim.cinedoury.core.model.PlaybackRequest
 import fr.guim.cinedoury.core.source.SourceException
 import fr.guim.cinedoury.feature.auth.AddressMode
 import fr.guim.cinedoury.feature.auth.PinPurpose
@@ -56,14 +57,14 @@ sealed interface Route {
 
     data object Search : Route
 
-    /** The details of an item: J3. */
+    /** The details of an item: a film, a series, an episode, a person, a collection. */
     data class Details(
         val item: MediaItem,
     ) : Route
 
-    /** The player: J4. */
+    /** The player: J4. Until then, what would be played. */
     data class Player(
-        val item: MediaItem,
+        val request: PlaybackRequest,
     ) : Route
 
     data object Settings : Route

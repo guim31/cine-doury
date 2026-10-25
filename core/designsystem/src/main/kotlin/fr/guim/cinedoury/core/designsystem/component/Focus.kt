@@ -71,6 +71,22 @@ class CineFocus private constructor(
 val LocalPreviewFocus = staticCompositionLocalOf<String?> { null }
 
 /**
+ * The first line a list shows so that its line `[prefix]N`, drawn focused by [LocalPreviewFocus],
+ * is in view with a few lines above it, as the D-pad would have scrolled; 0 outside screenshots.
+ */
+@Composable
+fun previewFirstVisible(prefix: String): Int {
+    val index =
+        LocalPreviewFocus.current
+            ?.takeIf { it.startsWith(prefix) }
+            ?.removePrefix(prefix)
+            ?.toIntOrNull()
+    return ((index ?: 0) - PREVIEW_LINES_ABOVE).coerceAtLeast(0)
+}
+
+private const val PREVIEW_LINES_ABOVE = 3
+
+/**
  * A [CineFocus] for one element. [previewTag] names the element for [LocalPreviewFocus]: when it
  * matches, the element is drawn as focused whatever the focus system says.
  */

@@ -1,8 +1,18 @@
 package fr.guim.cinedoury.tv
 
 import android.app.Activity
+import android.content.ActivityNotFoundException
+import android.content.Context
+import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,21 +25,27 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.tv.material3.Text
 import fr.guim.cinedoury.core.data.Profile
 import fr.guim.cinedoury.core.data.SessionManager
 import fr.guim.cinedoury.core.data.StartupTarget
+import fr.guim.cinedoury.core.designsystem.component.LocalSharedElements
+import fr.guim.cinedoury.core.designsystem.component.SharedElements
 import fr.guim.cinedoury.core.designsystem.component.Wordmark
+import fr.guim.cinedoury.core.designsystem.theme.CineMotion
 import fr.guim.cinedoury.core.designsystem.theme.CineSpacing
 import fr.guim.cinedoury.core.designsystem.theme.CineTheme
 import fr.guim.cinedoury.core.designsystem.theme.ThemeVariant
 import fr.guim.cinedoury.core.model.MediaItem
+import fr.guim.cinedoury.core.model.PlaybackRequest
+import fr.guim.cinedoury.core.model.RemoteTrailer
 import fr.guim.cinedoury.core.ui.ComingSoonScreen
 import fr.guim.cinedoury.core.ui.RailTarget
 import fr.guim.cinedoury.core.ui.avatarSource
-import fr.guim.cinedoury.core.ui.cardTitle
 import fr.guim.cinedoury.feature.auth.AddressMode
 import fr.guim.cinedoury.feature.auth.AddressRoute
 import fr.guim.cinedoury.feature.auth.PasswordRoute
@@ -40,6 +56,9 @@ import fr.guim.cinedoury.feature.auth.QuickConnectRoute
 import fr.guim.cinedoury.feature.auth.ServerSearchRoute
 import fr.guim.cinedoury.feature.auth.UnreachableScreen
 import fr.guim.cinedoury.feature.auth.WelcomeScreen
+import fr.guim.cinedoury.feature.details.DetailsNavigation
+import fr.guim.cinedoury.feature.details.DetailsRoute
+import fr.guim.cinedoury.feature.details.PlaybackPreviewScreen
 import fr.guim.cinedoury.feature.home.HomeNavigation
 import fr.guim.cinedoury.feature.home.HomeRoute
 import fr.guim.cinedoury.feature.home.HomeSettingsRoute
@@ -65,11 +84,33 @@ fun CineApp(
 ) {
     val saveable = rememberSaveableStateHolder()
     navigator.onRemoved = { saveable.removeState(it.id) }
-    val entry = navigator.current
+    val reduced = CineTheme.reducedMotion
     BackHandler(enabled = navigator.canGoBack) { navigator.pop() }
-    CompositionLocalProvider(LocalViewModelStoreOwner provides entry) {
-        saveable.SaveableStateProvider(entry.id) {
-            Screen(entry.route, navigator, sessions, variant, onToggleVariant, showCatalog)
+    // Opening a details screen is the one animated change of screen (`UI.md` § 7): the poster flies to
+    // its place in 250 ms while the screens cross-fade. The new screen takes the focus at once, so the
+    // animation never holds the remote back; every other change is instant.
+    SharedTransitionLayout {
+        AnimatedContent(
+            targetState = navigator.current,
+            transitionSpec = {
+                if (targetState.route is Route.Details && targetState.id > initialState.id && !reduced) {
+                    fadeIn(CineMotion.fade(CineMotion.DETAIL_OPEN_MILLIS)) togetherWith
+                        fadeOut(CineMotion.fade(CineMotion.DETAIL_OPEN_MILLIS))
+                } else {
+                    EnterTransition.None togetherWith ExitTransition.None
+                }
+            },
+            contentKey = { it.id },
+            label = "screens",
+        ) { entry ->
+            CompositionLocalProvider(
+                LocalViewModelStoreOwner provides entry,
+                LocalSharedElements provides SharedElements(this@SharedTransitionLayout, this@AnimatedContent),
+            ) {
+                saveable.SaveableStateProvider(entry.id) {
+                    Screen(entry.route, navigator, sessions, variant, onToggleVariant, showCatalog)
+                }
+            }
         }
     }
 }
@@ -196,19 +237,11 @@ private fun SessionScreen(
         }
 
         is Route.Details -> {
-            ComingSoonScreen(
-                title = stringResource(UiR.string.soon_title_details),
-                message = stringResource(UiR.string.soon_message_details, route.item.cardTitle),
-                onBack = { navigator.pop() },
-            )
+            DetailsRoute(route.item, navigation = detailsNavigation(navigator, LocalContext.current))
         }
 
         is Route.Player -> {
-            ComingSoonScreen(
-                title = stringResource(UiR.string.soon_title_player),
-                message = stringResource(UiR.string.soon_message_player, route.item.cardTitle),
-                onBack = { navigator.pop() },
-            )
+            PlaybackPreviewScreen(route.request, onBack = { navigator.pop() })
         }
 
         Route.Settings -> {
@@ -267,7 +300,7 @@ private fun homeNavigation(
 
     override fun open(item: MediaItem) = navigator.push(Route.Details(item))
 
-    override fun play(item: MediaItem) = navigator.push(Route.Player(item))
+    override fun play(item: MediaItem) = navigator.push(Route.Player(PlaybackRequest(item)))
 
     override fun customize() = navigator.push(Route.HomeSettings)
 
@@ -287,6 +320,39 @@ private fun libraryNavigation(
     override fun open(item: MediaItem) = navigator.push(Route.Details(item))
 
     override fun sessionEnded() = navigator.replaceAll(Route.Profiles)
+}
+
+private fun detailsNavigation(
+    navigator: Navigator,
+    context: Context,
+) = object : DetailsNavigation {
+    override fun open(item: MediaItem) = navigator.push(Route.Details(item))
+
+    override fun play(request: PlaybackRequest) = navigator.push(Route.Player(request))
+
+    override fun openTrailer(url: String) = openTrailerApp(context, url)
+
+    override fun sessionEnded() = navigator.replaceAll(Route.Profiles)
+}
+
+/**
+ * A trailer on the web, in the YouTube app of the TV (`FONCTIONNALITES.md` § 4): its own link first,
+ * then the web address, which the system gives to whatever can open it.
+ */
+private fun openTrailerApp(
+    context: Context,
+    url: String,
+) {
+    val youTube = RemoteTrailer(url).youTubeId?.let { Intent(Intent.ACTION_VIEW, "vnd.youtube:$it".toUri()) }
+    val web = Intent(Intent.ACTION_VIEW, url.toUri())
+    for (intent in listOfNotNull(youTube, web)) {
+        try {
+            context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            return
+        } catch (_: ActivityNotFoundException) {
+            // No app for this link: the next one.
+        }
+    }
 }
 
 private fun settingsNavigation(navigator: Navigator) =

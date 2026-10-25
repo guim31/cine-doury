@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ends_at">ends at %1$s</string>
+    <string name="years_since">since %1$d</string>
+    <string name="status_continuing">Continuing</string>
+    <string name="status_ended">Ended</string>
+    <string name="person_born">Born: %1$s</string>
+    <string name="person_died">Died: %1$s</string>
+    <string name="credits_directed">Directed by %1$s</string>
+    <string name="credits_written">Written by %1$s</string>
+    <string name="credits_created">Created by %1$s</string>
+    <string name="action_resume_remaining">Resume — %1$s left</string>
+    <string name="action_play">Play</string>
+    <string name="action_resume_episode">Resume %1$s — %2$s left</string>
+    <string name="action_play_episode">Play %1$s</string>
+    <string name="action_restart">From the start</string>
+    <string name="action_trailer">Trailer</string>
+    <string name="action_tracks">Audio and subtitles</string>
+    <string name="action_watched">Mark as watched</string>
+    <string name="action_unwatched">Mark as unwatched</string>
+    <string name="action_series_watched">Mark the series as watched</string>
+    <string name="action_series_unwatched">Mark the series as unwatched</string>
+    <string name="action_season_watched">Mark the season as watched</string>
+    <string name="action_season_unwatched">Mark the season as unwatched</string>
+    <string name="action_favorite">Add to favourites</string>
+    <string name="action_unfavorite">Remove from favourites</string>
+    <string name="action_series">Go to the series</string>
+    <string name="action_more">More options</string>
+    <string name="row_movies">Films</string>
+    <string name="row_series">Series</string>
+    <string name="row_cast">Cast</string>
+    <string name="row_collection">In the saga</string>
+    <string name="row_similar">Similar titles</string>
+    <string name="row_episodes">Episodes</string>
+    <string name="panel_tracks">Audio and subtitles</string>
+    <string name="panel_file">File information</string>
+    <string name="panel_version">Version</string>
+    <string name="panel_audio">Audio</string>
+    <string name="panel_subtitles">Subtitles</string>
+    <string name="subtitles_none">No subtitles</string>
+    <string name="action_play_with_tracks">Play with these choices</string>
+    <string name="action_file_info">File information</string>
+    <string name="bitrate">%1$d Mbit/s</string>
+    <string name="playback_version">Version</string>
+    <string name="playback_player_choice">Player\'s choice</string>
+    <string name="playback_start">Start</string>
+    <string name="playback_resume_at">Resumes at %1$s</string>
+    <string name="playback_from_start">From the start</string>
+    <plurals name="season_count">
+        <item quantity="one">%1$d season</item>
+        <item quantity="other">%1$d seasons</item>
+    </plurals>
+</resources>

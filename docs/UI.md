@@ -26,6 +26,7 @@ pas un tableau de bord. Les fonctionnalités sont dans `FONCTIONNALITES.md`.
 - **Mémoire du focus** par rangée et par écran. Une rangée qu'on retrouve redonne le focus au dernier élément choisi, pas au premier.
 - **Retour** : remonte d'un niveau. Sur l'accueil, un premier appui ramène en haut de page, un second ouvre le menu latéral, et rien ne quitte l'appli sans confirmation.
 - **Rail latéral** : fermé, il ne montre que les icônes (72 dp de large) ; avec le focus, il s'ouvre en recouvrant le contenu avec les libellés (240 dp). Plex vient de rétablir ce menu à gauche sous la pression de ses utilisateurs : c'est le bon modèle.
+  - Chaque bibliothèque a **son icône** *(retouche du 25/10/2026)* : films, séries, animation, animes, documentaires, spectacles, sport, vidéos en ligne, famille et enfants, collections, dossier. Elle est choisie d'après le type et des mots du nom (« Animes JPN », « Dessins animés », « Documentaires », « MMA », « YouTube »), et se change dans les réglages (« Bibliothèques »).
 
 ## 3. Le focus — ce qui doit être parfait
 
@@ -99,7 +100,7 @@ Plex (`#E5A00D`).
 ## 6. Images et cartes
 
 - **Affiche** 2:3, coins de 8 dp. Tailles TV : 150 × 225 dp (normal), 120 × 180 (petit), 190 × 285 (grand).
-- **Vignette** 16:9, coins de 8 dp, pour « Reprendre », les épisodes et les chapitres : 300 × 169 dp.
+- **Vignette** 16:9, coins de 8 dp, pour « Reprendre », les épisodes et les chapitres : **176 × 99 dp** : une rangée de 1080p en montre quatre entières et le début de la cinquième *(retouche du 25/10/2026 ; 300 × 169 auparavant, trois seulement)*. Le texte reste à la taille Légende (16 sp) sous la vignette ; le titre d'une carte générée y est en Légende aussi.
 - **Progression** : barre de 4 dp au bas de la carte, dans la couleur d'accent, sur un rail `blanc à 25 %`.
 - **Non vu** : petit triangle dans le coin haut droit, dans la couleur d'accent (comme le `watchedIndicator` de Plex). Pour une série, le nombre d'épisodes non vus dans une pastille.
 - **Titres sous les affiches** : désactivés par défaut sur la TV (l'affiche suffit), le titre et l'année s'affichent sous l'élément focalisé seulement. Activables en réglage.
@@ -128,12 +129,20 @@ Plex (`#E5A00D`).
 ### Accueil
 - Fond d'ambiance du § 3 derrière tout l'écran ; il en va de même pour les bibliothèques et les fiches.
 - Bandeau à la une sur 60 % de la hauteur. Le fond est le **film focalisé**, pas un carrousel qui défile seul. On peut le remplacer en réglage par un fond animé lent (Ken Burns à 3 % de zoom en 20 s), désactivé par défaut.
+- **Raccord** *(retouche du 25/10/2026)* : le fond du bandeau se fond dans le fond d'ambiance par la transparence, à gauche et en bas, sur une courbe douce : aucune arête ne marque l'endroit où il s'arrête, dans les deux thèmes.
 - Rangées en dessous ; titre de rangée en Titre 2, à 24 dp au-dessus des cartes.
 
 ### Fiche
 - Fond plein écran, voiles des § 4. Colonne gauche de 45 % : logo, ligne de métadonnées (« 2014 · 2 h 49 · 12 ans · se termine à 23 h 36 »), badges techniques en Légende sur `surface-2`, synopsis sur 3 lignes, dépliable.
 - **Focus initial sur « Lire » ou « Reprendre »**. Les boutons secondaires sont ronds, en icône seule, et leur libellé apparaît au focus.
 - En dessous : distribution, saga, similaires ; pour une série, les saisons et les épisodes.
+- Précisions du J3 :
+  - l'**affiche** (190 × 285) est à gauche de la colonne de texte : c'est elle qui vole depuis la carte ouverte ; un épisode montre sa vignette (320 × 180), une personne sa photo ;
+  - les **boutons** sont sous l'affiche et le texte, sur toute la largeur : « Reprendre — 1 h 09 restantes » et six boutons ronds ne tiennent pas dans la colonne de texte ;
+  - la ligne de métadonnées finit par l'heure de fin (« se termine à 22 h 07 ») ; les genres, puis les badges, viennent dessous ; le synopsis tient sur 3 lignes et se déplie par OK (il ne prend le focus que s'il est plus long) ;
+  - un titre entamé dit ce qui reste : « Reprendre — 1 h 09 restantes » ; une série dit l'épisode : « Reprendre S01E02 — 24 min restantes », « Lire S01E02 » ;
+  - les saisons sont des onglets, avec « Marquer la saison comme vue » ; une série à saison unique n'en a pas : ses épisodes suivent, sous « Épisodes » ;
+  - « Audio et sous-titres » ouvre, à droite, un seul panneau : version, audio, sous-titres, chaque piste décrite en clair, et « Lire avec ces choix » en tête.
 
 ### Lecteur
 - **Rien à l'écran pendant la lecture.** Une touche fait apparaître l'interface, qui disparaît après 4 s sans action.
