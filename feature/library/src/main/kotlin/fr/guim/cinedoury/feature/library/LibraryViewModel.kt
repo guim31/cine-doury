@@ -382,11 +382,12 @@ class LibraryViewModel(
             local.update { it.copy(scan = ScanStatus(running = true)) }
             // The task takes a moment to start: never seen running means already done.
             delay(SCAN_POLL_MILLIS)
-            while (true) {
-                val status = guardedOrNull { manager?.scanStatus() } ?: break
-                local.update { it.copy(scan = status) }
-                if (!status.running) break
-                delay(SCAN_POLL_MILLIS)
+            var running = true
+            while (running) {
+                val status = guardedOrNull { manager?.scanStatus() }
+                status?.let { found -> local.update { it.copy(scan = found) } }
+                running = status?.running == true
+                if (running) delay(SCAN_POLL_MILLIS)
             }
             local.update { it.copy(scan = ScanStatus.IDLE) }
             show(ManageNotice.ScanDone)

@@ -280,7 +280,7 @@ private fun ProblemActions(
                     icon = CineIcons.Search,
                     onClick = {
                         actions.choose(null)
-                        chosen?.let(onIdentify)
+                        onIdentify(chosen)
                     },
                     focusRequester = firstAction,
                     focus = rememberCineFocus(ProblemsPreview.IDENTIFY),

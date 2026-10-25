@@ -63,6 +63,7 @@ import fr.guim.cinedoury.core.ui.posterImage
 import fr.guim.cinedoury.core.ui.rememberArt
 
 /** What a library screen asks of its view model; a no-op for screenshots. */
+@Suppress("TooManyFunctions") // One function per gesture of the screen.
 interface LibraryActions {
     fun selectTab(tab: LibraryTab)
 

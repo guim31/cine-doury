@@ -61,6 +61,14 @@ class J6NavigationTest {
     private fun focusable(tag: String) =
         compose.onNode(hasClickAction() and (hasTestTag(tag) or hasAnyAncestor(hasTestTag(tag))))
 
+    /** A button of the dialog on screen, by its label. */
+    private fun dialogButton(label: String) =
+        compose.onNode(hasClickAction() and hasText(label) and hasAnyAncestor(hasTestTag(ManagePreview.DIALOG)))
+
+    private fun cancel() = dialogButton("Annuler")
+
+    private fun confirm(label: String = "Supprimer") = dialogButton(label)
+
     private fun press(
         key: Key,
         times: Int = 1,
@@ -160,14 +168,13 @@ class J6NavigationTest {
         // Marquer comme vu, Informations, then the three refreshes, Corriger, Images, Supprimer.
         press(Key.DirectionDown, times = 7)
         focusable(panelLine(8)).assertIsFocused()
-        compose.onNode(hasText("Supprimer") and hasAnyAncestor(hasTestTag(panelLine(8)))).assertExists()
         press(Key.DirectionCenter) // 2: « Supprimer »
         compose.onNode(hasTestTag(ManagePreview.DIALOG)).assertExists()
         compose
             .onNode(
                 hasText("/media/films/Le Phare (2001)/Le Phare (2001) - 2160p.mkv", substring = true),
             ).assertExists()
-        focusable(ManagePreview.DELETE_CANCEL).assertIsFocused()
+        cancel().assertIsFocused()
         // OK on « Annuler » deletes nothing.
         press(Key.DirectionCenter)
         assertEquals(0, details.deleted)
@@ -175,9 +182,9 @@ class J6NavigationTest {
         // Again, then → « Supprimer » and OK: deleted.
         details.askDelete()
         compose.waitForIdle()
-        focusable(ManagePreview.DELETE_CANCEL).assertIsFocused()
+        cancel().assertIsFocused()
         press(Key.DirectionRight)
-        focusable(ManagePreview.DELETE_CONFIRM).assertIsFocused()
+        confirm().assertIsFocused()
         press(Key.DirectionCenter)
         assertEquals(1, details.deleted)
     }
@@ -188,12 +195,12 @@ class J6NavigationTest {
         show(details)
         details.askDelete()
         compose.waitForIdle()
-        focusable(ManagePreview.DELETE_CANCEL).assertIsFocused()
+        cancel().assertIsFocused()
         press(Key.DirectionRight)
         press(Key.DirectionCenter)
         assertEquals(0, details.deleted, "the first « Supprimer » only asks again")
         compose.onNode(hasText("Supprimer toute la série ?")).assertExists()
-        focusable(ManagePreview.DELETE_CANCEL).assertIsFocused()
+        cancel().assertIsFocused()
         press(Key.DirectionRight)
         press(Key.DirectionCenter)
         assertEquals(1, details.deleted)
