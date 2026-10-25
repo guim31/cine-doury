@@ -26,6 +26,11 @@ class PlaybackScope(
     val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
 )
 
+/** The open profile, for the settings kept per profile ([PlayerSettingsStore]); null before one opens. */
+fun interface CurrentProfile {
+    fun key(): String?
+}
+
 /** `:core:playback` for Koin. */
 val playbackModule =
     module {
@@ -38,6 +43,7 @@ val playbackModule =
                         PlayerSettingsStore.FILE,
                     )
                 },
+                profile = { getOrNull<CurrentProfile>()?.key() },
             )
         }
         single<VideoPlayerFactory> {

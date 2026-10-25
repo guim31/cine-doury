@@ -13,7 +13,8 @@ import fr.guim.cinedoury.core.model.SubtitleBackground
 import fr.guim.cinedoury.core.model.SubtitleColor
 import fr.guim.cinedoury.core.model.SubtitleEdge
 import fr.guim.cinedoury.core.model.SubtitlePosition
-import fr.guim.cinedoury.core.model.SubtitleSize
+import fr.guim.cinedoury.core.model.SubtitleScale
+import fr.guim.cinedoury.core.model.SubtitleStyle
 import fr.guim.cinedoury.core.model.TranscodeReason
 import fr.guim.cinedoury.core.playback.PlayerSnapshot
 import fr.guim.cinedoury.core.ui.cardTitle
@@ -138,17 +139,6 @@ fun SegmentAction.label(): String =
     )
 
 @Composable
-fun SubtitleSize.label(): String =
-    stringResource(
-        when (this) {
-            SubtitleSize.Small -> R.string.size_small
-            SubtitleSize.Normal -> R.string.size_normal
-            SubtitleSize.Large -> R.string.size_large
-            SubtitleSize.Huge -> R.string.size_huge
-        },
-    )
-
-@Composable
 fun SubtitleColor.label(): String =
     stringResource(
         when (this) {
@@ -174,8 +164,8 @@ fun SubtitleBackground.label(): String =
     stringResource(
         when (this) {
             SubtitleBackground.None -> R.string.background_none
-            SubtitleBackground.Translucent -> R.string.background_translucent
-            SubtitleBackground.Opaque -> R.string.background_opaque
+            SubtitleBackground.Shaded -> R.string.background_shaded
+            SubtitleBackground.Band -> R.string.background_band
         },
     )
 
@@ -276,3 +266,7 @@ fun PlayerState.infoLines(snapshot: PlayerSnapshot): List<Pair<String, String>> 
 }
 
 private const val MILLIS = 1_000.0
+
+/** The size of the subtitles, « 140 % ». */
+@Composable
+fun SubtitleStyle.scaleLabel(): String = stringResource(R.string.setting_percent, SubtitleScale.percent(scale))

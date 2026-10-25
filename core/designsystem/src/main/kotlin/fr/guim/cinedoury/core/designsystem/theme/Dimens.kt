@@ -121,6 +121,12 @@ object CineSizes {
     /** The two columns of the audio and subtitle panel of the player. */
     val tracksPanelWidth = 720.dp
 
+    /** The value between − and + of a stepper (« 140 % »). */
+    val stepperValueWidth = 64.dp
+
+    /** The bar of the subtitles over the top of the picture, while their size is set. */
+    val subtitleBarWidth = 840.dp
+
     /** The still picture under the subtitles of « Apparence des sous-titres ». */
     val subtitlePreview = DpSize(320.dp, 180.dp)
     val subtitlePreviewTop = 120.dp

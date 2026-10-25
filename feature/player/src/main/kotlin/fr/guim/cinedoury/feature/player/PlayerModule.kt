@@ -1,6 +1,8 @@
 package fr.guim.cinedoury.feature.player
 
+import fr.guim.cinedoury.core.data.SessionManager
 import fr.guim.cinedoury.core.model.PlaybackRequest
+import fr.guim.cinedoury.core.playback.CurrentProfile
 import fr.guim.cinedoury.core.playback.DeviceCapabilitiesReader
 import fr.guim.cinedoury.core.playback.PlaybackScope
 import org.koin.core.module.dsl.viewModel
@@ -22,4 +24,12 @@ val playerModule =
             )
         }
         viewModel { PlaybackSettingsViewModel(get(), get()) }
+        single<CurrentProfile> {
+            val sessions = get<SessionManager>()
+            CurrentProfile {
+                sessions.active.value
+                    ?.profile
+                    ?.let { "${it.serverId}/${it.user.id.value}" }
+            }
+        }
     }

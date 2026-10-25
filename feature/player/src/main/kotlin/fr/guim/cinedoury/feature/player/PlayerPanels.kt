@@ -1,5 +1,8 @@
 package fr.guim.cinedoury.feature.player
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -13,6 +16,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
@@ -23,13 +27,18 @@ import fr.guim.cinedoury.core.designsystem.component.InitialFocus
 import fr.guim.cinedoury.core.designsystem.component.ListRow
 import fr.guim.cinedoury.core.designsystem.component.ListSectionTitle
 import fr.guim.cinedoury.core.designsystem.component.SidePanel
+import fr.guim.cinedoury.core.designsystem.component.StepperRow
+import fr.guim.cinedoury.core.designsystem.component.SubtitleBar
 import fr.guim.cinedoury.core.designsystem.component.SubtitlePreview
 import fr.guim.cinedoury.core.designsystem.component.rememberCineFocus
+import fr.guim.cinedoury.core.designsystem.theme.CineMotion
 import fr.guim.cinedoury.core.designsystem.theme.CineSizes
 import fr.guim.cinedoury.core.designsystem.theme.CineSpacing
 import fr.guim.cinedoury.core.model.MediaStream
 import fr.guim.cinedoury.core.model.Qualities
+import fr.guim.cinedoury.core.model.SubtitleBackground
 import fr.guim.cinedoury.core.model.SubtitleEdge
+import fr.guim.cinedoury.core.model.SubtitleScale
 import fr.guim.cinedoury.core.model.SubtitleStyle
 import fr.guim.cinedoury.core.ui.attributes
 import fr.guim.cinedoury.core.ui.label
@@ -56,10 +65,18 @@ fun PlayerPanels(
     SideEffect { if (panel != null) last = panel }
     val shown = panel ?: last
     if (shown == PlayerPanel.Settings && panel != null) SubtitleSample(state.settings.subtitles)
+    AnimatedVisibility(
+        visible = panel == PlayerPanel.SubtitleSize,
+        enter = fadeIn(CineMotion.fade(CineMotion.OSD_FADE_MILLIS)),
+        exit = fadeOut(CineMotion.fade(CineMotion.OSD_FADE_MILLIS)),
+    ) {
+        SubtitleSizeBar(state, actions, enabled = panel == PlayerPanel.SubtitleSize)
+    }
+    if (shown == PlayerPanel.SubtitleSize) return
     val title =
         stringResource(
             when (shown) {
-                PlayerPanel.Tracks, null -> R.string.player_tracks
+                PlayerPanel.Tracks, PlayerPanel.SubtitleSize, null -> R.string.player_tracks
                 PlayerPanel.Quality -> R.string.player_quality
                 PlayerPanel.Settings -> R.string.player_settings
                 PlayerPanel.Chapters -> R.string.player_chapters
@@ -74,7 +91,7 @@ fun PlayerPanels(
     ) {
         when (shown) {
             PlayerPanel.Tracks -> {
-                TracksPanel(state, actions, enabled = panel != null)
+                TracksPanel(state, actions, enabled = panel != null, onPanel)
             }
 
             PlayerPanel.Quality -> {
@@ -82,14 +99,14 @@ fun PlayerPanels(
             }
 
             PlayerPanel.Settings -> {
-                SettingsPanel(state, actions, enabled = panel != null)
+                SettingsPanel(state, actions, enabled = panel != null, onPanel)
             }
 
             PlayerPanel.Chapters -> {
                 ChaptersPanel(state, actions, enabled = panel != null) { onPanel(null) }
             }
 
-            null -> {}
+            PlayerPanel.SubtitleSize, null -> {}
         }
     }
 }
@@ -142,6 +159,7 @@ private fun TracksPanel(
     state: PlayerState,
     actions: PlayerActions,
     enabled: Boolean,
+    onPanel: (PlayerPanel?) -> Unit,
 ) {
     val source = state.stream?.source ?: state.item.mediaSources.firstOrNull()
     val audio =
@@ -164,7 +182,8 @@ private fun TracksPanel(
                 it.choice(
                     state.subtitleIndex == it.index,
                 ) { actions.selectSubtitles(it.index) }
-            }
+            } +
+            subtitleLook(state) { onPanel(PlayerPanel.SubtitleSize) }
     val first = remember { FocusRequester() }
     Row(horizontalArrangement = Arrangement.spacedBy(CineSpacing.m)) {
         ChoiceColumn(0, stringResource(R.string.player_audio), audio, Modifier.weight(1f), first)
@@ -172,6 +191,24 @@ private fun TracksPanel(
     }
     InitialFocus(first, key = enabled, enabled = enabled)
 }
+
+/** « Taille, position et fond », with the size: the bar over the picture. */
+@Composable
+private fun subtitleLook(
+    state: PlayerState,
+    onClick: () -> Unit,
+) = Choice(
+    key = "look",
+    title = stringResource(R.string.player_subtitle_look),
+    pills = emptyList(),
+    checked = false,
+    onClick = onClick,
+    description =
+        stringResource(
+            if (state.subtitlesBurnedIn) R.string.player_subtitle_fixed else R.string.player_subtitle_hint,
+        ),
+    value = if (state.subtitlesBurnedIn) null else state.settings.subtitles.scaleLabel(),
+)
 
 @Composable
 private fun MediaStream.choice(
@@ -224,6 +261,7 @@ private fun SettingsPanel(
     state: PlayerState,
     actions: PlayerActions,
     enabled: Boolean,
+    onPanel: (PlayerPanel?) -> Unit,
 ) {
     val settings = state.settings
     val style = settings.subtitles
@@ -240,24 +278,72 @@ private fun SettingsPanel(
             Choice("segments", stringResource(R.string.player_segments), emptyList(), false, {
                 actions.updateSettings { it.copy(segments = it.segments.next()) }
             }, value = settings.segments.label()),
-            Choice("size", stringResource(R.string.player_subtitle_size), emptyList(), false, {
-                subtitles { it.copy(size = it.size.next()) }
-            }, value = style.size.label()),
+            subtitleLook(state) { onPanel(PlayerPanel.SubtitleSize) },
             Choice("color", stringResource(R.string.player_subtitle_color), emptyList(), false, {
                 subtitles { it.copy(color = it.color.next()) }
             }, value = style.color.label()),
             Choice("edge", stringResource(R.string.player_subtitle_edge), emptyList(), false, {
                 subtitles { it.copy(edge = it.edge.next()) }
             }, value = style.edge.label()),
-            Choice("background", stringResource(R.string.player_subtitle_background), emptyList(), false, {
-                subtitles { it.copy(background = it.background.next()) }
-            }, value = style.background.label()),
-            Choice("position", stringResource(R.string.player_subtitle_position), emptyList(), false, {
-                subtitles { it.copy(position = it.position.next()) }
-            }, value = style.position.label()),
         )
     val first = remember { FocusRequester() }
     ChoiceColumn(0, null, choices, initialFocus = first)
+    InitialFocus(first, key = enabled, enabled = enabled)
+}
+
+/**
+ * The size of the subtitles, over the top of the picture so that they stay in sight (`UI.md` § 8):
+ * ← and → change it at once, then their height and their background. A line shows while no
+ * subtitle is on screen. Subtitles burned into the picture cannot change: the bar says so.
+ */
+@Composable
+private fun SubtitleSizeBar(
+    state: PlayerState,
+    actions: PlayerActions,
+    enabled: Boolean,
+) {
+    val style = state.settings.subtitles
+    val fixed = state.subtitlesBurnedIn
+
+    fun subtitles(change: (SubtitleStyle) -> SubtitleStyle) =
+        actions.updateSettings {
+            it.copy(subtitles = change(it.subtitles))
+        }
+    val first = remember { FocusRequester() }
+    Box(Modifier.fillMaxSize().padding(top = CineSpacing.safeVertical), contentAlignment = Alignment.TopCenter) {
+        SubtitleBar(
+            note = stringResource(if (fixed) R.string.player_subtitle_fixed else R.string.player_subtitle_hint),
+            modifier = Modifier.testTag(PlayerPreview.SUBTITLE_BAR),
+        ) {
+            StepperRow(
+                title = stringResource(R.string.player_subtitle_size_short),
+                value = style.scaleLabel(),
+                onStep = { forward -> if (!fixed) subtitles { it.step(forward) } },
+                canDecrease = !fixed && style.scale > SubtitleScale.MIN,
+                canIncrease = !fixed && style.scale < SubtitleScale.MAX,
+                icon = CineIcons.TextSize,
+                focusRequester = first,
+                focus = rememberCineFocus(playerPanelLine(0, 0)),
+                modifier = Modifier.weight(1.2f).testTag(playerPanelLine(0, 0)),
+            )
+            if (!fixed) {
+                ListRow(
+                    title = stringResource(R.string.player_subtitle_position),
+                    value = style.position.label(),
+                    onClick = { subtitles { it.copy(position = it.position.next()) } },
+                    focus = rememberCineFocus(playerPanelLine(0, 1)),
+                    modifier = Modifier.weight(1f).testTag(playerPanelLine(0, 1)),
+                )
+                ListRow(
+                    title = stringResource(R.string.player_subtitle_background),
+                    value = style.background.label(),
+                    onClick = { subtitles { it.copy(background = it.background.next()) } },
+                    focus = rememberCineFocus(playerPanelLine(0, 2)),
+                    modifier = Modifier.weight(1f).testTag(playerPanelLine(0, 2)),
+                )
+            }
+        }
+    }
     InitialFocus(first, key = enabled, enabled = enabled)
 }
 
@@ -280,8 +366,9 @@ fun SubtitleSample(
             background = Color(style.background.argb),
             outline = style.edge == SubtitleEdge.Outline,
             shadow = style.edge == SubtitleEdge.Shadow,
-            sizeFraction = style.size.fraction,
+            sizeFraction = style.textFraction,
             bottomFraction = style.position.bottomFraction,
+            band = style.background == SubtitleBackground.Band,
         )
     }
 }

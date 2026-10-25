@@ -10,6 +10,7 @@ import fr.guim.cinedoury.core.model.PlaybackFailure
 import fr.guim.cinedoury.core.model.PlaybackProfile
 import fr.guim.cinedoury.core.model.PlaybackStream
 import fr.guim.cinedoury.core.model.PlayerSettings
+import fr.guim.cinedoury.core.model.SubtitleMethod
 import fr.guim.cinedoury.core.model.TrickplayInfo
 import fr.guim.cinedoury.core.playback.PlayerSnapshot
 import fr.guim.cinedoury.core.source.SourceException
@@ -88,6 +89,13 @@ data class PlayerState(
                     .orEmpty()
             return versions.firstOrNull { it.width >= TRICKPLAY_WIDTH } ?: versions.lastOrNull()
         }
+
+    /**
+     * The subtitles chosen are burned into the picture by the server (PGS while transcoding, ASS
+     * when the setting asks): neither their size nor their place can change.
+     */
+    val subtitlesBurnedIn: Boolean
+        get() = stream?.subtitles?.firstOrNull { it.index == subtitleIndex }?.method == SubtitleMethod.Encode
 
     /** The chapter at the position. */
     val chapterIndex: Int get() = chapters.indexOfLast { it.start <= position }

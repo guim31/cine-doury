@@ -91,6 +91,9 @@ enum class PlayerPanel {
     Quality,
     Settings,
     Chapters,
+
+    /** The size, height and background of the subtitles: a bar over the top of the picture. */
+    SubtitleSize,
 }
 
 /** Preview tags of the player, for tests and screenshots. */
@@ -99,6 +102,8 @@ object PlayerPreview {
     const val PLAY = "player-play"
     const val CHAPTERS = "player-chapters"
     const val TRACKS = "player-tracks"
+    const val SUBTITLES = "player-subtitles"
+    const val SUBTITLE_BAR = "player-subtitle-bar"
     const val QUALITY = "player-quality"
     const val SETTINGS = "player-settings"
     const val INFO = "player-info"
@@ -135,7 +140,9 @@ fun PlayerRoute(
         actions = viewModel,
         sources = sessions::imageSource,
         onBack = viewModel::close,
-        video = { VideoSurface(player, state.settings.aspect, state.settings.subtitles, Modifier.fillMaxSize()) },
+        video = { sample ->
+            VideoSurface(player, state.settings.aspect, state.settings.subtitles, Modifier.fillMaxSize(), sample)
+        },
     )
 }
 
@@ -144,7 +151,8 @@ fun PlayerRoute(
  * interface (title, hour and end, progress, controls), which fades out after 4 s. ← and → jump; on
  * the bar they search, with the preview picture above it, faster as the key stays down. « Passer
  * l'intro » and « Épisode suivant » take the focus when they appear. « Retour » closes a panel, then
- * the interface, then the player.
+ * the interface, then the player. Holding ↑ or ↓ while the interface is hidden makes the subtitles
+ * larger or smaller at once, with their bar over the top of the picture (`UI.md` § 8).
  *
  * @param previewOsd shows the interface (screenshots); [previewPanel] opens a panel.
  */
@@ -158,7 +166,7 @@ fun PlayerScreen(
     modifier: Modifier = Modifier,
     previewOsd: Boolean = false,
     previewPanel: PlayerPanel? = null,
-    video: @Composable () -> Unit = {},
+    video: @Composable (sample: String?) -> Unit = {},
 ) {
     var osd by remember { mutableStateOf(previewOsd) }
     var panel by remember { mutableStateOf(previewPanel) }
@@ -168,6 +176,14 @@ fun PlayerScreen(
     val current by rememberUpdatedState(state)
     val overlay = state.error != null || state.stillWatching
     val pausedForSettings = remember { mutableStateOf(false) }
+    var resized by remember { mutableStateOf(false) }
+
+    fun resize(forward: Boolean) {
+        resized = true
+        osd = false
+        panel = PlayerPanel.SubtitleSize
+        if (!current.subtitlesBurnedIn) actions.updateSettings { it.copy(subtitles = it.subtitles.step(forward)) }
+    }
 
     // The interface fades out 4 s after the last key while the film plays.
     val autoHide = osd && state.playing && !previewOsd
@@ -175,6 +191,13 @@ fun PlayerScreen(
         if (autoHide && panel == null && state.scrub == null) {
             delay(CineMotion.OSD_HIDE_AFTER_MILLIS.toLong())
             osd = false
+        }
+    }
+    // The bar of the subtitles goes too, 4 s after the last key.
+    LaunchedEffect(panel, lastKey) {
+        if (panel == PlayerPanel.SubtitleSize && previewPanel == null) {
+            delay(CineMotion.OSD_HIDE_AFTER_MILLIS.toLong())
+            panel = null
         }
     }
     // A search left alone goes there after a moment.
@@ -189,7 +212,7 @@ fun PlayerScreen(
         if (panel == PlayerPanel.Settings && current.playing) {
             pausedForSettings.value = true
             actions.pause()
-        } else if (panel == null && pausedForSettings.value) {
+        } else if (panel != PlayerPanel.Settings && pausedForSettings.value) {
             pausedForSettings.value = false
             actions.play()
         }
@@ -266,7 +289,26 @@ fun PlayerScreen(
                 }.focusRequester(root)
                 .onKeyEvent { event ->
                     // Keys nothing focused took: the interface is hidden.
-                    if (event.type != KeyEventType.KeyDown || osd || overlay) return@onKeyEvent false
+                    if (osd || overlay) return@onKeyEvent false
+                    val vertical = event.key == Key.DirectionUp || event.key == Key.DirectionDown
+                    if (vertical && (panel == null || panel == PlayerPanel.SubtitleSize)) {
+                        // Held: the size of the subtitles; pressed: the interface.
+                        val repeat = event.nativeKeyEvent.repeatCount
+                        when {
+                            event.type == KeyEventType.KeyDown && repeat >= LONG_PRESS_REPEAT -> {
+                                if ((repeat - LONG_PRESS_REPEAT) % RESIZE_EVERY_REPEAT == 0) {
+                                    resize(forward = event.key == Key.DirectionUp)
+                                }
+                            }
+
+                            event.type == KeyEventType.KeyUp -> {
+                                if (!resized && panel == null) osd = true
+                                resized = false
+                            }
+                        }
+                        return@onKeyEvent true
+                    }
+                    if (event.type != KeyEventType.KeyDown || panel != null) return@onKeyEvent false
                     when (event.key) {
                         Key.DirectionLeft -> {
                             actions.jump(forward = false)
@@ -278,7 +320,7 @@ fun PlayerScreen(
                             osd = true
                         }
 
-                        Key.DirectionCenter, Key.Enter, Key.DirectionUp, Key.DirectionDown -> {
+                        Key.DirectionCenter, Key.Enter -> {
                             osd = true
                         }
 
@@ -289,14 +331,23 @@ fun PlayerScreen(
                     true
                 }.focusable(),
     ) {
-        video()
+        val resizing = panel == PlayerPanel.SubtitleSize && !state.subtitlesBurnedIn
+        video(if (resizing) stringResource(R.string.player_subtitle_sample) else null)
         if (state.loading && state.stream == null) Loading(state, sources)
         AnimatedVisibility(
             visible = osd && !overlay,
             enter = fadeIn(CineMotion.fade(CineMotion.OSD_FADE_MILLIS)),
             exit = fadeOut(CineMotion.fade(CineMotion.OSD_FADE_MILLIS)),
         ) {
-            Osd(state, actions, progress, onPanel = { panel = it })
+            Osd(
+                state,
+                actions,
+                progress,
+                onPanel = {
+                    panel = it
+                    if (it == PlayerPanel.SubtitleSize) osd = false
+                },
+            )
         }
         if (state.reconnecting && state.error == null) {
             StatusPill(
@@ -336,6 +387,10 @@ fun PlayerScreen(
 }
 
 private const val SCRUB_COMMIT_MILLIS = 1_200L
+
+/** A key held down repeats after about half a second, then about twenty times a second. */
+private const val LONG_PRESS_REPEAT = 1
+private const val RESIZE_EVERY_REPEAT = 6
 
 /** While the server is asked: the frame of the item, its title, never a black screen. */
 @Composable
@@ -560,6 +615,12 @@ private fun Controls(
             label = stringResource(R.string.player_tracks),
             onClick = { onPanel(PlayerPanel.Tracks) },
             focus = rememberCineFocus(PlayerPreview.TRACKS),
+        )
+        RoundIconButton(
+            icon = CineIcons.TextSize,
+            label = stringResource(R.string.player_subtitle_size),
+            onClick = { onPanel(PlayerPanel.SubtitleSize) },
+            focus = rememberCineFocus(PlayerPreview.SUBTITLES),
         )
         if (!state.trailer) {
             RoundIconButton(

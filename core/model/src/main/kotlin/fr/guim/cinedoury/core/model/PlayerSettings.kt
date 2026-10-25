@@ -65,24 +65,51 @@ object Qualities {
 
 /**
  * The look of the subtitles drawn by the player (`FONCTIONNALITES.md` § 5): size, colour, edge,
- * background and height above the bottom of the picture.
+ * background and height above the bottom of the picture. Every size is a part of the height of the
+ * picture, never pixels: a setting looks the same in 1080p and in 4K.
+ *
+ * @param scale the size, from [SubtitleScale.MIN] to [SubtitleScale.MAX] of [SubtitleScale.BASE]:
+ * the text of SRT and ASS (the sizes of the ASS styles keep their proportions) and the pictures of
+ * PGS and VobSub grow alike.
  */
 data class SubtitleStyle(
-    val size: SubtitleSize = SubtitleSize.Normal,
+    val scale: Float = 1f,
     val color: SubtitleColor = SubtitleColor.White,
     val edge: SubtitleEdge = SubtitleEdge.Outline,
     val background: SubtitleBackground = SubtitleBackground.None,
     val position: SubtitlePosition = SubtitlePosition.Bottom,
-)
-
-/** The height of the text, as a fraction of the height of the picture. */
-enum class SubtitleSize(
-    val fraction: Float,
 ) {
-    Small(0.045f),
-    Normal(0.0533f),
-    Large(0.065f),
-    Huge(0.08f),
+    /** The height of the text without a size of its own, as a part of the height of the picture. */
+    val textFraction: Float get() = SubtitleScale.BASE * scale
+
+    /** The size one step up ([forward]) or down, within the steps. */
+    fun step(forward: Boolean): SubtitleStyle = copy(scale = SubtitleScale.step(scale, forward))
+}
+
+/** The steps of the size of the subtitles: 60 % to 200 %, by tenths up to 100 %, then by fifths. */
+object SubtitleScale {
+    /** The height of a line at 100 %: 5.33 % of the picture, the size of Android's captions. */
+    const val BASE = 0.0533f
+    const val MIN = 0.6f
+    const val MAX = 2f
+    val STEPS = listOf(0.6f, 0.7f, 0.8f, 0.9f, 1f, 1.2f, 1.4f, 1.6f, 1.8f, 2f)
+
+    /** The next step from [scale], one way or the other; a value between two steps snaps to one. */
+    fun step(
+        scale: Float,
+        forward: Boolean,
+    ): Float =
+        if (forward) {
+            STEPS.firstOrNull { it > scale + EPSILON } ?: STEPS.last()
+        } else {
+            STEPS.lastOrNull { it < scale - EPSILON } ?: STEPS.first()
+        }
+
+    /** The size as a whole percentage (« 140 % »). */
+    fun percent(scale: Float): Int = Math.round(scale * PERCENT)
+
+    private const val EPSILON = 0.001f
+    private const val PERCENT = 100
 }
 
 /** The colour of the text, in ARGB. */
@@ -101,20 +128,27 @@ enum class SubtitleEdge {
     Shadow,
 }
 
-/** The box behind the text, in ARGB. */
+/**
+ * What lies behind the text, in ARGB: nothing, a shade behind the words, or a band the width of
+ * the picture.
+ */
 enum class SubtitleBackground(
     val argb: Long,
 ) {
     None(0x00000000),
-    Translucent(0x99000000),
-    Opaque(0xFF000000),
+    Shaded(0x99000000),
+    Band(0xB3000000),
 }
 
-/** The space under the text, as a fraction of the height of the picture. */
+/** The space under the text, as a part of the height of the picture. */
 enum class SubtitlePosition(
     val bottomFraction: Float,
 ) {
     Bottom(0.08f),
     Raised(0.15f),
     High(0.25f),
+    ;
+
+    /** How much higher than [Bottom] the subtitles sit (pictures move up as much). */
+    val raise: Float get() = bottomFraction - Bottom.bottomFraction
 }

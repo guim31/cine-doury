@@ -150,11 +150,15 @@ Plex (`#E5A00D`).
 ### Lecteur
 - **Rien à l'écran pendant la lecture.** Une touche fait apparaître l'interface, qui disparaît après 4 s sans action.
 - En haut à gauche : titre, ou série et « S02 · E05 — titre ». En haut à droite : l'heure et l'heure de fin.
-- En bas : barre de progression pleine largeur, temps écoulé et temps restant, rangée de commandes (lecture, chapitres, audio et sous-titres, qualité, réglages).
+- En bas : barre de progression pleine largeur, temps écoulé et temps restant, rangée de commandes (lecture, chapitres, audio et sous-titres, taille des sous-titres, qualité, réglages, informations).
 - **Recherche dans la vidéo** : la vignette d'aperçu (trickplay) apparaît au-dessus de la barre, à 320 dp de large ; l'image en fond reste figée. L'accélération est progressive si on maintient la touche.
 - **Passer l'intro** : bouton en bas à droite, dans la couleur d'accent, focalisé d'office et sans masquer la vidéo, qui disparaît seul à la fin du segment.
 - **Épisode suivant** : carte en bas à droite pendant le générique (vignette, titre, compte à rebours circulaire). La vidéo réduite reste visible derrière.
 - **Audio et sous-titres** : un seul panneau à deux colonnes (audio | sous-titres), en panneau latéral droit, sans quitter l'image. Chaque piste est décrite en clair : « Français — 5.1 — E-AC3 — par défaut ».
+- **Taille des sous-titres** *(ajout du 25/10/2026)* : une **barre en haut de l'image** (840 dp, `panneau du lecteur`), pas un panneau latéral, qui cacherait les sous-titres. Elle tient sur une ligne : « Taille − 140 % + » (← et → la changent, focus d'office), « Position », « Fond », et dessous une ligne d'aide (« Maintenez ↑ ou ↓ pendant la lecture pour changer leur taille. »). La vidéo continue ; sans sous-titre à l'écran, une phrase d'exemple s'affiche. Elle disparaît 4 s après la dernière touche, comme l'interface.
+  - Raccourci : **↑ ou ↓ maintenu**, interface cachée, grossit ou réduit d'un cran par demi-seconde et montre la barre ; un appui bref montre l'interface, comme avant.
+  - On y arrive aussi par la ligne « Taille, position et fond » (panneaux Audio et sous-titres, Réglages) et par le bouton « Taille des sous-titres » de l'interface.
+  - Sous-titres incrustés par le serveur : le − / + est éteint, la barre dit « La taille de ces sous-titres ne peut pas être modifiée. Le serveur les incruste dans l'image. »
 
 ### Gestion
 - Même langage visuel que le reste : pas de formulaire d'administration gris. Une correction d'affiche est une **galerie d'affiches**, une correction d'identification une **liste de résultats avec affiches et année**.

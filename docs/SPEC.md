@@ -784,18 +784,50 @@ pré-sélection du J3.
 
 **Sous-titres** : dans le fichier (lecture directe : n-ième piste de sous-titres du fichier ↔ n-ième
 groupe de pistes de Media3), externes (`DeliveryUrl`, chargés à part avec l'en-tête du serveur), ou
-incrustés par le serveur (changer pour l'une d'elles redemande le flux). Apparence (taille,
-couleur, contour, fond, position) appliquée au `SubtitleView` ; les styles ASS sont gardés (couleurs,
-positions), pas leurs tailles. Aperçu sur l'image en pause dans le panneau « Réglages » du lecteur,
-et dans « Apparence des sous-titres ».
+incrustés par le serveur (changer pour l'une d'elles redemande le flux). Apparence (couleur,
+contour) appliquée au `SubtitleView` ; aperçu sur l'image en pause dans le panneau « Réglages » du
+lecteur, et dans « Apparence des sous-titres ».
+
+**Taille, position et fond des sous-titres** *(ajout au J4, demandé par le mainteneur)* : réglables
+en cours de lecture, sans pause, depuis une barre posée en haut de l'image (le panneau latéral
+cacherait les sous-titres) : la taille va de 60 % à 200 % (crans de 10 % jusqu'à 100 %, puis de
+20 %), ← et → la changent aussitôt ; puis la position (en bas, relevée, haute) et le fond (aucun,
+ombré derrière le texte, bandeau sur toute la largeur). Sans sous-titre à l'écran, une phrase
+d'exemple s'affiche le temps du réglage. Accès : la ligne « Taille, position et fond » des panneaux
+Audio et sous-titres et Réglages, le bouton « Taille des sous-titres » de l'interface, et un
+**raccourci : ↑ ou ↓ maintenu, interface masquée**, qui grossit ou réduit d'un cran à chaque demi-
+seconde en montrant la barre (un appui bref montre toujours l'interface). Le réglage est mémorisé
+pour le profil sur cet appareil (DataStore `player`, clés suffixées par serveur et utilisateur ; un
+profil qui ne l'a jamais touché part de celui de l'appareil), devient la valeur par défaut, et se
+retrouve dans « Apparence des sous-titres ».
+
+- **Jamais de pixels** : la taille du texte est une fraction de la hauteur de la zone du lecteur
+  (5,33 % à 100 %, comme les sous-titres d'Android), et le contour d'aperçu une fraction de la
+  taille du texte. Un réglage donne le même rendu en 1080p et en 4K : sur une Shield en 4K,
+  l'interface est en 960 × 540 dp à une densité quatre fois plus forte, et `SubtitleView` mesure en
+  fraction de sa hauteur, pas en dp (captures `106-sous-titres-160` et `108-sous-titres-160-4k`).
+  Plex dessine en points fixes, d'où des sous-titres trop petits sur une sortie 4K.
+- **Formats** : nos sous-titres passent par notre `SubtitleView` (celui de `PlayerView` est caché),
+  qui reçoit les répliques de Media3 transformées par `SubtitleCues` : un texte sans taille (SRT,
+  WebVTT) prend la taille réglée ; un texte qui a la sienne (styles ASS) est multiplié par le
+  facteur, si bien que les styles gardent leurs proportions (et leurs couleurs, positions) ; une
+  image (PGS, VobSub) grandit autour du milieu de son bord bas et remonte avec la position
+  (`SubtitleBox`), sans sortir de l'image.
+- **Ce qui ne s'agrandit pas** : des sous-titres **incrustés par le serveur** (PGS ou VobSub quand
+  il transcode, ASS si le réglage « ASS incrustés » est actif) font partie de l'image : ni leur
+  taille ni leur place ne peuvent changer. La barre le dit (« La taille de ces sous-titres ne peut
+  pas être modifiée. Le serveur les incruste dans l'image. »), le − / + est éteint et les autres
+  réglages masqués.
 
 **Interface** (`UI.md` § 8) : touches de la télécommande — interface masquée : ← et → sautent
-(10 s, 30 s, réglables), OK et ↑ ↓ montrent l'interface ; sur la barre, ← → recherchent (pas de
+(10 s, 30 s, réglables), OK et ↑ ↓ (appui bref) montrent l'interface, ↑ ↓ maintenus changent la
+taille des sous-titres ; sur la barre, ← → recherchent (pas de
 10 s, puis 30 s, 1, 2, 5 min, 6 répétitions de touche chacun), la vignette trickplay au-dessus, OK
 ou 1,2 s sans touche y va ; touches média : lecture, pause, lecture/pause, avance et retour rapides
 (recherche), suivant et précédent (chapitres), stop ; Info : écran d'informations. L'interface
 disparaît 4 s après la dernière touche pendant la lecture. Panneaux à droite, l'image visible :
-Audio | Sous-titres (deux colonnes), Qualité, Réglages, Chapitres. L'écran reste allumé, la lecture
+Audio | Sous-titres (deux colonnes), Qualité, Réglages, Chapitres ; en haut, la barre des
+sous-titres. L'écran reste allumé, la lecture
 se met en pause quand l'appli passe en arrière-plan.
 
 **Écran d'informations** : moteur, mode et raison, repli, conteneur, codec vidéo reçu, résolution

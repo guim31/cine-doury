@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -34,6 +35,7 @@ import fr.guim.cinedoury.core.designsystem.component.GeneratedArtwork
 import fr.guim.cinedoury.core.designsystem.component.InitialFocus
 import fr.guim.cinedoury.core.designsystem.component.ListRow
 import fr.guim.cinedoury.core.designsystem.component.ListSectionTitle
+import fr.guim.cinedoury.core.designsystem.component.StepperRow
 import fr.guim.cinedoury.core.designsystem.component.rememberCineFocus
 import fr.guim.cinedoury.core.designsystem.theme.CineSizes
 import fr.guim.cinedoury.core.designsystem.theme.CineSpacing
@@ -95,6 +97,8 @@ private data class SettingRow(
     val description: String?,
     val value: String?,
     val onClick: () -> Unit,
+    /** ← and → change the value (a size), instead of OK. */
+    val onStep: ((forward: Boolean) -> Unit)? = null,
 )
 
 private sealed interface SettingLine {
@@ -296,11 +300,10 @@ fun SubtitleSettingsRoute(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     BackHandler(onBack = onBack)
-    SubtitleSettingsScreen(state.settings.subtitles) { change ->
-        viewModel.update {
-            it.copy(subtitles = change(it.subtitles))
-        }
-    }
+    SubtitleSettingsScreen(
+        style = state.settings.subtitles,
+        onChange = { change -> viewModel.update { it.copy(subtitles = change(it.subtitles)) } },
+    )
 }
 
 /** « Apparence des sous-titres », with the subtitles over a still picture at the right. */
@@ -312,12 +315,16 @@ fun SubtitleSettingsScreen(
 ) {
     val lines =
         listOf(
-            row(
-                "size",
-                R.string.player_subtitle_size,
-                null,
-                style.size.label(),
-            ) { onChange { it.copy(size = it.size.next()) } },
+            SettingLine.Row(
+                SettingRow(
+                    key = "size",
+                    title = stringResource(R.string.player_subtitle_size),
+                    description = null,
+                    value = style.scaleLabel(),
+                    onClick = {},
+                    onStep = { forward -> onChange { it.step(forward) } },
+                ),
+            ),
             row("color", R.string.player_subtitle_color, null, style.color.label()) {
                 onChange { it.copy(color = it.color.next()) }
             },
@@ -405,6 +412,18 @@ private fun LazyListScope.settingLines(
 
             is SettingLine.Row -> {
                 item(key = line.row.key) {
+                    val onStep = line.row.onStep
+                    if (onStep != null) {
+                        StepperRow(
+                            title = line.row.title,
+                            value = line.row.value.orEmpty(),
+                            onStep = onStep,
+                            focusRequester = if (index == firstRow) first else null,
+                            focus = rememberCineFocus(PlaybackSettingsPreview.row(index)),
+                            modifier = Modifier.fillMaxWidth().testTag(PlaybackSettingsPreview.row(index)),
+                        )
+                        return@item
+                    }
                     ListRow(
                         title = line.row.title,
                         description = line.row.description,

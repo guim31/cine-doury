@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -248,9 +249,9 @@ private const val FULL_TURN = 360f
 private const val START_ANGLE = -90f
 
 /**
- * Subtitles as the player will draw them, over a paused picture (`FONCTIONNALITES.md` § 5): the
- * text at [sizeFraction] of the height of the picture, [bottomFraction] above its bottom, with its
- * colour, edge and background.
+ * Subtitles as the player draws them, over a picture of any size: the text is a part of the height
+ * of the picture ([sizeFraction]), as are its edge and its height above the bottom
+ * ([bottomFraction]); [band] spreads the background over the width of the picture.
  */
 @Composable
 fun SubtitlePreview(
@@ -262,41 +263,82 @@ fun SubtitlePreview(
     sizeFraction: Float,
     bottomFraction: Float,
     modifier: Modifier = Modifier,
+    band: Boolean = false,
 ) {
     BoxWithConstraints(modifier.fillMaxSize()) {
         val pictureHeight = maxHeight
         val density = LocalDensity.current
-        val fontSize = with(density) { (pictureHeight * sizeFraction).toSp() }
+        val textHeight = pictureHeight * sizeFraction
+        val fontSize = with(density) { textHeight.toSp() }
+        val edgePx = with(density) { textHeight.toPx() } * EDGE_FRACTION
         val edge = CineTheme.colors.shadow
-        Text(
-            text = text,
-            textAlign = TextAlign.Center,
-            color = color,
-            style =
-                CineTheme.typography.body.copy(
-                    fontSize = fontSize,
-                    lineHeight = fontSize * LINE_HEIGHT,
-                    shadow =
-                        when {
-                            outline -> Shadow(edge, Offset.Zero, OUTLINE_BLUR)
-                            shadow -> Shadow(edge, Offset(SHADOW_OFFSET, SHADOW_OFFSET), SHADOW_BLUR)
-                            else -> null
-                        },
-                ),
-            modifier =
-                Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = pictureHeight * bottomFraction)
-                    .background(background)
-                    .padding(horizontal = CineSpacing.xs),
-        )
+        val line =
+            @Composable { textModifier: Modifier ->
+                Text(
+                    text = text,
+                    textAlign = TextAlign.Center,
+                    color = color,
+                    style =
+                        CineTheme.typography.body.copy(
+                            fontSize = fontSize,
+                            lineHeight = fontSize * LINE_HEIGHT,
+                            shadow =
+                                when {
+                                    outline -> Shadow(edge, Offset.Zero, edgePx * 2)
+                                    shadow -> Shadow(edge, Offset(edgePx, edgePx), edgePx)
+                                    else -> null
+                                },
+                        ),
+                    modifier = textModifier,
+                )
+            }
+        val bottom = Modifier.align(Alignment.BottomCenter).padding(bottom = pictureHeight * bottomFraction)
+        if (band) {
+            Box(bottom.fillMaxWidth().background(background), contentAlignment = Alignment.Center) {
+                line(Modifier.padding(vertical = textHeight * BAND_PADDING))
+            }
+        } else {
+            line(bottom.background(background).padding(horizontal = textHeight * BOX_PADDING))
+        }
     }
 }
 
 private const val LINE_HEIGHT = 1.2f
-private const val OUTLINE_BLUR = 6f
-private const val SHADOW_BLUR = 4f
-private const val SHADOW_OFFSET = 3f
+
+/** The edge of the letters: a part of their height, the same at any resolution. */
+private const val EDGE_FRACTION = 0.06f
+private const val BOX_PADDING = 0.25f
+private const val BAND_PADDING = 0.2f
+
+/**
+ * The bar of the subtitles, over the top of the picture while their size is set: the picture and
+ * its subtitles stay in sight below. [content] holds the stepper and its rows, side by side; [note]
+ * says when the subtitles cannot change.
+ */
+@Composable
+fun SubtitleBar(
+    modifier: Modifier = Modifier,
+    note: String? = null,
+    content: @Composable RowScope.() -> Unit,
+) {
+    Column(
+        modifier =
+            modifier
+                .width(CineSizes.subtitleBarWidth)
+                .background(CineTheme.colors.playerPanel, PlayerShape)
+                .padding(CineSpacing.s),
+        verticalArrangement = Arrangement.spacedBy(CineSpacing.xs),
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(CineSpacing.s),
+            verticalAlignment = Alignment.CenterVertically,
+            content = content,
+        )
+        if (note != null) {
+            Text(text = note, style = CineTheme.typography.caption, color = CineTheme.colors.text2)
+        }
+    }
+}
 
 /**
  * The technical information of the player (`FONCTIONNALITES.md` § 5): a block over the picture,

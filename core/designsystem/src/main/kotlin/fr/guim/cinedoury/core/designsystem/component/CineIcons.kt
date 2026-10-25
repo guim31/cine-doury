@@ -315,6 +315,11 @@ object CineIcons {
         )
     }
 
+    val Remove: ImageVector by lazy { icon("Remove", "M19 13H5v-2h14v2z") }
+
+    /** The size of the subtitles. */
+    val TextSize: ImageVector by lazy { icon("TextSize", "M9 4v3h5v12h3V7h5V4H9zm-6 8h3v7h3v-7h3V9H3v3z") }
+
     /** A synopsis that unfolds. */
     val Expand: ImageVector by lazy { icon("Expand", "M16.59 8.59 12 13.17 7.41 8.59 6 10l6 6 6-6z") }
 

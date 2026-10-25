@@ -111,7 +111,7 @@ class DeviceCapabilitiesReader(
                     .map { it.refreshRate }
                     .distinct()
                     .sorted(),
-            hdr = types.mapNotNull { HDR_TYPES[it] }.toSet(),
+            hdr = types.toList().mapNotNull { HDR_TYPES[it] }.toSet(),
         )
     }
 

@@ -137,6 +137,10 @@ toutes les cibles où elle a du sens.
 - [P0] SRT, ASS/SSA (avec styles), PGS et VobSub (Blu-ray et DVD).
 - [P0] Mode : désactivés, forcés seulement (réglage actuel), toujours, ou « intelligent » (si l'audio n'est pas dans ma langue).
 - [P0] Apparence : taille, couleur, contour, fond, position verticale. Aperçu en direct sur l'image en pause.
+- [P0] **Taille réglable en cours de film, à sa guise** *(ajout du 25/10/2026)* : de 60 % à 200 %, depuis la lecture en deux appuis au plus (↑ ou ↓ maintenus quand l'interface est cachée, ou la barre « Taille, position et fond » des panneaux). Effet immédiat sur l'image, sans pause ; une phrase d'exemple s'affiche s'il n'y a pas de sous-titre à l'écran. Position verticale et fond (aucun, ombré, bandeau) dans la même barre.
+  - Taille relative à la hauteur de l'image, jamais en pixels : même rendu en 1080p et en 4K.
+  - Mémorisée par profil et par appareil ; le réglage fait pendant un film devient la valeur par défaut, et se retrouve dans l'apparence des sous-titres.
+  - Vaut pour SRT, ASS (en gardant les proportions des styles), PGS et VobSub (images agrandies). Des sous-titres incrustés par le serveur ne peuvent pas changer : l'écran le dit.
 - [P1] Décalage de synchronisation (± 0,1 s), mémorisé pour le fichier.
 - [P1] Recherche et téléchargement de sous-titres (OpenSubtitles) depuis le lecteur.
 - [P2] Double sous-titre (deux langues), pour apprendre une langue.

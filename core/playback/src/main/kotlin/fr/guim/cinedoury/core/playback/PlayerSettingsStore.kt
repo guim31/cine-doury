@@ -10,11 +10,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import fr.guim.cinedoury.core.model.PassthroughFormat
 import fr.guim.cinedoury.core.model.PlayerSettings
-import fr.guim.cinedoury.core.model.SubtitleBackground
-import fr.guim.cinedoury.core.model.SubtitleColor
-import fr.guim.cinedoury.core.model.SubtitleEdge
-import fr.guim.cinedoury.core.model.SubtitlePosition
-import fr.guim.cinedoury.core.model.SubtitleSize
+import fr.guim.cinedoury.core.model.SubtitleScale
 import fr.guim.cinedoury.core.model.SubtitleStyle
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -23,10 +19,13 @@ import kotlinx.coroutines.flow.map
 
 /**
  * The settings of the player, kept on the device (DataStore `player`): they belong to the TV and its
- * amplifier, not to a profile (`FONCTIONNALITES.md` § 12).
+ * amplifier, not to a profile (`FONCTIONNALITES.md` § 12). The look of the subtitles is the
+ * exception: it is kept per profile of this device ([profile], the open one), since one reads them
+ * from the sofa and another from close by; a profile that never set it starts from the device's.
  */
 class PlayerSettingsStore(
     private val store: DataStore<Preferences>,
+    private val profile: () -> String? = { null },
 ) {
     val settings: Flow<PlayerSettings> = store.data.map { it.toSettings() }.distinctUntilChanged()
 
@@ -47,12 +46,47 @@ class PlayerSettingsStore(
             val bitrate = next.maxBitrate
             if (bitrate == null) prefs.remove(MAX_BITRATE) else prefs[MAX_BITRATE] = bitrate
             prefs[ASPECT] = next.aspect.name
-            prefs[SUBTITLE_SIZE] = next.subtitles.size.name
-            prefs[SUBTITLE_COLOR] = next.subtitles.color.name
-            prefs[SUBTITLE_EDGE] = next.subtitles.edge.name
-            prefs[SUBTITLE_BACKGROUND] = next.subtitles.background.name
-            prefs[SUBTITLE_POSITION] = next.subtitles.position.name
+            val keys = SubtitleKeys.of(profile())
+            prefs[keys.scale] = next.subtitles.scale
+            prefs[keys.color] = next.subtitles.color.name
+            prefs[keys.edge] = next.subtitles.edge.name
+            prefs[keys.background] = next.subtitles.background.name
+            prefs[keys.position] = next.subtitles.position.name
         }
+    }
+
+    /** The keys of the look of the subtitles: those of a profile, or of the device ([profile] null). */
+    private class SubtitleKeys(
+        suffix: String,
+    ) {
+        val scale = floatPreferencesKey("subtitle_scale$suffix")
+        val color = stringPreferencesKey("subtitle_color$suffix")
+        val edge = stringPreferencesKey("subtitle_edge$suffix")
+        val background = stringPreferencesKey("subtitle_background$suffix")
+        val position = stringPreferencesKey("subtitle_position$suffix")
+
+        companion object {
+            val DEVICE = SubtitleKeys("")
+
+            fun of(profile: String?): SubtitleKeys = if (profile == null) DEVICE else SubtitleKeys("@$profile")
+        }
+    }
+
+    private fun Preferences.subtitles(): SubtitleStyle {
+        val own = SubtitleKeys.of(profile())
+        val device = SubtitleKeys.DEVICE
+        val defaults = SubtitleStyle()
+        return SubtitleStyle(
+            scale =
+                (this[own.scale] ?: this[device.scale] ?: defaults.scale).coerceIn(
+                    SubtitleScale.MIN,
+                    SubtitleScale.MAX,
+                ),
+            color = enumOf(this[own.color] ?: this[device.color], defaults.color),
+            edge = enumOf(this[own.edge] ?: this[device.edge], defaults.edge),
+            background = enumOf(this[own.background] ?: this[device.background], defaults.background),
+            position = enumOf(this[own.position] ?: this[device.position], defaults.position),
+        )
     }
 
     private fun Preferences.toSettings(): PlayerSettings {
@@ -74,14 +108,7 @@ class PlayerSettingsStore(
             burnInAss = this[BURN_IN_ASS] ?: defaults.burnInAss,
             maxBitrate = this[MAX_BITRATE],
             aspect = enumOf(this[ASPECT], defaults.aspect),
-            subtitles =
-                SubtitleStyle(
-                    size = enumOf(this[SUBTITLE_SIZE], SubtitleSize.Normal),
-                    color = enumOf(this[SUBTITLE_COLOR], SubtitleColor.White),
-                    edge = enumOf(this[SUBTITLE_EDGE], SubtitleEdge.Outline),
-                    background = enumOf(this[SUBTITLE_BACKGROUND], SubtitleBackground.None),
-                    position = enumOf(this[SUBTITLE_POSITION], SubtitlePosition.Bottom),
-                ),
+            subtitles = subtitles(),
         )
     }
 
@@ -103,10 +130,5 @@ class PlayerSettingsStore(
         private val BURN_IN_ASS = booleanPreferencesKey("burn_in_ass")
         private val MAX_BITRATE = intPreferencesKey("max_bitrate")
         private val ASPECT = stringPreferencesKey("aspect")
-        private val SUBTITLE_SIZE = stringPreferencesKey("subtitle_size")
-        private val SUBTITLE_COLOR = stringPreferencesKey("subtitle_color")
-        private val SUBTITLE_EDGE = stringPreferencesKey("subtitle_edge")
-        private val SUBTITLE_BACKGROUND = stringPreferencesKey("subtitle_background")
-        private val SUBTITLE_POSITION = stringPreferencesKey("subtitle_position")
     }
 }

@@ -15,6 +15,7 @@ import fr.guim.cinedoury.core.model.SegmentType
 import fr.guim.cinedoury.core.model.StreamType
 import fr.guim.cinedoury.core.model.SubtitleDelivery
 import fr.guim.cinedoury.core.model.SubtitleMethod
+import fr.guim.cinedoury.core.model.SubtitleStyle
 import fr.guim.cinedoury.core.model.TranscodeReason
 import fr.guim.cinedoury.core.model.TrickplayInfo
 import fr.guim.cinedoury.core.playback.AudioOutput
@@ -219,6 +220,23 @@ internal object J4Samples {
         )
 
     val subtitleStyle = PlayerSettings().subtitles
+
+    /** A line of the film, as an SRT cue would bring it. */
+    const val SUBTITLE_LINE = "Le gardien n'a pas quitté le phare\ndepuis trois hivers."
+
+    /** The size being set: 140 %, the bar over the top, a sample line (no subtitle on screen). */
+    val resizing =
+        playing.copy(
+            subtitleIndex = 5,
+            settings = playing.settings.copy(subtitles = SubtitleStyle(scale = 1.4f)),
+        )
+
+    /** The same film on screen with its subtitles, at [scale]. */
+    fun withSubtitles(scale: Float) =
+        playing.copy(subtitleIndex = 5, settings = playing.settings.copy(subtitles = SubtitleStyle(scale = scale)))
+
+    /** Transcoded, the PGS burned into the picture by the server: their size cannot change. */
+    val burnedIn = transcodedInfo.copy(info = null, subtitleIndex = 7)
 
     /** No gesture: the screenshots only draw. */
     val noActions =

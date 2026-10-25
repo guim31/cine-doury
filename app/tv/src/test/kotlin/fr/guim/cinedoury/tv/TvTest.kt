@@ -29,6 +29,9 @@ internal fun createTvComposeRule(): TvComposeRule = createAndroidComposeRule<Com
 /** A 1080p TV screen (960 × 540 dp at xhdpi), in French, the app's default language. */
 internal const val TV_1080P = "fr-rFR-w960dp-h540dp-land-television-xhdpi-notouch"
 
+/** A 4K TV screen: the same 960 × 540 dp at xxxhdpi, 3840 × 2160 pixels. */
+internal const val TV_4K = "fr-rFR-w960dp-h540dp-land-television-xxxhdpi-notouch"
+
 /**
  * Shows [content] the way a TV does: Robolectric starts in touch mode, where Compose refuses the
  * focus to clickable elements, whereas a TV without a touch screen is in keyboard mode. A key
