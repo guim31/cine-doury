@@ -11,6 +11,8 @@ android {
         applicationId = "fr.guim.cinedoury"
         versionCode = 1
         versionName = "0.1.0"
+        // On the emulator of the CI: real playback against the test Jellyfin (PlaybackOnDeviceTest).
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     signingConfigs {
@@ -75,4 +77,10 @@ dependencies {
     testImplementation(libs.roborazzi.junit.rule)
     testImplementation(libs.compose.ui.test.junit4)
     debugImplementation(libs.compose.ui.test.manifest)
+
+    androidTestImplementation(testFixtures(projects.core.source))
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.kotlin.test)
+    androidTestImplementation(libs.kotlinx.coroutines.test)
 }

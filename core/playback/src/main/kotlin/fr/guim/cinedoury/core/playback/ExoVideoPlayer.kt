@@ -1,10 +1,10 @@
 package fr.guim.cinedoury.core.playback
 
 import android.content.Context
+import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import androidx.annotation.OptIn
-import androidx.core.net.toUri
 import androidx.media3.common.C
 import androidx.media3.common.Format
 import androidx.media3.common.MediaItem
@@ -220,7 +220,7 @@ class ExoVideoPlayer(
             .map { delivery ->
                 val track = stream.source.streams.firstOrNull { it.index == delivery.index }
                 MediaItem.SubtitleConfiguration
-                    .Builder(checkNotNull(delivery.url).toUri())
+                    .Builder(Uri.parse(checkNotNull(delivery.url)))
                     .setId(externalId(delivery.index))
                     .setMimeType(subtitleMime(delivery.codec ?: track?.codec))
                     .setLanguage(track?.language)

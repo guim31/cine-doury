@@ -131,8 +131,9 @@ fun MatchFrameRate(
             }
         }
         onDispose {
-            val changed = window?.attributes?.preferredDisplayModeId?.let { it != previous } == true
-            if (changed) window.attributes = window.attributes.apply { preferredDisplayModeId = previous }
+            if (window != null && window.attributes.preferredDisplayModeId != previous) {
+                window.attributes = window.attributes.apply { preferredDisplayModeId = previous }
+            }
         }
     }
 }

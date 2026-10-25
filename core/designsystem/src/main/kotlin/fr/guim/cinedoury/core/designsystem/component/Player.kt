@@ -3,7 +3,6 @@ package fr.guim.cinedoury.core.designsystem.component
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clipToBounds
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -22,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -48,8 +48,8 @@ import fr.guim.cinedoury.core.designsystem.theme.CineSpacing
 import fr.guim.cinedoury.core.designsystem.theme.CineTheme
 import fr.guim.cinedoury.core.designsystem.theme.tabular
 
-private val CardShape = RoundedCornerShape(CineSizes.cardCorner)
-private val CardOutlineShape =
+private val PlayerShape = RoundedCornerShape(CineSizes.cardCorner)
+private val PlayerOutlineShape =
     RoundedCornerShape(CineSizes.cardCorner + CineSizes.focusOutlineGap + CineSizes.focusOutlineWidth / 2)
 
 /**
@@ -128,9 +128,9 @@ fun TrickplayPreview(
         Box(
             Modifier
                 .size(width, height)
-                .clip(CardShape)
+                .clip(PlayerShape)
                 .background(CineTheme.colors.surface1)
-                .border(CineSizes.hairline, CineTheme.colors.focus, CardShape)
+                .border(CineSizes.hairline, CineTheme.colors.focus, PlayerShape)
                 .clipToBounds(),
         ) {
             if (url != null) {
@@ -190,13 +190,13 @@ fun NextEpisodeCard(
             modifier
                 .width(CineSizes.nextCardWidth)
                 .withFocusRequester(focusRequester)
-                .cineFocusable(focus, CardShape, CineScale.THUMBNAIL, onPlay, CardOutlineShape)
+                .cineFocusable(focus, PlayerShape, CineScale.THUMBNAIL, onPlay, PlayerOutlineShape)
                 .background(colors.playerPanel)
                 .padding(CineSpacing.s),
         horizontalArrangement = Arrangement.spacedBy(CineSpacing.s),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(Modifier.size(CineSizes.thumbnail).clip(CardShape).background(colors.surface3)) {
+        Box(Modifier.size(CineSizes.thumbnail).clip(PlayerShape).background(colors.surface3)) {
             picture?.invoke()
             Box(Modifier.align(Alignment.Center).size(CineSizes.countdownRing), contentAlignment = Alignment.Center) {
                 val ring = colors.accent
@@ -313,7 +313,7 @@ fun PlaybackInfoSheet(
         modifier =
             modifier
                 .width(CineSizes.infoSheetWidth)
-                .background(colors.playerPanel, CardShape)
+                .background(colors.playerPanel, PlayerShape)
                 .padding(CineSpacing.m),
         verticalArrangement = Arrangement.spacedBy(CineSpacing.xs / 2),
     ) {

@@ -189,22 +189,49 @@ jobs:
           if-no-files-found: ignore
 
   emulator:
-    name: Install and start on an API 34 TV emulator
+    name: Install, start and play on an API 34 TV emulator
     needs: build
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 50
+    services:
+      jellyfin:
+        image: jellyfin/jellyfin:12.3.20261023-013714
+        ports:
+          - 8096:8096
+        volumes:
+          - /tmp/cine-doury-media:/media
     steps:
       - uses: actions/checkout@v7
       - uses: actions/download-artifact@v8
         with:
           name: cine-doury-debug-apk
           path: apk
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: false
+          add-job-summary: never
+      - name: ffmpeg
+        run: sudo apt-get update -q && sudo apt-get install -y -q ffmpeg
+      - name: Generate the test media
+        run: |
+          sudo chown -R "$(id -u):$(id -g)" /tmp/cine-doury-media
+          ci/jellyfin/generate-media.sh /tmp/cine-doury-media
+      - name: Bootstrap Jellyfin
+        run: ci/jellyfin/bootstrap.sh http://localhost:8096
+      - name: Build the instrumented tests
+        run: |
+          set -o pipefail
+          ./gradlew :app:tv:assembleDebugAndroidTest 2>&1 | tee gradle.log
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-      - name: Start the app
+      - name: Start the app, then play
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
@@ -213,11 +240,19 @@ jobs:
           profile: tv_1080p
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          script: ci/emulator-smoke.sh apk
+          # The emulator reaches the Jellyfin of the host at 10.0.2.2.
+          script: |
+            ci/emulator-smoke.sh apk
+            ci/emulator-playback.sh http://10.0.2.2:8096
+      - name: Failure summary
+        if: failure()
+        run: ci/failure-summary.sh gradle.log
       - name: Emulator screenshot
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: emulator-screenshot
-          path: emulator-start.png
+          path: |
+            emulator-start.png
+            emulator-playback.txt
           if-no-files-found: ignore
