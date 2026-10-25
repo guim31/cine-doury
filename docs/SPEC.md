@@ -12,7 +12,7 @@ son domaine :
 
 | Jalon | État | PR |
 |---|---|---|
-| J0 — Fondations | à faire | — |
+| J0 — Fondations | en revue | [#1](https://github.com/guim31/cine-doury/pull/1) |
 
 *(Chaque jalon met à jour ce tableau et ajoute ses contrats au § 4.)*
 
@@ -72,8 +72,94 @@ caché** derrière `:core:source` : aucun type du SDK ne sort de `:source:jellyf
 
 ## 4. Contrats
 
-*(Fixés par le J0, puis complétés par chaque jalon. Tout ce qui suit est la cible ; vérifier chaque
-point contre l'OpenAPI de la 12.3, à versionner dans `docs/api/jellyfin-openapi-12.3.json`.)*
+*(Fixés par le J0, puis complétés par chaque jalon. Vérifier chaque point contre l'OpenAPI de la
+12.3, versionnée dans [`docs/api/jellyfin-openapi-12.3.json`](api/jellyfin-openapi-12.3.json) ; la
+CI échoue si le serveur de test en sert une autre.)*
+
+### 4.1 Modules (J0)
+
+| Module | Plugin de convention | Contenu au J0 |
+|---|---|---|
+| `:core:model` | `cinedoury.jvm.library` | `Library`, `MediaItem`, `MediaSource`, `MediaStream`, `ImageRef`, `UserData`, `User`, `ServerInfo`, `Page`, `PageRequest` |
+| `:core:source` | `cinedoury.jvm.library` | `SourceConnector` (informations publiques, connexion, ouverture d'une session), `LibrarySource` (bibliothèques, éléments paginés, détail), `SourceException` (erreurs typées) ; fausse source `InMemorySource` en *test fixtures* |
+| `:source:jellyfin` | `cinedoury.jvm.library` | `JellyfinConnector` ; tests unitaires (MockWebServer, réponses enregistrées) et suite `integrationTest` |
+| `:core:designsystem` | `cinedoury.android.library` + `.compose` | jetons (`CineColors`, `CineTypography`, `CineSpacing`, `CineSizes`, `CineScale`, `CineMotion`), `CineTheme`, composants TV |
+| `:app:tv` | `cinedoury.android.application` + `.compose` | `MainActivity`, écran « catalogue du design system », captures Roborazzi |
+
+Les plugins de convention vivent dans `build-logic/` (build inclus) ; les versions dans
+`gradle/libs.versions.toml`. Paquets Kotlin : `fr.guim.cinedoury.<module>`.
+
+**Écart au § 3** : `:core:data`, `:core:playback`, `:feature:*` et `:benchmark` ne sont pas créés
+vides au J0 ; chacun naît avec le jalon qui le remplit (J1 pour `:core:data` et `:feature:auth`, J4
+pour `:core:playback`, J8 pour `:benchmark`). Raison : un module vide ne teste rien et ralentit la
+configuration.
+
+### 4.2 Pile (versions vérifiées le 25/10/2026)
+
+| Rôle | Choix | Version |
+|---|---|---|
+| Construction | Gradle (Kotlin DSL), Android Gradle Plugin avec Kotlin intégré (*built-in Kotlin*, pas de plugin `kotlin-android`) | 9.8.2, AGP 9.4.1 |
+| Langage | Kotlin | 2.4.21 |
+| SDK Android | `compileSdk` / `targetSdk` 37, **`minSdk` 30** (Android 11 : Shield TV ; le Chromecast avec Google TV à jour est en Android 12 ou plus) | — |
+| Interface | Compose (BOM), Compose for TV `tv-material` | BOM 2026.09.00 (ui 1.12.1), 1.1.0 |
+| Police | Inter, fichiers statiques 400/500/600/700, SIL OFL 1.1 (`core/designsystem/INTER-LICENSE.txt`) | 4.1 |
+| Client Jellyfin | SDK Kotlin officiel `org.jellyfin.sdk:jellyfin-core` (variante JVM, OkHttp) | 1.9.3 |
+| Coroutines | kotlinx.coroutines | 1.11.0 |
+| Tests | JUnit 4, kotlin-test, MockWebServer 3, Robolectric, Roborazzi | 4.13.2, —, 5.5.1, 4.17, 1.77.0 |
+| Analyse statique | Spotless + ktlint (`ktlint_official`), Detekt, Android Lint | 8.10.4 + 1.8.0, 1.23.8 |
+| À venir (retenus, non encore ajoutés) | Coil 3 (J1), Room (J1), Koin (J1, plutôt que Hilt : pas de traitement d'annotations, compatible sans réglage avec le Kotlin intégré d'AGP 9), Media3 (J4), Macrobenchmark (J8) | 3.6.3, 2.8.5, 4.2.2, 1.11.1, 1.5.0 |
+
+### 4.3 Client Jellyfin : le SDK officiel
+
+Décision du J0 : **SDK Kotlin officiel 1.9.3**, plutôt qu'un client généré depuis l'OpenAPI.
+- Il est **généré par le projet Jellyfin depuis l'OpenAPI 12.3.0** (« Recommended API Version
+  12.3.0 », minimum 12.0) et suit chaque version du serveur : on profite de sa génération sans en
+  maintenir une (gabarits, sérialisation, cas particuliers de l'OpenAPI de Jellyfin).
+- Il envoie l'en-tête `Authorization: MediaBrowser …` exigé par Jellyfin 12, jamais `X-Emby-Token`
+  ni `api_key` (vérifié dans ses sources et par les tests unitaires).
+- Sa variante JVM garde `:source:jellyfin` en Kotlin pur.
+- Ses exceptions (`InvalidStatusException`, `TimeoutException`…) se traduisent une fois pour toutes
+  en `SourceException` (`JellyfinCall.kt`).
+- **Licence : LGPL-3.0.** Ce n'est ni GPL ni AGPL (exclues par `CLAUDE.md`). Le code de l'appli
+  restant public, quiconque peut la reconstruire avec une version modifiée du SDK, ce que demande la
+  LGPL. La mention de licence sera affichée dans « À propos » (J7). *À confirmer par le mainteneur.*
+- Il est **entièrement caché** derrière `:core:source` (dépendance `implementation`, types
+  `internal`) : le remplacer par un client généré ne toucherait que `:source:jellyfin`.
+
+### 4.4 Source (J0)
+
+- `SourceConnector.serverInfo(adresse)` lit `/System/Info/Public` et refuse un serveur antérieur à
+  la 12.3 (`SourceException.Incompatible`).
+- `signIn(adresse, Credentials.Password)` : `POST /Users/AuthenticateByName` ; un 401 devient
+  `InvalidCredentials`. La `Session` (adresse, serveur, utilisateur, jeton) masque le jeton dans
+  `toString()`.
+- `LibrarySource.libraries()` : `GET /UserViews`. Les bibliothèques de musique, livres, photos,
+  listes de lecture et TV en direct sont écartées (hors périmètre, § 2).
+- `items(bibliothèque, PageRequest)` : `GET /Items?parentId=…&sortBy=SortName&collapseBoxSetItems=false`,
+  avec le nombre total. Les films d'une collection restent listés un par un.
+- `item(id)` : `GET /Items/{id}?userId=…`, avec les sources média et leurs pistes (codec, langue,
+  forcé, canaux, plage dynamique).
+- Les identifiants Jellyfin circulent sous leur forme serveur : 32 chiffres hexadécimaux sans tirets.
+- Le client s'annonce `Client="Cine Doury"` : le SDK recopie ce nom dans `User-Agent`, où OkHttp
+  refuse tout caractère non ASCII (voir `CLAUDE.md`, « Pièges »). **Écart** à la forme
+  `Client="Ciné Doury"` ci-dessous.
+
+### 4.5 Design system (J0)
+
+- `CineTheme(variant = ThemeVariant.Dark | OledBlack, reducedMotion)` fournit les jetons de
+  `UI.md` § 4, 5 et 7 et alimente le `MaterialTheme` de Compose for TV.
+- Focus (`Modifier.cineFocusable`) : échelle 1,08 (affiches) ou 1,05 (boutons, vignettes), contour
+  de 3 dp écarté de 2 dp, ombre ; 150 ms en décélération à l'arrivée, 120 ms en accélération au
+  départ ; l'animation ne recompose pas l'élément (lecture dans `graphicsLayer` et au dessin).
+- Composants : `PosterCard` (3 tailles, progression, triangle « non vu », pastille d'épisodes,
+  titre au focus seulement), `ThumbnailCard`, `GeneratedArtwork` (carte sans image : titre sur un
+  dégradé tiré du nom), `PrimaryButton`, `RoundIconButton` (libellé au focus), `NavigationRail`
+  (72 dp fermé, 240 dp ouvert au focus, par-dessus le contenu), `Modifier.readabilityScrims`,
+  `CineIcons`.
+- Captures de référence : `app/tv/src/test/screenshots/` (vérifiées par la CI), copiées dans
+  `docs/screenshots/j0/`.
+
+### 4.6 Contrats Jellyfin
 
 - **Authentification** : uniquement l'en-tête
   `Authorization: MediaBrowser Client="Ciné Doury", Device="<nom>", DeviceId="<id>", Version="<x.y.z>", Token="<jeton>"`.

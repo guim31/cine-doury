@@ -49,9 +49,9 @@ class InMemorySource(
             }
         }
 
-    override fun open(session: Session): LibrarySource = Library(session)
+    override fun open(session: Session): LibrarySource = InMemoryLibrary(session)
 
-    private inner class Library(override val session: Session) : LibrarySource {
+    private inner class InMemoryLibrary(override val session: Session) : LibrarySource {
         override suspend fun libraries() = libraries
 
         override suspend fun items(library: LibraryId, page: PageRequest): Page<MediaItem> {

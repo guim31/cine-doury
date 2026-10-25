@@ -57,6 +57,7 @@ import fr.guim.cinedoury.tv.R
 private val SwatchShape = RoundedCornerShape(CineSizes.cardCorner)
 private const val SWATCHES_PER_ROW = 7
 private const val PERCENT = 100
+private const val RGB_MASK = 0xFFFFFF
 
 @Composable
 private fun Section(
@@ -93,7 +94,7 @@ private fun Modifier.bleed(horizontal: Dp): Modifier =
 
 private val RowBleed = CineSpacing.m
 
-private fun hex(color: Color): String = "#%06X".format(color.toArgb() and 0xFFFFFF)
+private fun hex(color: Color): String = "#%06X".format(color.toArgb() and RGB_MASK)
 
 @Composable
 internal fun ColorsSection() {

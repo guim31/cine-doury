@@ -28,12 +28,11 @@ class JellyfinConnectorTest {
             ClientIdentity(appVersion = "0.1.0", deviceId = "device-1", deviceName = "Salon"),
             requestTimeout = 5.seconds,
         )
-    private lateinit var address: ServerAddress
+    private val address by lazy { ServerAddress.of(server.url("/").toString()) }
 
     @BeforeTest
     fun start() {
         server.start()
-        address = ServerAddress.of(server.url("/").toString())
     }
 
     @AfterTest

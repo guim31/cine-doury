@@ -42,6 +42,9 @@ internal fun Long.ticksToDuration(): Duration = (this / TICKS_PER_MICROSECOND).m
 
 private const val TICKS_PER_MICROSECOND = 10
 
+// `hasPassword` is deprecated in the 12.3 API but is still the only way to know whether a profile
+// needs a password (J1, profile picker).
+@Suppress("DEPRECATION")
 internal fun UserDto.toModel() =
     User(
         id = UserId(id.toJellyfinId()),

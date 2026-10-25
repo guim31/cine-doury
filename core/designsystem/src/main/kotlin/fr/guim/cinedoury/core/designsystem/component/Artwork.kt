@@ -29,13 +29,14 @@ private const val TOP_VALUE = 0.46f
 private const val BOTTOM_SATURATION = 0.58f
 private const val BOTTOM_VALUE = 0.17f
 private const val HASH_SPREAD = 31
+private const val HASH_SEED = 7
 
 /**
  * Two colours derived from a title, always the same for the same title. They stay dark and muted
  * so that the generated card sits calmly among real posters.
  */
 fun artworkColors(title: String): Pair<Color, Color> {
-    val hash = title.fold(7) { acc, char -> acc * HASH_SPREAD + char.code }
+    val hash = title.fold(HASH_SEED) { acc, char -> acc * HASH_SPREAD + char.code }
     val hue = Math.floorMod(hash, HUE_TURN.toInt()).toFloat()
     val top = Color.hsv(hue, TOP_SATURATION, TOP_VALUE)
     val bottom = Color.hsv((hue + HUE_SHIFT) % HUE_TURN, BOTTOM_SATURATION, BOTTOM_VALUE)

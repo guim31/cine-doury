@@ -2,8 +2,13 @@
 naming:
   FunctionNaming:
     ignoreAnnotated: ['Composable']
+    # Test names are sentences between backticks.
+    excludes: ['**/test/**', '**/integrationTest/**', '**/testFixtures/**']
+  MatchingDeclarationName:
+    # A Compose file holds several composables beside a single small type (an enum, a data class).
+    active: false
   TopLevelPropertyNaming:
-    constantPattern: '[A-Z][A-Za-z0-9]*'
+    constantPattern: '[A-Z][_A-Za-z0-9]*'
 
 complexity:
   LongParameterList:

@@ -22,7 +22,7 @@
     <string name="rail_closed">Closed</string>
     <string name="rail_open">Open</string>
     <string name="section_scrims">Readability scrims</string>
-    <string name="section_scrims_hint">Over a full-screen backdrop: 92% from the left over 60% of the width, 100% from the bottom over 45% of the height.</string>
+    <string name="section_scrims_hint" formatted="false">Over a full-screen backdrop: 92% from the left over 60% of the width, 100% from the bottom over 45% of the height.</string>
     <string name="section_spacing">Spacing and motion</string>
     <string name="section_spacing_hint">8 dp grid. No animation ever blocks input.</string>
     <string name="token_background">background</string>
