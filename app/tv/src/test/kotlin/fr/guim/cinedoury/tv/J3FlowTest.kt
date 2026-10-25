@@ -158,23 +158,7 @@ class J3FlowTest {
         focusable(panelLine(0)).assertIsFocused()
         press(Key.DirectionCenter)
         waitFor(hasTestTag("player"))
-        // The player asks the server for the English track, from the saved position.
-        compose.waitUntil(TIMEOUT) { players.player.loads.isNotEmpty() }
-        val english =
-            J3Samples.phare.mediaSources
-                .first()
-                .audio
-                .first { it.language == "eng" }
-                .index
-        val asked = source.playback.requests.last()
-        assertEquals(english, asked.audioIndex)
-        assertEquals(40, asked.start.inWholeMinutes.toInt())
-        assertEquals(
-            english,
-            players.player.loads
-                .last()
-                .audioIndex,
-        )
+        assertPlayerAskedForEnglish()
 
         compose.pressBack()
         waitFor(hasTestTag(DetailsPreview.TRACKS))
@@ -193,6 +177,26 @@ class J3FlowTest {
                     .userData!!
                     .played
             },
+        )
+    }
+
+    /** The player asks the server for the English track, from the saved position. */
+    private fun assertPlayerAskedForEnglish() {
+        compose.waitUntil(TIMEOUT) { players.player.loads.isNotEmpty() }
+        val english =
+            J3Samples.phare.mediaSources
+                .first()
+                .audio
+                .first { it.language == "eng" }
+                .index
+        val asked = source.playback.requests.last()
+        assertEquals(english, asked.audioIndex)
+        assertEquals(40, asked.start.inWholeMinutes.toInt())
+        assertEquals(
+            english,
+            players.player.loads
+                .last()
+                .audioIndex,
         )
     }
 
