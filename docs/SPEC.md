@@ -14,7 +14,8 @@ son domaine :
 |---|---|---|
 | J0 — Fondations | terminé, fusionné | [#1](https://github.com/guim31/cine-doury/pull/1) |
 | J1 — Connexion et profils (et retouches du design system) | terminé, fusionné | [#2](https://github.com/guim31/cine-doury/pull/2) |
-| J2 — Accueil et navigation | en revue (captures dans `docs/screenshots/j2/`) | [#3](https://github.com/guim31/cine-doury/pull/3) |
+| J2 — Accueil et navigation | terminé, fusionné | [#3](https://github.com/guim31/cine-doury/pull/3) |
+| J3 — Fiches (et retouches du J2 : raccord du bandeau, vignettes, index local et filtres HDR/audio, icônes de bibliothèque, clé de débogage) | en revue (captures dans `docs/screenshots/j3/`) | [#4](https://github.com/guim31/cine-doury/pull/4) |
 
 *(Chaque jalon met à jour ce tableau et ajoute ses contrats au § 4.)*
 
@@ -99,7 +100,7 @@ Ajoutés au J1 :
 | `:feature:settings` | idem | réglages du J1 (profil, PIN, démarrage, adresses, oubli du serveur, catalogue en débogage), complétés au J7 |
 
 Ajouté au J2 : `:feature:library` (`cinedoury.android.library` + `.compose`), une bibliothèque :
-onglets, vues, tri, filtres, saut A–Z.
+onglets, vues, tri, filtres, saut A–Z. Ajouté au J3 : `:feature:details`, les fiches (§ 4.10).
 
 `:core:ui` n'était pas prévu au § 3 : les messages d'erreur servent à tous les écrans, mais
 `:core:designsystem` ne doit pas connaître `:core:source`. Le design system reste sans dépendance
@@ -347,12 +348,8 @@ les filtres se combinent :
 | collection | `parentId` = la collection (au lieu de la bibliothèque) |
 | favori | `isFavorite=true` |
 
-**Écart** : les filtres **HDR / Dolby Vision** et **format audio** (stéréo, 5.1, Atmos, DTS) ne
-sont pas proposés. Jellyfin 12.3 n'a aucun paramètre de `/Items` pour la plage dynamique ni pour les
-canaux ou le codec audio, et le contournement (lire les pistes de chaque film, `fields=MediaStreams`)
-revient à tout charger. Le panneau de filtres le dit (« Jellyfin 12.3 ne sait pas encore filtrer
-sur ces critères »). Ils viendront avec un index local des pistes (cache du J3, quand les fiches
-lisent les sources média) ou une version du serveur qui sait filtrer.
+Les filtres **HDR / Dolby Vision**, **format audio** et **codec vidéo**, que Jellyfin 12.3 ne sait
+pas appliquer, passent par l'index local du J3 (§ 4.10).
 
 **Rangées** (`:core:data`, `home`) :
 - `HomeRowConfig(id, type, bibliothèques, style, fenêtre)` ; `type` ∈ `Resume`, `NextUp`, `Latest`,
@@ -451,8 +448,216 @@ focus à son entrée choisie, `ConfirmDialog(destructive = false)`, `ListRow(tra
 `alphabetWidth`, `panelWidth`, `listRowPoster`, `listRowHeight`, `skeletonLine`,
 `HERO_HEIGHT_FRACTION`.
 
-**Écrans provisoires** : Recherche (J5), Fiche (J3) et Lecteur (J4) s'ouvrent sur un écran « arrive
-avec une prochaine version » (`ComingSoonScreen`), avec « Retour ».
+**Écrans provisoires** : Recherche (J5) et Lecteur (J4) s'ouvrent sur un écran « arrive avec une
+prochaine version » (`ComingSoonScreen`), avec « Retour » ; depuis le J3, le lecteur provisoire montre
+ce qui serait lu (§ 4.10).
+
+### 4.10 Fiches (J3)
+
+**Module** : `:feature:details` (`cinedoury.android.library` + `.compose`) : fiches film, série,
+épisode, personne et collection, panneaux (pistes, « ⋯ », informations sur le fichier) et l'écran
+provisoire du lecteur (`PlaybackPreviewScreen`, remplacé au J4).
+
+**Source** (`:core:source`, `LibrarySource`) :
+
+| Fonction | Appel Jellyfin | Notes |
+|---|---|---|
+| `item(id)` | `GET /Items/{id}?userId=…` | tout : sources média et pistes (`Profile`, `DisplayTitle`, `AudioSpatialFormat`, `ChannelLayout`), `People` (avec `PrimaryImageTag` et BlurHash), `Studios`, `Status`, `EndDate`, `RemoteTrailers`, `LocalTrailerCount`, `ProductionLocations` |
+| `seasons(série)` | `GET /Shows/{id}/Seasons` | données utilisateur (`UnplayedItemCount`, `Played`) |
+| `episodes(série)` | `GET /Shows/{id}/Episodes` | **toutes** les saisons en un appel : le bouton intelligent et les onglets en dépendent ; `Overview`, une image par type |
+| `similar(id, n)` | `GET /Items/{id}/Similar` | seulement des titres de la bibliothèque (12) |
+| `collectionsOf(id)` | `GET /Items/{id}/Collections` | les collections (sagas) qui contiennent le film, en un appel |
+| `collectionItems(collection)` | `GET /Items?parentId=<collection>` | tri `PremiereDate, ProductionYear, SortName` croissant : ordre de sortie |
+| `filmography(personne)` | `GET /Items?personIds=…&recursive=true&includeItemTypes=Movie,Series` | limitée à la bibliothèque par construction, du plus récent au plus ancien |
+| `localTrailers(id)` | `GET /Items/{id}/LocalTrailers` | fichiers `*-trailer.*` ou `trailers/` à côté du film |
+| `setPlayed(id, vu)` | `POST` / `DELETE /UserPlayedItems/{id}` | une saison ou une série marque tous ses épisodes ; rend les nouvelles données utilisateur |
+| `setFavorite(id, favori)` | `POST` / `DELETE /UserFavoriteItems/{id}` | idem |
+| `playbackPreferences()` | `GET /Users/Me` | `Configuration` : `AudioLanguagePreference`, `SubtitleLanguagePreference`, `SubtitleMode`, `PlayDefaultAudioTrack` |
+| `itemIds(requête)` | `GET /Items` (`fields` vide, sans images ni données utilisateur) | les identifiants d'une requête, dans son ordre (≈ 400 octets par film) |
+| `items(ItemQuery(ids = …))` | `GET /Items?ids=…` | 100 identifiants au plus par requête (`MAX_IDS`) : le serveur refuse une adresse de plus de 8 Ko (414) |
+| `technicalItems(bibliothèque, depuis, page)` | `GET /Items?parentId=…&recursive=true&includeItemTypes=Movie,Episode&fields=MediaSources,SortName&enableImages=false&enableUserData=false[&minDateLastSaved=…]` | les pages de l'index local, triées `SortName, DateCreated` |
+
+**Fiche** (`UI.md` § 8) :
+- s'ouvre **tout de suite** sur la carte choisie (titre, images, métadonnées du cache de l'accueil),
+  avec les badges de l'index local s'il connaît le titre ; le détail du serveur complète ensuite
+  (sources, pistes, distribution, saga, similaires, bande-annonce) sans déplacer le focus ;
+- fond plein écran sous les voiles (`readabilityScrims`) et fond d'ambiance du titre ; affiche
+  (190 × 285) à gauche, qui **vole** depuis la carte ouverte ; colonne de 45 % (432 dp) : logo (texte
+  à défaut), ligne de métadonnées avec **heure de fin**, genres, badges, synopsis sur 3 lignes
+  dépliable (OK), réalisation et scénario, boutons ;
+- **focus initial** sur « Lire » / « Reprendre — 1 h 09 restantes » (série : bouton intelligent) ;
+  personne et collection : leur première carte ; boutons ronds dans cet ordre : Depuis le début
+  (titre entamé), Bande-annonce, Audio et sous-titres, Marquer comme vu, Favori, Aller à la série
+  (épisode), ⋯ ;
+- sous le héros : saisons et épisodes (série), Distribution (photos, rôle sous le nom), saga (dans
+  l'ordre de sortie), Titres similaires ; personne : Films, Séries de la bibliothèque ;
+- « Retour » ferme un panneau (le focus revient au bouton qui l'a ouvert), sinon revient à l'écran
+  d'où l'on vient. La fiche garde l'élément focalisé (état sauvegardé par entrée de la pile), et
+  chaque rangée la carte quittée : revenir d'une personne ou d'un épisode y ramène.
+- **Vu / favori** : changés à l'écran tout de suite (moins de 100 ms), puis envoyés au serveur ; une
+  série relit ses épisodes une fois la réponse reçue.
+
+**Heure de fin** : maintenant + (durée − position si le titre est entamé), arrondie à la minute la
+plus proche ; elle suit l'horloge (`LocalClock`) tant que la fiche est ouverte. « se termine à
+22 h 47 » (« ends at 10:47 PM »).
+
+**Bouton intelligent d'une série** (`SmartPlay`, `:core:model`), sur la liste de tous ses épisodes :
+1. un épisode entamé et non fini (position > 0, non vu) : le dernier lu → « Reprendre S02E05 — 12 min
+   restantes » ;
+2. sinon le premier épisode non vu **après** le dernier vu (par date de lecture) → « Lire S02E05 » ;
+3. sinon le premier épisode non vu ;
+4. sinon (tout vu, ou rien de connu) le premier épisode.
+Les spéciaux (saison 0) ne comptent que si la série n'a rien d'autre.
+
+**Saisons** : en onglets (`CineTab`), avec « Marquer la saison comme vue » ; la saison affichée est
+celle de l'épisode du bouton intelligent. **Une série à saison unique est aplatie** : ses épisodes
+viennent directement sous le titre « Épisodes », sans onglet. Épisode : vignette 16:9, numéro et
+titre, durée et date de diffusion, résumé sur deux lignes, progression ; un bouton rond à droite le
+marque vu ou non vu.
+
+**Pré-sélection des pistes** (`TrackPreselection`, `:core:model`), d'après les préférences du
+profil sur le serveur ; la version est la première source (Jellyfin met la meilleure en tête) :
+- **audio** : la langue préférée (sa piste par défaut, sinon la première) ; sans langue préférée, la
+  piste par défaut du fichier si `PlayDefaultAudioTrack`, sinon la première ;
+- **sous-titres**, selon le mode :
+  - *Aucun* : aucun ;
+  - *Forcés seulement* : une piste forcée dans la langue des sous-titres préférée ou dans celle de
+    l'audio (sinon une piste forcée sans langue) ;
+  - *Toujours* : une piste complète (non forcée) dans la langue préférée — sa piste par défaut, sinon
+    une non « malentendants » —, sinon une forcée ; sans langue préférée, la piste par défaut ;
+  - *Intelligent* : comme *Toujours* si l'audio n'est pas dans la langue des sous-titres préférée,
+    sinon comme *Forcés seulement* ;
+  - *Par défaut* : une piste forcée (comme *Forcés seulement*), sinon une piste marquée par défaut
+    dans le fichier (dans la langue préférée d'abord).
+- Les codes ISO 639-2 bibliographiques (« fre ») valent les terminologiques (« fra »).
+- Panneau « Audio et sous-titres » (un seul, à droite) : « Lire avec ces choix », la **version**
+  (s'il y en a plusieurs : « 4K — HEVC — Dolby Vision — 48,3 Go »), l'**audio** (« Français — 5.1 —
+  E-AC3 — par défaut »), les **sous-titres** (« Sans sous-titres », « Français — SRT — forcés »).
+  Changer de version refait la pré-sélection pour elle. Le choix part au lecteur dans un
+  `PlaybackRequest(item, TrackSelection(sourceId, audioIndex, subtitleIndex), resume)` ; l'écran
+  provisoire du J4 montre ce qui serait lu.
+
+**Badges** (`TechnicalSummary.badges`, `:core:model`), toutes versions confondues, dans l'ordre :
+résolution (4K, 1080p, 720p, SD, d'après la largeur), meilleure plage dynamique (Dolby Vision >
+HDR10+ > HDR10 > HLG), meilleur audio (Atmos > DTS:X > TrueHD > DTS-HD > DTS), canaux (7.1, 5.1),
+langues : **VF** si une piste audio est dans la langue du profil (sa langue audio préférée, à défaut
+celle de l'appareil), **VOST** si une autre langue a des sous-titres dans cette langue, **VO** sinon.
+Atmos : `AudioSpatialFormat = DolbyAtmos` ou « Atmos » dans le profil du codec ; DTS-HD : profil
+« DTS-HD MA/HRA » ; DTS:X : `AudioSpatialFormat = DTSX`.
+
+**Bande-annonce** : la bande-annonce locale d'abord (jouée par le lecteur, comme un film), sinon la
+première distante, ouverte par un intent : `vnd.youtube:<id>` (appli YouTube de la TV), à défaut
+l'adresse web ; bouton masqué s'il n'y en a pas.
+
+**Menu « ⋯ »** (vide de gestion jusqu'au J6) : « Marquer comme non vu » (ou « vu »), « Informations
+sur le fichier » (chemin, conteneur, taille, débit ; chaque piste décrite, et sa description
+serveur).
+
+**Transition d'ouverture** (`UI.md` § 7) : `SharedTransitionLayout` + `AnimatedContent` autour de
+la pile d'écrans ; seule l'ouverture d'une fiche s'anime (fondu de 250 ms, l'affiche vole de sa carte
+à sa place, `Modifier.sharedPoster(id)`) ; tout autre changement d'écran est instantané, et aucun
+avec les animations réduites. La fiche prend le focus à l'image suivante : une touche pressée pendant
+le vol s'applique à la fiche. Une même affiche n'est partagée qu'une fois par écran (première rangée
+qui la montre ; sur la fiche, le héros).
+
+**Index local** (Room, `:core:data`, `LibraryIndex`) — retouche A3 :
+
+| Table | Clé | Contenu |
+|---|---|---|
+| `media_index` | serveur, élément | bibliothèque, `Movie` ou `Episode`, série (épisode), titre, largeur maximale, **masques de bits** des plages dynamiques, codecs vidéo et caractéristiques audio (`DynamicRange`, `VideoCodec`, `AudioFeature`), langues audio, de sous-titres et de sous-titres forcés, nombre de versions, taille, date de la dernière lecture |
+| `index_state` | serveur, bibliothèque | début de la dernière mise à jour, fin de la dernière lecture complète |
+| `library_icons` | serveur, bibliothèque | l'icône choisie dans les réglages (retouche A4) |
+
+- **Par serveur**, pas par profil : les fichiers sont les mêmes pour tous ; chaque réponse est
+  recoupée avec celle du serveur, qui applique les droits du profil.
+- **Remplissage** : en arrière-plan (`IndexScheduler`, `Dispatchers.IO`), 5 s après l'ouverture d'un
+  profil puis toutes les 6 h tant que l'appli tourne ; par pages de 100, bibliothèque par bibliothèque
+  (films, séries, vidéos personnelles, mixtes). Jamais bloquant : les écrans ne l'attendent pas.
+- **Mise à jour par différence** : `minDateLastSaved` = début de la dernière mise à jour − 1 h (marge
+  pour l'écart d'horloge entre serveur et TV) ; puis le nombre d'éléments de la bibliothèque sur le
+  serveur est comparé à celui de l'index ; s'il diffère (un élément supprimé), la bibliothèque est
+  relue entière, et les lignes que cette lecture n'a pas vues sont effacées. Relecture complète au
+  moins tous les 7 jours, ou à la demande (réglages).
+- **Politique de cache** : une bibliothèque que le profil ne voit plus est retirée de l'index ;
+  oublier le serveur efface l'index et les icônes ; se déconnecter d'un profil les garde.
+- **Filtres** (`IndexedQuery`) : sans filtre de l'index, le serveur fait tout (§ 4.9). Avec : 1. le
+  serveur donne les identifiants qui passent ses propres filtres, dans l'ordre du tri demandé
+  (`itemIds`) ; 2. l'index garde ceux qui passent les siens (une série passe si l'un de ses épisodes
+  passe ; les valeurs d'un filtre s'additionnent, les filtres se combinent) ; 3. chaque page est lue
+  par identifiants, 100 à la fois, et remise dans l'ordre. Le saut A–Z compte de même. Les films
+  d'une collection ne sont pas regroupés sous ces filtres. Tant que l'index n'est pas complet, le
+  panneau de filtres le dit sous ces filtres (« Index de la bibliothèque en cours : 3 200 sur 11 523
+  titres »).
+- **Valeurs** : HDR et Dolby Vision (Dolby Vision, HDR10+, HDR10, HLG, SDR) ; format audio (Stéréo,
+  5.1, 7.1, Dolby Atmos, DTS — DTS-HD et DTS:X compris —, Dolby TrueHD) ; codec vidéo (H.264, HEVC,
+  AV1, VP9, MPEG-2, VC-1, autre).
+- **Badges** des fiches : lus dans l'index dès l'ouverture, remplacés par ceux des sources du
+  détail.
+- **Réglages** : « Index de la bibliothèque » dit où il en est (« À jour : 1 523 films et
+  10 000 épisodes, le 25 oct. 2026 à 14 h 02 », « Mise à jour : 3 200 sur 11 523 titres », un échec)
+  ; OK relit tout.
+- **Mesures** (Jellyfin 12.3 de test en Docker, appli sur la JVM avec Room et SQLite embarqué, sur
+  le poste de la session cloud) : 58 éléments (47 films, 11 épisodes) indexés en 0,17 à 0,33 s ;
+  lecture et analyse ≈ 1,5 ms par élément (pages de 100, ≈ 2,7 Ko de JSON par film de test) ;
+  écriture de 11 500 lignes 0,26 s ; un filtre sur 11 500 lignes 11 ms. **Extrapolation** pour
+  1 500 films et 10 000 épisodes : un vrai fichier décrit 2 à 3 fois plus de pistes (≈ 6 à 8 Ko),
+  soit ≈ 70 à 90 Mo de JSON en ≈ 115 requêtes ; ≈ 30 à 50 s sur un poste, **2 à 4 min sur la Shield**
+  (processeur ≈ 4 à 5 fois plus lent pour l'analyse JSON, serveur sur un NAS) pour le premier
+  remplissage, en arrière-plan ; ensuite, une mise à jour ne relit que ce qui a changé (quelques
+  secondes) ; un filtre ≈ 50 ms sur la Shield, plus une requête d'identifiants (≈ 600 Ko pour 1 500
+  films). À mesurer sur la Shield au J8.
+- **Migration 2 → 3** : automatique (`@AutoMigration`, trois tables ajoutées), testée par
+  `CineDatabaseMigrationTest` (base créée d'après `2.json`, index SQL compris).
+
+**Icônes des bibliothèques** (retouche A4) : `LibraryIcon` (films, séries, animation, animes,
+documentaires, spectacles, sport, vidéos en ligne, famille et enfants, collections, dossier) ;
+`LibraryIcon.defaultFor(type, nom)` cherche d'abord des **mots du nom**, sans accents ni casse,
+français et anglais (dans cet ordre : animation — « animation », « dessin(s) animé(s) », « cartoon » ;
+animes — « anime(s) », « manga(s) » ; sport — « sport… », « MMA », « UFC », « boxe », « foot »,
+« rugby », « F1 »… ; spectacles — « spectacle… », « concert », « théâtre », « stand-up », « humour »,
+« opéra » ; documentaires — « docu… », « reportage… », « nature » ; vidéos en ligne — « YouTube »,
+« Twitch », « web », « podcast », « chaînes » ; famille — « enfant(s) », « kids », « jeunesse »,
+« famille ») : un mot court compte entier, un préfixe (« docu ») en début de mot ; sinon le type
+(films, séries, collections, dossier). Le choix se modifie dans les réglages (« Bibliothèques », OK
+sur une bibliothèque, « Automatique » en tête), gardé par serveur (`library_icons`). Tracés Material
+(Apache 2.0) recopiés dans `CineIcons`, sans la dépendance `material-icons-extended` (plusieurs Mo).
+
+**Retouches du J2** :
+- **Raccord du bandeau** (A1) : le fond du bandeau ne se fond plus vers la couleur `fond` (opaque,
+  d'où une ligne nette là où il s'arrêtait au-dessus du fond d'ambiance) mais vers la
+  **transparence**, par un masque alpha (`BlendMode.DstIn`, couche hors écran) : à gauche de 8 % à
+  100 % sur 60 % de la largeur, en bas sur une courbe douce (100 % jusqu'à 40 % de la hauteur, 0 % au
+  bord). Le fond d'ambiance garde ses voiles sous le texte.
+- **Vignettes** (A2) : 176 × 99 dp (au lieu de 300 × 169) : quatre entières et le début de la
+  cinquième (64 dp) dans une rangée de 1080p ; légende inchangée (Légende, 16 sp), titre d'une carte
+  générée en Légende.
+- **Clé de débogage** (A5) : `app/tv/debug.keystore` (PKCS12, `android` / `androiddebugkey`), versionnée
+  et utilisée par le `signingConfig` de débogage partout (CI et postes) : chaque APK de débogage
+  s'installe par-dessus le précédent. Ce n'est pas un secret (README). L'APK de release reste signé
+  hors du dépôt.
+
+**Serveur de test** : générique de « Le Phare » (réalisation, scénario, deux rôles), bande-annonce
+distante (« Big Buck Bunny », fondation Blender), bande-annonce locale de « Nuit polaire », statut et
+dates de diffusion des séries ; affiches, fonds et logos **générés** (dégradés et titres en Inter)
+pour huit films et trois séries, photos (initiales) des sept personnes, posés par l'API
+(`ci/jellyfin/images.sh`, appelé par `bootstrap.sh`).
+
+**Tests** : unitaires `SmartPlayTest`, `TrackPreselectionTest`, `PlaybackTest` (heure de fin),
+`LibraryIconTest`, `TechnicalSummaryTest` (`:core:model`), `LibraryIndexTest` (remplissage, filtres,
+différence, suppression, requête filtrée), `FiltersCodecTest`, `CineDatabaseMigrationTest`
+(`:core:data`) ; intégration `JellyfinDetailsIntegrationTest` (deux versions, pistes multiples et
+HDR10, générique et saga, similaires, série à deux saisons et son bouton intelligent, saison unique,
+vu et favori, filmographie, préférences, index complet puis par différence, identifiants) ; interface
+`J3NavigationTest` (croix directionnelle), `J3FlowTest` (appli entière : pistes choisies jusqu'au
+lecteur provisoire, « Retour », vu envoyé au serveur), `J2FlowTest` (« Retour » depuis une fiche).
+
+**Captures** (`docs/screenshots/j3/`, 1920 × 1080, sombre et noir OLED ; images générées comme
+celles du serveur de test, dessinées par le gestionnaire d'aperçu de Coil) : accueil (70), rail et
+icônes (71), filtres HDR et audio (72 à 74), fiche film (75), synopsis déplié (76), distribution et
+saga (77), pistes (78), choix de la version (79), informations sur le fichier (80), fiche série (81),
+saisons et épisodes (82), saison unique (83), fiche épisode (84), fiche personne (85), lecteur
+provisoire (86), réglages des bibliothèques et de l'index (87 à 89) ; les captures du J0 au J2 sont
+réenregistrées (vignettes, raccord, panneau de filtres).
 
 ## 5. Tests et CI
 
