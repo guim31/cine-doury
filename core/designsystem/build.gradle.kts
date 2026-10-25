@@ -12,4 +12,8 @@ dependencies {
     api(libs.compose.foundation)
     api(libs.tv.material)
     api(libs.compose.material.icons.core)
+    implementation(libs.coil.compose)
+
+    testImplementation(libs.junit)
+    testImplementation(libs.kotlin.test)
 }

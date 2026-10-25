@@ -32,10 +32,16 @@ pas un tableau de bord. Les fonctionnalités sont dans `FONCTIONNALITES.md`.
 - L'élément focalisé :
   - **grandit** de 1,08 (affiches) ou 1,05 (boutons, vignettes) ;
   - prend un **contour de 3 dp** dans la couleur « focus » (blanc à 90 %), écarté de 2 dp du bord ;
+  - s'entoure d'un **halo** : lueur claire et diffuse (jeton `halo de focus`, blanc à 30 %, flou de 14 dp) qui part du contour, dans les deux thèmes. L'ombre ne se voit pas sur un noir OLED ; le halo, si : le focus se repère d'un coup d'œil à 3 m, même sur un fond noir pur *(retouche du 25/10/2026)* ;
   - reçoit une **ombre portée** douce.
 - Le focus ne repose **jamais sur la couleur seule** : le contour et l'échelle suffisent à le voir sans percevoir les couleurs.
 - Animation : 150 ms en arrivant, 120 ms en partant, courbe de décélération standard. Un défilement rapide (touche maintenue) ne joue pas les animations intermédiaires.
 - Sur une affiche focalisée, le **fond de l'écran** passe au fond du titre, en fondu de 300 ms et après 250 ms d'arrêt. On évite ainsi un clignotement en défilant.
+- **Fond d'ambiance** *(retouche du 25/10/2026)* : derrière les écrans de navigation (accueil, bibliothèques, fiches), un fond plein écran **très flou**, tiré de l'élément focalisé (son fond, à défaut son affiche), suit le focus selon la même règle (fondu de 300 ms après 250 ms d'arrêt).
+  - Il est tiré du **BlurHash** que Jellyfin fournit pour chaque image, décodé en 32 × 18 puis étiré en plein écran avec un filtrage bilinéaire : aucun appel réseau, aucun calcul notable, et pas de `RenderEffect` (API 31, alors que la Shield est en Android 11).
+  - Une carte générée (sans image) donne son dégradé.
+  - Il est **assombri** par une couche `fond` à 60 % (jeton `assombrissement d'ambiance`), puis recouvert des voiles de lisibilité du § 4. À 60 %, le `texte` garde 4,6:1 au-dessus de l'image la plus claire possible (blanc pur) ; le `texte-2` et les petits textes se posent sur les voiles.
+  - Composant `AmbientBackdrop` du design system. Une option « fond fixe » (sans ambiance) est prévue dans les réglages (J7).
 - Les rangées défilent pour **garder le focus à une position fixe** : deuxième colonne pour les affiches, le plus à gauche possible pour les vignettes. C'est le contenu qui bouge, pas le focus qui court.
 
 ## 4. Couleurs
@@ -52,6 +58,7 @@ Thème sombre seulement, sur la TV comme ailleurs. Variante **noir OLED** en ré
 | `texte-2` | `#A9AEB8` | texte secondaire |
 | `texte-3` | `#6E7480` | métadonnées discrètes |
 | `focus` | `#FFFFFF` à 90 % | contour de focus |
+| `halo de focus` | `#FFFFFF` à 30 %, flou de 14 dp | lueur autour de l'élément focalisé (§ 3) |
 | `accent` | `#F2C14E` (« jaune projecteur », § 4.1) | bouton principal, progression, sélection |
 | `danger` | `#E5484D` | suppression |
 | `succès` | `#46A758` | confirmations |
@@ -60,6 +67,7 @@ Thème sombre seulement, sur la TV comme ailleurs. Variante **noir OLED** en ré
   - dégradé de gauche à droite (fond à 92 % → 0 % sur 60 % de la largeur) ;
   - dégradé du bas vers le haut (fond à 100 % → 0 % sur 45 % de la hauteur).
   - Le texte posé sur une image doit atteindre **4,5:1** de contraste dans le pire cas, et on le vérifie sur des captures réelles.
+- **Assombrissement d'ambiance** : couche `fond` à 60 % sur le fond d'ambiance (§ 3), sous les voiles.
 - **Teinte d'ambiance** facultative : une couleur extraite du fond (Palette d'Android) colore légèrement `surface-1` sur la fiche, à 6 % au plus.
 
 ### 4.1 Couleur d'accent
@@ -95,8 +103,9 @@ Plex (`#E5A00D`).
 - **Progression** : barre de 4 dp au bas de la carte, dans la couleur d'accent, sur un rail `blanc à 25 %`.
 - **Non vu** : petit triangle dans le coin haut droit, dans la couleur d'accent (comme le `watchedIndicator` de Plex). Pour une série, le nombre d'épisodes non vus dans une pastille.
 - **Titres sous les affiches** : désactivés par défaut sur la TV (l'affiche suffit), le titre et l'année s'affichent sous l'élément focalisé seulement. Activables en réglage.
+- **Jamais deux fois le titre** *(retouche du 25/10/2026)* : une carte générée (sans image) porte déjà le titre ; sous elle, on n'affiche que la ligne secondaire (année, épisode, « Reprendre à … »). Une carte avec une vraie image garde dessous le titre et la ligne secondaire (au focus pour une affiche, toujours pour une vignette).
 - **Chargement d'image** :
-  - couleur dominante, ou flou de basse définition (BlurHash, fourni par Jellyfin), puis fondu de 200 ms vers l'image nette ;
+  - couleur dominante, ou flou de basse définition (BlurHash, fourni par Jellyfin), puis fondu de 200 ms vers l'image nette (composant `RemoteImage`, Coil 3 ; le BlurHash reste affiché si l'image ne vient pas) ;
   - préchargement des rangées voisines ;
   - images demandées **à la taille affichée**, jamais en pleine définition pour une vignette.
 - **Image absente** : carte générée avec le titre en typographie soignée sur un dégradé tiré du nom. Jamais d'icône « image cassée ».
@@ -117,6 +126,7 @@ Plex (`#E5A00D`).
 ## 8. Écrans clés
 
 ### Accueil
+- Fond d'ambiance du § 3 derrière tout l'écran ; il en va de même pour les bibliothèques et les fiches.
 - Bandeau à la une sur 60 % de la hauteur. Le fond est le **film focalisé**, pas un carrousel qui défile seul. On peut le remplacer en réglage par un fond animé lent (Ken Burns à 3 % de zoom en 20 s), désactivé par défaut.
 - Rangées en dessous ; titre de rangée en Titre 2, à 24 dp au-dessus des cartes.
 

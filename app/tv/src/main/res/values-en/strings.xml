@@ -11,10 +11,10 @@
     <string name="section_type">Typography</string>
     <string name="section_type_hint">Inter, embedded. TV scale for a 1080p screen seen from 3 m.</string>
     <string name="section_posters">Posters</string>
-    <string name="section_posters_hint">On focus, a poster grows by 1.08 and gets an outline 2 dp away and a shadow. Its title only shows then.</string>
+    <string name="section_posters_hint">On focus, a poster grows by 1.08 and gets an outline 2 dp away, a halo and a shadow. Its title only shows then, and only once: under a generated card, only the year shows.</string>
     <string name="section_poster_sizes">Poster sizes</string>
     <string name="section_thumbnails">Thumbnails</string>
-    <string name="section_thumbnails_hint">16:9, for “Resume”, episodes and chapters. They grow by 1.05 on focus.</string>
+    <string name="section_thumbnails_hint">16:9, for “Resume”, episodes and chapters. They grow by 1.05 on focus; under a generated card, only the secondary line shows.</string>
     <string name="section_buttons">Buttons</string>
     <string name="section_buttons_hint">A single main button per screen. Secondary buttons are round; their label shows on focus.</string>
     <string name="section_rail">Side rail</string>
@@ -81,4 +81,6 @@
     <string name="duration_ms">%1$d ms</string>
     <string name="spacing_dp">%1$d dp</string>
     <string name="metadata_pair">%1$s · %2$s</string>
+    <string name="section_ambient">Ambient backdrop</string>
+    <string name="section_ambient_hint">A very blurred backdrop taken from the focused element, dimmed under the veils. It follows the focus after 250 ms of rest, with a 300 ms fade.</string>
 </resources>

@@ -92,11 +92,11 @@ jobs:
         env:
           HEAD_REF: ${{ github.head_ref }}
         run: |
-          mkdir -p docs/screenshots/j0
-          cp app/tv/src/test/screenshots/*.png docs/screenshots/j0/
+          mkdir -p docs/screenshots/j1
+          cp app/tv/src/test/screenshots/*.png docs/screenshots/j1/
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add app/tv/src/test/screenshots docs/screenshots/j0
+          git add app/tv/src/test/screenshots docs/screenshots/j1
           if git diff --cached --quiet; then
             echo "Screenshots unchanged."
           else

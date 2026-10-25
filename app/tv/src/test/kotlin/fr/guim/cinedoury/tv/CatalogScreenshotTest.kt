@@ -56,6 +56,12 @@ class CatalogScreenshotTest(
     @Test
     fun spacingAndMotion() = shoot("09-espacements-mouvement", CatalogSection.SPACING)
 
+    @Test
+    fun ambientGenerated() = shoot("10-ambiance-carte-generee", CatalogSection.AMBIENT, "ambient-0")
+
+    @Test
+    fun ambientImage() = shoot("11-ambiance-image", CatalogSection.AMBIENT, "ambient-1")
+
     /**
      * Under native graphics Robolectric never gives the focus (`CLAUDE.md`, « Pièges »): the
      * focused element is drawn with `CineFocus.preview()`, through the same code. Real focus and
