@@ -119,6 +119,9 @@ fun SettingsScreen(
     var confirm by rememberSaveable { mutableStateOf(confirmingForget) }
     // The library whose icon is being chosen, in the side panel.
     var iconOf by rememberSaveable(stateSaver = LibraryIdSaver) { mutableStateOf(previewIconOf) }
+    // The row of the library whose icon was chosen: the focus comes back to it.
+    var chosenFor by remember { mutableStateOf<LibraryId?>(null) }
+    val libraryRows = remember { mutableMapOf<LibraryId, FocusRequester>() }
     val first = remember { FocusRequester() }
     val cancel = remember { FocusRequester() }
     Box(
@@ -204,7 +207,12 @@ fun SettingsScreen(
                         modifier = Modifier.testTag("customize-home"),
                     )
                 }
-                libraryItems(state, onIcon = { iconOf = it }, onRebuildIndex = onRebuildIndex)
+                libraryItems(
+                    state,
+                    onIcon = { iconOf = it },
+                    onRebuildIndex = onRebuildIndex,
+                    requesters = { libraryRows.requester(it) },
+                )
                 item { ListSectionTitle(stringResource(R.string.section_startup)) }
                 item {
                     val last = state.startupMode == StartupMode.LastProfile
@@ -265,6 +273,7 @@ fun SettingsScreen(
             chosen = iconOf?.let { state.chosen[it] },
             onChoose = { library, icon ->
                 onSetIcon(library, icon)
+                chosenFor = library
                 iconOf = null
             },
         )
@@ -285,6 +294,14 @@ fun SettingsScreen(
             )
         }
     }
-    BackHandler(enabled = iconOf != null) { iconOf = null }
-    InitialFocus(if (confirm) cancel else first, key = confirm, enabled = iconOf == null)
+    BackHandler(enabled = iconOf != null) {
+        chosenFor = iconOf
+        iconOf = null
+    }
+    val back = chosenFor?.let { libraryRows.requester(it) }
+    InitialFocus(if (confirm) cancel else back ?: first, key = confirm to chosenFor, enabled = iconOf == null)
 }
+
+/** The requester of a row, made on first use: outside composition, where it may not be built. */
+private fun MutableMap<LibraryId, FocusRequester>.requester(library: LibraryId): FocusRequester =
+    getOrPut(library) { FocusRequester() }

@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -217,7 +218,15 @@ fun DetailsScreen(
     }
     // The first focus: « Lire », or the element left when coming back (or that opened the panel just
     // closed); for a person or a collection, the first card, once read.
-    val target = focused ?: if (state.hasMainButton) KEY_PLAY else state.firstRowKey()?.let(::rowKey)
+    val target =
+        focused ?: when {
+            state.hasMainButton -> KEY_PLAY
+
+            item.kind == ItemKind.Person -> state.firstRowKey()?.let(::rowKey)
+
+            // A collection, or a season: its first card, else « Favori », always there.
+            else -> state.firstRowKey()?.let(::rowKey) ?: DetailsPreview.FAVORITE.takeIf { state.loaded }
+        }
     val ready = target != null && (target == KEY_PLAY || state.loaded)
     if (target != null) {
         LaunchedEffect(target, ready, panel == null) {
@@ -493,7 +502,7 @@ private fun Buttons(
 
 @Composable
 private fun Round(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     label: String,
     onClick: () -> Unit,
     tag: String,

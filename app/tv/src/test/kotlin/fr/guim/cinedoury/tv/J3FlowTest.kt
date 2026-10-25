@@ -2,6 +2,7 @@ package fr.guim.cinedoury.tv
 
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasClickAction
@@ -116,7 +117,7 @@ class J3FlowTest {
         compose.waitForIdle()
     }
 
-    private fun waitFor(matcher: androidx.compose.ui.test.SemanticsMatcher) =
+    private fun waitFor(matcher: SemanticsMatcher) =
         compose.waitUntil(TIMEOUT) { compose.onAllNodes(matcher).fetchSemanticsNodes().isNotEmpty() }
 
     @Test

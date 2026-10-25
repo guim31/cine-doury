@@ -7,14 +7,15 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
@@ -122,17 +123,22 @@ fun NavigationRail(
                 .padding(vertical = CineSpacing.safeVertical + CineSpacing.m, horizontal = CineSpacing.xs),
         verticalArrangement = Arrangement.spacedBy(CineSpacing.xs),
     ) {
-        destinations.forEachIndexed { index, destination ->
-            RailItem(
-                destination,
-                selected = index == selectedIndex,
-                labelAlpha = expansion,
-                onClick = { onSelect(index) },
-                preview = index == previewFocusedIndex,
-                focusRequester = selected.takeIf { index == selectedIndex },
-            )
+        // Many libraries: the top of the rail scrolls, « Profil » and « Réglages » stay at the bottom.
+        Column(
+            modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(CineSpacing.xs),
+        ) {
+            destinations.forEachIndexed { index, destination ->
+                RailItem(
+                    destination,
+                    selected = index == selectedIndex,
+                    labelAlpha = expansion,
+                    onClick = { onSelect(index) },
+                    preview = index == previewFocusedIndex,
+                    focusRequester = selected.takeIf { index == selectedIndex },
+                )
+            }
         }
-        Spacer(Modifier.weight(1f))
         bottomDestinations.forEachIndexed { offset, destination ->
             val index = destinations.size + offset
             RailItem(

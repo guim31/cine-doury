@@ -51,6 +51,7 @@ internal fun LazyListScope.libraryItems(
     state: SettingsState,
     onIcon: (LibraryId) -> Unit,
     onRebuildIndex: () -> Unit,
+    requesters: (LibraryId) -> FocusRequester,
 ) {
     if (state.libraries.isEmpty()) return
     item { ListSectionTitle(stringResource(R.string.section_libraries)) }
@@ -65,6 +66,7 @@ internal fun LazyListScope.libraryItems(
             value = icon.label(),
             icon = icon.vector,
             onClick = { onIcon(library.id) },
+            focusRequester = requesters(library.id),
             focus = rememberCineFocus(SettingsPreview.library(index)),
             modifier = Modifier.testTag(SettingsPreview.library(index)),
         )
