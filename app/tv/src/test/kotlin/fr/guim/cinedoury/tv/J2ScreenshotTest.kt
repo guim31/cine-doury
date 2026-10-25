@@ -106,8 +106,7 @@ class J2ScreenshotTest(
                         items =
                             PagedItems(
                                 total = 2,
-                                pages =
-                                    mapOf(0 to J2Samples.movies.filter { m -> m.title.startsWith("J") }),
+                                pages = mapOf(0 to J2Samples.movies.take(2)),
                                 pageSize = 60,
                             ),
                     )

@@ -219,8 +219,8 @@ fun LibraryScreen(
     InitialFocus(buttons.getValue(closed ?: LibraryPanel.View), key = closed, enabled = closed != null || empty)
 }
 
-/** Room for the A–Z bar on the right of the grid. */
-private val AlphabetSpace = CineSizes.alphabetWidth + CineSpacing.s
+/** Room for the A–Z bar on the right of the grid, and for the focused element to grow without touching it. */
+private val AlphabetSpace = CineSizes.alphabetWidth + CineSpacing.s + CineSpacing.m
 
 /** The rows of a grid and the toolbar start right of the closed rail. */
 internal val ContentStart = CineSizes.railCollapsed + CineSpacing.m

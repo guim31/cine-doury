@@ -74,7 +74,8 @@ fun AppRail(
             listOf(
                 RailDestination(
                     CineIcons.Profile,
-                    stringResource(R.string.rail_profiles),
+                    // The name of the profile: short enough for the rail, and it says who is watching.
+                    state.profileName.ifEmpty { stringResource(R.string.rail_profiles) },
                     avatar = {
                         ProfileAvatar(
                             name = state.profileName,
