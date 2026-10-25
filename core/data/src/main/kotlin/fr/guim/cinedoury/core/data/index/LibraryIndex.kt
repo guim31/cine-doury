@@ -141,7 +141,7 @@ class LibraryIndex(
                 dao.dropUnseen(serverId, library.value, started)
             }
         }
-        val fullAt = if (full || state == null) clock.millis() else state.fullSyncAt
+        val fullAt = if (full) clock.millis() else state.fullSyncAt
         dao.saveState(IndexStateEntity(serverId, library.value, syncedAt = started, fullSyncAt = fullAt))
     }
 

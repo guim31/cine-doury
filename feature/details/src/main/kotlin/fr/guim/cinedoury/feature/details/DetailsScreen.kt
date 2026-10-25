@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -131,7 +131,8 @@ object DetailsPreview {
  * seasons and episodes of a series, the cast, the saga, similar titles, the works of a person.
  * « Retour » closes a panel, then goes back exactly where the user came from.
  *
- * @param previewPanel opens a panel (screenshots); [previewExpanded] unfolds the synopsis.
+ * @param previewPanel opens a panel (screenshots); [previewExpanded] unfolds the synopsis;
+ * [previewFirstItem] scrolls the page to that item (0: the hero, 1: the seasons).
  */
 @Composable
 fun DetailsScreen(
@@ -142,6 +143,7 @@ fun DetailsScreen(
     modifier: Modifier = Modifier,
     previewPanel: DetailsPanel? = null,
     previewExpanded: Boolean = false,
+    previewFirstItem: Int = 0,
 ) {
     var panel by rememberSaveable { mutableStateOf(previewPanel) }
     var expanded by rememberSaveable { mutableStateOf(previewExpanded) }
@@ -161,6 +163,7 @@ fun DetailsScreen(
         }
         FocusPivot(fraction = PIVOT) {
             LazyColumn(
+                state = rememberLazyListState(initialFirstVisibleItemIndex = previewFirstItem),
                 modifier = Modifier.fillMaxSize(),
                 contentPadding =
                     PaddingValues(
@@ -212,12 +215,12 @@ fun DetailsScreen(
             },
         )
     }
-    // The first focus: « Lire », or the element left when coming back; for a person or a collection,
-    // the first card, once read.
+    // The first focus: « Lire », or the element left when coming back (or that opened the panel just
+    // closed); for a person or a collection, the first card, once read.
     val target = focused ?: if (state.hasMainButton) KEY_PLAY else state.firstRowKey()?.let(::rowKey)
     val ready = target != null && (target == KEY_PLAY || state.loaded)
     if (target != null) {
-        LaunchedEffect(target, ready) {
+        LaunchedEffect(target, ready, panel == null) {
             if (ready && panel == null) {
                 withFrameNanos { }
                 runCatching { requesters[target].requestFocus() }

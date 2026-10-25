@@ -33,4 +33,35 @@
     <string name="section_home">Accueil</string>
     <string name="customize_home">Personnaliser l\'accueil</string>
     <string name="customize_home_description">Rangées, ordre, bibliothèques et menu latéral de ce profil.</string>
+    <string name="section_libraries">Bibliothèques</string>
+    <string name="library_icon_automatic">Icône choisie d\'après son nom. Choisissez-en une autre pour le menu latéral.</string>
+    <string name="library_icon_chosen">Icône choisie par vous pour le menu latéral.</string>
+    <string name="library_icon_auto">Automatique (%1$s)</string>
+    <string name="index_title">Index de la bibliothèque</string>
+    <string name="index_running">Mise à jour : %1$d sur %2$d titres.</string>
+    <string name="index_starting">Mise à jour en cours.</string>
+    <string name="index_failed">La dernière mise à jour n\'a pas abouti ; elle sera retentée. Appuyez pour réessayer.</string>
+    <string name="index_ready">À jour : %1$s et %2$s, le %3$s à %4$s. Appuyez pour tout relire.</string>
+    <string name="index_empty">Pas encore construit : il se construit en arrière-plan.</string>
+    <string name="icon_movies">Films</string>
+    <string name="icon_shows">Séries</string>
+    <string name="icon_animation">Animation</string>
+    <string name="icon_anime">Animes</string>
+    <string name="icon_documentaries">Documentaires</string>
+    <string name="icon_stage">Spectacles</string>
+    <string name="icon_sport">Sport</string>
+    <string name="icon_online">Vidéos en ligne</string>
+    <string name="icon_kids">Famille et enfants</string>
+    <string name="icon_collections">Collections</string>
+    <string name="icon_folder">Dossier</string>
+    <plurals name="films_count">
+        <item quantity="one">%1$d film</item>
+        <item quantity="many">%1$d films</item>
+        <item quantity="other">%1$d films</item>
+    </plurals>
+    <plurals name="episodes_count">
+        <item quantity="one">%1$d épisode</item>
+        <item quantity="many">%1$d épisodes</item>
+        <item quantity="other">%1$d épisodes</item>
+    </plurals>
 </resources>

@@ -117,6 +117,9 @@ fun ExpandableText(
  * An episode in the list of a series (`FONCTIONNALITES.md` § 4): its frame with the progress and the
  * « non vu » mark, its number and title, a line of metadata (duration, air date), its synopsis on
  * two lines; on its right, a round button marks it watched or not.
+ *
+ * @param rowModifier applied to the focusable row itself (tags, focus listeners), [modifier] to the
+ * whole line with its button.
  */
 @Composable
 fun EpisodeRow(
@@ -126,6 +129,7 @@ fun EpisodeRow(
     watchedLabel: String,
     onToggleWatched: () -> Unit,
     modifier: Modifier = Modifier,
+    rowModifier: Modifier = Modifier,
     metadata: String? = null,
     overview: String? = null,
     progress: Float? = null,
@@ -145,7 +149,7 @@ fun EpisodeRow(
     ) {
         Row(
             modifier =
-                Modifier
+                rowModifier
                     .weight(1f)
                     .height(CineSizes.episodeRowHeight)
                     .withFocusRequester(focusRequester)

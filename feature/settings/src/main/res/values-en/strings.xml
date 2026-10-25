@@ -33,4 +33,33 @@
     <string name="section_home">Home</string>
     <string name="customize_home">Customise the home</string>
     <string name="customize_home_description">Rows, order, libraries and side menu of this profile.</string>
+    <string name="section_libraries">Libraries</string>
+    <string name="library_icon_automatic">Icon chosen from its name. Pick another one for the side menu.</string>
+    <string name="library_icon_chosen">Icon you picked for the side menu.</string>
+    <string name="library_icon_auto">Automatic (%1$s)</string>
+    <string name="index_title">Library index</string>
+    <string name="index_running">Updating: %1$d of %2$d titles.</string>
+    <string name="index_starting">Updating.</string>
+    <string name="index_failed">The last update did not finish; it will be tried again. Press to retry.</string>
+    <string name="index_ready">Up to date: %1$s and %2$s, on %3$s at %4$s. Press to read everything again.</string>
+    <string name="index_empty">Not built yet: it is being built in the background.</string>
+    <string name="icon_movies">Films</string>
+    <string name="icon_shows">Series</string>
+    <string name="icon_animation">Animation</string>
+    <string name="icon_anime">Anime</string>
+    <string name="icon_documentaries">Documentaries</string>
+    <string name="icon_stage">Shows</string>
+    <string name="icon_sport">Sport</string>
+    <string name="icon_online">Online videos</string>
+    <string name="icon_kids">Family and children</string>
+    <string name="icon_collections">Collections</string>
+    <string name="icon_folder">Folder</string>
+    <plurals name="films_count">
+        <item quantity="one">%1$d film</item>
+        <item quantity="other">%1$d films</item>
+    </plurals>
+    <plurals name="episodes_count">
+        <item quantity="one">%1$d episode</item>
+        <item quantity="other">%1$d episodes</item>
+    </plurals>
 </resources>

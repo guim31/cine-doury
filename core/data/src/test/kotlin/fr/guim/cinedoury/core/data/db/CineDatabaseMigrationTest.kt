@@ -8,6 +8,7 @@ import fr.guim.cinedoury.core.data.library.LibraryIconRepository
 import fr.guim.cinedoury.core.model.LibraryId
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
+import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -45,7 +46,15 @@ class CineDatabaseMigrationTest {
         val entities = schema.getJSONArray("entities")
         for (index in 0 until entities.length()) {
             val entity = entities.getJSONObject(index)
-            database.execSQL(entity.getString("createSql").replace("\${TABLE_NAME}", entity.getString("tableName")))
+            val table = entity.getString("tableName")
+            database.execSQL(entity.getString("createSql").replace("\${TABLE_NAME}", table))
+            // The indices of the table (from version 2 on).
+            val indices = entity.optJSONArray("indices") ?: JSONArray()
+            for (position in 0 until indices.length()) {
+                database.execSQL(
+                    indices.getJSONObject(position).getString("createSql").replace("\${TABLE_NAME}", table),
+                )
+            }
         }
         val setup = schema.getJSONArray("setupQueries")
         for (index in 0 until setup.length()) database.execSQL(setup.getString(index))

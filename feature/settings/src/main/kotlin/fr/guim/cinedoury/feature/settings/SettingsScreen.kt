@@ -1,5 +1,6 @@
 package fr.guim.cinedoury.feature.settings
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,6 +38,8 @@ import fr.guim.cinedoury.core.designsystem.component.rememberCineFocus
 import fr.guim.cinedoury.core.designsystem.theme.CineSizes
 import fr.guim.cinedoury.core.designsystem.theme.CineSpacing
 import fr.guim.cinedoury.core.designsystem.theme.CineTheme
+import fr.guim.cinedoury.core.model.LibraryIcon
+import fr.guim.cinedoury.core.model.LibraryId
 import fr.guim.cinedoury.core.ui.CollectEvents
 import fr.guim.cinedoury.core.ui.RemoteIndicator
 import org.koin.androidx.compose.koinViewModel
@@ -80,6 +84,8 @@ fun SettingsRoute(
         onSwitchProfile = viewModel::switchProfile,
         onSignOut = viewModel::signOut,
         onForgetServer = viewModel::forgetServer,
+        onSetIcon = viewModel::setIcon,
+        onRebuildIndex = viewModel::rebuildIndex,
     )
 }
 
@@ -101,12 +107,18 @@ fun SettingsScreen(
     onSignOut: () -> Unit,
     onForgetServer: () -> Unit,
     modifier: Modifier = Modifier,
+    onSetIcon: (LibraryId, LibraryIcon?) -> Unit = { _, _ -> },
+    onRebuildIndex: () -> Unit = {},
     confirmingForget: Boolean = false,
+    previewIconOf: LibraryId? = null,
+    previewFirstItem: Int = 0,
 ) {
     val session = state.session ?: return
     val profile = session.profile
     val server = session.connection.server
     var confirm by rememberSaveable { mutableStateOf(confirmingForget) }
+    // The library whose icon is being chosen, in the side panel.
+    var iconOf by rememberSaveable(stateSaver = LibraryIdSaver) { mutableStateOf(previewIconOf) }
     val first = remember { FocusRequester() }
     val cancel = remember { FocusRequester() }
     Box(
@@ -133,6 +145,7 @@ fun SettingsScreen(
                 if (session.connection.mode == ConnectionMode.Remote) RemoteIndicator()
             }
             LazyColumn(
+                state = rememberLazyListState(initialFirstVisibleItemIndex = previewFirstItem),
                 modifier = Modifier.width(CineSizes.settingsWidth).fillMaxHeight().testTag("settings"),
                 contentPadding =
                     PaddingValues(
@@ -191,6 +204,7 @@ fun SettingsScreen(
                         modifier = Modifier.testTag("customize-home"),
                     )
                 }
+                libraryItems(state, onIcon = { iconOf = it }, onRebuildIndex = onRebuildIndex)
                 item { ListSectionTitle(stringResource(R.string.section_startup)) }
                 item {
                     val last = state.startupMode == StartupMode.LastProfile
@@ -246,6 +260,14 @@ fun SettingsScreen(
                 }
             }
         }
+        IconPanel(
+            library = state.libraries.firstOrNull { it.id == iconOf },
+            chosen = iconOf?.let { state.chosen[it] },
+            onChoose = { library, icon ->
+                onSetIcon(library, icon)
+                iconOf = null
+            },
+        )
         if (confirm) {
             ConfirmDialog(
                 title = stringResource(R.string.forget_title),
@@ -263,5 +285,6 @@ fun SettingsScreen(
             )
         }
     }
-    InitialFocus(if (confirm) cancel else first, key = confirm)
+    BackHandler(enabled = iconOf != null) { iconOf = null }
+    InitialFocus(if (confirm) cancel else first, key = confirm, enabled = iconOf == null)
 }

@@ -1,5 +1,6 @@
 package fr.guim.cinedoury.feature.details
 
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -236,11 +237,12 @@ internal fun LazyListScope.episodes(
             focusRequester = requesters[key],
             focus = rememberCineFocus(DetailsPreview.episode(index)),
             image = rememberArt(episode.landscapeImage, sources),
-            modifier =
+            modifier = Modifier.padding(horizontal = CineSpacing.safeHorizontal),
+            rowModifier =
                 Modifier
-                    .padding(horizontal = CineSpacing.safeHorizontal)
-                    .testTag(DetailsPreview.episode(index))
-                    .onFocusChanged { if (it.hasFocus) onFocused(key) },
+                    .testTag(
+                        DetailsPreview.episode(index),
+                    ).onFocusChanged { if (it.hasFocus) onFocused(key) },
         )
     }
 }
@@ -254,8 +256,14 @@ private fun Seasons(
 ) {
     val season = state.seasons.firstOrNull { it.id == state.season }
     val watched = if (state.flattened) state.item.userData?.played == true else season?.userData?.played == true
+    // Entering the row lands on the season shown.
+    val selected = requesters["season:${state.season?.value}"]
     Row(
-        modifier = Modifier.padding(horizontal = CineSpacing.safeHorizontal),
+        modifier =
+            Modifier
+                .padding(horizontal = CineSpacing.safeHorizontal)
+                .focusRestorer(selected)
+                .focusGroup(),
         horizontalArrangement = Arrangement.spacedBy(CineSpacing.xs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
