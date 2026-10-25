@@ -42,6 +42,7 @@ import fr.guim.cinedoury.feature.details.DetailsPreview
 import fr.guim.cinedoury.feature.details.detailsModule
 import fr.guim.cinedoury.feature.home.homeModule
 import fr.guim.cinedoury.feature.library.libraryModule
+import fr.guim.cinedoury.feature.manage.manageModule
 import fr.guim.cinedoury.feature.player.playerModule
 import fr.guim.cinedoury.feature.search.KeyboardTags
 import fr.guim.cinedoury.feature.search.SearchPreview
@@ -173,6 +174,7 @@ class J5FlowTest {
                 homeModule,
                 libraryModule,
                 detailsModule,
+                manageModule,
                 playbackModule,
                 playerModule,
                 searchModule,

@@ -176,7 +176,6 @@ fun DetailsScreen(
     }
     val restoreFocus = { focused?.let { runCatching { requesters[it].requestFocus() } } }
     BackHandler(enabled = state.deletion != null || state.manageError != null) {
-        restoreFocus()
         if (state.deletion != null) actions.cancelDelete() else actions.dismissManageError()
     }
 
@@ -244,25 +243,31 @@ fun DetailsScreen(
             onImages = { navigation.images(item) },
         )
         ManageNoticePill(state.notice)
-        // A dialog that closes first gives the focus back to the element it came from, as a panel
-        // does: the focus never falls out of the screen.
+        // A dialog that closes gives the focus back to the element it came from, as a panel does:
+        // the focus never falls out of the screen. Only once the dialog is gone: while it is
+        // composed, `ConfirmDialog` keeps the focus inside it and refuses any request from outside.
+        val dialogShown = state.deletion != null || state.manageError != null
+        var hadDialog by remember { mutableStateOf(false) }
+        LaunchedEffect(dialogShown) {
+            if (dialogShown) {
+                hadDialog = true
+            } else if (hadDialog) {
+                hadDialog = false
+                withFrameNanos { }
+                restoreFocus()
+            }
+        }
         state.deletion?.let {
             DeleteDialog(
                 it,
                 onConfirm = actions::confirmDelete,
-                onCancel = {
-                    restoreFocus()
-                    actions.cancelDelete()
-                },
+                onCancel = actions::cancelDelete,
             )
         }
         state.manageError?.let {
             ManageErrorDialog(
                 it,
-                onDismiss = {
-                    restoreFocus()
-                    actions.dismissManageError()
-                },
+                onDismiss = actions::dismissManageError,
             )
         }
     }
