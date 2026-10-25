@@ -64,4 +64,11 @@
         <item quantity="many">%1$d épisodes</item>
         <item quantity="other">%1$d épisodes</item>
     </plurals>
+    <string name="section_playback">Lecture</string>
+    <string name="playback_settings">Lecture et son</string>
+    <string name="playback_settings_description">Passthrough vers l\'ampli, fréquence d\'images, intro, épisode suivant. Réglages de cet appareil.</string>
+    <string name="subtitle_settings">Apparence des sous-titres</string>
+    <string name="subtitle_settings_description">Taille, couleur, contour, fond et position.</string>
+    <string name="device_profile">Profil de lecture de l\'appareil</string>
+    <string name="device_profile_description">Ce que l\'appareil sait lire, et ce qui est demandé au serveur.</string>
 </resources>

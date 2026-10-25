@@ -62,4 +62,11 @@
         <item quantity="one">%1$d episode</item>
         <item quantity="other">%1$d episodes</item>
     </plurals>
+    <string name="section_playback">Playback</string>
+    <string name="playback_settings">Playback and sound</string>
+    <string name="playback_settings_description">Passthrough to the amplifier, frame rate, intro, next episode. Settings of this device.</string>
+    <string name="subtitle_settings">Subtitle appearance</string>
+    <string name="subtitle_settings_description">Size, colour, edge, background and position.</string>
+    <string name="device_profile">Playback profile of the device</string>
+    <string name="device_profile_description">What the device plays, and what the server is asked for.</string>
 </resources>

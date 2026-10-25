@@ -5,8 +5,10 @@ import fr.guim.cinedoury.core.data.db.HomeCacheDao
 import fr.guim.cinedoury.core.data.db.HomeRowConfigEntity
 import fr.guim.cinedoury.core.data.db.PreferencesDao
 import fr.guim.cinedoury.core.data.db.RailHiddenEntity
+import fr.guim.cinedoury.core.model.ItemId
 import fr.guim.cinedoury.core.model.LibraryId
 import fr.guim.cinedoury.core.model.MediaItem
+import fr.guim.cinedoury.core.model.UserData
 import fr.guim.cinedoury.core.source.LibrarySource
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -111,6 +113,26 @@ class HomeRepository(
             rows.mapValues { (_, items) -> items.map { it.toEntity(profile) } },
         )
         return rows
+    }
+
+    /**
+     * What the user did with [item] (`SPEC.md` § 4.11): the position and « vu » at the end of
+     * playback reach the cards of the home at once, before the next refresh.
+     */
+    suspend fun updateUserData(
+        profile: ProfileKey,
+        item: ItemId,
+        data: UserData,
+    ) {
+        cache.updateUserData(
+            serverId = profile.serverId,
+            userId = profile.userId,
+            itemId = item.value,
+            played = data.played,
+            positionMs = data.playbackPosition.inWholeMilliseconds,
+            playCount = data.playCount,
+            lastPlayed = data.lastPlayed?.toEpochMilli(),
+        )
     }
 
     /** Forgets the cache of a profile (signed out), or of every profile of a server. */

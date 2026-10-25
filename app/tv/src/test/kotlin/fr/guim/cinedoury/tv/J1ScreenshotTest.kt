@@ -188,6 +188,12 @@ internal object NoNavigation : SettingsNavigation {
 
     override fun catalog() = Unit
 
+    override fun playback() = Unit
+
+    override fun subtitles() = Unit
+
+    override fun deviceProfile() = Unit
+
     override fun profileClosed() = Unit
 
     override fun serverForgotten() = Unit

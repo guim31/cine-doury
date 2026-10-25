@@ -5,6 +5,7 @@ import androidx.compose.ui.unit.dp
 
 /** The 8 dp grid and the TV safe area (`UI.md` § 2). */
 object CineSpacing {
+    val none = 0.dp
     val xs = 8.dp
     val s = 16.dp
     val m = 24.dp
@@ -96,6 +97,39 @@ object CineSizes {
 
     /** The side panels with long lines: tracks, file information. */
     val widePanelWidth = 480.dp
+
+    // Player (J4).
+
+    /** Above and below the text of a pill (« par défaut »). */
+    val pillPadding = 2.dp
+
+    /** The progress bar of the player, and its knob with the focus. */
+    val progressBar = 6.dp
+    val progressBarFocused = 10.dp
+    val progressKnob = 20.dp
+    val chapterGap = 3.dp
+
+    /** « Épisode suivant », its countdown ring. */
+    val nextCardWidth = 480.dp
+    val countdownRing = 48.dp
+    val countdownStroke = 4.dp
+
+    /** The information screen of the player: wide enough for a codec string. */
+    val infoSheetWidth = 640.dp
+    val infoLabelWidth = 200.dp
+
+    /** The two columns of the audio and subtitle panel of the player. */
+    val tracksPanelWidth = 720.dp
+
+    /** The value between − and + of a stepper (« 140 % »). */
+    val stepperValueWidth = 64.dp
+
+    /** The bar of the subtitles over the top of the picture, while their size is set. */
+    val subtitleBarWidth = 840.dp
+
+    /** The still picture under the subtitles of « Apparence des sous-titres ». */
+    val subtitlePreview = DpSize(320.dp, 180.dp)
+    val subtitlePreviewTop = 120.dp
 
     /** The featured banner takes 60 % of the screen height (`UI.md` § 8). */
     const val HERO_HEIGHT_FRACTION = 0.6f

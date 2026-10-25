@@ -298,6 +298,28 @@ object CineIcons {
         )
     }
 
+    // The player (J4).
+    val Pause: ImageVector by lazy { icon("Pause", "M6 19h4V5H6v14zm8-14v14h4V5h-4z") }
+    val SkipNext: ImageVector by lazy { icon("SkipNext", "M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z") }
+    val FastForward: ImageVector by lazy { icon("FastForward", "M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z") }
+    val FastRewind: ImageVector by lazy { icon("FastRewind", "M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z") }
+    val Chapters: ImageVector by lazy {
+        icon("Chapters", "M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z")
+    }
+    val Quality: ImageVector by lazy {
+        icon(
+            "Quality",
+            "M19 4H5c-1.11 0-2 .9-2 2v12c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 11H9.5v-2h-2v2H6V9h" +
+                "1.5v2.5h2V9H11v6zm7-1c0 .55-.45 1-1 1h-.75v1.5h-1.5V15H14c-.55 0-1-.45-1-1v-4c0-.55.45-1 1-1h3c.55 " +
+                "0 1 .45 1 1v4zm-3.5-.5h2v-3h-2v3z",
+        )
+    }
+
+    val Remove: ImageVector by lazy { icon("Remove", "M19 13H5v-2h14v2z") }
+
+    /** The size of the subtitles. */
+    val TextSize: ImageVector by lazy { icon("TextSize", "M9 4v3h5v12h3V7h5V4H9zm-6 8h3v7h3v-7h3V9H3v3z") }
+
     /** A synopsis that unfolds. */
     val Expand: ImageVector by lazy { icon("Expand", "M16.59 8.59 12 13.17 7.41 8.59 6 10l6 6 6-6z") }
 

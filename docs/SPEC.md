@@ -15,7 +15,8 @@ son domaine :
 | J0 — Fondations | terminé, fusionné | [#1](https://github.com/guim31/cine-doury/pull/1) |
 | J1 — Connexion et profils (et retouches du design system) | terminé, fusionné | [#2](https://github.com/guim31/cine-doury/pull/2) |
 | J2 — Accueil et navigation | terminé, fusionné | [#3](https://github.com/guim31/cine-doury/pull/3) |
-| J3 — Fiches (et retouches du J2 : raccord du bandeau, vignettes, index local et filtres HDR/audio, icônes de bibliothèque, clé de débogage) | terminé, en revue (CI verte ; captures dans `docs/screenshots/j3/`, numéros 70 à 89) | [#4](https://github.com/guim31/cine-doury/pull/4) |
+| J3 — Fiches (et retouches du J2 : raccord du bandeau, vignettes, index local et filtres HDR/audio, icônes de bibliothèque, clé de débogage) | terminé, fusionné | [#4](https://github.com/guim31/cine-doury/pull/4) |
+| J4 — Lecteur (et retouches du J3 : pastilles des pistes, groupes insécables, logo à la place de l'affiche) | terminé, en revue (captures dans `docs/screenshots/j4/`, numéros 90 à 108 ; ajout : taille des sous-titres en cours de lecture) | [#5](https://github.com/guim31/cine-doury/pull/5) |
 
 *(Chaque jalon met à jour ce tableau et ajoute ses contrats au § 4.)*
 
@@ -101,6 +102,12 @@ Ajoutés au J1 :
 
 Ajouté au J2 : `:feature:library` (`cinedoury.android.library` + `.compose`), une bibliothèque :
 onglets, vues, tri, filtres, saut A–Z. Ajouté au J3 : `:feature:details`, les fiches (§ 4.10).
+Ajoutés au J4 (§ 4.11) : `:core:playback` (`cinedoury.android.library`, sans Compose) — lecture
+des capacités de l'appareil, ExoPlayer derrière l'interface `VideoPlayer`, rapports, réglages de
+l'appareil, modes de l'écran — et `:feature:player` (`.compose`) — l'écran du lecteur, ses
+panneaux, les pages « Lecture et son », « Apparence des sous-titres » et le profil de l'appareil.
+Le profil, la décision et les règles (vu, épisode suivant, « toujours là ») sont du Kotlin pur dans
+`:core:model`, testés sans Android.
 
 `:core:ui` n'était pas prévu au § 3 : les messages d'erreur servent à tous les écrans, mais
 `:core:designsystem` ne doit pas connaître `:core:source`. Le design system reste sans dépendance
@@ -131,7 +138,17 @@ configuration.
 | Stockage | Room (avec KSP, qui fonctionne avec le Kotlin intégré d'AGP 9), DataStore Preferences | 2.8.5 (KSP 2.3.12), 1.3.0 |
 | Injection | Koin (`koin-android`, `koin-androidx-compose`), plutôt que Hilt : pas de traitement d'annotations | 4.2.2 |
 | JSON (découverte UDP) | kotlinx.serialization JSON (déjà apportée par le SDK Jellyfin) | 1.12.0 |
-| À venir (retenus, non encore ajoutés) | Media3 (J4), Macrobenchmark (J8) | 1.11.1, 1.5.0 |
+| Lecture (J4) | Media3 : `media3-exoplayer`, `-exoplayer-hls`, `-ui` (`PlayerView`, sous-titres) | 1.11.1 |
+| Tests sur l'émulateur (J4) | `androidx.test:runner`, `androidx.test.ext:junit` | 1.7.0, 1.3.0 |
+| À venir (retenus, non encore ajoutés) | Macrobenchmark (J8) | 1.5.0 |
+
+**Extension FFmpeg de Media3 : écartée au J4.** Google ne la publie pas (il faut la construire
+avec le NDK et un FFmpeg compilé à part) ; la seule publiée, `org.jellyfin.media3:media3-ffmpeg-decoder`
+(Maven Central), est sous **GPL-3.0**, que `CLAUDE.md` exclut de l'APK, et suit Media3 1.9 (nous
+sommes en 1.11). Ce qu'elle apporterait (décoder DTS, TrueHD sans ampli) est fait par le serveur :
+le profil ne déclare pas ces codecs quand ni l'appareil ni l'ampli ne les prennent, et Jellyfin
+transcode l'audio seul (vidéo copiée). À revoir si une version LGPL, construite par la CI, devient
+utile.
 
 ### 4.3 Client Jellyfin : le SDK officiel
 
@@ -448,9 +465,9 @@ focus à son entrée choisie, `ConfirmDialog(destructive = false)`, `ListRow(tra
 `alphabetWidth`, `panelWidth`, `listRowPoster`, `listRowHeight`, `skeletonLine`,
 `HERO_HEIGHT_FRACTION`.
 
-**Écrans provisoires** : Recherche (J5) et Lecteur (J4) s'ouvrent sur un écran « arrive avec une
-prochaine version » (`ComingSoonScreen`), avec « Retour » ; depuis le J3, le lecteur provisoire montre
-ce qui serait lu (§ 4.10).
+**Écrans provisoires** : Recherche (J5) s'ouvre sur un écran « arrive avec une prochaine version »
+(`ComingSoonScreen`), avec « Retour ». Le lecteur provisoire du J3 a laissé la place au vrai lecteur
+au J4 (§ 4.11).
 
 ### 4.10 Fiches (J3)
 
@@ -660,6 +677,212 @@ saga (77), pistes (78), choix de la version (79), informations sur le fichier (8
 saisons et épisodes (82), saison unique (83), fiche épisode (84), fiche personne (85), lecteur
 provisoire (86), réglages des bibliothèques et de l'index (87 à 89) ; les captures du J0 au J2 sont
 réenregistrées (vignettes, raccord, panneau de filtres).
+
+### 4.11 Lecteur (J4)
+
+**Modules** : `:core:model` (Kotlin pur) porte le profil, la décision et les règles ;
+`:core:playback` lit l'appareil et enveloppe ExoPlayer ; `:feature:player` est l'écran.
+
+**Source** (`:core:source`, `LibrarySource.playback: PlaybackSource`) :
+
+| Fonction | Appel Jellyfin | Notes |
+|---|---|---|
+| `playbackInfo(requête)` | `POST /Items/{id}/PlaybackInfo` | `DeviceProfile` construit du profil (ci-dessous), `MaxStreamingBitrate`, `StartTimeTicks`, `AudioStreamIndex`, `SubtitleStreamIndex` (`-1` : aucun), `MediaSourceId`, `EnableDirectPlay`/`EnableDirectStream` (faux après un échec), `AllowVideoStreamCopy`/`AllowAudioStreamCopy` |
+| `reportStart` / `reportProgress` / `reportStopped` | `POST /Sessions/Playing`, `/Playing/Progress`, `/Playing/Stopped` | version, pistes, position, pause, `PlayMethod`, `PlaySessionId` |
+| `segments(id)` | `GET /MediaSegments/{id}` | Intro, Outro, Recap, Preview, Commercial ; vide sans plugin |
+| `trickplayTileUrl(id, version, largeur, tuile)` | `/Videos/{id}/Trickplay/{largeur}/{tuile}.jpg` | métadonnées dans `Trickplay` de l'élément (version → largeur → tuiles) |
+| `streamHeaders` | — | `Authorization: MediaBrowser …, Token="…"`, envoyé par ExoPlayer et Coil à chaque requête du lecteur (flux, sous-titres, tuiles) |
+
+`item(id)` donne aussi les **chapitres** (`Chapters`) et, par version, le **trickplay** ; chaque
+piste vidéo sa fréquence d'images (`RealFrameRate`) et son profil Dolby Vision (`DvProfile`).
+
+**Profil de l'appareil** — ce qui est détecté (`DeviceCapabilitiesReader`, relu à chaque lecture :
+un ampli a pu s'allumer) :
+- décodeurs vidéo de `MediaCodecList` (H.264, HEVC, AV1, VP9, MPEG-2, VC-1) : nom, matériel ou
+  logiciel, profils (« high », « main 10 »…), niveau maximal à l'échelle du serveur (H.264 5.1 → 51,
+  HEVC 5.1 → 153), taille maximale, 10 bits ; profils du décodeur Dolby Vision (4 à 9) ;
+- écran : taille et fréquences du mode courant, HDR (`Display.getHdrCapabilities` : HDR10, HDR10+,
+  HLG, Dolby Vision) ;
+- son : décodeurs audio de l'appareil ; passthrough HDMI (`AudioCapabilities` de Media3 : AC3,
+  E-AC3, E-AC3 JOC, DTS, DTS-HD, TrueHD) ; canaux PCM ;
+- sous-titres dessinés par Media3 : SubRip, SSA/ASS, WebVTT, TTML, PGS, VobSub, DVB.
+
+Ce qui est envoyé (`PlaybackProfiles.build`, puis `toDeviceProfile` dans `:source:jellyfin`) :
+- **lecture directe** : conteneurs lus par ExoPlayer (mkv, webm, mp4, m4v, mov, ts, m2ts, mts, avi,
+  flv, 3gp, ogv), un `CodecProfile` par codec vidéo décodé (profils — « baseline » emporte
+  « constrained baseline » —, niveau, largeur, hauteur, profondeur, **plages dynamiques**), les
+  codecs audio décodés **ou** passés à l'ampli (passthrough autorisé dans les réglages), les canaux ;
+  un décodeur logiciel de HEVC, AV1 ou VP9 est limité à 1080p ;
+- **plages** : SDR toujours ; HDR10 et HDR10+ (sa base est HDR10) si l'écran prend HDR10 et le
+  décodeur 10 bits ; HLG de même ; Dolby Vision selon les profils du décodeur **et** un écran Dolby
+  Vision. Profil 5 (`DOVI`) : seulement avec Dolby Vision, sinon le serveur fait le tone mapping
+  (paramétré sur le serveur) ; profil 7 (`DOVIWithEL`) : seulement si le décodeur déclare le profil
+  7 ; profil 8 (`DOVIWithHDR10`, `…HLG`, `…SDR`) : Dolby Vision, sinon **sa couche de base** sur le
+  décodeur HEVC (Media3 sait la lire ; sans écran Dolby Vision, le sélecteur de décodeurs écarte le
+  décodeur Dolby Vision pour que la base soit lue en HDR10, HLG ou SDR) ;
+- **transcodage** : HLS ; HEVC puis H.264 en fMP4 (`mp4`) quand un décodeur HEVC Main 10 matériel
+  existe, sinon H.264 en MPEG-TS ; audio AC3 d'abord quand l'appareil ou l'ampli prend du 5.1,
+  sinon AAC ; `MaxAudioChannels` ;
+- **sous-titres** : `Embed` pour tout format dessiné, `External` pour les formats texte ; le reste
+  (PGS, VobSub en transcodage) est incrusté par le serveur (`Encode`). L'option « ASS incrustés par
+  le serveur » retire ASS/SSA : le serveur les dessine, styles compris ;
+- débit : 120 Mb/s par défaut, ou la qualité choisie (40 à 1 Mb/s).
+
+**Décision** : le serveur décide d'après le profil. `SupportsDirectPlay` → **lecture directe**
+(`/Videos/{id}/stream?static=true`) ; sinon `TranscodingUrl` (HLS) : **flux direct** (remux) si
+`SupportsDirectStream`, **transcodage** sinon — « audio seulement » quand toutes les raisons sont
+audio (la vidéo est copiée). La **raison** vient de `TranscodeReasons=` dans l'adresse
+(`TranscodeReason`, montrée en clair par l'écran d'informations). Un flux HLS de Jellyfin couvre
+toute la durée : le lecteur se place lui-même à la position de départ.
+
+**Repli** (`PlaybackFallback`) : une erreur de **décodage** (codes Media3 4xxx, piste audio 5xxx,
+ou aucune piste vidéo — ou audio — prise en charge par un décodeur) ou de **format** (3xxx) pendant
+une lecture directe ou un remux redemande le flux au serveur, sans lecture directe, **à la même
+position**, sans écran d'erreur, une fois ; l'écran d'informations dit « Lecture directe impossible,
+transcodage : <erreur> ». Toute autre erreur, ou un transcodage qui échoue, montre l'erreur (deux
+phrases, « Réessayer » qui repart de la position). **Réseau** : les chargements sont réessayés
+(20 fois, jusqu'à 5 s d'écart, ≈ 90 s) pendant que la mémoire tampon (30 à 90 s, 192 Mo) joue ;
+après 3 s d'attente, « Connexion au serveur perdue. Nouvel essai en cours… » s'affiche.
+
+**Rapports** (`PlaybackReporter`) : « démarré » une fois par flux ; « progression » toutes les
+10 s, à chaque pause ou reprise, après chaque saut (les 10 s repartent de là) et à chaque
+changement de piste dans le flux ; « arrêté » à la sortie. Un changement de qualité, de piste
+hors du flux ou le repli arrêtent le flux courant et en démarrent un autre. Les rapports partent
+dans l'ordre, un à la fois, sur une portée qui survit à l'écran ; un échec est ignoré (le suivant
+porte la position). Une bande-annonce locale n'envoie aucun rapport et ne touche pas au « vu ».
+
+**« Vu »** (`PlaybackRules.isWatched`) : à 90 % de la durée (réglable : 80, 85, 90, 95 %), ou dès le
+début du segment Outro. Alors le dernier rapport porte la **fin** de la durée, et le serveur marque
+vu de lui-même. Le seuil du serveur (`MaxResumePct`, 90 % par défaut) s'applique aussi. À la sortie,
+la position (ou « vu », position 0, une lecture de plus) part tout de suite dans le cache de
+l'accueil (`HomeRepository.updateUserData`, table `cached_items`) et vers les fiches ouvertes
+(`UserDataUpdates`), avant tout rafraîchissement.
+
+**Segments** : « Passer l'intro », « Passer le récapitulatif » (aperçu, publicité) en bas à droite,
+focalisé d'office, tant que le segment joue ; réglage « Bouton », « Passer automatiquement » (une
+fois par segment), « Rien ». Le générique (Outro) mène à l'épisode suivant.
+
+**Épisode suivant** : le suivant dans l'ordre de la série (les spéciaux seulement après un
+spécial). La carte apparaît au début du segment Outro, sinon 30 s avant la fin, focalisée, avec un
+compte à rebours de 10 s (qui ne court que pendant la lecture) ; à zéro, ou à la fin du fichier,
+l'épisode suivant démarre si « Épisode suivant automatique » est actif. « Retour » écarte la carte.
+
+**« Vous êtes toujours là ? »** (`StillWatching`) : l'épisode lancé par l'utilisateur compte 1,
+chaque épisode lancé par le compte à rebours ajoute 1, toute touche repart de 1 ; quand 3 épisodes
+(réglable : jamais, 2 à 5) ont joué ainsi, le suivant attend la réponse au lieu de démarrer
+(« Continuer la lecture », focus initial, ou « Arrêter »).
+
+**Image** : fréquence d'images adaptée (activée par défaut) : `Surface.setFrameRate` par Media3
+quand le changement est sans coupure, et changement de **mode** de l'écran
+(`preferredDisplayModeId`) vers le mode de même taille dont la fréquence est la cadence du film ou
+un multiple (`DisplayModes`), rendu à la sortie. Format : adapter, remplir, zoom (`PlayerView`).
+
+**Son** : passthrough selon ce que la sortie HDMI prend, réglable format par format ; un format
+refusé est décodé par l'appareil (le fournisseur de sortie audio le déclare non pris en charge), à
+défaut converti par le serveur. Piste audio de départ : le choix de la fiche, sinon la
+pré-sélection du J3.
+
+**Sous-titres** : dans le fichier (lecture directe : n-ième piste de sous-titres du fichier ↔ n-ième
+groupe de pistes de Media3), externes (`DeliveryUrl`, chargés à part avec l'en-tête du serveur), ou
+incrustés par le serveur (changer pour l'une d'elles redemande le flux). Apparence (couleur,
+contour) appliquée au `SubtitleView` ; aperçu sur l'image en pause dans le panneau « Réglages » du
+lecteur, et dans « Apparence des sous-titres ».
+
+**Taille, position et fond des sous-titres** *(ajout au J4, demandé par le mainteneur)* : réglables
+en cours de lecture, sans pause, depuis une barre posée en haut de l'image (le panneau latéral
+cacherait les sous-titres) : la taille va de 60 % à 200 % (crans de 10 % jusqu'à 100 %, puis de
+20 %), ← et → la changent aussitôt ; puis la position (en bas, relevée, haute) et le fond (aucun,
+ombré derrière le texte, bandeau sur toute la largeur). Sans sous-titre à l'écran, une phrase
+d'exemple s'affiche le temps du réglage. Accès : la ligne « Taille, position et fond » des panneaux
+Audio et sous-titres et Réglages, le bouton « Taille des sous-titres » de l'interface, et un
+**raccourci : ↑ ou ↓ maintenu, interface masquée**, qui grossit ou réduit d'un cran à chaque demi-
+seconde en montrant la barre (un appui bref montre toujours l'interface). Le réglage est mémorisé
+pour le profil sur cet appareil (DataStore `player`, clés suffixées par serveur et utilisateur ; un
+profil qui ne l'a jamais touché part de celui de l'appareil), devient la valeur par défaut, et se
+retrouve dans « Apparence des sous-titres ».
+
+- **Jamais de pixels** : la taille du texte est une fraction de la hauteur de la zone du lecteur
+  (5,33 % à 100 %, comme les sous-titres d'Android), et le contour d'aperçu une fraction de la
+  taille du texte. Un réglage donne le même rendu en 1080p et en 4K : sur une Shield en 4K,
+  l'interface est en 960 × 540 dp à une densité quatre fois plus forte, et `SubtitleView` mesure en
+  fraction de sa hauteur, pas en dp (captures `106-sous-titres-160` et `108-sous-titres-160-4k`).
+  Plex dessine en points fixes, d'où des sous-titres trop petits sur une sortie 4K.
+- **Formats** : nos sous-titres passent par notre `SubtitleView` (celui de `PlayerView` est caché),
+  qui reçoit les répliques de Media3 transformées par `SubtitleCues` : un texte sans taille (SRT,
+  WebVTT) prend la taille réglée ; un texte qui a la sienne (styles ASS) est multiplié par le
+  facteur, si bien que les styles gardent leurs proportions (et leurs couleurs, positions) ; une
+  image (PGS, VobSub) grandit autour du milieu de son bord bas et remonte avec la position
+  (`SubtitleBox`), sans sortir de l'image.
+- **Ce qui ne s'agrandit pas** : des sous-titres **incrustés par le serveur** (PGS ou VobSub quand
+  il transcode, ASS si le réglage « ASS incrustés » est actif) font partie de l'image : ni leur
+  taille ni leur place ne peuvent changer. La barre le dit (« La taille de ces sous-titres ne peut
+  pas être modifiée. Le serveur les incruste dans l'image. »), le − / + est éteint et les autres
+  réglages masqués.
+
+**Interface** (`UI.md` § 8) : touches de la télécommande — interface masquée : ← et → sautent
+(10 s, 30 s, réglables), OK et ↑ ↓ (appui bref) montrent l'interface, ↑ ↓ maintenus changent la
+taille des sous-titres ; sur la barre, ← → recherchent (pas de
+10 s, puis 30 s, 1, 2, 5 min, 6 répétitions de touche chacun), la vignette trickplay au-dessus, OK
+ou 1,2 s sans touche y va ; touches média : lecture, pause, lecture/pause, avance et retour rapides
+(recherche), suivant et précédent (chapitres), stop ; Info : écran d'informations. L'interface
+disparaît 4 s après la dernière touche pendant la lecture. Panneaux à droite, l'image visible :
+Audio | Sous-titres (deux colonnes), Qualité, Réglages, Chapitres ; en haut, la barre des
+sous-titres. L'écran reste allumé, la lecture
+se met en pause quand l'appli passe en arrière-plan.
+
+**Écran d'informations** : moteur, mode et raison, repli, conteneur, codec vidéo reçu, résolution
+et cadence, plage dynamique (et profil Dolby Vision), décodeur, audio (codec, canaux, fréquence),
+passthrough oui/non, débit, bande passante mesurée, mémoire tampon, images perdues, appareil et
+écran. **Profil de l'appareil** (réglages, versions de débogage) : chaque décodeur, l'écran, le
+son, puis le profil envoyé, en entier.
+
+**Réglages de l'appareil** (DataStore `player`, pas par profil) : passthrough par format,
+fréquence d'images, intro, épisode suivant, « toujours là », seuil « vu », sauts, ASS par le
+serveur, format, apparence des sous-titres.
+
+**Serveur de test** : `bootstrap.sh` installe **Chapter Segments Provider** depuis le dépôt de
+plugins de jellyfin.org (redémarrage du serveur), puis lance la tâche d'analyse des segments : les
+chapitres « Intro » et « Credits » des médias générés deviennent des segments Intro et Outro. Sans
+Internet (session cloud), le plugin manque : le test des segments le dit et ne vérifie que l'appel ;
+la CI, elle, passe `JELLYFIN_SEGMENTS=true` quand les segments existent.
+
+**Tests** : `PlaybackRulesTest` (`:core:model` : vu, épisode suivant, intro, « toujours là »,
+repli, trickplay, raisons), `PlaybackProfilesTest` (Shield, Chromecast, appareil SD, passthrough,
+ASS), `DeviceProfilesTest` (forme Jellyfin), `PlaybackReporterTest` et `DisplayModesTest`
+(`:core:playback`), `JellyfinPlaybackIntegrationTest` (lecture directe pour le profil complet,
+transcodage HLS et sa raison pour le profil limité, repli, la reprise déplacée par un rapport de
+progression, « vu » posé, segments), `J3FlowTest` (de la fiche au lecteur avec les pistes choisies),
+`PlaybackOnDeviceTest` sur l'émulateur de la CI (H.264 lu directement, HEVC HDR transcodé : la
+position avance de 2 s), `SubtitleStyleTest` (crans, fraction de l'image, images agrandies) et
+`PlayerSettingsStoreTest` (apparence par profil, le reste par appareil). Captures :
+`J4ScreenshotTest`, `J4Screenshot4kTest`.
+
+**Captures** (`docs/screenshots/j4/`, 1920 × 1080, sombre et noir OLED, image vidéo générée) :
+interface du lecteur (90), recherche et vignette (91), audio et sous-titres (92), qualité (93),
+réglages et aperçu des sous-titres (94), « Passer l'intro » (95), « Épisode suivant » (96),
+« Vous êtes toujours là ? » (97), informations en lecture directe (98) et en transcodage avec sa
+raison (99), erreur (100), « Lecture et son » (101), « Apparence des sous-titres » (102), profil de
+l'appareil (103), barre de taille des sous-titres (104), un même sous-titre à 100 % (105) et à
+160 % (106), sous-titres incrustés (107), 160 % sur une sortie 4K, 3840 × 2160 (108) ; les retouches du J3 se voient sur la fiche (75 : logo sans affiche, heure de fin
+d'un bloc) et les pistes (78, 79 : pastilles). Le lecteur provisoire (86) disparaît.
+
+**Limites connues** (à reprendre plus tard) :
+- Le mode des sous-titres (désactivés, forcés, toujours, intelligent) suit la pré-sélection du J3
+  et les préférences du profil sur le serveur ; son réglage dans l'appli arrive avec les pages de
+  réglages du J7, comme la langue préférée.
+- La qualité choisie pendant la lecture vaut pour la séance ; le réglage par défaut est au J7.
+- Le passage d'un Dolby Vision profil 5 sur un appareil qui ne le décode pas passe par le
+  transcodage du serveur (tone mapping) ; seul le profil 8 se replie sur HEVC dans l'appareil.
+- Rien n'a encore été mesuré sur la Shield (60 images/s, cadence, passthrough réel) : c'est le J8.
+- Sous-titres incrustés par le serveur : ni taille ni position ne changent (voir plus haut).
+
+**Retouches du J3** :
+- **Pastilles** : « par défaut », « forcés », « SDH », « externe » suivent le libellé d'une piste
+  en pastilles (`TrackPill`) ; le libellé passe à la ligne, jamais tronqué (`ListRow(wrapTitle)`).
+- **Groupes insécables** : espaces insécables dans « se termine à 22 h 07 », « 1 h 49 », « 42 min »,
+  « S01 · E02 », « 10:47 PM » (`UI.md` § 5).
+- **Logo ou affiche** : un film, une série ou une collection qui a un logo n'affiche plus son
+  affiche ; l'affiche de la carte vole vers le logo en s'y fondant (`sharedBounds`, des deux côtés).
 
 ## 5. Tests et CI
 

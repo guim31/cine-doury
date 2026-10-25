@@ -26,7 +26,6 @@ import fr.guim.cinedoury.feature.details.DetailsPanel
 import fr.guim.cinedoury.feature.details.DetailsPreview
 import fr.guim.cinedoury.feature.details.DetailsScreen
 import fr.guim.cinedoury.feature.details.DetailsState
-import fr.guim.cinedoury.feature.details.PlaybackPreviewScreen
 import fr.guim.cinedoury.feature.details.panelLine
 import fr.guim.cinedoury.feature.home.HomePreview
 import fr.guim.cinedoury.feature.home.HomeScreen
@@ -149,12 +148,6 @@ class J3ScreenshotTest(
 
     @Test
     fun person() = shoot("85-fiche-personne", DetailsPreview.card("movies", 0)) { Details(J3Samples.person) }
-
-    @Test
-    fun player() =
-        shoot("86-lecture-provisoire", "playback-back") {
-            PlaybackPreviewScreen(PlaybackRequest(J3Samples.phare, J3Samples.film.selection), onBack = {})
-        }
 
     @Test
     fun settings() =

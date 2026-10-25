@@ -94,4 +94,6 @@ data class PlaybackRequest(
     val item: MediaItem,
     val selection: TrackSelection? = null,
     val resume: Boolean = item.progress != null,
+    /** A local trailer: the same player, without reports nor « vu » (`SPEC.md` § 4.11). */
+    val trailer: Boolean = false,
 )

@@ -30,6 +30,8 @@ data class CineColors(
     val accentPressed: Color,
     /** Track behind a progress bar. */
     val progressTrack: Color,
+    /** What the player has loaded ahead, on the progress bar (J4). */
+    val progressBuffer: Color,
     /** `danger`: deletion. */
     val danger: Color,
     /** `succès`: confirmations. */
@@ -43,6 +45,12 @@ data class CineColors(
      * background, where a shadow cannot (`UI.md` § 3).
      */
     val focusHalo: Color,
+    /** Over the picture of the player, behind its panels: light, the film stays visible (J4). */
+    val playerScrim: Color,
+    /** A panel of the player: `surface-2`, slightly see-through. */
+    val playerPanel: Color,
+    /** The veils of the player's interface, top and bottom of the picture. */
+    val playerVeil: Color,
 )
 
 enum class ThemeVariant {
@@ -69,14 +77,24 @@ val DarkCineColors =
         onAccent = Color(0xFF14120B),
         accentPressed = Color(0xFFD9A93A),
         progressTrack = Color.White.copy(alpha = 0.25f),
+        progressBuffer = Color.White.copy(alpha = 0.45f),
         danger = Color(0xFFE5484D),
         success = Color(0xFF46A758),
         dialogScrim = Ink.copy(alpha = 0.82f),
         shadow = Color.Black,
         focusHalo = Color.White.copy(alpha = 0.4f),
+        playerScrim = Ink.copy(alpha = 0.25f),
+        playerPanel = Color(0xFF1E2128).copy(alpha = 0.94f),
+        playerVeil = Ink.copy(alpha = 0.85f),
     )
 
-val OledCineColors = DarkCineColors.copy(background = Color.Black, dialogScrim = Color.Black.copy(alpha = 0.82f))
+val OledCineColors =
+    DarkCineColors.copy(
+        background = Color.Black,
+        dialogScrim = Color.Black.copy(alpha = 0.82f),
+        playerScrim = Color.Black.copy(alpha = 0.25f),
+        playerVeil = Color.Black.copy(alpha = 0.85f),
+    )
 
 fun ThemeVariant.colors(): CineColors =
     when (this) {

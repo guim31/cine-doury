@@ -7,6 +7,7 @@ import fr.guim.cinedoury.core.data.DeviceIdentity
 import fr.guim.cinedoury.core.data.ProfileRepository
 import fr.guim.cinedoury.core.data.ServerRepository
 import fr.guim.cinedoury.core.data.SessionManager
+import fr.guim.cinedoury.core.data.UserDataUpdates
 import fr.guim.cinedoury.core.data.db.CineDatabase
 import fr.guim.cinedoury.core.data.home.HomeRepository
 import fr.guim.cinedoury.core.data.index.IndexScheduler
@@ -34,6 +35,7 @@ val dataModule =
         single { IndexScheduler(get(), get()) }
         single { HomeRepository(get(), get()) }
         single { LibraryStateRepository(get()) }
+        single { UserDataUpdates() }
         single<TokenCipher> { KeystoreTokenCipher() }
         single {
             AppPreferences(

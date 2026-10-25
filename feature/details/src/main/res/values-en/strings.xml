@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="ends_at">ends at %1$s</string>
+    <string name="ends_at">ends\u00A0at\u00A0%1$s</string>
     <string name="years_since">since %1$d</string>
     <string name="status_continuing">Continuing</string>
     <string name="status_ended">Ended</string>
@@ -41,11 +41,6 @@
     <string name="action_play_with_tracks">Play with these choices</string>
     <string name="action_file_info">File information</string>
     <string name="bitrate">%1$d Mbit/s</string>
-    <string name="playback_version">Version</string>
-    <string name="playback_player_choice">Player\'s choice</string>
-    <string name="playback_start">Start</string>
-    <string name="playback_resume_at">Resumes at %1$s</string>
-    <string name="playback_from_start">From the start</string>
     <plurals name="season_count">
         <item quantity="one">%1$d season</item>
         <item quantity="other">%1$d seasons</item>
