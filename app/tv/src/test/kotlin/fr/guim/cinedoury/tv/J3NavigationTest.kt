@@ -129,7 +129,7 @@ class J3NavigationTest {
         show(J3Samples.film)
         focusable(DetailsPreview.PLAY).assertIsFocused()
         compose.onNode(hasText("Reprendre — 1\u00A0h\u00A009 restantes")).assertExists()
-        compose.onNode(hasText("se termine à 22\u00A0h\u00A007", substring = true)).assertExists()
+        compose.onNode(hasText("se\u00A0termine\u00A0à\u00A022\u00A0h\u00A007", substring = true)).assertExists()
         press(Key.DirectionRight)
         focusable(DetailsPreview.RESTART).assertIsFocused()
         press(Key.DirectionCenter)

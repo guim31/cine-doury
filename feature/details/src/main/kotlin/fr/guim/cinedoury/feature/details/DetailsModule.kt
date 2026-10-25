@@ -6,5 +6,5 @@ import org.koin.dsl.module
 
 val detailsModule =
     module {
-        viewModel { (item: MediaItem) -> DetailsViewModel(item, get(), get()) }
+        viewModel { (item: MediaItem) -> DetailsViewModel(item, get(), get(), get()) }
     }

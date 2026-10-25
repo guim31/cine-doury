@@ -58,12 +58,15 @@ import fr.guim.cinedoury.feature.auth.UnreachableScreen
 import fr.guim.cinedoury.feature.auth.WelcomeScreen
 import fr.guim.cinedoury.feature.details.DetailsNavigation
 import fr.guim.cinedoury.feature.details.DetailsRoute
-import fr.guim.cinedoury.feature.details.PlaybackPreviewScreen
 import fr.guim.cinedoury.feature.home.HomeNavigation
 import fr.guim.cinedoury.feature.home.HomeRoute
 import fr.guim.cinedoury.feature.home.HomeSettingsRoute
 import fr.guim.cinedoury.feature.library.LibraryNavigation
 import fr.guim.cinedoury.feature.library.LibraryRoute
+import fr.guim.cinedoury.feature.player.DeviceProfileRoute
+import fr.guim.cinedoury.feature.player.PlaybackSettingsRoute
+import fr.guim.cinedoury.feature.player.PlayerRoute
+import fr.guim.cinedoury.feature.player.SubtitleSettingsRoute
 import fr.guim.cinedoury.feature.settings.SettingsNavigation
 import fr.guim.cinedoury.feature.settings.SettingsRoute
 import fr.guim.cinedoury.tv.catalog.CatalogScreen
@@ -242,11 +245,27 @@ private fun SessionScreen(
         }
 
         is Route.Player -> {
-            PlaybackPreviewScreen(route.request, onBack = { navigator.pop() })
+            PlayerRoute(
+                request = route.request,
+                onClose = { navigator.pop() },
+                onSessionEnded = { navigator.replaceAll(Route.Profiles) },
+            )
         }
 
         Route.Settings -> {
             SettingsRoute(navigation = settingsNavigation(navigator), showCatalog = showCatalog)
+        }
+
+        Route.PlaybackSettings -> {
+            PlaybackSettingsRoute(onBack = { navigator.pop() })
+        }
+
+        Route.SubtitleSettings -> {
+            SubtitleSettingsRoute(onBack = { navigator.pop() })
+        }
+
+        Route.DeviceProfile -> {
+            DeviceProfileRoute(onBack = { navigator.pop() })
         }
 
         Route.Catalog -> {
@@ -369,6 +388,12 @@ private fun settingsNavigation(navigator: Navigator) =
             navigator.push(Route.Address(if (remote) AddressMode.EditRemote else AddressMode.EditLocal))
 
         override fun catalog() = navigator.push(Route.Catalog)
+
+        override fun playback() = navigator.push(Route.PlaybackSettings)
+
+        override fun subtitles() = navigator.push(Route.SubtitleSettings)
+
+        override fun deviceProfile() = navigator.push(Route.DeviceProfile)
 
         override fun profileClosed() = navigator.replaceAll(Route.Profiles)
 

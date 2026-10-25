@@ -36,6 +36,8 @@ style:
     ignorePropertyDeclaration: true
     ignoreCompanionObjectPropertyDeclaration: true
     ignoreAnnotated: ['Composable', 'Preview']
+    # The values of an enum are a table (subtitle sizes and colours, AudioCodec names).
+    ignoreEnums: true
     excludes: ['**/test/**', '**/integrationTest/**']
   UnusedPrivateMember:
     ignoreAnnotated: ['Preview']

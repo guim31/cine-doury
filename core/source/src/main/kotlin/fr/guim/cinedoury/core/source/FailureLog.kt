@@ -2,7 +2,7 @@ package fr.guim.cinedoury.core.source
 
 /**
  * Where every caught failure is written, with its stack: logcat on Android (tag `CineDoury`), so
- * that a failure on a real device can be read with `adb logcat` (`SPEC.md` § 4.11). Nothing here
+ * that a failure on a real device can be read with `adb logcat` (`SPEC.md` § 4.12). Nothing here
  * may carry a secret: messages name a request by its method and path only.
  */
 object FailureLog {

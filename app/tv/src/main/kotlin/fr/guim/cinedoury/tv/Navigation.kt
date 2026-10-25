@@ -62,12 +62,21 @@ sealed interface Route {
         val item: MediaItem,
     ) : Route
 
-    /** The player: J4. Until then, what would be played. */
+    /** The player (J4): a film, an episode, a local trailer. */
     data class Player(
         val request: PlaybackRequest,
     ) : Route
 
     data object Settings : Route
+
+    /** « Lecture et son » (J4). */
+    data object PlaybackSettings : Route
+
+    /** « Apparence des sous-titres » (J4). */
+    data object SubtitleSettings : Route
+
+    /** The playback profile of the device, in debug builds (J4). */
+    data object DeviceProfile : Route
 
     data object Catalog : Route
 }

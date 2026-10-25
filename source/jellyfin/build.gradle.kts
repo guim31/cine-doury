@@ -25,6 +25,7 @@ testing {
             useJUnit(libs.versions.junit)
             dependencies {
                 implementation(project())
+                implementation(testFixtures(projects.core.source))
                 implementation(libs.kotlin.test)
                 implementation(libs.kotlinx.coroutines.test)
             }

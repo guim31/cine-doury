@@ -78,7 +78,7 @@
     <string name="motion_detail">Opening a detail screen</string>
     <string name="motion_panel">Panel, menu</string>
     <string name="motion_osd">Player controls</string>
-    <string name="duration_ms">%1$d ms</string>
+    <string name="duration_ms">%1$d\u00A0ms</string>
     <string name="spacing_dp">%1$d dp</string>
     <string name="metadata_pair">%1$s · %2$s</string>
     <string name="section_ambient">Ambient backdrop</string>

@@ -19,6 +19,8 @@
     <string name="error_session_message">Reconnectez-vous pour continuer.</string>
     <string name="error_forbidden_title">Ce profil n\'y a pas accès.</string>
     <string name="error_forbidden_message">Demandez à l\'administrateur du serveur, ou choisissez un autre profil.</string>
+    <string name="error_unplayable_title">Ce titre ne peut pas être lu sur cet appareil.</string>
+    <string name="error_unplayable_message">Le serveur ne trouve aucun moyen de le transmettre. Vérifiez que le transcodage est activé sur le serveur, puis réessayez.</string>
     <string name="error_server_title">Le serveur a rencontré une erreur.</string>
     <string name="error_server_message">Réessayez dans un instant. Si l\'erreur persiste, redémarrez le serveur.</string>
     <string name="error_unexpected_title">Une erreur inattendue s\'est produite.</string>
@@ -34,7 +36,7 @@
     <string name="rail_profiles">Changer de profil</string>
     <string name="duration_hours">%1$d\u00A0h\u00A0%2$02d</string>
     <string name="duration_minutes">%1$d\u00A0min</string>
-    <string name="episode_code">S%1$02d · E%2$02d</string>
+    <string name="episode_code">S%1$02d\u00A0·\u00A0E%2$02d</string>
     <string name="episode_line">%1$s — %2$s</string>
     <string name="resume_at">Reprendre à %1$s</string>
     <string name="rating">★\u00A0%1$s</string>
@@ -42,8 +44,6 @@
     <string name="soon_message_search">La recherche arrive avec une prochaine version.</string>
     <string name="soon_title_details">Fiche</string>
     <string name="soon_message_details">La fiche de « %1$s » arrive avec une prochaine version.</string>
-    <string name="soon_title_player">Lecture</string>
-    <string name="soon_message_player">Le lecteur arrive avec une prochaine version. « %1$s » se lira ici.</string>
     <string name="time_pattern">H\' h \'mm</string>
     <string name="badge_uhd" translatable="false">4K</string>
     <string name="badge_full_hd" translatable="false">1080p</string>
@@ -92,6 +92,7 @@
     <string name="track_with_atmos" translatable="false">%1$s Atmos</string>
     <string name="track_forced">forcés</string>
     <string name="track_hearing_impaired">pour sourds et malentendants</string>
+    <string name="track_hearing_impaired_short" translatable="false">SDH</string>
     <string name="track_default">par défaut</string>
     <string name="track_external">externe</string>
     <string name="size_gb">%1$s Go</string>

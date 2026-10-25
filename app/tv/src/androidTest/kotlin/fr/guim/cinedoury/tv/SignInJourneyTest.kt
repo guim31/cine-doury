@@ -23,7 +23,7 @@ import org.junit.runner.RunWith
  * network rules (no network on the main thread) and its input pipeline. The remote is simulated
  * by key events sent through the instrumentation, from a virtual keyboard as a Bluetooth remote
  * may be, and the keyboard by text and IME actions. The real-device trial of 25/10/2026 failed at
- * three steps of this path.
+ * three steps of this path. It ends in the player of J4, opened from the home.
  */
 @RunWith(AndroidJUnit4::class)
 class SignInJourneyTest {
@@ -91,11 +91,21 @@ class SignInJourneyTest {
 
         // Signed in, the token kept by the Keystore: the home of the administrator.
         waitFor(hasText("Reprendre"), SIGN_IN_TIMEOUT)
+
+        // And on to the player of J4 with the session just made (PlaybackOnDeviceTest checks the
+        // playback itself): the main button of the banner has the focus.
+        val play = hasTestTag(HOME_PLAY) or hasAnyAncestor(hasTestTag(HOME_PLAY))
+        waitFor(isFocused() and play)
+        remote(KeyEvent.KEYCODE_DPAD_CENTER)
+        waitFor(hasTestTag(PLAYER), SIGN_IN_TIMEOUT)
+        remote(KeyEvent.KEYCODE_BACK)
     }
 
     private companion object {
         const val TIMEOUT = 10_000L
         const val DISCOVERY_TIMEOUT = 15_000L
         const val SIGN_IN_TIMEOUT = 30_000L
+        const val HOME_PLAY = "home-play"
+        const val PLAYER = "player"
     }
 }

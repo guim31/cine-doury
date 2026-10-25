@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -11,12 +12,19 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.tv.material3.Icon
 import androidx.tv.material3.Text
@@ -24,6 +32,7 @@ import fr.guim.cinedoury.core.designsystem.theme.CineScale
 import fr.guim.cinedoury.core.designsystem.theme.CineSizes
 import fr.guim.cinedoury.core.designsystem.theme.CineSpacing
 import fr.guim.cinedoury.core.designsystem.theme.CineTheme
+import fr.guim.cinedoury.core.designsystem.theme.tabular
 
 private val RowShape = RoundedCornerShape(CineSizes.cardCorner)
 private val RowOutlineShape =
@@ -32,6 +41,9 @@ private val RowOutlineShape =
 /**
  * A row of a list (servers found, settings): a title, a line of explanation under it, a value at
  * the end. It turns light with the focus. [destructive] writes the title in `danger`.
+ *
+ * @param pills short attributes after the title (« par défaut », « forcés », « SDH »).
+ * @param wrapTitle the title goes on as many lines as it needs, never cut (the tracks).
  */
 @Composable
 fun ListRow(
@@ -45,6 +57,8 @@ fun ListRow(
     trailingIcon: ImageVector? = null,
     focusRequester: FocusRequester? = null,
     focus: CineFocus = rememberCineFocus(),
+    pills: List<String> = emptyList(),
+    wrapTitle: Boolean = false,
 ) {
     val colors = CineTheme.colors
     val typography = CineTheme.typography
@@ -77,13 +91,20 @@ fun ListRow(
             )
         }
         Column(Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = typography.label,
-                color = primary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(CineSpacing.xs),
+                verticalArrangement = Arrangement.spacedBy(CineSpacing.xs / 2),
+                itemVerticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = title,
+                    style = typography.label,
+                    color = primary,
+                    maxLines = if (wrapTitle) Int.MAX_VALUE else 1,
+                    overflow = if (wrapTitle) TextOverflow.Clip else TextOverflow.Ellipsis,
+                )
+                pills.forEach { TrackPill(it, inverted = focused) }
+            }
             if (description != null) {
                 Text(
                     text = description,
@@ -113,6 +134,107 @@ fun ListRow(
         }
     }
 }
+
+/**
+ * A row whose value goes down with ← and up with → (− and + at its sides, dimmed at the ends), at
+ * one step per press and a few per second while the key is held; OK does nothing more. The size of
+ * the subtitles (`UI.md` § 8).
+ */
+@Composable
+fun StepperRow(
+    title: String,
+    value: String,
+    onStep: (forward: Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+    canDecrease: Boolean = true,
+    canIncrease: Boolean = true,
+    icon: ImageVector? = null,
+    focusRequester: FocusRequester? = null,
+    focus: CineFocus = rememberCineFocus(),
+) {
+    val colors = CineTheme.colors
+    val focused = focus.isFocused
+    val primary = if (focused) colors.background else colors.text
+    val secondary = if (focused) colors.background else colors.text2
+    val dimmed = if (focused) colors.text2 else colors.text3
+    Row(
+        modifier =
+            modifier
+                .heightIn(min = CineSizes.settingsRowHeight)
+                .withFocusRequester(focusRequester)
+                .onPreviewKeyEvent { event ->
+                    val forward =
+                        when (event.key) {
+                            Key.DirectionLeft -> false
+                            Key.DirectionRight -> true
+                            else -> return@onPreviewKeyEvent false
+                        }
+                    if (event.type == KeyEventType.KeyDown &&
+                        event.nativeKeyEvent.repeatCount % STEP_EVERY_REPEAT == 0
+                    ) {
+                        onStep(forward)
+                    }
+                    true
+                }.cineFocusable(focus, RowShape, CineScale.FIELD, {}, RowOutlineShape)
+                .background(if (focused) colors.text else colors.surface1)
+                .padding(horizontal = CineSpacing.m, vertical = CineSpacing.s),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(CineSpacing.s),
+    ) {
+        if (icon != null) {
+            Icon(icon, contentDescription = null, tint = secondary, modifier = Modifier.size(CineSizes.icon))
+        }
+        Text(text = title, style = CineTheme.typography.label, color = primary, maxLines = 1)
+        Icon(
+            CineIcons.Remove,
+            contentDescription = null,
+            tint = if (canDecrease) secondary else dimmed,
+            modifier = Modifier.size(CineSizes.icon),
+        )
+        Text(
+            text = value,
+            style = CineTheme.typography.body.tabular(),
+            color = primary,
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            modifier = Modifier.widthIn(min = CineSizes.stepperValueWidth),
+        )
+        Icon(
+            CineIcons.Add,
+            contentDescription = null,
+            tint = if (canIncrease) secondary else dimmed,
+            modifier = Modifier.size(CineSizes.icon),
+        )
+    }
+}
+
+/** A key held down repeats about twenty times a second: one step out of four of them. */
+private const val STEP_EVERY_REPEAT = 4
+
+/**
+ * A short attribute in a pill (« par défaut », « forcés », « SDH »), after the title of a row: on
+ * `surface-2`, and dark on a focused (light) row.
+ */
+@Composable
+fun TrackPill(
+    text: String,
+    modifier: Modifier = Modifier,
+    inverted: Boolean = false,
+) {
+    val colors = CineTheme.colors
+    Text(
+        text = text,
+        style = CineTheme.typography.minimum,
+        color = if (inverted) colors.text else colors.text2,
+        maxLines = 1,
+        modifier =
+            modifier
+                .background(if (inverted) colors.background else colors.surface2, PillShape)
+                .padding(horizontal = CineSpacing.xs, vertical = CineSizes.pillPadding),
+    )
+}
+
+private val PillShape = RoundedCornerShape(percent = 50)
 
 /** Title of a group of rows. */
 @Composable

@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import fr.guim.cinedoury.core.data.ActiveSession
 import fr.guim.cinedoury.core.data.SessionManager
+import fr.guim.cinedoury.core.data.UserDataUpdates
 import fr.guim.cinedoury.core.data.index.LibraryIndex
 import fr.guim.cinedoury.core.model.ItemId
 import fr.guim.cinedoury.core.model.ItemKind
@@ -119,6 +120,7 @@ class DetailsViewModel(
     initial: MediaItem,
     private val sessions: SessionManager,
     private val index: LibraryIndex,
+    private val updates: UserDataUpdates = UserDataUpdates(),
 ) : ViewModel(),
     DetailsActions {
     private val active: ActiveSession? = sessions.active.value
@@ -137,6 +139,19 @@ class DetailsViewModel(
             local.update { if (it.badges.isEmpty()) it.copy(badges = summary.badges(language())) else it }
         }
         load()
+        // Back from the player: the position and « vu » it left, at once (`SPEC.md` § 4.11).
+        viewModelScope.launch {
+            updates.updates.collect { (id, data) ->
+                local.update { state ->
+                    val changed = state.withUserData(id) { data }
+                    if (changed.item.kind == ItemKind.Series) {
+                        changed.copy(smartPlay = SmartPlay.of(changed.episodes.orEmpty()))
+                    } else {
+                        changed
+                    }
+                }
+            }
+        }
     }
 
     private fun language(): String = preferences.audioLanguage ?: Locale.getDefault().isO3Language

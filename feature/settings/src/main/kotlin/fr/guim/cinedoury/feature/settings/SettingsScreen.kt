@@ -58,6 +58,15 @@ interface SettingsNavigation {
 
     fun catalog()
 
+    /** « Lecture et son » (J4). */
+    fun playback()
+
+    /** « Apparence des sous-titres » (J4). */
+    fun subtitles()
+
+    /** The playback profile of the device, in debug builds (J4). */
+    fun deviceProfile()
+
     fun profileClosed()
 
     fun serverForgotten()
@@ -213,6 +222,25 @@ fun SettingsScreen(
                     onRebuildIndex = onRebuildIndex,
                     requesters = { libraryRows.requester(it) },
                 )
+                item { ListSectionTitle(stringResource(R.string.section_playback)) }
+                item {
+                    ListRow(
+                        title = stringResource(R.string.playback_settings),
+                        description = stringResource(R.string.playback_settings_description),
+                        icon = CineIcons.Audio,
+                        onClick = navigation::playback,
+                        modifier = Modifier.testTag("playback-settings-row"),
+                    )
+                }
+                item {
+                    ListRow(
+                        title = stringResource(R.string.subtitle_settings),
+                        description = stringResource(R.string.subtitle_settings_description),
+                        icon = CineIcons.Tracks,
+                        onClick = navigation::subtitles,
+                        modifier = Modifier.testTag("subtitle-settings-row"),
+                    )
+                }
                 item { ListSectionTitle(stringResource(R.string.section_startup)) }
                 item {
                     val last = state.startupMode == StartupMode.LastProfile
@@ -263,6 +291,14 @@ fun SettingsScreen(
                             description = stringResource(R.string.catalog_description),
                             onClick = navigation::catalog,
                             modifier = Modifier.testTag("catalog"),
+                        )
+                    }
+                    item {
+                        ListRow(
+                            title = stringResource(R.string.device_profile),
+                            description = stringResource(R.string.device_profile_description),
+                            onClick = navigation::deviceProfile,
+                            modifier = Modifier.testTag("device-profile-row"),
                         )
                     }
                 }

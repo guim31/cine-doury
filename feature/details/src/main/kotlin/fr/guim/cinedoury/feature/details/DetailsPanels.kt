@@ -30,7 +30,9 @@ import fr.guim.cinedoury.core.model.ItemKind
 import fr.guim.cinedoury.core.model.MediaSource
 import fr.guim.cinedoury.core.model.StreamType
 import fr.guim.cinedoury.core.ui.SEPARATOR
+import fr.guim.cinedoury.core.ui.attributes
 import fr.guim.cinedoury.core.ui.describe
+import fr.guim.cinedoury.core.ui.label
 import fr.guim.cinedoury.core.ui.sizeText
 
 /** A line of a panel: a section title, or a row that may be chosen. */
@@ -52,6 +54,8 @@ private sealed interface PanelLine {
         val icon: ImageVector? = null,
         /** Where the focus lands when the panel opens. */
         val initial: Boolean = false,
+        /** The attributes of a track, in pills after its title; the title then never gets cut. */
+        val pills: List<String>? = null,
     ) : PanelLine
 }
 
@@ -121,6 +125,8 @@ internal fun DetailsPanels(
                             onClick = line.onClick,
                             focusRequester = if (index == initial) first else null,
                             focus = rememberCineFocus(panelLine(index)),
+                            pills = line.pills.orEmpty(),
+                            wrapTitle = line.pills != null,
                             modifier = Modifier.testTag(panelLine(index)),
                         )
                     }
@@ -167,10 +173,11 @@ private fun trackLines(
             add(
                 PanelLine.Choice(
                     "audio-${track.index}",
-                    track.describe(),
+                    track.label(),
                     { actions.selectAudio(track.index) },
                     checked = chosen,
                     initial = chosen && state.item.mediaSources.size <= 1,
+                    pills = track.attributes(),
                 ),
             )
         }
@@ -187,9 +194,10 @@ private fun trackLines(
             add(
                 PanelLine.Choice(
                     "subtitles-${track.index}",
-                    track.describe(),
+                    track.label(),
                     { actions.selectSubtitles(track.index) },
                     checked = selection?.subtitleIndex == track.index,
+                    pills = track.attributes(),
                 ),
             )
         }
@@ -250,7 +258,8 @@ private fun fileLines(sources: List<MediaSource>): List<PanelLine> =
                 add(
                     PanelLine.Choice(
                         key = "stream-${source.id}-${stream.index}",
-                        title = stream.describe(),
+                        title = stream.label(),
+                        pills = stream.attributes(),
                         onClick = {},
                         description = stream.displayTitle,
                         icon =

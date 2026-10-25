@@ -1,5 +1,6 @@
 package fr.guim.cinedoury.source.jellyfin
 
+import fr.guim.cinedoury.core.model.Chapter
 import fr.guim.cinedoury.core.model.Credit
 import fr.guim.cinedoury.core.model.CreditType
 import fr.guim.cinedoury.core.model.EpisodeInfo
@@ -17,6 +18,7 @@ import fr.guim.cinedoury.core.model.RemoteTrailer
 import fr.guim.cinedoury.core.model.SeriesStatus
 import fr.guim.cinedoury.core.model.SpatialAudio
 import fr.guim.cinedoury.core.model.StreamType
+import fr.guim.cinedoury.core.model.TrickplayInfo
 import fr.guim.cinedoury.core.model.User
 import fr.guim.cinedoury.core.model.UserData
 import fr.guim.cinedoury.core.model.UserId
@@ -39,6 +41,7 @@ import java.time.Instant
 import java.time.ZoneId
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.microseconds
+import kotlin.time.Duration.Companion.milliseconds
 import fr.guim.cinedoury.core.model.ImageType as ModelImageType
 import org.jellyfin.sdk.model.api.ImageType as JellyfinImageType
 import org.jellyfin.sdk.model.api.MediaStream as JellyfinMediaStream
@@ -147,8 +150,36 @@ internal fun BaseItemDto.toMediaItem(): MediaItem =
                 null
             },
         childCount = childCount,
-        mediaSources = mediaSources.orEmpty().map { it.toModel() },
+        mediaSources = mediaSources.orEmpty().map { it.toModel(trickplayOf(it.id)) },
+        chapters =
+            chapters.orEmpty().map {
+                Chapter(it.startPositionTicks.ticksToDuration(), it.name?.takeIf(String::isNotBlank))
+            },
     ).withDetailsOf(this)
+
+/** The preview pictures of a version, at each width (`Trickplay`: version → width → pictures). */
+private fun BaseItemDto.trickplayOf(sourceId: String?): List<TrickplayInfo> {
+    val key = sourceId?.replace("-", "")?.lowercase() ?: return emptyList()
+    val widths =
+        trickplay
+            .orEmpty()
+            .entries
+            .firstOrNull { it.key.replace("-", "").lowercase() == key }
+            ?.value
+    return widths
+        .orEmpty()
+        .values
+        .map {
+            TrickplayInfo(
+                width = it.width,
+                height = it.height,
+                tileColumns = it.tileWidth,
+                tileRows = it.tileHeight,
+                thumbnailCount = it.thumbnailCount,
+                interval = it.interval.milliseconds,
+            )
+        }.sortedBy { it.width }
+}
 
 /** What only a details screen shows: credits, studios, status, trailers. */
 private fun MediaItem.withDetailsOf(dto: BaseItemDto): MediaItem =
@@ -245,7 +276,7 @@ internal fun UserItemDataDto.toModel() =
         lastPlayed = lastPlayedDate?.toInstant(),
     )
 
-private fun MediaSourceInfo.toModel() =
+internal fun MediaSourceInfo.toModel(trickplay: List<TrickplayInfo> = emptyList()) =
     MediaSource(
         id = id.orEmpty(),
         name = name,
@@ -254,6 +285,7 @@ private fun MediaSourceInfo.toModel() =
         streams = mediaStreams.orEmpty().map { it.toModel() },
         path = path,
         bitrate = bitrate,
+        trickplay = trickplay,
     )
 
 private fun JellyfinMediaStream.toModel(): MediaStream {
@@ -289,6 +321,8 @@ private fun JellyfinMediaStream.toModel(): MediaStream {
             },
         isHearingImpaired = isHearingImpaired,
         bitrate = bitRate,
+        frameRate = realFrameRate ?: averageFrameRate,
+        dolbyVisionProfile = dvProfile?.takeIf { videoRangeType.name.startsWith("DOVI") },
     )
 }
 

@@ -28,14 +28,17 @@ api() {
     ${3:+--data "$3"}
 }
 
-log "waiting for $BASE"
 # The server answers /System/Info/Public before it is ready (no version yet, then 503 on the
 # startup wizard): wait for a version.
-for _ in $(seq 1 90); do
-  version="$(curl -fsS "$BASE/System/Info/Public" 2> /dev/null | jq -r '.Version // empty' 2> /dev/null || true)"
-  [ -n "$version" ] && break
-  sleep 2
-done
+wait_ready() {
+  log "waiting for $BASE"
+  for _ in $(seq 1 90); do
+    version="$(curl -fsS "$BASE/System/Info/Public" 2> /dev/null | jq -r '.Version // empty' 2> /dev/null || true)"
+    [ -n "$version" ] && break
+    sleep 2
+  done
+}
+wait_ready
 info="$(curl -fsS "$BASE/System/Info/Public")"
 log "server $(jq -r .Version <<< "$info")"
 
@@ -52,6 +55,36 @@ fi
 TOKEN="$(api POST /Users/AuthenticateByName \
   "$(jq -nc --arg n "$ADMIN_USER" --arg p "$ADMIN_PASSWORD" '{Username:$n,Pw:$p}')" | jq -r .AccessToken)"
 log "authenticated as $ADMIN_USER"
+
+# Chapter Segments Provider (J4), the official plugin that turns the chapters « Intro » and « Credits »
+# into media segments, as Intro Skipper does on the real server. It comes from the plugin repository
+# of jellyfin.org: without internet (a cloud session), it is skipped and the segment tests say so.
+segments_plugin() {
+  if api GET /Plugins | jq -e 'any(.[]; .Name | test("chapter segments"; "i"))' > /dev/null; then
+    return 0
+  fi
+  local package name guid
+  package="$(api GET /Packages 2> /dev/null | jq -c '[.[] | select(.name | test("chapter segments"; "i"))] | first // empty' || true)"
+  if [ -z "$package" ]; then
+    log "Chapter Segments Provider is not in the plugin repository (no internet?): no segments"
+    return 1
+  fi
+  name="$(jq -r .name <<< "$package")"
+  guid="$(jq -r .guid <<< "$package")"
+  log "installing $name"
+  api POST "/Packages/Installed/$(jq -rn --arg v "$name" '$v|@uri')?assemblyGuid=$guid" || return 1
+  for _ in $(seq 1 60); do
+    api GET /Plugins | jq -e 'any(.[]; .Name | test("chapter segments"; "i"))' > /dev/null && break
+    sleep 2
+  done
+  log "restarting the server for the plugin"
+  api POST /System/Restart || true
+  sleep 10
+  wait_ready
+  api GET /Plugins | jq -e 'any(.[]; .Name | test("chapter segments"; "i"))' > /dev/null
+}
+SEGMENTS=false
+segments_plugin && SEGMENTS=true
 
 # library NAME COLLECTION_TYPE FOLDER. Internet providers are off: the scan stays offline and
 # deterministic, and no outside artwork enters the test server. `EnableInternetProviders: false`
@@ -224,5 +257,25 @@ fi
 if command -v ffmpeg > /dev/null; then
   "$HERE/images.sh" "$BASE" "$TOKEN"
 fi
+
+# The segments of the chapters (J4): the task of the server that asks the segment providers.
+if [ "$SEGMENTS" = "true" ]; then
+  task="$(api GET /ScheduledTasks | jq -r '[.[] | select(((.Key // "") + " " + .Name) | test("segment"; "i")) | .Id] | first // empty')"
+  if [ -n "$task" ]; then
+    log "media segment scan"
+    api POST "/ScheduledTasks/Running/$task" || true
+    sleep 3
+    for _ in $(seq 1 60); do
+      [ "$(api GET /ScheduledTasks | jq -r --arg t "$task" '.[] | select(.Id == $t) | .State')" = "Idle" ] && break
+      sleep 2
+    done
+  fi
+  phare="$(id_of Movie "Le Phare")"
+  count="$(api GET "/MediaSegments/$phare" | jq -r '.Items | length')"
+  log "segments of Le Phare: $count"
+  [ "$count" -gt 0 ] || SEGMENTS=false
+fi
+# The integration tests check the segments only when the server has them.
+[ -n "${GITHUB_ENV:-}" ] && echo "JELLYFIN_SEGMENTS=$SEGMENTS" >> "$GITHUB_ENV"
 
 log "done"

@@ -19,6 +19,9 @@ import java.time.Instant
 interface LibrarySource {
     val session: Session
 
+    /** Playback of the items of this session (J4, `SPEC.md` § 4.11). */
+    val playback: PlaybackSource
+
     /**
      * Every library of the user, hidden ones included, in the order the user chose on the server
      * (Jellyfin: `OrderedViews`).

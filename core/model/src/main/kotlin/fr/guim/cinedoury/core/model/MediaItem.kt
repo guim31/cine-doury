@@ -55,6 +55,8 @@ data class MediaItem(
     val localTrailerCount: Int = 0,
     /** Where a film was made; where a person was born. */
     val productionLocations: List<String> = emptyList(),
+    /** The chapters of a video, in order (J4). */
+    val chapters: List<Chapter> = emptyList(),
 ) {
     /** Playback progress between 0 and 1, or null when not started. */
     val progress: Float?

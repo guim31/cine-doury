@@ -19,6 +19,8 @@
     <string name="error_session_message">Sign in again to go on.</string>
     <string name="error_forbidden_title">This profile has no access to it.</string>
     <string name="error_forbidden_message">Ask the server administrator, or choose another profile.</string>
+    <string name="error_unplayable_title">This title cannot be played on this device.</string>
+    <string name="error_unplayable_message">The server finds no way to send it. Check that transcoding is enabled on the server, then try again.</string>
     <string name="error_server_title">The server ran into an error.</string>
     <string name="error_server_message">Try again in a moment. If the error persists, restart the server.</string>
     <string name="error_unexpected_title">Something unexpected happened.</string>
@@ -31,9 +33,9 @@
     <string name="rail_home">Home</string>
     <string name="rail_settings">Settings</string>
     <string name="rail_profiles">Switch profile</string>
-    <string name="duration_hours">%1$dh %2$02dm</string>
-    <string name="duration_minutes">%1$d min</string>
-    <string name="episode_code">S%1$02d · E%2$02d</string>
+    <string name="duration_hours">%1$dh\u00A0%2$02dm</string>
+    <string name="duration_minutes">%1$d\u00A0min</string>
+    <string name="episode_code">S%1$02d\u00A0·\u00A0E%2$02d</string>
     <string name="episode_line">%1$s — %2$s</string>
     <string name="resume_at">Resume at %1$s</string>
     <string name="rating">★ %1$s</string>
@@ -41,9 +43,7 @@
     <string name="soon_message_search">Search comes with a future version.</string>
     <string name="soon_title_details">Details</string>
     <string name="soon_message_details">The details of “%1$s” come with a future version.</string>
-    <string name="soon_title_player">Playback</string>
-    <string name="soon_message_player">The player comes with a future version. “%1$s” will play here.</string>
-    <string name="time_pattern">h:mm a</string>
+    <string name="time_pattern">h:mm a</string>
     <string name="badge_local_audio">French</string>
     <string name="badge_subtitled">Subtitled</string>
     <string name="badge_original">Original</string>

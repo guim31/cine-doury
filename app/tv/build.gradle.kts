@@ -11,7 +11,8 @@ android {
         applicationId = "fr.guim.cinedoury"
         versionCode = 1
         versionName = "0.1.0"
-        // Instrumented tests on the API 34 TV emulator of the CI (ci/emulator-tests.sh).
+        // On the emulator of the CI: real playback (PlaybackOnDeviceTest) and the sign-in with the remote
+        // (SignInJourneyTest) against the test Jellyfin, the real Keystore (KeystoreTokenCipherTest).
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -55,6 +56,8 @@ dependencies {
     implementation(projects.feature.details)
     implementation(projects.feature.home)
     implementation(projects.feature.library)
+    implementation(projects.feature.player)
+    implementation(projects.core.playback)
     implementation(projects.feature.settings)
     implementation(projects.source.jellyfin)
     implementation(libs.koin.android)
@@ -76,9 +79,11 @@ dependencies {
     testImplementation(libs.compose.ui.test.junit4)
     debugImplementation(libs.compose.ui.test.manifest)
 
+    androidTestImplementation(testFixtures(projects.core.source))
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.kotlin.test)
+    androidTestImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.compose.ui.test.junit4)
-    androidTestImplementation(libs.androidx.test.runner)
-    androidTestImplementation(libs.androidx.test.junit)
-    androidTestImplementation(libs.kotlin.test)
 }
