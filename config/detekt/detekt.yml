@@ -15,6 +15,9 @@ complexity:
     functionThreshold: 8
     ignoreDefaultParameters: true
     ignoreAnnotated: ['Composable']
+  CyclomaticComplexMethod:
+    # A `when` that dispatches a route or an error to its screen is one decision, not sixteen.
+    ignoreSimpleWhenEntries: true
   LongMethod:
     ignoreAnnotated: ['Composable']
   TooManyFunctions:

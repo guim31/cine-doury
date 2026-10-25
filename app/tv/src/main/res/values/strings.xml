@@ -84,4 +84,5 @@
     <string name="metadata_pair">%1$s · %2$s</string>
     <string name="section_ambient">Fond d\'ambiance</string>
     <string name="section_ambient_hint">Un fond très flou tiré de l\'élément focalisé, assombri sous les voiles. Il le suit après 250\u00A0ms d\'arrêt, en fondu de 300\u00A0ms.</string>
+    <string name="startup_connecting">Connexion au serveur…</string>
 </resources>

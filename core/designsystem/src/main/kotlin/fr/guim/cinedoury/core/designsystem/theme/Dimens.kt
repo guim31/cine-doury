@@ -51,19 +51,18 @@ object CineSizes {
     val railExpanded = 240.dp
     val railItemHeight = 52.dp
 
-    val avatarLarge = 136.dp
-    val avatarMedium = 96.dp
-    val avatarSmall = 40.dp
-    val textFieldHeight = 64.dp
-    val textFieldWidth = 560.dp
-    val keypadKey = 72.dp
-    val pinDot = 20.dp
-    val formWidth = 640.dp
-    val settingsWidth = 760.dp
-    val settingsRowHeight = 72.dp
-    val dialogWidth = 640.dp
-    val serverCardWidth = 560.dp
-    val quickConnectDigitGap = 12.dp
+    // Sign-in, profiles and settings (J1). The TV screen is 960 × 540 dp.
+    val avatarLarge = 112.dp
+    val avatarMedium = 72.dp
+    val avatarSmall = 32.dp
+    val textFieldHeight = 52.dp
+    val textFieldWidth = 400.dp
+    val keypadKey = 52.dp
+    val pinDot = 16.dp
+    val formWidth = 480.dp
+    val settingsWidth = 560.dp
+    val settingsRowHeight = 56.dp
+    val dialogWidth = 480.dp
 
     val logoMax = DpSize(360.dp, 140.dp)
     val trickplayWidth = 320.dp

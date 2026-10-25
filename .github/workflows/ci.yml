@@ -26,6 +26,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
         with:
           cache-read-only: false
+          # Keeps the end of the log for the failure summary.
+          add-job-summary: never
       - name: Robolectric cache
         uses: actions/cache@v6
         with:
@@ -71,6 +73,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
         with:
           cache-read-only: false
+          # Keeps the end of the log for the failure summary.
+          add-job-summary: never
       - name: Robolectric cache
         uses: actions/cache@v6
         with:
@@ -145,6 +149,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
         with:
           cache-read-only: false
+          # Keeps the end of the log for the failure summary.
+          add-job-summary: never
       - name: ffmpeg
         run: sudo apt-get update -q && sudo apt-get install -y -q ffmpeg
       - name: Generate the test media

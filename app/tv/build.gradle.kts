@@ -34,10 +34,22 @@ tasks.withType<Test>().configureEach {
 
 dependencies {
     implementation(projects.core.designsystem)
+    implementation(projects.core.ui)
+    implementation(projects.feature.auth)
+    implementation(projects.feature.home)
+    implementation(projects.feature.settings)
+    implementation(projects.source.jellyfin)
+    implementation(libs.koin.android)
+    implementation(libs.koin.androidx.compose)
+    implementation(libs.coil.compose)
+    implementation(libs.coil.network.okhttp)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
 
+    testImplementation(testFixtures(projects.core.source))
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.koin.test)
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
     testImplementation(libs.roborazzi)

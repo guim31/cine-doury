@@ -2,6 +2,8 @@ package fr.guim.cinedoury.core.data
 
 import fr.guim.cinedoury.core.data.prefs.AppPreferences
 import fr.guim.cinedoury.core.data.server.AddressResolver
+import fr.guim.cinedoury.core.model.ImageRef
+import fr.guim.cinedoury.core.model.User
 import fr.guim.cinedoury.core.source.Credentials
 import fr.guim.cinedoury.core.source.QuickConnectRequest
 import fr.guim.cinedoury.core.source.ServerAddress
@@ -230,6 +232,26 @@ class SessionManager(
         profiles.get(profile.serverId, profile.user.id.value)?.let { updated ->
             currentSession.value = active.copy(profile = updated)
         }
+    }
+
+    /** URL of [image] at [width] × [height] pixels on the server in use, or null without one. */
+    fun imageUrl(
+        image: ImageRef,
+        width: Int,
+        height: Int,
+    ): String? = currentConnection.value?.let { connector.imageUrl(it.address, image, width, height) }
+
+    /** URL of the picture of [user] on the server in use, or null. */
+    fun userImageUrl(user: User): String? = currentConnection.value?.let { connector.userImageUrl(it.address, user) }
+
+    /**
+     * Checks that the saved server answers at [address] (to change its addresses): fails if nothing
+     * answers there, or another server does.
+     */
+    suspend fun checkAddress(address: ServerAddress) {
+        val server = requireConnection().server
+        val info = connector.serverInfo(address)
+        if (info.id != server.id) throw SourceException.NotAServer("Another server (${info.name}) answers at $address")
     }
 
     private fun requireConnection(): Connection = checkNotNull(currentConnection.value) { "No server in use" }

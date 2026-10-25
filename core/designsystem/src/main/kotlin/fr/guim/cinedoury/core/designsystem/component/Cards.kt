@@ -15,6 +15,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -61,6 +62,7 @@ fun PosterCard(
     unwatched: Boolean = false,
     unwatchedCount: Int? = null,
     alwaysShowTitle: Boolean = false,
+    focusRequester: FocusRequester? = null,
     focus: CineFocus = rememberCineFocus(),
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     image: (@Composable () -> Unit)? = null,
@@ -70,6 +72,7 @@ fun PosterCard(
             modifier =
                 Modifier
                     .size(size.dp)
+                    .withFocusRequester(focusRequester)
                     .cineFocusable(focus, CardShape, CineScale.POSTER, onClick, CardOutlineShape, interactionSource)
                     .background(CineTheme.colors.surface1),
         ) {
@@ -109,6 +112,7 @@ fun ThumbnailCard(
     modifier: Modifier = Modifier,
     subtitle: String? = null,
     progress: Float? = null,
+    focusRequester: FocusRequester? = null,
     focus: CineFocus = rememberCineFocus(),
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     image: (@Composable () -> Unit)? = null,
@@ -118,6 +122,7 @@ fun ThumbnailCard(
             modifier =
                 Modifier
                     .size(CineSizes.thumbnail)
+                    .withFocusRequester(focusRequester)
                     .cineFocusable(
                         focus,
                         CardShape,

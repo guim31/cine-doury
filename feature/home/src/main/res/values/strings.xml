@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_greeting">Bonjour, %1$s</string>
+    <string name="home_libraries">Bibliothèques</string>
+    <string name="rail_home">Accueil</string>
+    <string name="rail_profiles">Changer de profil</string>
+    <string name="rail_settings">Réglages</string>
+    <string name="kind_movies">Films</string>
+    <string name="kind_shows">Séries</string>
+    <string name="kind_collections">Collections</string>
+    <string name="kind_home_videos">Vidéos personnelles</string>
+    <string name="kind_mixed">Bibliothèque</string>
+</resources>

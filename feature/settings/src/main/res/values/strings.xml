@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">Réglages</string>
+    <string name="section_profile">Profil : %1$s</string>
+    <string name="pin_set">Définir un code PIN</string>
+    <string name="pin_change">Changer le code PIN</string>
+    <string name="pin_remove">Retirer le code PIN</string>
+    <string name="pin_description">Quatre chiffres, demandés à l\'ouverture de ce profil sur cette télévision.</string>
+    <string name="pin_on">Activé</string>
+    <string name="pin_off">Désactivé</string>
+    <string name="switch_profile">Changer de profil</string>
+    <string name="sign_out">Se déconnecter de ce profil</string>
+    <string name="sign_out_description">Ce profil est oublié sur cette télévision ; les autres restent connectés.</string>
+    <string name="section_startup">Démarrage</string>
+    <string name="startup_title">Au démarrage</string>
+    <string name="startup_last">Dernier profil</string>
+    <string name="startup_ask">Choix du profil</string>
+    <string name="startup_last_description">Ciné Doury ouvre directement le dernier profil utilisé, derrière son code PIN s\'il en a un.</string>
+    <string name="startup_ask_description">Ciné Doury demande toujours qui regarde. Par défaut.</string>
+    <string name="section_server">Serveur : %1$s · %2$s</string>
+    <string name="address_local">Adresse locale</string>
+    <string name="address_remote">Adresse distante</string>
+    <string name="address_remote_none">Aucune</string>
+    <string name="forget_server">Oublier ce serveur</string>
+    <string name="forget_server_description">Déconnecte tous les profils de cette télévision et revient à l\'accueil du premier lancement.</string>
+    <string name="forget_title">Oublier ce serveur ?</string>
+    <string name="forget_message">Tous les profils de « %1$s » seront déconnectés de cette télévision, et ses adresses oubliées. Rien n\'est supprimé sur le serveur.</string>
+    <string name="forget_confirm">Oublier</string>
+    <string name="forget_cancel">Annuler</string>
+    <string name="section_debug">Version de débogage</string>
+    <string name="catalog">Catalogue</string>
+    <string name="catalog_description">Les jetons et composants du design system.</string>
+</resources>

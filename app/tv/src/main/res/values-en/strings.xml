@@ -83,4 +83,5 @@
     <string name="metadata_pair">%1$s · %2$s</string>
     <string name="section_ambient">Ambient backdrop</string>
     <string name="section_ambient_hint">A very blurred backdrop taken from the focused element, dimmed under the veils. It follows the focus after 250 ms of rest, with a 300 ms fade.</string>
+    <string name="startup_connecting">Connecting to the server…</string>
 </resources>

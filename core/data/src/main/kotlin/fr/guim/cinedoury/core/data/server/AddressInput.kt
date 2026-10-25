@@ -11,10 +11,12 @@ import java.net.URISyntaxException
  */
 object AddressInput {
     const val DEFAULT_PORT = 8096
+    private val BARE_SCHEME = Regex("^[A-Za-z][A-Za-z0-9+.-]*:(?!//)(\\D|$)")
 
     fun parse(input: String): ServerAddress? {
         val trimmed = input.trim().trimEnd('/')
-        if (trimmed.isEmpty() || trimmed.any { it.isWhitespace() }) return null
+        // « http: » without a host is a scheme, not a host followed by a port.
+        if (trimmed.isEmpty() || trimmed.any { it.isWhitespace() } || BARE_SCHEME.containsMatchIn(trimmed)) return null
         val uri =
             try {
                 URI(if ("://" in trimmed) trimmed else "http://$trimmed")
