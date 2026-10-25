@@ -2,6 +2,7 @@ package fr.guim.cinedoury.tv
 
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.ui.test.SemanticsNodeInteraction
+import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
@@ -91,8 +92,14 @@ class CatalogScreenshotTest(
                 )
             }
         }
-        focus?.invoke(compose)?.requestFocus()
+        val target =
+            focus?.invoke(compose) ?: compose.clickable(inside = "theme-toggle").takeIf {
+                firstSection == CatalogSection.HEADER
+            }
+        if (focus != null) target?.requestFocus()
         compose.waitForIdle()
+        // A screenshot without its focus would be a wrong reference.
+        target?.assertIsFocused()
         compose.onRoot().captureRoboImage("src/test/screenshots/$name-${variant.slug}.png")
     }
 
