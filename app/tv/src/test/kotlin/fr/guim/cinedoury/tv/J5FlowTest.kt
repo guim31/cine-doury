@@ -9,6 +9,7 @@ import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.pressKey
@@ -204,6 +205,9 @@ class J5FlowTest {
     private fun waitFor(matcher: SemanticsMatcher) =
         compose.waitUntil(TIMEOUT) { compose.onAllNodes(matcher).fetchSemanticsNodes().isNotEmpty() }
 
+    private fun dialogButton(label: String) =
+        hasClickAction() and hasText(label) and hasAnyAncestor(hasTestTag("request-dialog"))
+
     private fun queryIs(text: String) = hasText(text) and hasAnyAncestor(hasTestTag("query"))
 
     private fun showSearch() {
@@ -298,11 +302,15 @@ class J5FlowTest {
         waitFor(hasTestTag(SearchPreview.card(SearchRows.REQUESTS, 0)))
         focusable(SearchPreview.card(SearchRows.REQUESTS, 0)).assertIsFocused()
         press(Key.DirectionCenter)
-        waitFor(hasTestTag("request-dialog"))
         // « Annuler » first: no request leaves by mistake.
+        waitFor(dialogButton("Annuler") and isFocused())
         press(Key.DirectionRight)
+        compose.onNode(dialogButton("Demander")).assertIsFocused()
         press(Key.DirectionCenter)
-        compose.waitUntil(TIMEOUT) { seerr.requested.isNotEmpty() }
+        compose.waitUntil(TIMEOUT) {
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(LOOPER_STEP))
+            seerr.requested.isNotEmpty()
+        }
         assertEquals(120, seerr.requested.single().tmdbId)
         waitFor(hasText("2001 · Demandé"))
         assertTrue(compose.onAllNodes(hasTestTag("request-dialog")).fetchSemanticsNodes().isEmpty())
