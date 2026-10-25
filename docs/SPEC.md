@@ -376,7 +376,8 @@ lisent les sources média) ou une version du serveur qui sait filtrer.
   rail** (FONCTIONNALITES § 3, « visibilité réglable »). Gardée **par profil, sur l'appareil**.
 
 **Rail** : Recherche, Accueil, une entrée par bibliothèque (ordre `OrderedViews`, moins celles
-cachées par l'utilisateur), puis le profil (avatar, « Changer de profil ») et Réglages. Fermé
+cachées par l'utilisateur), puis le profil (son avatar et son nom ; il mène au choix du profil) et
+Réglages. Fermé
 (72 dp) avec les icônes, il s'ouvre au focus ; y entrer redonne le focus à la dernière entrée
 choisie, sinon à l'écran courant. **Écart** : les bibliothèques de `MyMediaExcludes` restent dans le
 rail (exclues de l'accueil seulement), parce que FONCTIONNALITES § 2 veut qu'elles « restent
