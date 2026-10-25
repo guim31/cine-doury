@@ -11,8 +11,10 @@ import fr.guim.cinedoury.core.model.User
 import fr.guim.cinedoury.core.model.UserId
 import fr.guim.cinedoury.core.source.ServerAddress
 import fr.guim.cinedoury.core.source.Session
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 
 /**
  * The profiles of each server on this device (`SPEC.md` § 4.7): the public users of the server,
@@ -106,7 +108,9 @@ class ProfileRepository(
         profile: Profile,
         pin: String?,
     ) {
-        update(profile) { it.copy(pinHash = pin?.let(PinHasher::hash)) }
+        // PBKDF2 takes a few tens of milliseconds: never on the main thread.
+        val hash = pin?.let { withContext(Dispatchers.Default) { PinHasher.hash(it) } }
+        update(profile) { it.copy(pinHash = hash) }
     }
 
     suspend fun checkPin(
@@ -114,7 +118,7 @@ class ProfileRepository(
         pin: String,
     ): Boolean {
         val hash = dao.get(profile.serverId, profile.user.id.value)?.pinHash ?: return true
-        return PinHasher.verify(pin, hash)
+        return withContext(Dispatchers.Default) { PinHasher.verify(pin, hash) }
     }
 
     suspend fun deleteAll(serverId: String) {

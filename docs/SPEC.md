@@ -12,7 +12,8 @@ son domaine :
 
 | Jalon | État | PR |
 |---|---|---|
-| J0 — Fondations | terminé, en revue (CI verte, captures dans `docs/screenshots/j0/`) | [#1](https://github.com/guim31/cine-doury/pull/1) |
+| J0 — Fondations | terminé, fusionné | [#1](https://github.com/guim31/cine-doury/pull/1) |
+| J1 — Connexion et profils (et retouches du design system) | en revue (captures dans `docs/screenshots/j1/`) | [#2](https://github.com/guim31/cine-doury/pull/2) |
 
 *(Chaque jalon met à jour ce tableau et ajoute ses contrats au § 4.)*
 
@@ -86,6 +87,20 @@ CI échoue si le serveur de test en sert une autre.)*
 | `:core:designsystem` | `cinedoury.android.library` + `.compose` | jetons (`CineColors`, `CineTypography`, `CineSpacing`, `CineSizes`, `CineScale`, `CineMotion`), `CineTheme`, composants TV |
 | `:app:tv` | `cinedoury.android.application` + `.compose` | `MainActivity`, écran « catalogue du design system », captures Roborazzi |
 
+Ajoutés au J1 :
+
+| Module | Plugin de convention | Contenu |
+|---|---|---|
+| `:core:data` | `cinedoury.android.library` + KSP | Room (serveurs, profils), DataStore (préférences), Keystore (jetons), `PinHasher`, `AddressInput`, `AddressResolver`, `SessionManager`, `DeviceIdentity`, module Koin `dataModule` |
+| `:core:ui` | `cinedoury.android.library` + `.compose` | ce que partagent les écrans et qui connaît `:core:source` : messages d'erreur lisibles (`toErrorText`, `SourceErrorPanel`), événements ponctuels (`Events`), indicateur « À distance », images de la session |
+| `:feature:auth` | idem | premier lancement, serveurs du réseau, saisie d'adresse, Quick Connect, identifiants, choix du profil, PIN, serveur injoignable |
+| `:feature:home` | idem | accueil **provisoire** (rail et tuiles des bibliothèques), remplacé au J2 |
+| `:feature:settings` | idem | réglages du J1 (profil, PIN, démarrage, adresses, oubli du serveur, catalogue en débogage), complétés au J7 |
+
+`:core:ui` n'était pas prévu au § 3 : les messages d'erreur servent à tous les écrans, mais
+`:core:designsystem` ne doit pas connaître `:core:source`. Le design system reste sans dépendance
+au domaine.
+
 Les plugins de convention vivent dans `build-logic/` (build inclus) ; les versions dans
 `gradle/libs.versions.toml`. Paquets Kotlin : `fr.guim.cinedoury.<module>`.
 
@@ -107,7 +122,11 @@ configuration.
 | Coroutines | kotlinx.coroutines | 1.11.0 |
 | Tests | JUnit 4, kotlin-test, MockWebServer 3, Robolectric, Roborazzi | 4.13.2, —, 5.5.1, 4.17, 1.77.0 |
 | Analyse statique | Spotless + ktlint (`ktlint_official`), Detekt, Android Lint | 8.10.4 + 1.8.0, 1.23.8 |
-| À venir (retenus, non encore ajoutés) | Coil 3 (J1), Room (J1), Koin (J1, plutôt que Hilt : pas de traitement d'annotations, compatible sans réglage avec le Kotlin intégré d'AGP 9), Media3 (J4), Macrobenchmark (J8) | 3.6.3, 2.8.5, 4.2.2, 1.11.1, 1.5.0 |
+| Images | Coil 3 (`coil-compose`, `coil-network-okhttp`) | 3.6.3 |
+| Stockage | Room (avec KSP, qui fonctionne avec le Kotlin intégré d'AGP 9), DataStore Preferences | 2.8.5 (KSP 2.3.12), 1.3.0 |
+| Injection | Koin (`koin-android`, `koin-androidx-compose`), plutôt que Hilt : pas de traitement d'annotations | 4.2.2 |
+| JSON (découverte UDP) | kotlinx.serialization JSON (déjà apportée par le SDK Jellyfin) | 1.12.0 |
+| À venir (retenus, non encore ajoutés) | Media3 (J4), Macrobenchmark (J8) | 1.11.1, 1.5.0 |
 
 ### 4.3 Client Jellyfin : le SDK officiel
 
@@ -161,13 +180,103 @@ Décision du J0 : **SDK Kotlin officiel 1.9.3**, plutôt qu'un client généré 
   L'élément focalisé y est dessiné par `CineFocus.preview()` (Robolectric ne donne pas le focus en
   rendu natif) ; la navigation réelle à la croix est testée par `CatalogNavigationTest`.
 
-### 4.6 Contrats Jellyfin
+### 4.6 Retouches du design system (J1)
+
+- **Titre une seule fois** : une carte générée ne montre dessous que la ligne secondaire ; une carte
+  avec image garde titre et ligne secondaire (`UI.md` § 6).
+- **Halo de focus** : `BlurMaskFilter` (flou de 14 dp, blanc à 40 %, jeton `focusHalo`) dessiné
+  derrière le contour, dans `Modifier.cineFocusable` ; il marche dès l'API 28 avec l'accélération
+  matérielle, sans `RenderEffect` (API 31).
+- **Fond d'ambiance** : `AmbientBackdrop(Ambience)`, BlurHash décodé en 32 × 18 (`BlurHash`,
+  décodeur maison de 150 lignes plutôt qu'une dépendance), étiré en bilinéaire, assombri à 60 %
+  (`CineAmbient`), sous les voiles ; 250 ms d'arrêt puis fondu de 300 ms. Une carte générée donne
+  son dégradé.
+- **Images** : `RemoteImage(ImageSource, blurHash)` sur Coil 3 ; l'URL est demandée à la taille de
+  la mise en page en pixels ; le BlurHash sert d'aperçu et reste si l'image échoue.
+- Composants ajoutés pour le J1 : `CineTextField`, `SecondaryButton`, `PrimaryButton(destructive)`,
+  `ProfileAvatar`, `ProfileTile`, `KeypadKey`, `PinDots`, `ListRow`, `ConfirmDialog`,
+  `MessagePanel`, `StatusPill`, `FormScreen`, `Wordmark`, `InitialFocus`, `LocalPreviewFocus`.
+
+### 4.7 Connexion et profils (J1)
+
+**Source** (`:core:source`) : `SourceConnector` gagne `publicUsers`, `quickConnectEnabled`,
+`startQuickConnect`, `isQuickConnectApproved`, `signIn(Credentials.QuickConnect)`, `signOut`,
+`imageUrl`, `userImageUrl` ; `ServerDiscovery.discover()` ; erreurs `QuickConnectDisabled` et
+`QuickConnectExpired`.
+
+**Stockage** :
+
+| Où | Quoi |
+|---|---|
+| Room `servers` | identifiant Jellyfin du serveur, nom, version, adresse locale, adresse distante (facultative), date d'ajout |
+| Room `profiles` (clé : serveur + utilisateur) | nom, administrateur, étiquette de l'avatar, public ou non, **jeton chiffré** (Base64), **empreinte du PIN**, dernière utilisation |
+| Android Keystore | **seulement la clé** AES-256-GCM `cinedoury.tokens`, qui ne sort jamais du Keystore. Le jeton chiffré est `IV (12 octets) + texte chiffré + étiquette`, en Base64. Une clé perdue (jeton illisible) déconnecte le profil |
+| DataStore `settings` | dernier serveur, dernier profil, mode de démarrage |
+| `noBackupFilesDir/device-id` | le `DeviceId` |
+
+- La base n'est pas sauvegardée (`allowBackup="false"`) et le schéma n'est pas encore exporté
+  (`exportSchema = false`, version 1) : les migrations viendront avec le cache du J2.
+- **`DeviceId`** : 32 chiffres hexadécimaux tirés au hasard au premier lancement (UUID sans tirets),
+  gardés dans `noBackupFilesDir` : stable pour toute la vie de l'installation, jamais copié sur un
+  autre appareil, effacé avec l'appli. **Nom d'appareil** : le nom donné à la TV dans ses réglages
+  (`Settings.Global.DEVICE_NAME`), à défaut le modèle.
+- **PIN** : 4 chiffres, local à l'appareil (Jellyfin 12 n'a plus de PIN), stocké en
+  `pbkdf2-sha256:20000:<sel>:<empreinte>` (sel de 16 octets), calculé hors du fil principal. Quatre
+  chiffres ne résistent pas à une recherche par qui détient la base : le PIN protège un profil d'un
+  enfant, pas d'un voleur. Un nouveau PIN se saisit deux fois ; le retirer demande l'actuel.
+- **Plusieurs comptes** restent connectés sur l'appareil, un jeton par utilisateur. Se déconnecter
+  appelle `POST /Sessions/Logout` avec le jeton du profil (si le serveur répond) puis l'oublie ;
+  oublier le serveur déconnecte tous ses profils puis efface serveur et profils.
+
+**Découverte** : « `Who is JellyfinServer?` » en UDP vers le port 7359, sur l'adresse de diffusion
+de chaque interface active et sur `255.255.255.255`, trois fois à une seconde d'intervalle ; chaque
+réponse JSON (`Id`, `Name`, `Address`) donne un serveur, émis une fois, au fur et à mesure, pendant
+3 s. Sans `Address`, l'adresse de l'émetteur et le port 8096.
+
+**Saisie d'adresse** : `http://` supposé sans schéma, port 8096 supposé en `http` sans port, chemin
+conservé (`https://example.com/jellyfin`). L'adresse est vérifiée par `serverInfo` (Jellyfin 12.3
+ou plus) avant d'être gardée. Les adresses en `http://` exigent `usesCleartextTraffic="true"` dans
+le manifeste (un serveur de maison répond en clair sur le réseau local).
+
+**Quick Connect** :
+1. `GET /QuickConnect/Enabled` ; s'il est désactivé, l'écran du mot de passe prend la place.
+2. `POST /QuickConnect/Initiate` (en-tête `Authorization` sans jeton, avec notre `DeviceId`) : le
+   code à 6 chiffres s'affiche en deux groupes de trois.
+3. `GET /QuickConnect/Connect?secret=…` toutes les 2 s, sans bloquer l'écran.
+4. Approuvé : `POST /Users/AuthenticateWithQuickConnect` avec le secret ; la session est celle de
+   l'utilisateur qui a validé, quel que soit le profil choisi.
+5. Le serveur oublie la demande après 10 min (réponse 404 « Unknown secret ») : « Ce code a
+   expiré », bouton « Nouveau code ».
+
+**Choix de l'adresse** au démarrage (`AddressResolver`) : l'adresse locale d'abord (3 s au plus),
+puis la distante (10 s au plus). Une adresse ne compte que si le serveur qui y répond a le même
+identifiant que le serveur enregistré. Si aucune ne répond : écran « Le serveur ne répond pas »
+(« Réessayer », « Changer de serveur »), avec l'erreur la plus parlante (serveur trop ancien, puis
+autre serveur, puis silence). En mode distant, un indicateur discret « À distance » s'affiche
+(choix du profil, accueil, réglages).
+
+**Démarrage** (`SessionManager.start`) : sans serveur, l'accueil du premier lancement ; sinon,
+le serveur est joint, puis selon le réglage « Au démarrage » : **« Choix du profil »** (par défaut,
+une TV de salon est partagée) ou **« Dernier profil »** (ouvert directement, derrière son PIN s'il
+en a un).
+
+**Profils** : les utilisateurs publics du serveur (`/Users/Public`, rafraîchis à chaque passage
+sur l'écran) et tous ceux qui se sont connectés sur l'appareil (même cachés), triés par nom. Avatar :
+l'image de l'utilisateur (`/UserImage?userId=…&tag=…`, servie en une seule taille), sinon l'initiale
+sur un disque coloré d'après le nom. Un profil connecté s'ouvre directement (après son PIN) ;
+sinon Quick Connect, puis mot de passe.
+
+**Navigation** : une pile d'écrans maison (`Navigator`, une douzaine d'écrans, aucun lien profond),
+chaque entrée ayant son `ViewModelStore` et son état sauvegardé ; « Retour » dépile, un parcours
+achevé (connecté, serveur oublié) remplace toute la pile.
+
+### 4.8 Contrats Jellyfin
 
 - **Authentification** : uniquement l'en-tête
   `Authorization: MediaBrowser Client="Ciné Doury", Device="<nom>", DeviceId="<id>", Version="<x.y.z>", Token="<jeton>"`.
   Jellyfin 12 **refuse** `X-Emby-Token` et `?api_key=` (401). `DeviceId` est stable par installation.
-- **Découverte** : diffusion UDP sur le port 7359 (`Who is JellyfinServer?`), réponse JSON (adresse, identifiant, nom).
-- **Quick Connect** : `POST /QuickConnect/Initiate` (code à afficher), interrogation de `/QuickConnect/Connect?secret=`, puis `POST /Users/AuthenticateWithQuickConnect`.
+- **Découverte** : diffusion UDP sur le port 7359 (`Who is JellyfinServer?`), réponse JSON (adresse, identifiant, nom). Détail au § 4.7.
+- **Quick Connect** : `POST /QuickConnect/Initiate` (code à afficher), interrogation de `/QuickConnect/Connect?secret=`, puis `POST /Users/AuthenticateWithQuickConnect`. Détail au § 4.7.
 - **Images** : toujours demandées à la taille affichée (`fillWidth`/`fillHeight`, `quality`, `tag`). Le BlurHash fourni par le serveur sert d'aperçu.
 - **Lecture** :
   - `POST /Items/{id}/PlaybackInfo`, avec un **profil d'appareil construit d'après les capacités réelles** (MediaCodecList, HDR de l'écran, passthrough audio) ;

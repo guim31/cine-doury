@@ -38,7 +38,7 @@ interface SourceConnector {
     fun open(session: Session): LibrarySource
 
     /**
-     * URL of [image], resized by the server to fill [width] × [height] pixels (`SPEC.md` § 4.6).
+     * URL of [image], resized by the server to fill [width] × [height] pixels (`SPEC.md` § 4.8).
      * Images are readable without a token.
      */
     fun imageUrl(server: ServerAddress, image: ImageRef, width: Int, height: Int): String

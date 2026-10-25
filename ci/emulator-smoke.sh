@@ -10,7 +10,7 @@ activity="$package/fr.guim.cinedoury.tv.MainActivity"
 adb install -r "$apk"
 adb shell am start -W -n "$activity"
 sleep 10
-adb exec-out screencap -p > emulator-catalog.png
+adb exec-out screencap -p > emulator-start.png
 if adb shell dumpsys activity activities | grep -E 'ResumedActivity' | grep -q "$package"; then
   echo "$activity is resumed"
 else

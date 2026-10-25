@@ -73,10 +73,17 @@ private fun Screen(
     onToggleVariant: () -> Unit,
     showCatalog: Boolean,
 ) {
-    val home = { navigator.replaceAll(Route.Home) }
     when (route) {
         Route.Startup -> {
-            StartupScreen(sessions) { target -> navigator.replaceAll(target.toRoute()) }
+            StartupScreen(sessions) { target ->
+                if (target is StartupTarget.Pin) {
+                    // « Retour » on the PIN of the last profile leads to the other profiles.
+                    navigator.replaceAll(Route.Profiles)
+                    navigator.push(Route.Pin(target.profile, PinPurpose.Unlock))
+                } else {
+                    navigator.replaceAll(target.toRoute())
+                }
+            }
         }
 
         Route.Welcome -> {

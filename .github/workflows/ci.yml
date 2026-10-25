@@ -212,5 +212,5 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: emulator-screenshot
-          path: emulator-catalog.png
+          path: emulator-start.png
           if-no-files-found: ignore

@@ -26,7 +26,7 @@ import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeSource
 
 /**
- * Jellyfin's local discovery (`SPEC.md` § 4.6): « Who is JellyfinServer? » broadcast on UDP 7359;
+ * Jellyfin's local discovery (`SPEC.md` § 4.7): « Who is JellyfinServer? » broadcast on UDP 7359;
  * each server answers with a JSON object (`Address`, `Id`, `Name`) to the sender. The question is
  * sent a few times, since UDP may lose it, and each server is emitted once, as soon as it answers.
  *

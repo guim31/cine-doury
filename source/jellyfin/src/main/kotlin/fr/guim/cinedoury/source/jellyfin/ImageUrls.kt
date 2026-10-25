@@ -10,7 +10,7 @@ private const val IMAGE_QUALITY = 90
 /**
  * `GET /Items/{id}/Images/{type}[/{index}]`, resized and cropped by the server to fill
  * [width] × [height] pixels. The tag makes the URL change when the image changes, so caches never
- * serve an old image. Images are readable without a token (`SPEC.md` § 4.6).
+ * serve an old image. Images are readable without a token (`SPEC.md` § 4.8).
  */
 internal fun imageUrlOf(
     server: ServerAddress,
