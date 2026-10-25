@@ -9,7 +9,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -91,6 +93,7 @@ fun ProfilesScreen(
     modifier: Modifier = Modifier,
 ) {
     val first = remember { FocusRequester() }
+    val other = remember { FocusRequester() }
     val error = state.error
     FormScreen(
         brand = stringResource(UiR.string.brand_name),
@@ -108,14 +111,16 @@ fun ProfilesScreen(
                 onSecondary = onOtherAccount,
             )
         } else {
-            ProfileRow(state.profiles, avatarUrl, onChoose, onOtherAccount, first)
+            ProfileRow(state.profiles, avatarUrl, onChoose, onOtherAccount, first, other)
             if (!state.loading && state.profiles.isEmpty()) {
                 DirectSignIn(onQuickConnect = onOtherAccount, onPassword = onPassword)
             }
         }
     }
-    // Once the profiles known here are listed, the first one takes the focus.
-    InitialFocus(first, key = error == null to state.profiles.isEmpty(), enabled = error == null)
+    // « Autre compte » while no profile is listed; once the profiles arrive (from the server, after
+    // the screen), the first one takes the focus.
+    val target = if (state.profiles.isEmpty()) other else first
+    InitialFocus(target, key = error == null to state.profiles.isEmpty(), enabled = error == null)
 }
 
 @Composable
@@ -125,8 +130,16 @@ private fun ProfileRow(
     onChoose: (Profile) -> Unit,
     onOtherAccount: () -> Unit,
     first: FocusRequester,
+    other: FocusRequester,
 ) {
+    val listState = rememberLazyListState()
+    // Profiles that arrive go before « Autre compte », which the list keeps in place by its key:
+    // back to the start, where the first profile is.
+    LaunchedEffect(profiles.isEmpty()) {
+        if (profiles.isNotEmpty()) listState.scrollToItem(0)
+    }
     LazyRow(
+        state = listState,
         // Room for the scale and the halo of the focused avatar.
         contentPadding = PaddingValues(vertical = CineSpacing.m, horizontal = CineSpacing.xs),
         horizontalArrangement = Arrangement.spacedBy(CineSpacing.l),
@@ -150,7 +163,7 @@ private fun ProfileRow(
                 name = stringResource(R.string.profiles_other),
                 onClick = onOtherAccount,
                 icon = CineIcons.Add,
-                focusRequester = if (profiles.isEmpty()) first else null,
+                focusRequester = other,
                 modifier = Modifier.testTag("profile-other"),
             )
         }
