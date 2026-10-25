@@ -138,8 +138,8 @@ class J2FlowTest {
         waitForTag(card)
         focusable(card).assertIsFocused()
 
-        // Into the rail, then « Films ».
-        press(Key.DirectionLeft)
+        // Back along the row into the rail (it opens on « Accueil »), then « Films ».
+        press(Key.DirectionLeft, times = 3)
         press(Key.DirectionDown)
         press(Key.DirectionCenter)
         waitForTag(LibraryPreview.item(0))
