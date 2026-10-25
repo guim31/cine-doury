@@ -15,7 +15,7 @@ son domaine :
 | J0 — Fondations | terminé, fusionné | [#1](https://github.com/guim31/cine-doury/pull/1) |
 | J1 — Connexion et profils (et retouches du design system) | terminé, fusionné | [#2](https://github.com/guim31/cine-doury/pull/2) |
 | J2 — Accueil et navigation | terminé, fusionné | [#3](https://github.com/guim31/cine-doury/pull/3) |
-| J3 — Fiches (et retouches du J2 : raccord du bandeau, vignettes, index local et filtres HDR/audio, icônes de bibliothèque, clé de débogage) | en revue (captures dans `docs/screenshots/j3/`) | [#4](https://github.com/guim31/cine-doury/pull/4) |
+| J3 — Fiches (et retouches du J2 : raccord du bandeau, vignettes, index local et filtres HDR/audio, icônes de bibliothèque, clé de débogage) | terminé, en revue (CI verte ; captures dans `docs/screenshots/j3/`, numéros 70 à 89) | [#4](https://github.com/guim31/cine-doury/pull/4) |
 
 *(Chaque jalon met à jour ce tableau et ajoute ses contrats au § 4.)*
 
@@ -484,7 +484,9 @@ provisoire du lecteur (`PlaybackPreviewScreen`, remplacé au J4).
 - fond plein écran sous les voiles (`readabilityScrims`) et fond d'ambiance du titre ; affiche
   (190 × 285) à gauche, qui **vole** depuis la carte ouverte ; colonne de 45 % (432 dp) : logo (texte
   à défaut), ligne de métadonnées avec **heure de fin**, genres, badges, synopsis sur 3 lignes
-  dépliable (OK), réalisation et scénario, boutons ;
+  dépliable (OK), réalisation et scénario ; les **boutons** sous l'affiche et le texte, sur toute la
+  largeur (écart au cahier : dans la colonne de texte, « Reprendre — 1 h 09 restantes » et six
+  boutons ronds débordaient de l'écran) ;
 - **focus initial** sur « Lire » / « Reprendre — 1 h 09 restantes » (série : bouton intelligent) ;
   personne et collection : leur première carte ; boutons ronds dans cet ordre : Depuis le début
   (titre entamé), Bande-annonce, Audio et sous-titres, Marquer comme vu, Favori, Aller à la série
