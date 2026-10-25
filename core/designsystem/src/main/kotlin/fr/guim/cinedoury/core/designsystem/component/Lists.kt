@@ -42,6 +42,7 @@ fun ListRow(
     value: String? = null,
     icon: ImageVector? = null,
     destructive: Boolean = false,
+    trailingIcon: ImageVector? = null,
     focusRequester: FocusRequester? = null,
     focus: CineFocus = rememberCineFocus(),
 ) {
@@ -100,6 +101,14 @@ fun ListRow(
                 color = secondary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+            )
+        }
+        if (trailingIcon != null) {
+            Icon(
+                imageVector = trailingIcon,
+                contentDescription = null,
+                tint = if (focused) colors.background else colors.accent,
+                modifier = Modifier.size(CineSizes.icon),
             )
         }
     }

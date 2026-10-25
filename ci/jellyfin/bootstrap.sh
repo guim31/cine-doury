@@ -51,7 +51,9 @@ TOKEN="$(api POST /Users/AuthenticateByName \
 log "authenticated as $ADMIN_USER"
 
 # library NAME COLLECTION_TYPE FOLDER. Internet providers are off: the scan stays offline and
-# deterministic, and no outside artwork enters the test server.
+# deterministic, and no outside artwork enters the test server. `EnableInternetProviders: false`
+# alone is not enough: without TypeOptions, Jellyfin 12 still runs the TMDb and OMDb fetchers
+# (CLAUDE.md, « Pièges »); empty fetcher lists turn them off, the local frame grabs stay.
 library() {
   if api GET /Library/VirtualFolders | jq -e --arg n "$1" 'any(.[]; .Name == $n)' > /dev/null; then
     return
@@ -63,6 +65,9 @@ library() {
     EnableTrickplayImageExtraction:false, ExtractTrickplayImagesDuringLibraryScan:false,
     EnableChapterImageExtraction:false, ExtractChapterImagesDuringLibraryScan:false,
     AutomaticallyAddToCollection:false, PreferredMetadataLanguage:"fr", MetadataCountryCode:"FR",
+    TypeOptions:([ "Movie", "Series", "Season", "Episode", "BoxSet", "Person" ] | map({Type:., MetadataFetchers:[],
+      MetadataFetcherOrder:[], ImageFetchers:["Embedded Image Extractor", "Screen Grabber"],
+      ImageFetcherOrder:["Embedded Image Extractor", "Screen Grabber"], ImageOptions:[]})),
     PathInfos:[{Path:$p}]}}')"
   api POST "/Library/VirtualFolders?name=$(jq -rn --arg v "$1" '$v|@uri')&collectionType=$2&refreshLibrary=false" "$options"
 }
