@@ -1,5 +1,7 @@
 package fr.guim.cinedoury.source.jellyfin
 
+import fr.guim.cinedoury.core.model.ImageRef
+import fr.guim.cinedoury.core.model.ImageType
 import fr.guim.cinedoury.core.model.ItemId
 import fr.guim.cinedoury.core.model.ItemKind
 import fr.guim.cinedoury.core.model.LibraryKind
@@ -7,6 +9,7 @@ import fr.guim.cinedoury.core.model.PageRequest
 import fr.guim.cinedoury.core.model.StreamType
 import fr.guim.cinedoury.core.model.VideoRange
 import fr.guim.cinedoury.core.source.Credentials
+import fr.guim.cinedoury.core.source.QuickConnectRequest
 import fr.guim.cinedoury.core.source.ServerAddress
 import fr.guim.cinedoury.core.source.SourceException
 import kotlinx.coroutines.test.runTest
@@ -149,6 +152,99 @@ class JellyfinConnectorTest {
             assertFailsWith<SourceException.Unauthorized> { library.libraries() }
         }
 
+    @Test
+    fun `public users with their picture`() =
+        runTest {
+            server.enqueue(json("users-public.json"))
+
+            val users = connector.publicUsers(address)
+
+            assertEquals(listOf("admin", "enfant"), users.map { it.name })
+            val admin = users.first()
+            assertEquals("93dc22f066b54845880229ec46225466", admin.id.value)
+            assertEquals(
+                "$address/UserImage?userId=93dc22f066b54845880229ec46225466&tag=d0568e8dbbafe3805c31c0c1013a1072",
+                connector.userImageUrl(address, admin),
+            )
+            assertEquals(null, connector.userImageUrl(address, users.last()))
+            assertEquals("/Users/Public", server.takeRequest().url.encodedPath)
+        }
+
+    @Test
+    fun `Quick Connect from the code to the session`() =
+        runTest {
+            server.enqueue(json("quick-connect-initiate.json"))
+            server.enqueue(jsonBody("""{"Authenticated": false, "Secret": "s", "Code": "361123", "DeviceId": "d", "DeviceName": "n", "AppName": "a", "AppVersion": "v", "DateAdded": "2026-10-25T10:17:52.947826Z"}"""))
+            server.enqueue(jsonBody("""{"Authenticated": true, "Secret": "s", "Code": "361123", "DeviceId": "d", "DeviceName": "n", "AppName": "a", "AppVersion": "v", "DateAdded": "2026-10-25T10:17:52.947826Z"}"""))
+            server.enqueue(json("system-info-public.json"))
+            server.enqueue(json("authenticate.json"))
+
+            val request = connector.startQuickConnect(address)
+            assertEquals("361123", request.code)
+            assertTrue(request.secret !in request.toString())
+            assertEquals(false, connector.isQuickConnectApproved(address, request))
+            assertEquals(true, connector.isQuickConnectApproved(address, request))
+            val session = connector.signIn(address, Credentials.QuickConnect(request))
+            assertEquals("admin", session.user.name)
+
+            val initiate = server.takeRequest()
+            assertEquals("POST", initiate.method)
+            assertEquals("/QuickConnect/Initiate", initiate.url.encodedPath)
+            assertTrue("DeviceId=\"device-1\"" in initiate.headers["Authorization"].orEmpty())
+            assertEquals(request.secret, server.takeRequest().url.queryParameter("secret"))
+            server.takeRequest()
+            server.takeRequest()
+            val authenticate = server.takeRequest()
+            assertEquals("/Users/AuthenticateWithQuickConnect", authenticate.url.encodedPath)
+            assertTrue(request.secret in authenticate.body?.utf8().orEmpty())
+        }
+
+    @Test
+    fun `forgotten Quick Connect request is QuickConnectExpired`() =
+        runTest {
+            server.enqueue(MockResponse.Builder().code(404).body("\"Unknown secret\"").build())
+
+            assertFailsWith<SourceException.QuickConnectExpired> {
+                connector.isQuickConnectApproved(address, QuickConnectRequest("123456", "secret"))
+            }
+        }
+
+    @Test
+    fun `disabled Quick Connect is QuickConnectDisabled`() =
+        runTest {
+            server.enqueue(MockResponse.Builder().code(401).build())
+
+            assertFailsWith<SourceException.QuickConnectDisabled> { connector.startQuickConnect(address) }
+        }
+
+    @Test
+    fun `sign out ends the session with its token`() =
+        runTest {
+            val session = signedIn()
+            server.enqueue(MockResponse.Builder().code(204).build())
+
+            connector.signOut(session)
+
+            server.takeRequest()
+            server.takeRequest()
+            val logout = server.takeRequest()
+            assertEquals("POST", logout.method)
+            assertEquals("/Sessions/Logout", logout.url.encodedPath)
+            assertTrue("Token=\"${session.accessToken}\"" in logout.headers["Authorization"].orEmpty())
+        }
+
+    @Test
+    fun `image URL asks for the displayed size`() {
+        val poster = ImageRef(ItemId("0123456789abcdef0123456789abcdef"), ImageType.Primary, "abc", blurHash = "x")
+        assertEquals(
+            "http://192.0.2.10:8096/Items/0123456789abcdef0123456789abcdef/Images/Primary" +
+                "?fillWidth=300&fillHeight=450&quality=90&tag=abc",
+            connector.imageUrl(ServerAddress.of("http://192.0.2.10:8096"), poster, 300, 450),
+        )
+        val backdrop = poster.copy(type = ImageType.Backdrop, index = 2)
+        assertTrue("/Images/Backdrop/2?" in connector.imageUrl(address, backdrop, 1920, 1080))
+    }
+
     private suspend fun signedIn() =
         run {
             server.enqueue(json("system-info-public.json"))
@@ -159,11 +255,13 @@ class JellyfinConnectorTest {
     private fun fixture(name: String): String =
         checkNotNull(javaClass.getResource("/fixtures/$name")) { "missing fixture $name" }.readText()
 
-    private fun json(name: String) =
+    private fun json(name: String) = jsonBody(fixture(name))
+
+    private fun jsonBody(body: String) =
         MockResponse
             .Builder()
             .code(200)
             .addHeader("Content-Type", "application/json")
-            .body(fixture(name))
+            .body(body)
             .build()
 }

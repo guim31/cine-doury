@@ -32,7 +32,12 @@ jobs:
           path: ~/.m2/repository/org/robolectric
           key: robolectric-${{ hashFiles('gradle/libs.versions.toml') }}
       - name: Spotless, Detekt, Android Lint, unit tests, debug APK
-        run: ./gradlew check :app:tv:assembleDebug --continue
+        run: |
+          set -o pipefail
+          ./gradlew check :app:tv:assembleDebug --continue 2>&1 | tee gradle.log
+      - name: Failure summary
+        if: failure()
+        run: ci/failure-summary.sh gradle.log
       - name: Debug APK
         uses: actions/upload-artifact@v7
         with:
@@ -83,10 +88,14 @@ jobs:
           fi
       - name: Verify against the references
         if: steps.mode.outputs.record != 'true'
-        run: ./gradlew :app:tv:verifyRoborazziDebug
+        run: |
+          set -o pipefail
+          ./gradlew :app:tv:verifyRoborazziDebug 2>&1 | tee gradle.log
       - name: Record the references
         if: steps.mode.outputs.record == 'true'
-        run: ./gradlew :app:tv:recordRoborazziDebug
+        run: |
+          set -o pipefail
+          ./gradlew :app:tv:recordRoborazziDebug 2>&1 | tee gradle.log
       - name: Commit the references
         if: steps.mode.outputs.record == 'true'
         env:
@@ -103,6 +112,9 @@ jobs:
             git commit -m "chore: record reference screenshots"
             git push origin "HEAD:refs/heads/$HEAD_REF"
           fi
+      - name: Failure summary
+        if: failure()
+        run: ci/failure-summary.sh gradle.log
       - name: Screenshots and diffs
         if: always()
         uses: actions/upload-artifact@v7
@@ -149,7 +161,12 @@ jobs:
       - name: Integration tests
         env:
           JELLYFIN_URL: http://localhost:8096
-        run: ./gradlew :source:jellyfin:integrationTest
+        run: |
+          set -o pipefail
+          ./gradlew :source:jellyfin:integrationTest 2>&1 | tee gradle.log
+      - name: Failure summary
+        if: failure()
+        run: ci/failure-summary.sh gradle.log
       - name: Reports
         if: always()
         uses: actions/upload-artifact@v7

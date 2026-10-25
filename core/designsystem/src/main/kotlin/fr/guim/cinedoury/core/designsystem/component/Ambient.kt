@@ -69,7 +69,7 @@ fun AmbientBackdrop(
     ) {
         Crossfade(
             targetState = settled,
-            animationSpec = CineMotion.fade(CineMotion.BACKDROP_FADE_MILLIS),
+            animationSpec = CineMotion.fade<Float>(CineMotion.BACKDROP_FADE_MILLIS),
             label = "ambience",
         ) { target ->
             Box(
