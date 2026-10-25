@@ -251,9 +251,16 @@ class J5FlowTest {
         runBlocking {
             getKoin().get<RequestSettings>().save(serverId, RequestServer("http://192.0.2.20:5055", "key"))
         }
+        val saved = runBlocking { getKoin().get<RequestSettings>().server(serverId).first() }
+        assertEquals("http://192.0.2.20:5055", saved?.address)
         showSearch()
         typePha()
-        compose.waitUntil(TIMEOUT) { "pha" in seerr.searched }
+        try {
+            compose.waitUntil(TIMEOUT) { "pha" in seerr.searched }
+        } catch (timeout: androidx.compose.ui.test.ComposeTimeoutException) {
+            val rows = compose.onAllNodes(hasTestTag("results")).fetchSemanticsNodes().size
+            throw AssertionError("Seerr asked for ${seerr.searched}, results shown: $rows", timeout)
+        }
         waitFor(hasTestTag(SearchPreview.card(SearchRows.of(SearchGroup.Collections), 0)))
         // Right into the results, then down to the last row (composed once in view): « Demander ».
         press(Key.DirectionRight, times = 7)
