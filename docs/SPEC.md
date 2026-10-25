@@ -16,7 +16,7 @@ son domaine :
 | J1 — Connexion et profils (et retouches du design system) | terminé, fusionné | [#2](https://github.com/guim31/cine-doury/pull/2) |
 | J2 — Accueil et navigation | terminé, fusionné | [#3](https://github.com/guim31/cine-doury/pull/3) |
 | J3 — Fiches (et retouches du J2 : raccord du bandeau, vignettes, index local et filtres HDR/audio, icônes de bibliothèque, clé de débogage) | terminé, fusionné | [#4](https://github.com/guim31/cine-doury/pull/4) |
-| J4 — Lecteur (et retouches du J3 : pastilles des pistes, groupes insécables, logo à la place de l'affiche) | terminé, en revue (captures dans `docs/screenshots/j4/`, numéros 90 à 103) | [#5](https://github.com/guim31/cine-doury/pull/5) |
+| J4 — Lecteur (et retouches du J3 : pastilles des pistes, groupes insécables, logo à la place de l'affiche) | terminé, en revue (captures dans `docs/screenshots/j4/`, numéros 90 à 108 ; ajout : taille des sous-titres en cours de lecture) | [#5](https://github.com/guim31/cine-doury/pull/5) |
 
 *(Chaque jalon met à jour ce tableau et ajoute ses contrats au § 4.)*
 
@@ -465,9 +465,9 @@ focus à son entrée choisie, `ConfirmDialog(destructive = false)`, `ListRow(tra
 `alphabetWidth`, `panelWidth`, `listRowPoster`, `listRowHeight`, `skeletonLine`,
 `HERO_HEIGHT_FRACTION`.
 
-**Écrans provisoires** : Recherche (J5) et Lecteur (J4) s'ouvrent sur un écran « arrive avec une
-prochaine version » (`ComingSoonScreen`), avec « Retour » ; depuis le J3, le lecteur provisoire montre
-ce qui serait lu (§ 4.10).
+**Écrans provisoires** : Recherche (J5) s'ouvre sur un écran « arrive avec une prochaine version »
+(`ComingSoonScreen`), avec « Retour ». Le lecteur provisoire du J3 a laissé la place au vrai lecteur
+au J4 (§ 4.11).
 
 ### 4.10 Fiches (J3)
 

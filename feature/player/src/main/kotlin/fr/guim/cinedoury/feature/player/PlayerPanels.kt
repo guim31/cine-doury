@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -326,7 +327,10 @@ private fun SubtitleSizeBar(
                 focus = rememberCineFocus(playerPanelLine(0, 0)),
                 modifier = Modifier.weight(1.2f).testTag(playerPanelLine(0, 0)),
             )
-            if (!fixed) {
+            if (fixed) {
+                // The size alone keeps its width: the rest of the bar holds nothing to set.
+                Spacer(Modifier.weight(2f))
+            } else {
                 ListRow(
                     title = stringResource(R.string.player_subtitle_position),
                     value = style.position.label(),
