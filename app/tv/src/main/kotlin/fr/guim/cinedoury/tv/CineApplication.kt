@@ -2,6 +2,7 @@ package fr.guim.cinedoury.tv
 
 import android.app.Application
 import android.content.pm.ApplicationInfo
+import android.util.Log
 import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
@@ -10,6 +11,7 @@ import fr.guim.cinedoury.core.data.DeviceIdentity
 import fr.guim.cinedoury.core.data.di.dataModule
 import fr.guim.cinedoury.core.data.index.IndexScheduler
 import fr.guim.cinedoury.core.designsystem.theme.CineMotion
+import fr.guim.cinedoury.core.source.FailureLog
 import fr.guim.cinedoury.core.source.ServerDiscovery
 import fr.guim.cinedoury.core.source.SourceConnector
 import fr.guim.cinedoury.feature.auth.authModule
@@ -32,6 +34,14 @@ class CineApplication :
     SingletonImageLoader.Factory {
     override fun onCreate() {
         super.onCreate()
+        // Every caught failure goes to logcat, with its stack: `adb logcat -s CineDoury`.
+        FailureLog.sink =
+            FailureLog.Sink { level, message, error ->
+                when (level) {
+                    FailureLog.Level.Warning -> Log.w(LOG_TAG, message, error)
+                    FailureLog.Level.Error -> Log.e(LOG_TAG, message, error)
+                }
+            }
         // Robolectric creates an application per test in the same process: start afresh.
         stopKoin()
         startKoin {
@@ -65,6 +75,9 @@ val jellyfinModule =
         single<SourceConnector> { JellyfinConnector(get()) }
         single<ServerDiscovery> { JellyfinDiscovery() }
     }
+
+/** The logcat tag of the app (`SPEC.md` § 4.11). */
+const val LOG_TAG = "CineDoury"
 
 /** Whether this is a debug build: the catalogue is offered in the settings. */
 val Application.isDebuggable: Boolean

@@ -8,6 +8,7 @@ import fr.guim.cinedoury.core.data.security.TokenCipher
 import fr.guim.cinedoury.core.data.server.AddressResolver
 import fr.guim.cinedoury.core.model.ServerInfo
 import fr.guim.cinedoury.core.source.Credentials
+import fr.guim.cinedoury.core.source.FailureLog
 import fr.guim.cinedoury.core.source.ServerAddress
 import fr.guim.cinedoury.core.source.SourceException
 import fr.guim.cinedoury.core.source.fake.InMemorySource
@@ -22,10 +23,12 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import java.io.File
+import java.security.InvalidAlgorithmParameterException
 import kotlin.io.path.createTempDirectory
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
@@ -61,11 +64,11 @@ class SessionManagerTest {
     /** One DataStore per file and process: every manager of a test shares it, as restarts would. */
     private val preferences = AppPreferences(PreferenceDataStoreFactory.create(scope = scope) { preferencesFile })
 
-    private fun manager(): SessionManager =
+    private fun manager(cipher: TokenCipher = ReversingCipher()): SessionManager =
         SessionManager(
             connector = source,
             servers = ServerRepository(database.servers()),
-            profiles = ProfileRepository(database.profiles(), ReversingCipher()),
+            profiles = ProfileRepository(database.profiles(), cipher),
             preferences = preferences,
             resolver = AddressResolver(source),
         )
@@ -77,6 +80,36 @@ class SessionManagerTest {
         database.close()
         scope.cancel()
     }
+
+    @Test
+    fun `a Keystore failure after the server said yes is shown and logged, not a crash`() =
+        runTest {
+            val logged = mutableListOf<Pair<FailureLog.Level, Throwable?>>()
+            FailureLog.sink = FailureLog.Sink { level, _, error -> logged += level to error }
+            try {
+                val broken =
+                    object : TokenCipher {
+                        override fun encrypt(token: String): String =
+                            throw InvalidAlgorithmParameterException("Caller-provided IV not permitted")
+
+                        override fun decrypt(encrypted: String): String? = null
+                    }
+                val sessions = manager(broken)
+                sessions.addServer(address)
+
+                val error =
+                    assertFailsWith<SourceException.Unexpected> {
+                        sessions.signIn(Credentials.Password("admin", "secret"))
+                    }
+
+                assertIs<InvalidAlgorithmParameterException>(error.cause)
+                assertNull(sessions.active.value)
+                assertEquals(FailureLog.Level.Error, logged.single().first)
+                assertIs<InvalidAlgorithmParameterException>(logged.single().second)
+            } finally {
+                FailureLog.sink = FailureLog.Sink { _, _, _ -> }
+            }
+        }
 
     @Test
     fun `first launch has no server`() =

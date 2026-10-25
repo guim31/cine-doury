@@ -10,6 +10,7 @@ import fr.guim.cinedoury.core.designsystem.component.LocalPreviewFocus
 import fr.guim.cinedoury.core.designsystem.theme.CineTheme
 import fr.guim.cinedoury.core.designsystem.theme.ThemeVariant
 import fr.guim.cinedoury.core.source.SourceException
+import fr.guim.cinedoury.core.ui.PREVIEW_DETAILS
 import fr.guim.cinedoury.core.ui.PREVIEW_RETRY
 import fr.guim.cinedoury.feature.auth.AddressMode
 import fr.guim.cinedoury.feature.auth.AddressScreen
@@ -87,7 +88,7 @@ class J1ScreenshotTest(
     @Test
     fun profiles() =
         shoot("25-choix-du-profil", AuthPreview.PROFILE) {
-            ProfilesScreen(ProfilesState(J1Samples.profiles, remote = true, loading = false), { null }, {}, {}, {})
+            ProfilesScreen(ProfilesState(J1Samples.profiles, remote = true, loading = false), { null }, {}, {}, {}, {})
         }
 
     @Test
@@ -133,6 +134,32 @@ class J1ScreenshotTest(
                 {},
                 {},
             )
+        }
+
+    @Test
+    fun errorDetails() =
+        shoot("35-erreur-plus-d-infos", PREVIEW_DETAILS) {
+            PasswordScreen(
+                PasswordState(
+                    username = "Léo",
+                    error =
+                        SourceException
+                            .Unexpected(IllegalStateException("Network read on the main thread"))
+                            .at("POST /Users/AuthenticateByName", 200),
+                ),
+                {},
+                {},
+                {},
+                {},
+                {},
+                showErrorDetails = true,
+            )
+        }
+
+    @Test
+    fun hiddenAccount() =
+        shoot("36-compte-masque", AuthPreview.PROFILES_QUICK_CONNECT) {
+            ProfilesScreen(ProfilesState(emptyList(), loading = false), { null }, {}, {}, {}, {})
         }
 
     @Test

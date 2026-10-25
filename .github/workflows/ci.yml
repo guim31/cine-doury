@@ -36,7 +36,7 @@ jobs:
       - name: Spotless, Detekt, Android Lint, unit tests, debug APK
         run: |
           set -o pipefail
-          ./gradlew check :app:tv:assembleDebug --continue 2>&1 | tee gradle.log
+          ./gradlew check :app:tv:assembleDebug :app:tv:assembleDebugAndroidTest --continue 2>&1 | tee gradle.log
       - name: Room schemas are up to date
         run: |
           if [ -n "$(git status --porcelain core/data/schemas)" ]; then
@@ -52,6 +52,12 @@ jobs:
         with:
           name: cine-doury-debug-apk
           path: app/tv/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+      - name: Instrumented tests APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: cine-doury-android-test-apk
+          path: app/tv/build/outputs/apk/androidTest/debug/*.apk
           if-no-files-found: error
       - name: Reports
         if: failure()
@@ -189,22 +195,41 @@ jobs:
           if-no-files-found: ignore
 
   emulator:
-    name: Install and start on an API 34 TV emulator
+    name: Sign in with the remote on an API 34 TV emulator
     needs: build
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
+    services:
+      jellyfin:
+        image: jellyfin/jellyfin:12.3.20261023-013714
+        ports:
+          - 8096:8096
+        volumes:
+          - /tmp/cine-doury-media:/media
     steps:
       - uses: actions/checkout@v7
       - uses: actions/download-artifact@v8
         with:
           name: cine-doury-debug-apk
           path: apk
+      - uses: actions/download-artifact@v8
+        with:
+          name: cine-doury-android-test-apk
+          path: test-apk
+      - name: ffmpeg
+        run: sudo apt-get update -q && sudo apt-get install -y -q ffmpeg
+      - name: Generate the test media
+        run: |
+          sudo chown -R "$(id -u):$(id -g)" /tmp/cine-doury-media
+          ci/jellyfin/generate-media.sh /tmp/cine-doury-media
+      - name: Bootstrap Jellyfin
+        run: ci/jellyfin/bootstrap.sh http://localhost:8096
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-      - name: Start the app
+      - name: Start the app, then sign in with the remote
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
@@ -213,11 +238,14 @@ jobs:
           profile: tv_1080p
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          script: ci/emulator-smoke.sh apk
-      - name: Emulator screenshot
+          script: ci/emulator-tests.sh apk test-apk
+      - name: Emulator screenshots and logs
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: emulator-screenshot
-          path: emulator-start.png
+          name: emulator
+          path: |
+            emulator-*.png
+            emulator-*.log
+            instrument.log
           if-no-files-found: ignore

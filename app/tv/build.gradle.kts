@@ -11,6 +11,8 @@ android {
         applicationId = "fr.guim.cinedoury"
         versionCode = 1
         versionName = "0.1.0"
+        // Instrumented tests on the API 34 TV emulator of the CI (ci/emulator-tests.sh).
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     signingConfigs {
@@ -73,4 +75,10 @@ dependencies {
     testImplementation(libs.roborazzi.junit.rule)
     testImplementation(libs.compose.ui.test.junit4)
     debugImplementation(libs.compose.ui.test.manifest)
+
+    androidTestImplementation(platform(libs.compose.bom))
+    androidTestImplementation(libs.compose.ui.test.junit4)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.junit)
+    androidTestImplementation(libs.kotlin.test)
 }

@@ -33,6 +33,7 @@ import fr.guim.cinedoury.core.designsystem.component.KeypadKey
 import fr.guim.cinedoury.core.designsystem.component.PinDots
 import fr.guim.cinedoury.core.designsystem.component.ProfileAvatar
 import fr.guim.cinedoury.core.designsystem.component.ProfileTile
+import fr.guim.cinedoury.core.designsystem.component.SecondaryButton
 import fr.guim.cinedoury.core.designsystem.component.rememberCineFocus
 import fr.guim.cinedoury.core.designsystem.image.ImageSource
 import fr.guim.cinedoury.core.designsystem.image.RemoteImage
@@ -51,6 +52,7 @@ fun ProfilesRoute(
     onOpened: () -> Unit,
     onSignIn: (username: String?) -> Unit,
     onPin: (Profile) -> Unit,
+    onPassword: () -> Unit,
     viewModel: ProfilesViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -66,6 +68,7 @@ fun ProfilesRoute(
         avatarUrl = viewModel::avatarUrl,
         onChoose = viewModel::choose,
         onOtherAccount = viewModel::otherAccount,
+        onPassword = onPassword,
         onRetry = viewModel::refresh,
     )
 }
@@ -73,7 +76,9 @@ fun ProfilesRoute(
 /**
  * « Qui regarde ? » (`FONCTIONNALITES.md` § 1): the profiles of the server with their pictures (or
  * an initial on a coloured disc), a padlock on those with a PIN, and « Autre compte » for a user
- * the server does not list.
+ * the server does not list. Jellyfin hides new users, the administrator made by its startup wizard
+ * included: a line says so, and when no profile is listed at all, Quick Connect and the password
+ * are offered right here.
  */
 @Composable
 fun ProfilesScreen(
@@ -81,6 +86,7 @@ fun ProfilesScreen(
     avatarUrl: (Profile) -> String?,
     onChoose: (Profile) -> Unit,
     onOtherAccount: () -> Unit,
+    onPassword: () -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -101,6 +107,11 @@ fun ProfilesScreen(
             )
         } else {
             ProfileRow(state.profiles, avatarUrl, onChoose, onOtherAccount, first)
+            HiddenAccountHint(
+                offerSignIn = !state.loading && state.profiles.isEmpty(),
+                onQuickConnect = onOtherAccount,
+                onPassword = onPassword,
+            )
         }
     }
     // Once the profiles known here are listed, the first one takes the focus.
@@ -142,6 +153,38 @@ private fun ProfileRow(
                 focusRequester = if (profiles.isEmpty()) first else null,
                 modifier = Modifier.testTag("profile-other"),
             )
+        }
+    }
+}
+
+/** « Votre compte n'apparaît pas ? », and the two ways to sign in when no profile is listed. */
+@Composable
+private fun HiddenAccountHint(
+    offerSignIn: Boolean,
+    onQuickConnect: () -> Unit,
+    onPassword: () -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(CineSpacing.m)) {
+        Text(
+            text = stringResource(R.string.profiles_hidden_hint),
+            style = CineTheme.typography.body,
+            color = CineTheme.colors.text2,
+            modifier = Modifier.testTag("profiles-hidden-hint"),
+        )
+        if (offerSignIn) {
+            Row(horizontalArrangement = Arrangement.spacedBy(CineSpacing.m)) {
+                SecondaryButton(
+                    text = stringResource(R.string.profiles_quick_connect),
+                    onClick = onQuickConnect,
+                    focus = rememberCineFocus(AuthPreview.PROFILES_QUICK_CONNECT),
+                    modifier = Modifier.testTag(AuthPreview.PROFILES_QUICK_CONNECT),
+                )
+                SecondaryButton(
+                    text = stringResource(R.string.use_password),
+                    onClick = onPassword,
+                    modifier = Modifier.testTag("profiles-password"),
+                )
+            }
         }
     }
 }

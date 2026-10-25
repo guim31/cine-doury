@@ -6,9 +6,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -53,7 +57,8 @@ fun ServerSearchRoute(
 
 /**
  * The servers of the local network, listed as they answer, and the way to type an address. The
- * focus starts on « Saisir une adresse » and does not jump when a server appears.
+ * focus starts on « Saisir une adresse »; the first server found takes it as soon as it appears,
+ * unless a key was pressed in the meantime (the focus never jumps under the user's hand).
  */
 @Composable
 fun ServerSearchScreen(
@@ -66,6 +71,8 @@ fun ServerSearchScreen(
     modifier: Modifier = Modifier,
 ) {
     val enterAddress = remember { FocusRequester() }
+    val firstServer = remember { FocusRequester() }
+    var touched by rememberSaveable { mutableStateOf(false) }
     val error = state.error
     val subtitle =
         when {
@@ -78,7 +85,11 @@ fun ServerSearchScreen(
         brand = stringResource(UiR.string.brand_name),
         title = stringResource(R.string.servers_title),
         subtitle = subtitle,
-        modifier = modifier,
+        modifier =
+            modifier.onPreviewKeyEvent {
+                touched = true
+                false
+            },
     ) {
         if (error != null) {
             SourceErrorPanel(
@@ -88,10 +99,14 @@ fun ServerSearchScreen(
                 onSecondary = onDismissError,
             )
         } else {
-            ServerList(state, onChoose, onEnterAddress, onSearchAgain, enterAddress)
+            ServerList(state, onChoose, onEnterAddress, onSearchAgain, enterAddress, firstServer)
         }
     }
-    InitialFocus(enterAddress, key = error == null, enabled = error == null)
+    val found = state.servers.isNotEmpty()
+    // On arrival and back from an error: the first server if there is one.
+    InitialFocus(if (found) firstServer else enterAddress, key = error == null, enabled = error == null)
+    // A server appears while the user has not touched anything: it takes the focus.
+    InitialFocus(firstServer, key = found, enabled = found && !touched && error == null)
 }
 
 @Composable
@@ -101,6 +116,7 @@ private fun ServerList(
     onEnterAddress: () -> Unit,
     onSearchAgain: () -> Unit,
     enterAddress: FocusRequester,
+    firstServer: FocusRequester,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(CineSpacing.m)) {
         Column(
@@ -114,6 +130,7 @@ private fun ServerList(
                     value = stringResource(R.string.servers_checking).takeIf { state.checking == server.address },
                     icon = CineIcons.Server,
                     onClick = { onChoose(server.address) },
+                    focusRequester = if (index == 0) firstServer else null,
                     focus = rememberCineFocus("server-$index"),
                     modifier = Modifier.testTag("server-$index"),
                 )

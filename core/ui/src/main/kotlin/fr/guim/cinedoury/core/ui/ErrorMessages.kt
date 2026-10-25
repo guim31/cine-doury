@@ -1,10 +1,12 @@
 package fr.guim.cinedoury.core.ui
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.res.stringResource
 import fr.guim.cinedoury.core.designsystem.component.CineFocus
+import fr.guim.cinedoury.core.designsystem.component.InitialFocus
 import fr.guim.cinedoury.core.designsystem.component.MessagePanel
 import fr.guim.cinedoury.core.designsystem.component.rememberCineFocus
 import fr.guim.cinedoury.core.source.SourceException
@@ -103,6 +105,9 @@ fun SourceErrorPanel(
     showDetails: Boolean = false,
 ) {
     val text = error.toErrorText()
+    // « Réessayer » takes the focus, unless the screen places it itself.
+    val retry = retryFocusRequester ?: remember { FocusRequester() }
+    if (retryFocusRequester == null) InitialFocus(retry)
     MessagePanel(
         title = text.title,
         message = text.message,
@@ -114,7 +119,7 @@ fun SourceErrorPanel(
         detailsLabel = stringResource(R.string.action_more_info),
         details = text.details,
         showDetails = showDetails,
-        actionFocusRequester = retryFocusRequester,
+        actionFocusRequester = retry,
         actionFocus = retryFocus,
         detailsFocus = rememberCineFocus(PREVIEW_DETAILS),
     )
