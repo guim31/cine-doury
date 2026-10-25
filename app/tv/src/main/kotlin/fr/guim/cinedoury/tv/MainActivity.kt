@@ -9,20 +9,21 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import fr.guim.cinedoury.core.designsystem.theme.CineTheme
 import fr.guim.cinedoury.core.designsystem.theme.ThemeVariant
-import fr.guim.cinedoury.tv.catalog.CatalogScreen
 
-/** J0: the app opens on the design system catalogue. */
+/** The app opens on its start screen; the design system catalogue is in the settings (debug). */
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val debuggable = application.isDebuggable
         setContent {
             var variant by rememberSaveable { mutableStateOf(ThemeVariant.Dark) }
             CineTheme(variant = variant) {
-                CatalogScreen(
+                CineApp(
                     variant = variant,
                     onToggleVariant = {
                         variant = if (variant == ThemeVariant.Dark) ThemeVariant.OledBlack else ThemeVariant.Dark
                     },
+                    showCatalog = debuggable,
                 )
             }
         }

@@ -18,7 +18,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,9 +27,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.tv.material3.Text
 import fr.guim.cinedoury.core.designsystem.component.CineFocus
 import fr.guim.cinedoury.core.designsystem.component.CineIcons
+import fr.guim.cinedoury.core.designsystem.component.LocalPreviewFocus
 import fr.guim.cinedoury.core.designsystem.component.NavigationRail
 import fr.guim.cinedoury.core.designsystem.component.RailDestination
 import fr.guim.cinedoury.core.designsystem.component.RoundIconButton
+import fr.guim.cinedoury.core.designsystem.component.rememberCineFocus
 import fr.guim.cinedoury.core.designsystem.theme.CineSizes
 import fr.guim.cinedoury.core.designsystem.theme.CineSpacing
 import fr.guim.cinedoury.core.designsystem.theme.CineTheme
@@ -48,6 +49,7 @@ object CatalogSection {
     const val RAIL = 6
     const val SCRIMS = 7
     const val SPACING = 8
+    const val AMBIENT = 9
 }
 
 /**
@@ -94,6 +96,7 @@ fun CatalogScreen(
                 item(key = "rail") { RailSection() }
                 item(key = "scrims") { ScrimsSection() }
                 item(key = "spacing") { SpacingSection() }
+                item(key = "ambient") { AmbientSection() }
             }
             NavigationRail(
                 destinations = railDestinations(),
@@ -117,21 +120,12 @@ fun CatalogScreen(
     }
 }
 
-/**
- * Tag of the element drawn as focused, for the reference screenshots: Robolectric cannot give the
- * focus under native graphics (`CLAUDE.md`, « Pièges »).
- */
-internal val LocalPreviewFocus = staticCompositionLocalOf<String?> { null }
-
 /** Tag that draws the side rail open, its « Films » destination focused. */
 const val PREVIEW_RAIL = "rail"
 private const val RAIL_MOVIES = 2
 
 @Composable
-internal fun focusFor(tag: String): CineFocus {
-    val preview = LocalPreviewFocus.current == tag
-    return remember(preview) { if (preview) CineFocus.preview() else CineFocus() }
-}
+internal fun focusFor(tag: String): CineFocus = rememberCineFocus(tag)
 
 @Composable
 internal fun railDestinations() =

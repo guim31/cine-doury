@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="welcome_tagline">Votre bibliothèque Jellyfin, sur grand écran.</string>
+    <string name="welcome_start">Commencer</string>
+    <string name="servers_title">Choisissez votre serveur</string>
+    <string name="servers_searching">Recherche des serveurs Jellyfin sur le réseau local…</string>
+    <string name="servers_found">Choisissez un serveur trouvé sur le réseau, ou saisissez son adresse.</string>
+    <string name="servers_none">Aucun serveur trouvé sur le réseau local. Saisissez son adresse.</string>
+    <string name="servers_enter_address">Saisir une adresse</string>
+    <string name="servers_search_again">Chercher à nouveau</string>
+    <string name="servers_checking">Vérification…</string>
+    <string name="address_title">Adresse du serveur</string>
+    <string name="address_subtitle">Par exemple 192.0.2.10 ou https://example.com. Sans précision, http:// et le port 8096 sont supposés.</string>
+    <string name="address_label">Adresse</string>
+    <string name="address_placeholder" translatable="false">192.0.2.10</string>
+    <string name="address_invalid">Cette adresse n\'est pas valide. Vérifiez-la, puis réessayez.</string>
+    <string name="address_continue">Continuer</string>
+    <string name="address_local_title">Adresse locale</string>
+    <string name="address_local_subtitle">L\'adresse du serveur sur le réseau de la maison, essayée en premier au démarrage.</string>
+    <string name="address_remote_title">Adresse distante</string>
+    <string name="address_remote_subtitle">L\'adresse publique du serveur (https://…), essayée quand l\'adresse locale ne répond pas. Laissez vide pour n\'en garder aucune.</string>
+    <string name="address_remote_placeholder" translatable="false">https://example.com</string>
+    <string name="address_save">Enregistrer</string>
+    <string name="sign_in_title">Se connecter</string>
+    <string name="sign_in_for">Profil : %1$s</string>
+    <string name="quick_connect_instruction">Sur votre téléphone, ouvrez Jellyfin, puis votre profil › Quick Connect, et saisissez ce code.</string>
+    <string name="quick_connect_waiting">En attente de validation sur votre téléphone…</string>
+    <string name="quick_connect_loading">Demande d\'un code…</string>
+    <string name="quick_connect_new_code">Nouveau code</string>
+    <string name="quick_connect_code">Code : %1$s</string>
+    <string name="use_password">Utiliser un mot de passe</string>
+    <string name="password_subtitle">Saisissez l\'identifiant et le mot de passe de votre compte Jellyfin.</string>
+    <string name="password_username">Identifiant</string>
+    <string name="password_password">Mot de passe</string>
+    <string name="password_show">Afficher le mot de passe</string>
+    <string name="password_hide">Masquer le mot de passe</string>
+    <string name="password_sign_in">Se connecter</string>
+    <string name="profiles_title">Qui regarde ?</string>
+    <string name="profiles_other">Autre compte</string>
+    <string name="profiles_to_sign_in">À connecter</string>
+    <string name="pin_unlock_title">Saisissez le code PIN</string>
+    <string name="pin_create_title">Choisissez un code PIN</string>
+    <string name="pin_create_subtitle">Quatre chiffres, demandés à l\'ouverture de ce profil sur cette télévision.</string>
+    <string name="pin_confirm_title">Confirmez le code PIN</string>
+    <string name="pin_remove_title">Saisissez le code PIN actuel</string>
+    <string name="pin_remove_subtitle">Le profil s\'ouvrira ensuite sans code sur cette télévision.</string>
+    <string name="pin_wrong">Code incorrect. Réessayez.</string>
+    <string name="pin_mismatch">Les deux codes ne correspondent pas. Recommencez.</string>
+    <string name="pin_erase">Effacer</string>
+    <string name="change_server">Changer de serveur</string>
+</resources>

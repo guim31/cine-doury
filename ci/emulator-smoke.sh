@@ -10,11 +10,13 @@ activity="$package/fr.guim.cinedoury.tv.MainActivity"
 adb install -r "$apk"
 adb shell am start -W -n "$activity"
 sleep 10
-adb exec-out screencap -p > emulator-catalog.png
+adb exec-out screencap -p > emulator-start.png
 if adb shell dumpsys activity activities | grep -E 'ResumedActivity' | grep -q "$package"; then
   echo "$activity is resumed"
 else
-  adb logcat -d -t 300 | grep -E "AndroidRuntime|$package" || true
+  # The crash buffer holds the stack trace of an app that died at start.
+  adb logcat -d -b crash || true
+  adb logcat -d | grep -E "AndroidRuntime|FATAL|$package" | tail -n 80 || true
   echo "::error::$activity is not in front"
   exit 1
 fi

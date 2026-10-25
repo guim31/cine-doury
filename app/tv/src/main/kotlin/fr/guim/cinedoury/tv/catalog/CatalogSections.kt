@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -37,6 +38,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.tv.material3.Text
+import fr.guim.cinedoury.core.designsystem.component.Ambience
+import fr.guim.cinedoury.core.designsystem.component.AmbientBackdrop
 import fr.guim.cinedoury.core.designsystem.component.CineIcons
 import fr.guim.cinedoury.core.designsystem.component.GeneratedArtwork
 import fr.guim.cinedoury.core.designsystem.component.NavigationRail
@@ -47,6 +50,7 @@ import fr.guim.cinedoury.core.designsystem.component.RoundIconButton
 import fr.guim.cinedoury.core.designsystem.component.ThumbnailCard
 import fr.guim.cinedoury.core.designsystem.component.artworkColors
 import fr.guim.cinedoury.core.designsystem.component.readabilityScrims
+import fr.guim.cinedoury.core.designsystem.image.RemoteImage
 import fr.guim.cinedoury.core.designsystem.theme.CineMotion
 import fr.guim.cinedoury.core.designsystem.theme.CineSizes
 import fr.guim.cinedoury.core.designsystem.theme.CineSpacing
@@ -243,6 +247,7 @@ internal fun PostersSection() {
                     unwatchedCount = poster.unwatchedCount,
                     focus = focusFor("poster-$index"),
                     modifier = Modifier.testTag("poster-$index"),
+                    image = poster.blurHash?.let { hash -> { SampleImage(hash) } },
                 )
             }
         }
@@ -495,6 +500,68 @@ internal fun SpacingSection() {
                     )
                     Text(value, style = typography.body.tabular(), color = colors.text2)
                 }
+            }
+        }
+    }
+}
+
+/** A BlurHash drawn as if it were the image: what a poster shows while it loads. */
+@Composable
+private fun SampleImage(hash: String) {
+    RemoteImage(
+        source = { _, _ -> null },
+        blurHash = hash,
+        contentDescription = null,
+        modifier = Modifier.fillMaxSize(),
+    )
+}
+
+private val AmbientFrameHeight = CineSizes.posterNormal.height + CineSpacing.xxl * 2
+
+/**
+ * The ambient backdrop (`UI.md` § 3): a very blurred image of the focused element behind the
+ * screen. It follows the focus after 250 ms of rest, with a 300 ms crossfade; a generated card
+ * gives its gradient, a real image its BlurHash.
+ */
+@Composable
+internal fun AmbientSection() {
+    val generated = focusFor("ambient-0")
+    val withImage = focusFor("ambient-1")
+    val ambience =
+        if (withImage.isFocused) {
+            Ambience.of(SAMPLE_FILM, SAMPLE_HASH_TEAL)
+        } else {
+            Ambience.generated(SAMPLE_FILM_2)
+        }
+    Section(R.string.section_ambient, R.string.section_ambient_hint) {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(AmbientFrameHeight)
+                    .clip(SwatchShape)
+                    .testTag("ambient"),
+        ) {
+            AmbientBackdrop(ambience = ambience, modifier = Modifier.matchParentSize())
+            Row(
+                modifier = Modifier.padding(start = CineSpacing.xl, top = CineSpacing.l),
+                horizontalArrangement = Arrangement.spacedBy(CineSpacing.m),
+            ) {
+                PosterCard(
+                    title = SAMPLE_FILM_2,
+                    subtitle = SAMPLE_FILM_2_YEAR.toString(),
+                    onClick = {},
+                    focus = generated,
+                    modifier = Modifier.testTag("ambient-0"),
+                )
+                PosterCard(
+                    title = SAMPLE_FILM,
+                    subtitle = SAMPLE_FILM_YEAR.toString(),
+                    onClick = {},
+                    focus = withImage,
+                    modifier = Modifier.testTag("ambient-1"),
+                    image = { SampleImage(SAMPLE_HASH_TEAL) },
+                )
             }
         }
     }

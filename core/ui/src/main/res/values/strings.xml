@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="action_retry">Réessayer</string>
+    <string name="action_more_info">Plus d\'infos</string>
+    <string name="action_back">Retour</string>
+    <string name="error_unreachable_title">Le serveur ne répond pas.</string>
+    <string name="error_unreachable_message">Vérifiez qu\'il est allumé et que la télévision est sur le même réseau, puis réessayez.</string>
+    <string name="error_not_a_server_title">Aucun serveur Jellyfin à cette adresse.</string>
+    <string name="error_not_a_server_message">Vérifiez l\'adresse, puis réessayez.</string>
+    <string name="error_incompatible_title">Ce serveur Jellyfin est trop ancien.</string>
+    <string name="error_incompatible_message">Il est en version %1$s, et Ciné Doury demande la version %2$s ou plus récente. Mettez le serveur à jour, puis réessayez.</string>
+    <string name="error_credentials_title">Identifiant ou mot de passe refusé.</string>
+    <string name="error_credentials_message">Vérifiez-les, puis réessayez. Les majuscules comptent.</string>
+    <string name="error_code_expired_title">Ce code a expiré.</string>
+    <string name="error_code_expired_message">Demandez un nouveau code, puis saisissez-le sur votre téléphone.</string>
+    <string name="error_quick_connect_off_title">Quick Connect est désactivé sur ce serveur.</string>
+    <string name="error_quick_connect_off_message">Connectez-vous avec votre mot de passe, ou demandez à l\'administrateur du serveur de l\'activer.</string>
+    <string name="error_session_title">La session de ce profil a pris fin.</string>
+    <string name="error_session_message">Reconnectez-vous pour continuer.</string>
+    <string name="error_forbidden_title">Ce profil n\'y a pas accès.</string>
+    <string name="error_forbidden_message">Demandez à l\'administrateur du serveur, ou choisissez un autre profil.</string>
+    <string name="error_server_title">Le serveur a rencontré une erreur.</string>
+    <string name="error_server_message">Réessayez dans un instant. Si l\'erreur persiste, redémarrez le serveur.</string>
+    <string name="error_unexpected_title">Une erreur inattendue s\'est produite.</string>
+    <string name="error_unexpected_message">Réessayez. Le détail technique est dans « Plus d\'infos ».</string>
+    <string name="remote_connection">À distance</string>
+    <string name="brand_name" translatable="false">Ciné Doury</string>
+</resources>

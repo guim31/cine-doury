@@ -12,10 +12,10 @@
     <string name="section_type">Typographie</string>
     <string name="section_type_hint">Inter, embarquée. Échelle TV pour un écran 1080p vu à 3\u00A0m.</string>
     <string name="section_posters">Affiches</string>
-    <string name="section_posters_hint">Au focus, l\'affiche grandit de 1,08, prend un contour écarté de 2\u00A0dp et une ombre. Son titre n\'apparaît qu\'à ce moment.</string>
+    <string name="section_posters_hint">Au focus, l\'affiche grandit de 1,08 et prend un contour écarté de 2\u00A0dp, un halo et une ombre. Son titre n\'apparaît qu\'à ce moment, une seule fois\u00A0: sous une carte générée, seule l\'année s\'affiche.</string>
     <string name="section_poster_sizes">Tailles d\'affiche</string>
     <string name="section_thumbnails">Vignettes</string>
-    <string name="section_thumbnails_hint">En 16:9, pour «\u00A0Reprendre\u00A0», les épisodes et les chapitres. Elles grandissent de 1,05 au focus.</string>
+    <string name="section_thumbnails_hint">En 16:9, pour «\u00A0Reprendre\u00A0», les épisodes et les chapitres. Elles grandissent de 1,05 au focus\u00A0; sous une carte générée, seule la ligne secondaire s\'affiche.</string>
     <string name="section_buttons">Boutons</string>
     <string name="section_buttons_hint">Un seul bouton principal par écran. Les boutons secondaires sont ronds\u00A0; leur libellé apparaît au focus.</string>
     <string name="section_rail">Rail latéral</string>
@@ -82,4 +82,7 @@
     <string name="duration_ms">%1$d\u00A0ms</string>
     <string name="spacing_dp">%1$d\u00A0dp</string>
     <string name="metadata_pair">%1$s · %2$s</string>
+    <string name="section_ambient">Fond d\'ambiance</string>
+    <string name="section_ambient_hint">Un fond très flou tiré de l\'élément focalisé, assombri sous les voiles. Il le suit après 250\u00A0ms d\'arrêt, en fondu de 300\u00A0ms.</string>
+    <string name="startup_connecting">Connexion au serveur…</string>
 </resources>

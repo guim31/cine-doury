@@ -24,6 +24,12 @@ sealed class SourceException(message: String, cause: Throwable? = null) : Except
     class Incompatible(val serverVersion: String, val minimumVersion: String) :
         SourceException("Server version $serverVersion is older than $minimumVersion")
 
+    /** The server does not accept Quick Connect (disabled by its administrator). */
+    class QuickConnectDisabled : SourceException("Quick Connect is disabled on the server")
+
+    /** The Quick Connect request is no longer known to the server: a new code is needed. */
+    class QuickConnectExpired : SourceException("Quick Connect request expired")
+
     class Server(val status: Int) : SourceException("Server error $status")
 
     class Unexpected(cause: Throwable) : SourceException(cause.message ?: cause::class.simpleName.orEmpty(), cause)

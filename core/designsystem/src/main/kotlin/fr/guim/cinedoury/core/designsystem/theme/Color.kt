@@ -34,8 +34,15 @@ data class CineColors(
     val danger: Color,
     /** `succès`: confirmations. */
     val success: Color,
+    /** Veil behind a dialog. */
+    val dialogScrim: Color,
     /** Drop shadow of a focused element. */
     val shadow: Color,
+    /**
+     * Halo around a focused element: a soft light glow that shows the focus on a pure black
+     * background, where a shadow cannot (`UI.md` § 3).
+     */
+    val focusHalo: Color,
 )
 
 enum class ThemeVariant {
@@ -64,10 +71,12 @@ val DarkCineColors =
         progressTrack = Color.White.copy(alpha = 0.25f),
         danger = Color(0xFFE5484D),
         success = Color(0xFF46A758),
+        dialogScrim = Ink.copy(alpha = 0.82f),
         shadow = Color.Black,
+        focusHalo = Color.White.copy(alpha = 0.4f),
     )
 
-val OledCineColors = DarkCineColors.copy(background = Color.Black)
+val OledCineColors = DarkCineColors.copy(background = Color.Black, dialogScrim = Color.Black.copy(alpha = 0.82f))
 
 fun ThemeVariant.colors(): CineColors =
     when (this) {

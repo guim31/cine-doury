@@ -15,6 +15,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -42,7 +43,9 @@ internal val CardOutlineShape =
 
 /**
  * A 2:3 poster (`UI.md` § 3 and § 6). Its title and year show under it only while it has the
- * focus, unless [alwaysShowTitle]; the space is reserved so that nothing moves.
+ * focus, unless [alwaysShowTitle]; the space is reserved so that nothing moves. A generated card
+ * already shows the title: under it, only the [subtitle] appears, so that the title is never
+ * written twice.
  *
  * @param image the poster image; without it, a [GeneratedArtwork] stands in.
  * @param progress playback progress between 0 and 1, or null when not started.
@@ -59,6 +62,7 @@ fun PosterCard(
     unwatched: Boolean = false,
     unwatchedCount: Int? = null,
     alwaysShowTitle: Boolean = false,
+    focusRequester: FocusRequester? = null,
     focus: CineFocus = rememberCineFocus(),
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     image: (@Composable () -> Unit)? = null,
@@ -68,6 +72,7 @@ fun PosterCard(
             modifier =
                 Modifier
                     .size(size.dp)
+                    .withFocusRequester(focusRequester)
                     .cineFocusable(focus, CardShape, CineScale.POSTER, onClick, CardOutlineShape, interactionSource)
                     .background(CineTheme.colors.surface1),
         ) {
@@ -87,7 +92,7 @@ fun PosterCard(
             if (progress != null) CardProgressBar(progress, Modifier.align(Alignment.BottomStart))
         }
         CardCaption(
-            title = title,
+            title = title.takeIf { image != null },
             subtitle = subtitle,
             visible = alwaysShowTitle || focus.isFocused,
             modifier = Modifier.padding(top = CineSpacing.s),
@@ -96,8 +101,9 @@ fun PosterCard(
 }
 
 /**
- * A 16:9 thumbnail (`UI.md` § 6), for « Reprendre », episodes and chapters. Its title stays
- * visible: a still frame alone does not say what it is.
+ * A 16:9 thumbnail (`UI.md` § 6), for « Reprendre », episodes and chapters. Its caption stays
+ * visible: a still frame alone does not say what it is. A generated card already shows the title:
+ * under it, only the [subtitle] appears (episode, « Reprendre à … »).
  */
 @Composable
 fun ThumbnailCard(
@@ -106,6 +112,7 @@ fun ThumbnailCard(
     modifier: Modifier = Modifier,
     subtitle: String? = null,
     progress: Float? = null,
+    focusRequester: FocusRequester? = null,
     focus: CineFocus = rememberCineFocus(),
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     image: (@Composable () -> Unit)? = null,
@@ -115,6 +122,7 @@ fun ThumbnailCard(
             modifier =
                 Modifier
                     .size(CineSizes.thumbnail)
+                    .withFocusRequester(focusRequester)
                     .cineFocusable(
                         focus,
                         CardShape,
@@ -127,13 +135,22 @@ fun ThumbnailCard(
             if (image != null) image() else GeneratedArtwork(title)
             if (progress != null) CardProgressBar(progress, Modifier.align(Alignment.BottomStart))
         }
-        CardCaption(title, subtitle, visible = true, modifier = Modifier.padding(top = CineSpacing.s))
+        CardCaption(
+            title = title.takeIf { image != null },
+            subtitle = subtitle,
+            visible = true,
+            modifier = Modifier.padding(top = CineSpacing.s),
+        )
     }
 }
 
+/**
+ * Two lines under a card: the title, then the secondary line. Without a [title] (generated card),
+ * the secondary line moves up; both lines stay reserved so that a row keeps its height.
+ */
 @Composable
 private fun CardCaption(
-    title: String,
+    title: String?,
     subtitle: String?,
     visible: Boolean,
     modifier: Modifier = Modifier,
@@ -146,13 +163,15 @@ private fun CardCaption(
     val typography = CineTheme.typography
     val colors = CineTheme.colors
     Column(modifier = modifier.graphicsLayer { this.alpha = alpha }) {
-        Text(
-            text = title,
-            style = typography.caption,
-            color = colors.text,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+        if (title != null) {
+            Text(
+                text = title,
+                style = typography.caption,
+                color = colors.text,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
         Text(
             text = subtitle.orEmpty(),
             style = typography.caption.tabular(),
@@ -160,6 +179,10 @@ private fun CardCaption(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
+        if (title == null) {
+            // Keeps the height of the missing line.
+            Text(text = "", style = typography.caption, maxLines = 1)
+        }
     }
 }
 

@@ -3,6 +3,7 @@ package fr.guim.cinedoury.core.designsystem.theme
 import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.Easing
+import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 
@@ -40,6 +41,6 @@ object CineMotion {
         if (reduced) snap() else tween(PANEL_MILLIS, easing = Standard)
 
     /** Plain fade (still played with reduced motion). */
-    fun <T> fade(durationMillis: Int, delayMillis: Int = 0): AnimationSpec<T> =
+    fun <T> fade(durationMillis: Int, delayMillis: Int = 0): FiniteAnimationSpec<T> =
         tween(durationMillis, delayMillis = delayMillis, easing = Standard)
 }

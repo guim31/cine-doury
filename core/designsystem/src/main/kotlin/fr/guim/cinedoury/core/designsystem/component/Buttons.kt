@@ -37,6 +37,8 @@ private val PillShape = RoundedCornerShape(percent = 50)
 /**
  * The main action of a screen (`UI.md` § 1, principle 5): accent background, the only accent
  * button on the screen. It takes the focus when the screen opens.
+ *
+ * @param destructive a deletion: `danger` background instead of the accent (`UI.md` § 8).
  */
 @Composable
 fun PrimaryButton(
@@ -44,19 +46,27 @@ fun PrimaryButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     icon: ImageVector? = null,
+    destructive: Boolean = false,
     focusRequester: FocusRequester? = null,
     focus: CineFocus = rememberCineFocus(),
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
 ) {
     val colors = CineTheme.colors
     val pressed by interactionSource.collectIsPressedAsState()
+    val background =
+        when {
+            destructive -> colors.danger
+            pressed -> colors.accentPressed
+            else -> colors.accent
+        }
+    val content = if (destructive) colors.text else colors.onAccent
     Row(
         modifier =
             modifier
                 .height(CineSizes.buttonHeight)
                 .withFocusRequester(focusRequester)
                 .cineFocusable(focus, PillShape, CineScale.BUTTON, onClick, interactionSource = interactionSource)
-                .background(if (pressed) colors.accentPressed else colors.accent)
+                .background(background)
                 .padding(start = if (icon != null) CineSpacing.m else CineSpacing.l, end = CineSpacing.l),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(CineSpacing.xs),
@@ -65,11 +75,50 @@ fun PrimaryButton(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = colors.onAccent,
+                tint = content,
                 modifier = Modifier.size(CineSizes.icon),
             )
         }
-        Text(text = text, style = CineTheme.typography.label, color = colors.onAccent, maxLines = 1)
+        Text(text = text, style = CineTheme.typography.label, color = content, maxLines = 1)
+    }
+}
+
+/**
+ * A secondary action with a label: a pill on `surface-2` that turns light with the focus, like
+ * the round buttons. For the second choice of a screen (« Saisir une adresse », « Annuler »).
+ */
+@Composable
+fun SecondaryButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    icon: ImageVector? = null,
+    focusRequester: FocusRequester? = null,
+    focus: CineFocus = rememberCineFocus(),
+) {
+    val colors = CineTheme.colors
+    val focused = focus.isFocused
+    val content = if (focused) colors.background else colors.text
+    Row(
+        modifier =
+            modifier
+                .height(CineSizes.buttonHeight)
+                .withFocusRequester(focusRequester)
+                .cineFocusable(focus, PillShape, CineScale.BUTTON, onClick)
+                .background(if (focused) colors.text else colors.surface2)
+                .padding(start = if (icon != null) CineSpacing.m else CineSpacing.l, end = CineSpacing.l),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(CineSpacing.xs),
+    ) {
+        if (icon != null) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = content,
+                modifier = Modifier.size(CineSizes.icon),
+            )
+        }
+        Text(text = text, style = CineTheme.typography.label, color = content, maxLines = 1)
     }
 }
 
@@ -135,7 +184,7 @@ fun RoundIconButton(
 }
 
 /** Attaches [requester] to the focusable element itself, so that `requestFocus()` lands on it. */
-private fun Modifier.withFocusRequester(requester: FocusRequester?): Modifier =
+internal fun Modifier.withFocusRequester(requester: FocusRequester?): Modifier =
     if (requester == null) this else focusRequester(requester)
 
 /** Lays the element out at its own width but reports a zero width to its parent. */

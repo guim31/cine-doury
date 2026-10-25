@@ -1,0 +1,22 @@
+plugins {
+    alias(libs.plugins.cinedoury.android.library)
+    alias(libs.plugins.ksp)
+}
+
+android {
+    namespace = "fr.guim.cinedoury.core.data"
+}
+
+dependencies {
+    api(projects.core.source)
+    implementation(libs.androidx.room.runtime)
+    ksp(libs.androidx.room.compiler)
+    implementation(libs.androidx.datastore.preferences)
+    implementation(libs.koin.android)
+
+    testImplementation(testFixtures(projects.core.source))
+    testImplementation(libs.junit)
+    testImplementation(libs.kotlin.test)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.robolectric)
+}

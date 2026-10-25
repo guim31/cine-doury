@@ -26,13 +26,20 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
         with:
           cache-read-only: false
+          # Keeps the end of the log for the failure summary.
+          add-job-summary: never
       - name: Robolectric cache
         uses: actions/cache@v6
         with:
           path: ~/.m2/repository/org/robolectric
           key: robolectric-${{ hashFiles('gradle/libs.versions.toml') }}
       - name: Spotless, Detekt, Android Lint, unit tests, debug APK
-        run: ./gradlew check :app:tv:assembleDebug --continue
+        run: |
+          set -o pipefail
+          ./gradlew check :app:tv:assembleDebug --continue 2>&1 | tee gradle.log
+      - name: Failure summary
+        if: failure()
+        run: ci/failure-summary.sh gradle.log
       - name: Debug APK
         uses: actions/upload-artifact@v7
         with:
@@ -66,6 +73,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
         with:
           cache-read-only: false
+          # Keeps the end of the log for the failure summary.
+          add-job-summary: never
       - name: Robolectric cache
         uses: actions/cache@v6
         with:
@@ -83,26 +92,33 @@ jobs:
           fi
       - name: Verify against the references
         if: steps.mode.outputs.record != 'true'
-        run: ./gradlew :app:tv:verifyRoborazziDebug
+        run: |
+          set -o pipefail
+          ./gradlew :app:tv:verifyRoborazziDebug 2>&1 | tee gradle.log
       - name: Record the references
         if: steps.mode.outputs.record == 'true'
-        run: ./gradlew :app:tv:recordRoborazziDebug
+        run: |
+          set -o pipefail
+          ./gradlew :app:tv:recordRoborazziDebug 2>&1 | tee gradle.log
       - name: Commit the references
         if: steps.mode.outputs.record == 'true'
         env:
           HEAD_REF: ${{ github.head_ref }}
         run: |
-          mkdir -p docs/screenshots/j0
-          cp app/tv/src/test/screenshots/*.png docs/screenshots/j0/
+          mkdir -p docs/screenshots/j1
+          cp app/tv/src/test/screenshots/*.png docs/screenshots/j1/
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add app/tv/src/test/screenshots docs/screenshots/j0
+          git add app/tv/src/test/screenshots docs/screenshots/j1
           if git diff --cached --quiet; then
             echo "Screenshots unchanged."
           else
             git commit -m "chore: record reference screenshots"
             git push origin "HEAD:refs/heads/$HEAD_REF"
           fi
+      - name: Failure summary
+        if: failure()
+        run: ci/failure-summary.sh gradle.log
       - name: Screenshots and diffs
         if: always()
         uses: actions/upload-artifact@v7
@@ -133,6 +149,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
         with:
           cache-read-only: false
+          # Keeps the end of the log for the failure summary.
+          add-job-summary: never
       - name: ffmpeg
         run: sudo apt-get update -q && sudo apt-get install -y -q ffmpeg
       - name: Generate the test media
@@ -149,7 +167,12 @@ jobs:
       - name: Integration tests
         env:
           JELLYFIN_URL: http://localhost:8096
-        run: ./gradlew :source:jellyfin:integrationTest
+        run: |
+          set -o pipefail
+          ./gradlew :source:jellyfin:integrationTest 2>&1 | tee gradle.log
+      - name: Failure summary
+        if: failure()
+        run: ci/failure-summary.sh gradle.log
       - name: Reports
         if: always()
         uses: actions/upload-artifact@v7
@@ -189,5 +212,5 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: emulator-screenshot
-          path: emulator-catalog.png
+          path: emulator-start.png
           if-no-files-found: ignore

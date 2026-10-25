@@ -26,8 +26,11 @@ api() {
 }
 
 log "waiting for $BASE"
+# The server answers /System/Info/Public before it is ready (no version yet, then 503 on the
+# startup wizard): wait for a version.
 for _ in $(seq 1 90); do
-  curl -fsS "$BASE/System/Info/Public" > /dev/null 2>&1 && break
+  version="$(curl -fsS "$BASE/System/Info/Public" 2> /dev/null | jq -r '.Version // empty' 2> /dev/null || true)"
+  [ -n "$version" ] && break
   sleep 2
 done
 info="$(curl -fsS "$BASE/System/Info/Public")"
@@ -91,6 +94,24 @@ if ! api GET /Users | jq -e --arg n "$CHILD_USER" 'any(.[]; .Name == $n)' > /dev
     | .EnableCollectionManagement = false | .EnableSubtitleManagement = false
     | .MaxParentalRating = 10' <<< "$child")"
   api POST "/Users/$child_id/Policy" "$policy"
+fi
+
+# Public users (the profile picker lists them): Jellyfin 12 hides new users by default.
+for id in $(api GET /Users | jq -r '.[] | select(.Policy.IsHidden) | .Id'); do
+  log "user $id made public"
+  api POST "/Users/$id/Policy" "$(api GET "/Users/$id" | jq -c '.Policy | .IsHidden = false')"
+done
+
+# A picture for the administrator (the child profile keeps the initial on a coloured disc).
+admin_id="$(api GET /Users | jq -r --arg n "$ADMIN_USER" '.[] | select(.Name == $n) | .Id')"
+if [ "$(api GET "/Users/$admin_id" | jq -r '.PrimaryImageTag // empty')" = "" ] && command -v ffmpeg > /dev/null; then
+  log "picture of $ADMIN_USER"
+  avatar="$(mktemp --suffix=.png)"
+  ffmpeg -loglevel error -y -f lavfi -i "gradients=s=256x256:c0=0x2e6f8e:c1=0xf2c14e:seed=7" -frames:v 1 "$avatar"
+  # Jellyfin 12 takes the image base64-encoded in the body.
+  base64 -w0 "$avatar" | curl -fsS -X POST "$BASE/UserImage?userId=$admin_id" \
+    -H "Authorization: $AUTH, Token=\"$TOKEN\"" -H 'Content-Type: image/png' --data-binary @-
+  rm -f "$avatar"
 fi
 
 collection="Le Phare : la saga"
