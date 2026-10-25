@@ -234,6 +234,26 @@ class RemoteInputTest {
     }
 
     @Test
+    fun `profiles that arrive from the server take the focus from Other account`() {
+        var state by mutableStateOf(ProfilesState(emptyList(), loading = true))
+        show {
+            ProfilesScreen(
+                state,
+                avatarUrl = { null },
+                onChoose = {},
+                onOtherAccount = {},
+                onPassword = {},
+                onRetry = {},
+            )
+        }
+        compose.onNode(hasClickAction() and inside("profile-other")).assertIsFocused()
+
+        compose.runOnIdle { state = ProfilesState(J1Samples.profiles, loading = false) }
+        compose.waitForIdle()
+        compose.onNode(hasClickAction() and inside("profile-0")).assertIsFocused()
+    }
+
+    @Test
     fun `no profile listed - the screen says why and offers both ways to sign in`() {
         var quickConnect = false
         var password = false
