@@ -42,6 +42,7 @@ fun ListRow(
     value: String? = null,
     icon: ImageVector? = null,
     destructive: Boolean = false,
+    trailingIcon: ImageVector? = null,
     focusRequester: FocusRequester? = null,
     focus: CineFocus = rememberCineFocus(),
 ) {
@@ -102,6 +103,14 @@ fun ListRow(
                 overflow = TextOverflow.Ellipsis,
             )
         }
+        if (trailingIcon != null) {
+            Icon(
+                imageVector = trailingIcon,
+                contentDescription = null,
+                tint = if (focused) colors.background else colors.accent,
+                modifier = Modifier.size(CineSizes.icon),
+            )
+        }
     }
 }
 
@@ -121,7 +130,8 @@ fun ListSectionTitle(
 
 /**
  * A confirmation over the screen (`UI.md` § 8, « Action destructrice »): a `surface-2` box that
- * says exactly what will happen, « Annuler » with the initial focus, the action in `danger`.
+ * says exactly what will happen, « Annuler » with the initial focus, the action in `danger` (in the
+ * accent when it destroys nothing: « Quitter »).
  */
 @Composable
 fun ConfirmDialog(
@@ -135,6 +145,7 @@ fun ConfirmDialog(
     cancelFocusRequester: FocusRequester? = null,
     cancelFocus: CineFocus = rememberCineFocus(),
     confirmFocus: CineFocus = rememberCineFocus(),
+    destructive: Boolean = true,
 ) {
     val colors = CineTheme.colors
     Box(
@@ -164,7 +175,7 @@ fun ConfirmDialog(
                     focusRequester = cancelFocusRequester,
                     focus = cancelFocus,
                 )
-                PrimaryButton(text = confirmLabel, onClick = onConfirm, destructive = true, focus = confirmFocus)
+                PrimaryButton(text = confirmLabel, onClick = onConfirm, destructive = destructive, focus = confirmFocus)
             }
         }
     }

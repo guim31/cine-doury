@@ -37,6 +37,7 @@ dependencies {
     implementation(projects.core.ui)
     implementation(projects.feature.auth)
     implementation(projects.feature.home)
+    implementation(projects.feature.library)
     implementation(projects.feature.settings)
     implementation(projects.source.jellyfin)
     implementation(libs.koin.android)

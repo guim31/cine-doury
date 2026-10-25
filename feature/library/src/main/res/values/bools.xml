@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- « années 80 » in French, « 1980s » in English; « années 2000 » in both forms. -->
+    <bool name="decade_short">true</bool>
+</resources>

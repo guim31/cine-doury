@@ -1,12 +1,18 @@
 package fr.guim.cinedoury.core.designsystem.component
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Person
@@ -14,6 +20,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -37,6 +44,38 @@ object CineIcons {
     val Retry: ImageVector get() = Icons.Filled.Refresh
     val Info: ImageVector get() = Icons.Filled.Info
     val Warning: ImageVector get() = Icons.Filled.Warning
+    val Close: ImageVector get() = Icons.Filled.Close
+    val ListView: ImageVector get() = Icons.AutoMirrored.Filled.List
+    val Up: ImageVector get() = Icons.Filled.KeyboardArrowUp
+    val Down: ImageVector get() = Icons.Filled.KeyboardArrowDown
+    val Star: ImageVector get() = Icons.Filled.Star
+    val Edit: ImageVector get() = Icons.Filled.Edit
+    val Exit: ImageVector get() = Icons.AutoMirrored.Filled.ExitToApp
+
+    val Filter: ImageVector by lazy { icon("Filter", "M10,18h4v-2h-4v2zM3,6v2h18V6H3zm3,7h12v-2H6v2z") }
+
+    val Sort: ImageVector by lazy { icon("Sort", "M3,18h6v-2H3v2zM3,6v2h18V6H3zm0,7h12v-2H3v2z") }
+
+    /** A grid of posters. */
+    val GridView: ImageVector by lazy {
+        icon(
+            "GridView",
+            "M4,8h4V4H4v4zm6,12h4v-4h-4v4zm-6,0h4v-4H4v4zm0,-6h4v-4H4v4zm6,0h4v-4h-4v4zm6,-10v4h4V4h-4z" +
+                "m-6,4h4V4h-4v4zm6,6h4v-4h-4v4zm0,6h4v-4h-4v4z",
+        )
+    }
+
+    /** Landscape thumbnails. */
+    val ThumbnailView: ImageVector by lazy { icon("ThumbnailView", "M4,18h17v-6H4v6zM4,5v6h17V5H4z") }
+
+    /** A collection of films. */
+    val Collections: ImageVector by lazy {
+        icon(
+            "Collections",
+            "M4,6H2v14c0,1.1 0.9,2 2,2h14v-2H4V6zm16,-4H8c-1.1,0 -2,0.9 -2,2v12c0,1.1 0.9,2 2,2h12" +
+                "c1.1,0 2,-0.9 2,-2V4c0,-1.1 -0.9,-2 -2,-2zm0,14H8V4h12v12z",
+        )
+    }
 
     val Show: ImageVector by lazy {
         icon(

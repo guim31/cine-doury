@@ -4,6 +4,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.padding
@@ -77,18 +78,7 @@ fun PosterCard(
                     .background(CineTheme.colors.surface1),
         ) {
             if (image != null) image() else GeneratedArtwork(title, compact = size == PosterSize.Small)
-            when {
-                unwatchedCount != null && unwatchedCount > 0 -> {
-                    UnwatchedCountBadge(
-                        count = unwatchedCount,
-                        modifier = Modifier.align(Alignment.TopEnd).padding(CineSpacing.xs),
-                    )
-                }
-
-                unwatched -> {
-                    UnwatchedTriangle(Modifier.align(Alignment.TopEnd))
-                }
-            }
+            UnwatchedMark(unwatched, unwatchedCount)
             if (progress != null) CardProgressBar(progress, Modifier.align(Alignment.BottomStart))
         }
         CardCaption(
@@ -112,6 +102,8 @@ fun ThumbnailCard(
     modifier: Modifier = Modifier,
     subtitle: String? = null,
     progress: Float? = null,
+    unwatched: Boolean = false,
+    unwatchedCount: Int? = null,
     focusRequester: FocusRequester? = null,
     focus: CineFocus = rememberCineFocus(),
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
@@ -133,6 +125,7 @@ fun ThumbnailCard(
                     ).background(CineTheme.colors.surface1),
         ) {
             if (image != null) image() else GeneratedArtwork(title)
+            UnwatchedMark(unwatched, unwatchedCount)
             if (progress != null) CardProgressBar(progress, Modifier.align(Alignment.BottomStart))
         }
         CardCaption(
@@ -141,6 +134,26 @@ fun ThumbnailCard(
             visible = true,
             modifier = Modifier.padding(top = CineSpacing.s),
         )
+    }
+}
+
+/** The « non vu » mark of a card: the number of unwatched episodes, else the triangle. */
+@Composable
+internal fun BoxScope.UnwatchedMark(
+    unwatched: Boolean,
+    unwatchedCount: Int?,
+) {
+    when {
+        unwatchedCount != null && unwatchedCount > 0 -> {
+            UnwatchedCountBadge(
+                count = unwatchedCount,
+                modifier = Modifier.align(Alignment.TopEnd).padding(CineSpacing.xs),
+            )
+        }
+
+        unwatched -> {
+            UnwatchedTriangle(Modifier.align(Alignment.TopEnd))
+        }
     }
 }
 

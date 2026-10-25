@@ -75,8 +75,24 @@ ci/jellyfin/run-local.sh down
   ```
 - ktlint seul, sans Gradle : `java -jar ktlint-cli-1.8.0-all.jar -F "**/*.kt" "**/*.kts" "!**/build/**"` (jar sur Maven Central).
 - Detekt seul : `java -jar detekt-cli-1.23.8-all.jar --config config/detekt/detekt.yml --build-upon-default-config --input core,source,feature,app --excludes "**/build/**"`.
-- Médias de test : `ci/jellyfin/generate-media.sh DOSSIER` (9 s). Amorçage : `ci/jellyfin/bootstrap.sh URL`.
+- Médias de test : `ci/jellyfin/generate-media.sh DOSSIER` (20 s, 30 Mo). Amorçage : `ci/jellyfin/bootstrap.sh URL` (rejouable : il ne refait que ce qui manque).
+- Jeu de test du J2 : 45 films dans « Films » (A–Z, 11 genres, 8 décennies, 4 studios, 7 personnes, 2 collections), 3 séries, « Spectacles » exclue de l'accueil de `admin`, un historique (vus, en cours, favoris) posé par `bootstrap.sh`. Les tests d'intégration en dépendent : changer `generate-media.sh` oblige à revoir `JellyfinBrowseIntegrationTest`.
+- Schéma Room : exporté dans `core/data/schemas/` par KSP à chaque compilation ; la CI échoue s'il diffère de ce qui est versionné. Sans Gradle 9 en session, le projet jetable (voir plus haut) peut compiler le paquet `core/data/.../db` sur la JVM (Room KMP, `room-runtime` + `room-compiler` en KSP, `sqlite-bundled`) et produire le JSON.
 - OpenAPI : `curl http://localhost:8096/api-docs/openapi.json | python3 -m json.tool --indent 2 > docs/api/jellyfin-openapi-12.3.json`. La CI vérifie qu'il correspond au serveur (descriptions exclues).
+
+## Performances (J2)
+
+Ce qui compte pour garder 60 images/s au défilement (à mesurer sur la Shield au J8) :
+- des **clés stables** et un `contentType` dans chaque `LazyRow`/`LazyColumn`/`LazyVerticalGrid` ;
+- des états **immuables** (`@Immutable`, `data class`) recréés seulement quand ils changent : le
+  cache Room passe par `distinctUntilChanged()`, et l'avatar du rail est calculé une fois ;
+- aucune lambda neuve par composition vers une carte : `rememberArt(image, sources)` mémorise le
+  contenu d'image d'une carte ;
+- l'animation du focus est lue au dessin (`graphicsLayer`, `drawWithCache`), jamais en composition ;
+- un `Crossfade` indexé par une clé stable, pas par une valeur qui porte des lambdas ;
+- les pages de la grille arrivent dans un `PagedItems` immuable (une `Map` de pages, pas une liste
+  recopiée) ; les cases non lues sont des squelettes de même taille : aucune remise en page ;
+- les premières images de la rangée suivante sont préchargées (`PrefetchImages`).
 
 ## Pièges
 
@@ -111,3 +127,14 @@ ci/jellyfin/run-local.sh down
 - Les tailles se pensent en **dp sur un écran de 960 × 540 dp** (1080p en xhdpi) : un formulaire fait 400 à 560 dp de large, pas 1 000.
 - `Crossfade` veut une `FiniteAnimationSpec<Float>` : `CineMotion.fade<Float>(…)`. `Paint.asFrameworkPaint()` est déprécié : dessiner un `android.graphics.Paint` sur `nativeCanvas`.
 - `Modifier.focusRequester` posé sur une carte du design system atterrit sur son conteneur : passer le paramètre `focusRequester` des cartes et boutons.
+- **Fournisseurs en ligne de Jellyfin 12** : `EnableInternetProviders: false` ne suffit pas. Sans `TypeOptions`, le serveur interroge quand même TMDb et OMDb (en CI, où il a Internet : étiquettes « kite », « christmas »… sur les films dont le titre existe). `bootstrap.sh` pose des `TypeOptions` aux listes de fournisseurs vides.
+- **Durée d'un média** : Jellyfin ignore le `<runtime>` d'un `.nfo` (et `lockdata`, `LockedFields`) et garde la durée lue par ffprobe. Les films de test sont donc de vrais fichiers longs : une couleur fixe à une image toutes les 10 s pèse quelques Ko même en 4K (`generate-media.sh`, `clip`).
+- `/UserItems/Resume` renvoie aussi les saisons et séries entamées : `mediaTypes=Video` pour ne garder que films et épisodes.
+- `/UserViews` cache les bibliothèques de `MyMediaExcludes` et suit l'ordre de `OrderedViews` ; `includeHidden=true` les rend toutes, dans le même ordre. Il ajoute une vue « Collections » (`boxsets`) dès qu'une collection existe.
+- `SortName` de Jellyfin : minuscules, sans accents ni ponctuation, nombres sur 10 chiffres (« 0000000002 soleils ») ; `nameLessThan` compare sur lui sans tenir compte de la casse. Le nombre de titres avant une lettre (`count` avec `titleBelow`) est l'index du saut A–Z ; les titres à chiffre précèdent « A ».
+- `/Items` : `genres`, `tags`, `officialRatings`… acceptent plusieurs valeurs par clé répétée (ce que fait le SDK), pas par virgule ; les valeurs d'un même filtre s'additionnent (OU), les filtres se combinent (ET). `minWidth`/`maxWidth` filtrent la résolution, `audioLanguages`/`subtitleLanguages` les langues (codes ISO 639-2). Rien pour le HDR ni le format audio.
+- Regrouper les films par collection : `recursive=true&includeItemTypes=Movie&collapseBoxSetItems=true` (sans `recursive`, `collapseBoxSetItems` est sans effet sous une bibliothèque).
+- Le SDK sérialise les `DateTime` (`LocalDateTime`) dans le fuseau de l'appareil : convertir un `Instant` par `atZone(ZoneId.systemDefault())`.
+- `BringIntoViewSpec` (pivot du défilement) est expérimental sur Android et `scrollAnimationSpec` y est déprécié : ne surcharger que `calculateScrollDistance` (`FocusPivot`). `Modifier.focusRestorer(fallback)` prend désormais un `FocusRequester`, plus une lambda.
+- Les clés de `Crossfade` : sa cible est comparée par égalité ; une valeur qui porte des lambdas (recréées à chaque composition) relance le fondu à chaque image. Fondre sur une clé stable (identifiant) et retrouver la valeur à côté (`FeaturedBanner`).
+- **Android Lint et Compose** : `Locale.getDefault()` dans une fonction `@Composable` est une erreur (`NonObservableLocale`) : lire `LocalConfiguration.current.locales[0]`. Construire un `FocusRequester()` en composition hors `remember` aussi (`RememberInComposition`), même dans un `getOrPut` : passer par une fonction non composable.

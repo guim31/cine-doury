@@ -8,6 +8,8 @@ import fr.guim.cinedoury.core.data.ProfileRepository
 import fr.guim.cinedoury.core.data.ServerRepository
 import fr.guim.cinedoury.core.data.SessionManager
 import fr.guim.cinedoury.core.data.db.CineDatabase
+import fr.guim.cinedoury.core.data.home.HomeRepository
+import fr.guim.cinedoury.core.data.library.LibraryStateRepository
 import fr.guim.cinedoury.core.data.prefs.AppPreferences
 import fr.guim.cinedoury.core.data.security.KeystoreTokenCipher
 import fr.guim.cinedoury.core.data.security.TokenCipher
@@ -21,6 +23,10 @@ val dataModule =
         single { Room.databaseBuilder(androidContext(), CineDatabase::class.java, CineDatabase.NAME).build() }
         single { get<CineDatabase>().servers() }
         single { get<CineDatabase>().profiles() }
+        single { get<CineDatabase>().homeCache() }
+        single { get<CineDatabase>().preferences() }
+        single { HomeRepository(get(), get()) }
+        single { LibraryStateRepository(get()) }
         single<TokenCipher> { KeystoreTokenCipher() }
         single {
             AppPreferences(
@@ -31,5 +37,8 @@ val dataModule =
         single { ServerRepository(get()) }
         single { ProfileRepository(get(), get()) }
         single { AddressResolver(get()) }
-        single { SessionManager(get(), get(), get(), get(), get()) }
+        single {
+            val home = get<HomeRepository>()
+            SessionManager(get(), get(), get(), get(), get(), forgetCache = home::clear)
+        }
     }

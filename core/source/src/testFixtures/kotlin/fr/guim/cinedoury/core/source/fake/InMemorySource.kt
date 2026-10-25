@@ -1,7 +1,11 @@
 package fr.guim.cinedoury.core.source.fake
 
+import fr.guim.cinedoury.core.model.FilterOptions
+import fr.guim.cinedoury.core.model.HomeExclusions
 import fr.guim.cinedoury.core.model.ImageRef
 import fr.guim.cinedoury.core.model.ItemId
+import fr.guim.cinedoury.core.model.ItemKind
+import fr.guim.cinedoury.core.model.ItemQuery
 import fr.guim.cinedoury.core.model.Library
 import fr.guim.cinedoury.core.model.LibraryId
 import fr.guim.cinedoury.core.model.MediaItem
@@ -17,6 +21,7 @@ import fr.guim.cinedoury.core.source.ServerAddress
 import fr.guim.cinedoury.core.source.Session
 import fr.guim.cinedoury.core.source.SourceConnector
 import fr.guim.cinedoury.core.source.SourceException
+import java.time.Instant
 
 /**
  * A source held in memory, for screen and logic tests: the screens are tested against it, never
@@ -26,6 +31,7 @@ import fr.guim.cinedoury.core.source.SourceException
  * [hiddenUsers].
  * @param serverAt the server that answers at an address, to simulate another server on the
  * same address.
+ * @param nextUp what « À suivre » gives: the fake does not follow series.
  */
 class InMemorySource(
     private val server: ServerInfo = ServerInfo(id = "in-memory", name = "En mémoire", version = "12.3.0"),
@@ -34,6 +40,8 @@ class InMemorySource(
     private val contents: Map<LibraryId, List<MediaItem>> = emptyMap(),
     private val hiddenUsers: Set<String> = emptySet(),
     private val serverAt: (ServerAddress) -> ServerInfo = { server },
+    private val exclusions: HomeExclusions = HomeExclusions(),
+    private val nextUp: Map<LibraryId, List<MediaItem>> = emptyMap(),
 ) : SourceConnector {
     private val items: Map<ItemId, MediaItem> = contents.values.flatten().associateBy { it.id }
 
@@ -144,15 +152,83 @@ class InMemorySource(
             return libraries
         }
 
-        override suspend fun items(library: LibraryId, page: PageRequest): Page<MediaItem> {
+        override suspend fun homeExclusions(): HomeExclusions {
             checkSession()
-            val all = contents[library] ?: throw SourceException.NotFound("library ${library.value}")
-            val sorted = all.sortedBy { (it.sortTitle ?: it.title).lowercase() }
+            return exclusions
+        }
+
+        override suspend fun items(
+            query: ItemQuery,
+            page: PageRequest,
+        ): Page<MediaItem> {
+            val all = run(query)
             return Page(
-                items = sorted.drop(page.startIndex).take(page.limit),
+                items = all.drop(page.startIndex).take(page.limit),
                 startIndex = page.startIndex,
-                totalCount = sorted.size,
+                totalCount = all.size,
             )
+        }
+
+        override suspend fun count(query: ItemQuery): Int = run(query).size
+
+        /** The items of [query]: filters on what a [MediaItem] carries, then the sort. */
+        private fun run(query: ItemQuery): List<MediaItem> {
+            val matching =
+                pool(query.library)
+                    .filter { query.kinds.isEmpty() || it.kind in query.kinds }
+                    .filter { InMemoryQueries.matches(it, query.filters) }
+                    .filter { item ->
+                        query.releasedBefore?.let { (item.premiereDate ?: return@filter false) <= it }
+                            ?: true
+                    }
+            val sorted = InMemoryQueries.sort(matching, query.sort)
+            return query.titleBelow?.let { below ->
+                sorted.filter { InMemoryQueries.sortKey(it) < below.lowercase() }
+            } ?: sorted
+        }
+
+        override suspend fun resume(
+            library: LibraryId?,
+            limit: Int,
+        ): List<MediaItem> =
+            pool(library)
+                .filter { item -> item.userData?.let { !it.played && it.playbackPosition.isPositive() } == true }
+                .sortedByDescending { it.userData?.lastPlayed ?: Instant.EPOCH }
+                .take(limit)
+
+        override suspend fun nextUp(
+            library: LibraryId?,
+            since: Instant?,
+            limit: Int,
+        ): List<MediaItem> {
+            checkSession()
+            val candidates = library?.let { nextUp[it].orEmpty() } ?: nextUp.values.flatten()
+            return candidates
+                .filter { item -> since == null || (item.userData?.lastPlayed ?: Instant.EPOCH) >= since }
+                .take(limit)
+        }
+
+        override suspend fun latest(
+            library: LibraryId,
+            limit: Int,
+        ): List<MediaItem> = pool(library).sortedByDescending { it.dateAdded ?: Instant.EPOCH }.take(limit)
+
+        override suspend fun filterOptions(
+            library: LibraryId,
+            kinds: Set<ItemKind>,
+        ): FilterOptions {
+            val items = pool(library).filter { kinds.isEmpty() || it.kind in kinds }
+            return FilterOptions(
+                genres = items.flatMap { it.genres }.distinct().sorted(),
+                years = items.mapNotNull { it.year }.distinct().sorted(),
+                officialRatings = items.mapNotNull { it.officialRating }.distinct().sorted(),
+            )
+        }
+
+        private fun pool(library: LibraryId?): List<MediaItem> {
+            checkSession()
+            return library?.let { contents[it] ?: throw SourceException.NotFound("library ${it.value}") }
+                ?: contents.values.flatten()
         }
 
         override suspend fun item(id: ItemId): MediaItem {

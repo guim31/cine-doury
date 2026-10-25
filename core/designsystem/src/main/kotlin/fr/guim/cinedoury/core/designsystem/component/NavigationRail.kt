@@ -24,6 +24,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -41,10 +43,15 @@ import fr.guim.cinedoury.core.designsystem.theme.CineSizes
 import fr.guim.cinedoury.core.designsystem.theme.CineSpacing
 import fr.guim.cinedoury.core.designsystem.theme.CineTheme
 
+/**
+ * An entry of the rail. [avatar] stands in for the icon (the profile picture), drawn at the size of
+ * an icon.
+ */
 @Immutable
 data class RailDestination(
     val icon: ImageVector,
     val label: String,
+    val avatar: (@Composable () -> Unit)? = null,
 )
 
 private val RailItemShape = RoundedCornerShape(percent = 50)
@@ -59,6 +66,8 @@ private const val RAIL_SCRIM_ALPHA = 0.72f
  * @param expanded forces a state, for specimens; null lets the focus decide.
  * @param previewFocusedIndex draws that destination as focused and the rail open, for previews
  * and screenshots ([CineFocus.preview]).
+ * @param focusRequester attached to the selected destination: the screen gives the rail the focus
+ * through it (« Retour » on the home).
  */
 @Composable
 fun NavigationRail(
@@ -69,8 +78,11 @@ fun NavigationRail(
     bottomDestinations: List<RailDestination> = emptyList(),
     expanded: Boolean? = null,
     previewFocusedIndex: Int? = null,
+    focusRequester: FocusRequester? = null,
 ) {
     var hasFocus by remember { mutableStateOf(false) }
+    // Entering the rail lands on the entry focused last, else on the selected one.
+    val selected = focusRequester ?: remember { FocusRequester() }
     val open = expanded ?: (hasFocus || previewFocusedIndex != null)
     val expansion by animateFloatAsState(
         targetValue = if (open) 1f else 0f,
@@ -105,6 +117,7 @@ fun NavigationRail(
                         )
                     }
                 }.onFocusChanged { hasFocus = it.hasFocus }
+                .focusRestorer(selected)
                 .focusGroup()
                 .padding(vertical = CineSpacing.safeVertical + CineSpacing.m, horizontal = CineSpacing.xs),
         verticalArrangement = Arrangement.spacedBy(CineSpacing.xs),
@@ -116,6 +129,7 @@ fun NavigationRail(
                 labelAlpha = expansion,
                 onClick = { onSelect(index) },
                 preview = index == previewFocusedIndex,
+                focusRequester = selected.takeIf { index == selectedIndex },
             )
         }
         Spacer(Modifier.weight(1f))
@@ -127,6 +141,7 @@ fun NavigationRail(
                 labelAlpha = expansion,
                 onClick = { onSelect(index) },
                 preview = index == previewFocusedIndex,
+                focusRequester = selected.takeIf { index == selectedIndex },
             )
         }
     }
@@ -139,6 +154,7 @@ private fun RailItem(
     labelAlpha: Float,
     onClick: () -> Unit,
     preview: Boolean,
+    focusRequester: FocusRequester?,
 ) {
     val colors = CineTheme.colors
     val focus = if (preview) remember { CineFocus.preview() } else rememberCineFocus()
@@ -154,18 +170,24 @@ private fun RailItem(
             Modifier
                 .fillMaxWidth()
                 .height(CineSizes.railItemHeight)
+                .withFocusRequester(focusRequester)
                 .cineFocusable(focus, RailItemShape, CineScale.BUTTON, onClick)
                 .background(if (focused) colors.text else Color.Transparent)
                 .padding(horizontal = CineSpacing.s),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(CineSpacing.s),
     ) {
-        Icon(
-            imageVector = destination.icon,
-            contentDescription = destination.label,
-            tint = content,
-            modifier = Modifier.size(CineSizes.icon),
-        )
+        val avatar = destination.avatar
+        if (avatar != null) {
+            Box(Modifier.size(CineSizes.icon), contentAlignment = Alignment.Center) { avatar() }
+        } else {
+            Icon(
+                imageVector = destination.icon,
+                contentDescription = destination.label,
+                tint = content,
+                modifier = Modifier.size(CineSizes.icon),
+            )
+        }
         Box(Modifier.graphicsLayer { alpha = labelAlpha }) {
             Text(
                 text = destination.label,

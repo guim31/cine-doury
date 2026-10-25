@@ -18,11 +18,15 @@ complexity:
   CyclomaticComplexMethod:
     # A `when` that dispatches a route or an error to its screen is one decision, not sixteen.
     ignoreSimpleWhenEntries: true
+    # A screen lays out its states; splitting it would only scatter the layout.
+    ignoreAnnotated: ['Composable']
   LongMethod:
     ignoreAnnotated: ['Composable']
   TooManyFunctions:
     ignorePrivate: true
     thresholdInFiles: 20
+    # The actions a screen asks of its view model: one per gesture.
+    thresholdInInterfaces: 15
     # A test class has one function per case; a fake implements a whole interface.
     excludes: ['**/test/**', '**/integrationTest/**', '**/testFixtures/**']
 

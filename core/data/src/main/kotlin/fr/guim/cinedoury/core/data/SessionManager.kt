@@ -54,6 +54,8 @@ class SessionManager(
     private val profiles: ProfileRepository,
     private val preferences: AppPreferences,
     private val resolver: AddressResolver,
+    /** Forgets what is cached for a user signed out, or (null user) for a forgotten server. */
+    private val forgetCache: suspend (serverId: String, userId: String?) -> Unit = { _, _ -> },
 ) {
     private val currentConnection = MutableStateFlow<Connection?>(null)
     private val currentSession = MutableStateFlow<ActiveSession?>(null)
@@ -187,6 +189,7 @@ class SessionManager(
             profiles.session(profile, connection.address)?.let { endQuietly(it) }
         }
         profiles.signOut(profile)
+        forgetCache(profile.serverId, profile.user.id.value)
         if (currentSession.value
                 ?.profile
                 ?.user
@@ -200,6 +203,7 @@ class SessionManager(
     suspend fun sessionRejected() {
         val active = currentSession.value ?: return
         profiles.signOut(active.profile)
+        forgetCache(active.profile.serverId, active.profile.user.id.value)
         currentSession.value = null
     }
 
@@ -210,6 +214,7 @@ class SessionManager(
             profiles.session(profile, connection.address)?.let { endQuietly(it) }
         }
         profiles.deleteAll(connection.server.id)
+        forgetCache(connection.server.id, null)
         servers.delete(connection.server.id)
         preferences.setLastServer(null)
         currentSession.value = null

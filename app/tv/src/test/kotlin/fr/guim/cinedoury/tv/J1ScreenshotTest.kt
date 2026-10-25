@@ -7,7 +7,6 @@ import com.github.takahirom.roborazzi.captureRoboImage
 import fr.guim.cinedoury.core.data.ConnectionMode
 import fr.guim.cinedoury.core.data.Profile
 import fr.guim.cinedoury.core.designsystem.component.LocalPreviewFocus
-import fr.guim.cinedoury.core.designsystem.image.ImageSource
 import fr.guim.cinedoury.core.designsystem.theme.CineTheme
 import fr.guim.cinedoury.core.designsystem.theme.ThemeVariant
 import fr.guim.cinedoury.core.source.SourceException
@@ -29,9 +28,6 @@ import fr.guim.cinedoury.feature.auth.ServerSearchScreen
 import fr.guim.cinedoury.feature.auth.ServerSearchState
 import fr.guim.cinedoury.feature.auth.UnreachableScreen
 import fr.guim.cinedoury.feature.auth.WelcomeScreen
-import fr.guim.cinedoury.feature.home.HomeScreen
-import fr.guim.cinedoury.feature.home.HomeState
-import fr.guim.cinedoury.feature.home.PREVIEW_LIBRARY
 import fr.guim.cinedoury.feature.settings.PREVIEW_PIN_ROW
 import fr.guim.cinedoury.feature.settings.SettingsNavigation
 import fr.guim.cinedoury.feature.settings.SettingsScreen
@@ -55,8 +51,6 @@ class J1ScreenshotTest(
 ) {
     @get:Rule
     val compose = createTvComposeRule()
-
-    private val noImage = { _: Any -> ImageSource { _, _ -> null } }
 
     @Test
     fun welcome() = shoot("20-premier-lancement", AuthPreview.START) { WelcomeScreen(onStart = {}) }
@@ -142,12 +136,6 @@ class J1ScreenshotTest(
         }
 
     @Test
-    fun home() =
-        shoot("32-accueil-provisoire", PREVIEW_LIBRARY) {
-            HomeScreen(HomeState("Camille", remote = true, libraries = J1Samples.libraries), noImage, {}, {}, {})
-        }
-
-    @Test
     fun settings() = shoot("33-reglages", PREVIEW_PIN_ROW) { Settings() }
 
     @Test
@@ -189,6 +177,8 @@ class J1ScreenshotTest(
 }
 
 internal object NoNavigation : SettingsNavigation {
+    override fun customizeHome() = Unit
+
     override fun pin(
         profile: Profile,
         remove: Boolean,

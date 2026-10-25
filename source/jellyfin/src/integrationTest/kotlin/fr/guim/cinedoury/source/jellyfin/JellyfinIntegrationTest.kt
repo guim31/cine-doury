@@ -84,31 +84,34 @@ class JellyfinIntegrationTest {
     fun `lists the libraries`() =
         runTest {
             val libraries = library().libraries()
-            val byKind = libraries.associateBy { it.kind }
-            assertEquals("Films", byKind[LibraryKind.Movies]?.name)
-            assertEquals("Séries", byKind[LibraryKind.Shows]?.name)
+            val kinds = libraries.associate { it.name to it.kind }
+            assertEquals(LibraryKind.Movies, kinds["Films"])
+            assertEquals(LibraryKind.Shows, kinds["Séries"])
         }
 
     @Test
     fun `pages through the films, collection members included`() =
         runTest {
             val source = library()
-            val films = source.libraries().single { it.kind == LibraryKind.Movies }
+            val films = source.films()
 
             val first = source.items(films.id, PageRequest(limit = 3))
-            assertEquals(4, first.totalCount)
-            assertEquals(3, first.items.size)
-            val rest = source.items(films.id, PageRequest(startIndex = assertNotNull(first.nextStartIndex), limit = 3))
-            val titles = (first.items + rest.items).map { it.title }
-            assertEquals(listOf("Double jeu", "Le Phare", "Nuit polaire", "Retour au phare"), titles)
-            assertTrue((first.items + rest.items).all { it.kind == ItemKind.Movie })
+            assertEquals(FILMS, first.totalCount)
+            assertEquals(listOf("2 Soleils", "Après la pluie", "Bleu acier"), first.items.map { it.title })
+            val second =
+                source.items(
+                    films.id,
+                    PageRequest(startIndex = assertNotNull(first.nextStartIndex), limit = 3),
+                )
+            assertEquals(listOf("Chambre noire", "Double jeu", "Échappée belle"), second.items.map { it.title })
+            assertTrue((first.items + second.items).all { it.kind == ItemKind.Movie })
         }
 
     @Test
     fun `reads a film with its tracks`() =
         runTest {
             val source = library()
-            val films = source.libraries().single { it.kind == LibraryKind.Movies }
+            val films = source.films()
             val summary = source.items(films.id).items.single { it.title == "Nuit polaire" }
 
             val film = source.item(summary.id)
@@ -128,7 +131,7 @@ class JellyfinIntegrationTest {
     fun `reads both versions of a film`() =
         runTest {
             val source = library()
-            val films = source.libraries().single { it.kind == LibraryKind.Movies }
+            val films = source.films()
             val summary = source.items(films.id).items.single { it.title == "Double jeu" }
 
             val film = source.item(summary.id)
@@ -140,11 +143,11 @@ class JellyfinIntegrationTest {
     fun `reads the series`() =
         runTest {
             val source = library()
-            val shows = source.libraries().single { it.kind == LibraryKind.Shows }
+            val shows = source.libraries().single { it.name == "Séries" }
             val series = source.items(shows.id).items
-            assertEquals(listOf("Les Marées", "Une saison"), series.map { it.title })
+            assertEquals(listOf("Brume", "Les Marées", "Une saison"), series.map { it.title })
             assertTrue(series.all { it.kind == ItemKind.Series })
-            assertEquals(2, series.first().childCount)
+            assertEquals(2, series.single { it.title == "Les Marées" }.childCount)
         }
 
     @Test
@@ -213,7 +216,7 @@ class JellyfinIntegrationTest {
     fun `serves a poster at the asked size`() =
         runTest {
             val source = library()
-            val films = source.libraries().single { it.kind == LibraryKind.Movies }
+            val films = source.films()
             val film = source.items(films.id).items.single { it.title == "Nuit polaire" }
             val poster = assertNotNull(film.images.primary)
             assertNotNull(poster.blurHash, "Jellyfin gives a BlurHash for each image")
@@ -228,6 +231,8 @@ class JellyfinIntegrationTest {
                     .startsWith("image/"),
             )
         }
+
+    private suspend fun LibrarySource.films() = libraries().single { it.name == "Films" }
 
     private fun get(url: String): HttpResponse<ByteArray> =
         http.send(HttpRequest.newBuilder(URI(url)).GET().build(), HttpResponse.BodyHandlers.ofByteArray())
@@ -247,4 +252,9 @@ class JellyfinIntegrationTest {
                 .build(),
             HttpResponse.BodyHandlers.ofString(),
         )
+
+    private companion object {
+        /** The films of generate-media.sh in « Films ». */
+        const val FILMS = 45
+    }
 }

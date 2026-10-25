@@ -1,5 +1,6 @@
 package fr.guim.cinedoury.core.data.db
 
+import androidx.room.AutoMigration
 import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Database
@@ -7,18 +8,40 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.RoomDatabase
+import androidx.room.TypeConverters
 import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
 
 /**
- * The local store (`SPEC.md` § 4.7). Servers and profiles only at J1; the library cache joins it
- * with J2. Tokens are stored encrypted by a key of the Android Keystore, PINs as salted hashes.
+ * The local store (`SPEC.md` § 4.7 and § 4.9): servers and profiles (J1), the cache of the home and
+ * the home and library preferences (J2). Tokens are stored encrypted by a key of the Android
+ * Keystore, PINs as salted hashes. The schema of each version is exported to `core/data/schemas/`,
+ * and every migration is tested from it (`CineDatabaseMigrationTest`).
  */
-@Database(entities = [ServerEntity::class, ProfileEntity::class], version = 1, exportSchema = false)
+@Database(
+    entities = [
+        ServerEntity::class,
+        ProfileEntity::class,
+        CachedItemEntity::class,
+        HomeRowItemEntity::class,
+        CachedLibraryEntity::class,
+        HomeRowConfigEntity::class,
+        LibraryStateEntity::class,
+        RailHiddenEntity::class,
+    ],
+    version = 2,
+    exportSchema = true,
+    autoMigrations = [AutoMigration(from = 1, to = 2)],
+)
+@TypeConverters(Converters::class)
 abstract class CineDatabase : RoomDatabase() {
     abstract fun servers(): ServerDao
 
     abstract fun profiles(): ProfileDao
+
+    abstract fun homeCache(): HomeCacheDao
+
+    abstract fun preferences(): PreferencesDao
 
     companion object {
         const val NAME = "cine-doury.db"

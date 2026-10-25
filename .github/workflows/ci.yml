@@ -37,6 +37,13 @@ jobs:
         run: |
           set -o pipefail
           ./gradlew check :app:tv:assembleDebug --continue 2>&1 | tee gradle.log
+      - name: Room schemas are up to date
+        run: |
+          if [ -n "$(git status --porcelain core/data/schemas)" ]; then
+            git status --porcelain core/data/schemas
+            echo "::error::core/data/schemas differs from the entities: commit the exported schema"
+            exit 1
+          fi
       - name: Failure summary
         if: failure()
         run: ci/failure-summary.sh gradle.log
@@ -105,11 +112,11 @@ jobs:
         env:
           HEAD_REF: ${{ github.head_ref }}
         run: |
-          mkdir -p docs/screenshots/j1
-          cp app/tv/src/test/screenshots/*.png docs/screenshots/j1/
+          mkdir -p docs/screenshots/j2
+          cp app/tv/src/test/screenshots/*.png docs/screenshots/j2/
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add app/tv/src/test/screenshots docs/screenshots/j1
+          git add app/tv/src/test/screenshots docs/screenshots/j2
           if git diff --cached --quiet; then
             echo "Screenshots unchanged."
           else

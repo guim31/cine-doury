@@ -8,6 +8,8 @@ import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import fr.guim.cinedoury.core.data.Profile
 import fr.guim.cinedoury.core.data.SavedServer
+import fr.guim.cinedoury.core.model.LibraryId
+import fr.guim.cinedoury.core.model.MediaItem
 import fr.guim.cinedoury.core.source.SourceException
 import fr.guim.cinedoury.feature.auth.AddressMode
 import fr.guim.cinedoury.feature.auth.PinPurpose
@@ -45,6 +47,24 @@ sealed interface Route {
     ) : Route
 
     data object Home : Route
+
+    data class Library(
+        val id: LibraryId,
+    ) : Route
+
+    data object HomeSettings : Route
+
+    data object Search : Route
+
+    /** The details of an item: J3. */
+    data class Details(
+        val item: MediaItem,
+    ) : Route
+
+    /** The player: J4. */
+    data class Player(
+        val item: MediaItem,
+    ) : Route
 
     data object Settings : Route
 
@@ -93,6 +113,16 @@ class Navigator(
         val removed = entries
         entries = listOf(entry(route))
         dispose(removed)
+    }
+
+    /** Pops the screens above the last one that matches [predicate]; false if none does. */
+    fun popTo(predicate: (Route) -> Boolean): Boolean {
+        val index = entries.indexOfLast { predicate(it.route) }
+        if (index < 0) return false
+        val removed = entries.drop(index + 1)
+        entries = entries.take(index + 1)
+        dispose(removed)
+        return true
     }
 
     fun pop(): Boolean {

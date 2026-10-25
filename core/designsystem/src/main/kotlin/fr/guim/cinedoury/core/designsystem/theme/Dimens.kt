@@ -66,6 +66,21 @@ object CineSizes {
 
     val logoMax = DpSize(360.dp, 140.dp)
     val trickplayWidth = 320.dp
+
+    // Home and libraries (J2).
+
+    /** Width of the text column of the featured banner. */
+    val heroTextWidth = 520.dp
+    val tabHeight = 40.dp
+    val alphabetKey = 18.dp
+    val alphabetWidth = 32.dp
+    val panelWidth = 400.dp
+    val listRowPoster = DpSize(64.dp, 96.dp)
+    val listRowHeight = 112.dp
+    val skeletonLine = 16.dp
+
+    /** The featured banner takes 60 % of the screen height (`UI.md` § 8). */
+    const val HERO_HEIGHT_FRACTION = 0.6f
 }
 
 /** Scale of a focused element (`UI.md` § 3). */
