@@ -277,7 +277,8 @@ fun HomeScreen(
         }
     }
     // The first focus, and the focus found again when coming back: the row left, else « Lire ».
-    val initial = focusedRow?.let { rowRequesters[it] }
+    // Made here, not when the lazy row composes (later): the requester is the same for both.
+    val initial = focusedRow?.let { rowRequesters.getOrPut(it) { FocusRequester() } }
     // Not keyed on the quit dialog: closing it gives the focus back to the rail, not to « Lire ».
     InitialFocus(initial ?: play, key = rows?.isEmpty())
 }
