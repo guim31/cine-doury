@@ -1,16 +1,21 @@
 package fr.guim.cinedoury.tv
 
 import android.view.KeyEvent
+import androidx.compose.ui.test.ComposeTimeoutException
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.printToString
+import androidx.compose.ui.test.requestFocus
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -47,8 +52,24 @@ class SignInJourneyTest {
         matcher: SemanticsMatcher,
         timeout: Long = TIMEOUT,
     ) {
-        compose.waitUntil(timeout) { compose.onAllNodes(matcher).fetchSemanticsNodes().isNotEmpty() }
+        try {
+            compose.waitUntil(timeout) { compose.onAllNodes(matcher).fetchSemanticsNodes().isNotEmpty() }
+        } catch (timeout: ComposeTimeoutException) {
+            // What the screen shows, and where the focus is, for the log of the CI.
+            throw AssertionError("Not found: ${matcher.description}\n" + compose.onRoot().printToString(), timeout)
+        }
     }
+
+    private fun appeared(
+        matcher: SemanticsMatcher,
+        timeout: Long,
+    ): Boolean =
+        try {
+            compose.waitUntil(timeout) { compose.onAllNodes(matcher).fetchSemanticsNodes().isNotEmpty() }
+            true
+        } catch (_: ComposeTimeoutException) {
+            false
+        }
 
     private fun focusedText(text: String) = isFocused() and hasText(text, substring = true)
 
@@ -71,7 +92,13 @@ class SignInJourneyTest {
     }
 
     private fun journey() {
+        waitFor(hasText("Commencer") and hasClickAction())
         remote(KeyEvent.KEYCODE_DPAD_DOWN)
+        // The first focus is the one thing not given by the remote: an instrumented window may still
+        // be in touch mode when the screen asks for it.
+        if (!appeared(focusedText("Commencer"), FIRST_FOCUS_TIMEOUT)) {
+            compose.onNode(hasText("Commencer") and hasClickAction()).requestFocus()
+        }
         waitFor(focusedText("Commencer"))
         remote(KeyEvent.KEYCODE_DPAD_CENTER)
 
@@ -114,6 +141,7 @@ class SignInJourneyTest {
 
     private companion object {
         const val TIMEOUT = 10_000L
+        const val FIRST_FOCUS_TIMEOUT = 3_000L
         const val DISCOVERY_TIMEOUT = 15_000L
         const val SIGN_IN_TIMEOUT = 30_000L
         const val HOME_PLAY = "home-play"
