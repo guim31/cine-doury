@@ -1,11 +1,12 @@
 package fr.guim.cinedoury.tv
 
 import android.view.KeyEvent
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ComposeTimeoutException
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasClickAction
-import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
@@ -22,6 +23,8 @@ import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import fr.guim.cinedoury.feature.auth.R as AuthR
+import fr.guim.cinedoury.feature.home.R as HomeR
 
 /**
  * The sign-in of a real user, from the first launch to the home, against the Jellyfin of the CI
@@ -73,6 +76,20 @@ class SignInJourneyTest {
 
     private fun focusedText(text: String) = isFocused() and hasText(text, substring = true)
 
+    /** A label of the app in the language of the device (the emulator of the CI is in English). */
+    private fun text(id: Int): String = instrumentation.targetContext.getString(id)
+
+    private val start get() = text(AuthR.string.welcome_start)
+
+    /** The Quick Connect code came from the server: digits instead of the placeholder dashes. */
+    private fun hasDigits() =
+        SemanticsMatcher("has digits") { node ->
+            node.config
+                .getOrNull(SemanticsProperties.Text)
+                .orEmpty()
+                .any { line -> line.any(Char::isDigit) }
+        }
+
     /** Typing in the focused field: the text, then the action of the keyboard. */
     private fun type(text: String) {
         waitFor(isFocused() and hasSetTextAction())
@@ -92,18 +109,18 @@ class SignInJourneyTest {
     }
 
     private fun journey() {
-        waitFor(hasText("Commencer") and hasClickAction())
+        waitFor(hasText(start) and hasClickAction())
         remote(KeyEvent.KEYCODE_DPAD_DOWN)
         // The first focus is the one thing not given by the remote: an instrumented window may still
         // be in touch mode when the screen asks for it.
-        if (!appeared(focusedText("Commencer"), FIRST_FOCUS_TIMEOUT)) {
-            compose.onNode(hasText("Commencer") and hasClickAction()).requestFocus()
+        if (!appeared(focusedText(start), FIRST_FOCUS_TIMEOUT)) {
+            compose.onNode(hasText(start) and hasClickAction()).requestFocus()
         }
-        waitFor(focusedText("Commencer"))
+        waitFor(focusedText(start))
         remote(KeyEvent.KEYCODE_DPAD_CENTER)
 
         // No server answers the discovery from the emulator: the address is typed.
-        waitFor(focusedText("Saisir une adresse"), DISCOVERY_TIMEOUT)
+        waitFor(focusedText(text(AuthR.string.servers_enter_address)), DISCOVERY_TIMEOUT)
         remote(KeyEvent.KEYCODE_DPAD_CENTER)
         waitFor(isFocused() and hasAnyAncestor(hasTestTag("address-field")))
         // OK starts the typing and types nothing (no stray letter).
@@ -112,14 +129,14 @@ class SignInJourneyTest {
 
         // « Qui regarde ? »: the public users, and the line about hidden accounts.
         waitFor(hasText("enfant"))
-        waitFor(hasText("Votre compte n'apparaît pas", substring = true))
+        waitFor(hasText(text(AuthR.string.profiles_hidden_hint)))
         // Sorted by name, « admin » first; its name sits under the focused avatar.
         waitFor(isFocused() and hasAnyAncestor(hasTestTag("profile-0")))
         remote(KeyEvent.KEYCODE_DPAD_CENTER)
 
         // Quick Connect asks the server for a code at once (it failed on the device).
-        waitFor(hasTestTag("quick-connect-code") and hasContentDescription("Code", substring = true))
-        waitFor(focusedText("Utiliser un mot de passe"))
+        waitFor(hasTestTag("quick-connect-code") and hasDigits())
+        waitFor(focusedText(text(AuthR.string.use_password)))
         remote(KeyEvent.KEYCODE_DPAD_CENTER)
 
         // The username is known: the focus is on the password.
@@ -128,7 +145,7 @@ class SignInJourneyTest {
         type(password)
 
         // Signed in, the token kept by the Keystore: the home of the administrator.
-        waitFor(hasText("Reprendre"), SIGN_IN_TIMEOUT)
+        waitFor(hasText(text(HomeR.string.row_resume)), SIGN_IN_TIMEOUT)
 
         // And on to the player of J4 with the session just made (PlaybackOnDeviceTest checks the
         // playback itself): the main button of the banner has the focus.
