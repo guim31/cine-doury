@@ -17,6 +17,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -98,7 +99,11 @@ fun CatalogScreen(
         )
     }
     if (requestInitialFocus) {
-        LaunchedEffect(Unit) { firstFocus.requestFocus() }
+        LaunchedEffect(Unit) {
+            // The header lives in a lazy list, composed during the first layout: wait for it.
+            withFrameNanos { }
+            firstFocus.requestFocus()
+        }
     }
 }
 
