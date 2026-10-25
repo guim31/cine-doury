@@ -59,7 +59,11 @@ class JellyfinDiscoveryTest {
 
     @Test
     fun `answer without an address uses the sender and the default port`() {
-        val server = JellyfinDiscovery.parseAnswer("""{"Id":"a1","Name":"Salon"}""", InetAddress.getByName("192.0.2.12"))
+        val server =
+            JellyfinDiscovery.parseAnswer(
+                """{"Id":"a1","Name":"Salon"}""",
+                InetAddress.getByName("192.0.2.12"),
+            )
         assertEquals("http://192.0.2.12:8096", server?.address?.url)
         assertNull(JellyfinDiscovery.parseAnswer("""{"Name":"no id"}""", loopback))
     }

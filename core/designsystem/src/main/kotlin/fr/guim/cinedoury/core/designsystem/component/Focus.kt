@@ -20,13 +20,17 @@ import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.addOutline
+import androidx.compose.ui.graphics.asAndroidPath
 import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import fr.guim.cinedoury.core.designsystem.theme.CineMotion
 import fr.guim.cinedoury.core.designsystem.theme.CineSizes
 import fr.guim.cinedoury.core.designsystem.theme.CineTheme
@@ -165,17 +169,17 @@ internal fun Modifier.cineFocusDecoration(
                 )
             // A blur mask filter: a real gaussian glow on every API level the app supports (28+
             // with hardware acceleration), where RenderEffect needs 31.
+            val haloPath = Path().apply { addOutline(outline) }.asAndroidPath()
             val halo =
-                Paint().apply {
-                    color = colors.focusHalo
-                    asFrameworkPaint().maskFilter =
-                        BlurMaskFilter(CineSizes.focusHalo.toPx(), BlurMaskFilter.Blur.OUTER)
+                android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+                    color = colors.focusHalo.copy(alpha = 1f).toArgb()
+                    maskFilter = BlurMaskFilter(CineSizes.focusHalo.toPx(), BlurMaskFilter.Blur.OUTER)
                 }
             onDrawWithContent {
                 if (progress > 0f) {
                     translate(left = -inset, top = -inset) {
-                        halo.alpha = colors.focusHalo.alpha * progress
-                        drawIntoCanvas { it.drawOutline(outline, halo) }
+                        halo.alpha = (colors.focusHalo.alpha * progress * MAX_ALPHA).toInt()
+                        drawIntoCanvas { it.nativeCanvas.drawPath(haloPath, halo) }
                     }
                 }
                 drawContent()
@@ -187,3 +191,5 @@ internal fun Modifier.cineFocusDecoration(
             }
         }.clip(shape)
 }
+
+private const val MAX_ALPHA = 255

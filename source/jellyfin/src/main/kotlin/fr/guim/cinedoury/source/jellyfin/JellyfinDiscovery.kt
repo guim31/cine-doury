@@ -64,20 +64,27 @@ class JellyfinDiscovery(
                         }
                         sent++
                     }
-                    val packet = DatagramPacket(buffer, buffer.size)
-                    try {
-                        socket.receive(packet)
-                    } catch (_: SocketTimeoutException) {
-                        continue
-                    } catch (_: IOException) {
-                        continue
-                    }
-                    val answer = String(packet.data, packet.offset, packet.length, Charsets.UTF_8)
-                    val server = parseAnswer(answer, packet.address) ?: continue
-                    if (seen.add(server.id)) emit(server)
+                    val server = receive(socket, buffer)
+                    if (server != null && seen.add(server.id)) emit(server)
                 }
             }
         }.flowOn(Dispatchers.IO)
+
+    /** The next answer, or null after a short wait without one. */
+    private fun receive(
+        socket: DatagramSocket,
+        buffer: ByteArray,
+    ): DiscoveredServer? {
+        val packet = DatagramPacket(buffer, buffer.size)
+        return try {
+            socket.receive(packet)
+            parseAnswer(String(packet.data, packet.offset, packet.length, Charsets.UTF_8), packet.address)
+        } catch (_: SocketTimeoutException) {
+            null
+        } catch (_: IOException) {
+            null
+        }
+    }
 
     companion object {
         const val PORT = 7359

@@ -20,6 +20,8 @@ complexity:
   TooManyFunctions:
     ignorePrivate: true
     thresholdInFiles: 20
+    # A test class has one function per case; a fake implements a whole interface.
+    excludes: ['**/test/**', '**/integrationTest/**', '**/testFixtures/**']
 
 style:
   MagicNumber:

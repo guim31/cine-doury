@@ -11,8 +11,8 @@ import fr.guim.cinedoury.core.source.Session
 import fr.guim.cinedoury.core.source.SourceConnector
 import fr.guim.cinedoury.core.source.SourceException
 import org.jellyfin.sdk.Jellyfin
-import org.jellyfin.sdk.api.client.HttpClientOptions
 import org.jellyfin.sdk.api.client.ApiClient
+import org.jellyfin.sdk.api.client.HttpClientOptions
 import org.jellyfin.sdk.api.client.extensions.authenticateUserByName
 import org.jellyfin.sdk.api.client.extensions.authenticateWithQuickConnect
 import org.jellyfin.sdk.api.client.extensions.authenticationApi
@@ -70,7 +70,11 @@ class JellyfinConnector(
 
     override suspend fun publicUsers(address: ServerAddress): List<User> =
         jellyfinCall(what = "public users") {
-            api(address).userApi.getPublicUsers().content.map { it.toModel() }
+            api(address)
+                .userApi
+                .getPublicUsers()
+                .content
+                .map { it.toModel() }
         }
 
     override suspend fun quickConnectEnabled(address: ServerAddress): Boolean =
@@ -88,7 +92,10 @@ class JellyfinConnector(
     override suspend fun isQuickConnectApproved(address: ServerAddress, request: QuickConnectRequest): Boolean =
         try {
             jellyfinCall(onUnauthorized = { SourceException.QuickConnectDisabled() }, what = "Quick Connect") {
-                api(address).authenticationApi.getQuickConnectState(request.secret).content.authenticated
+                api(address)
+                    .authenticationApi
+                    .getQuickConnectState(request.secret)
+                    .content.authenticated
             }
         } catch (_: SourceException.NotFound) {
             // « Unknown secret »: the server forgot the request (10 minutes) or restarted.

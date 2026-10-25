@@ -118,16 +118,14 @@ private fun AmbienceLayer(ambience: Ambience?) {
             }
         }
 
+        null -> {}
+
         is Ambience.Gradient -> {
             Box(
                 Modifier
                     .fillMaxSize()
                     .background(Brush.linearGradient(listOf(ambience.top, ambience.bottom))),
             )
-        }
-
-        null -> {
-            Unit
         }
     }
 }

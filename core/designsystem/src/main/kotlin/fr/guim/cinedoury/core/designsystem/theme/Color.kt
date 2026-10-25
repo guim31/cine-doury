@@ -73,7 +73,7 @@ val DarkCineColors =
         success = Color(0xFF46A758),
         dialogScrim = Ink.copy(alpha = 0.82f),
         shadow = Color.Black,
-        focusHalo = Color.White.copy(alpha = 0.3f),
+        focusHalo = Color.White.copy(alpha = 0.4f),
     )
 
 val OledCineColors = DarkCineColors.copy(background = Color.Black, dialogScrim = Color.Black.copy(alpha = 0.82f))

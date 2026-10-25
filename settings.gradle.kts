@@ -22,5 +22,6 @@ rootProject.name = "cine-doury"
 include(":core:model")
 include(":core:source")
 include(":core:designsystem")
+include(":core:data")
 include(":source:jellyfin")
 include(":app:tv")

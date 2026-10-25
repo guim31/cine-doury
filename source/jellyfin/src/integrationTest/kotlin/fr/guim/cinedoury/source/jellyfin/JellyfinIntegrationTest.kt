@@ -6,11 +6,16 @@ import fr.guim.cinedoury.core.model.PageRequest
 import fr.guim.cinedoury.core.model.VideoRange
 import fr.guim.cinedoury.core.source.Credentials
 import fr.guim.cinedoury.core.source.LibrarySource
+import fr.guim.cinedoury.core.source.QuickConnectRequest
 import fr.guim.cinedoury.core.source.ServerAddress
 import fr.guim.cinedoury.core.source.Session
 import fr.guim.cinedoury.core.source.SourceException
 import kotlinx.coroutines.test.runTest
 import org.junit.Assume.assumeTrue
+import java.net.URI
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -26,6 +31,8 @@ class JellyfinIntegrationTest {
     private val url = System.getenv("JELLYFIN_URL").orEmpty()
     private val username = System.getenv("JELLYFIN_ADMIN_USER") ?: "admin"
     private val password = System.getenv("JELLYFIN_ADMIN_PASSWORD") ?: "cinedoury-test"
+    private val child = System.getenv("JELLYFIN_CHILD_USER") ?: "enfant"
+    private val http = HttpClient.newHttpClient()
     private val connector =
         JellyfinConnector(
             ClientIdentity(appVersion = "0.0.0-test", deviceId = "cine-doury-integration-test", deviceName = "CI"),
@@ -139,4 +146,105 @@ class JellyfinIntegrationTest {
             assertTrue(series.all { it.kind == ItemKind.Series })
             assertEquals(2, series.first().childCount)
         }
+
+    @Test
+    fun `lists the public users, the administrator with a picture`() =
+        runTest {
+            val users = connector.publicUsers(address)
+            assertEquals(setOf(username, child), users.map { it.name }.toSet())
+            val admin = users.single { it.name == username }
+            val picture = assertNotNull(connector.userImageUrl(address, admin))
+            assertEquals(200, get(picture).statusCode())
+            assertEquals(null, connector.userImageUrl(address, users.single { it.name == child }))
+        }
+
+    @Test
+    fun `signs in with Quick Connect, approved by the administrator as the phone would`() =
+        runTest {
+            assertTrue(connector.quickConnectEnabled(address))
+            val request = connector.startQuickConnect(address)
+            assertEquals(6, request.code.length)
+            assertEquals(false, connector.isQuickConnectApproved(address, request))
+
+            // The phone: the administrator approves the code for the child profile.
+            val admin = signIn()
+            val childId =
+                connector
+                    .publicUsers(address)
+                    .single { it.name == child }
+                    .id.value
+            val approval =
+                post(
+                    "/QuickConnect/Authorize?code=${request.code}&userId=$childId",
+                    token = admin.accessToken,
+                )
+            assertEquals(200, approval.statusCode(), approval.body())
+
+            assertTrue(connector.isQuickConnectApproved(address, request))
+            val session = connector.signIn(address, Credentials.QuickConnect(request))
+            assertEquals(child, session.user.name)
+            assertTrue(connector.open(session).libraries().isNotEmpty())
+        }
+
+    @Test
+    fun `an unknown Quick Connect request has expired`() =
+        runTest {
+            assertFailsWith<SourceException.QuickConnectExpired> {
+                connector.isQuickConnectApproved(address, QuickConnectRequest("000000", "0".repeat(64)))
+            }
+        }
+
+    @Test
+    fun `two profiles stay signed in side by side, and signing out ends only one`() =
+        runTest {
+            val admin = signIn()
+            val kid = connector.signIn(address, Credentials.Password(child, ""))
+            assertTrue(admin.accessToken != kid.accessToken)
+            assertTrue(connector.open(admin).libraries().isNotEmpty())
+            assertTrue(connector.open(kid).libraries().isNotEmpty())
+
+            connector.signOut(kid)
+
+            assertFailsWith<SourceException.Unauthorized> { connector.open(kid).libraries() }
+            assertTrue(connector.open(admin).libraries().isNotEmpty())
+        }
+
+    @Test
+    fun `serves a poster at the asked size`() =
+        runTest {
+            val source = library()
+            val films = source.libraries().single { it.kind == LibraryKind.Movies }
+            val film = source.items(films.id).items.single { it.title == "Nuit polaire" }
+            val poster = assertNotNull(film.images.primary)
+            assertNotNull(poster.blurHash, "Jellyfin gives a BlurHash for each image")
+
+            val response = get(connector.imageUrl(address, poster, 150, 225))
+            assertEquals(200, response.statusCode())
+            assertTrue(
+                response
+                    .headers()
+                    .firstValue("Content-Type")
+                    .orElse("")
+                    .startsWith("image/"),
+            )
+        }
+
+    private fun get(url: String): HttpResponse<ByteArray> =
+        http.send(HttpRequest.newBuilder(URI(url)).GET().build(), HttpResponse.BodyHandlers.ofByteArray())
+
+    private fun post(
+        path: String,
+        token: String,
+    ): HttpResponse<String> =
+        http.send(
+            HttpRequest
+                .newBuilder(URI("$url$path"))
+                .header(
+                    "Authorization",
+                    "MediaBrowser Client=\"Cine Doury tests\", Device=\"CI\", DeviceId=\"cine-doury-phone\", " +
+                        "Version=\"0.0.0\", Token=\"$token\"",
+                ).POST(HttpRequest.BodyPublishers.noBody())
+                .build(),
+            HttpResponse.BodyHandlers.ofString(),
+        )
 }

@@ -174,8 +174,8 @@ class JellyfinConnectorTest {
     fun `Quick Connect from the code to the session`() =
         runTest {
             server.enqueue(json("quick-connect-initiate.json"))
-            server.enqueue(jsonBody("""{"Authenticated": false, "Secret": "s", "Code": "361123", "DeviceId": "d", "DeviceName": "n", "AppName": "a", "AppVersion": "v", "DateAdded": "2026-10-25T10:17:52.947826Z"}"""))
-            server.enqueue(jsonBody("""{"Authenticated": true, "Secret": "s", "Code": "361123", "DeviceId": "d", "DeviceName": "n", "AppName": "a", "AppVersion": "v", "DateAdded": "2026-10-25T10:17:52.947826Z"}"""))
+            server.enqueue(jsonBody(quickConnectState(authenticated = false)))
+            server.enqueue(jsonBody(quickConnectState(authenticated = true)))
             server.enqueue(json("system-info-public.json"))
             server.enqueue(json("authenticate.json"))
 
@@ -202,7 +202,13 @@ class JellyfinConnectorTest {
     @Test
     fun `forgotten Quick Connect request is QuickConnectExpired`() =
         runTest {
-            server.enqueue(MockResponse.Builder().code(404).body("\"Unknown secret\"").build())
+            server.enqueue(
+                MockResponse
+                    .Builder()
+                    .code(404)
+                    .body("\"Unknown secret\"")
+                    .build(),
+            )
 
             assertFailsWith<SourceException.QuickConnectExpired> {
                 connector.isQuickConnectApproved(address, QuickConnectRequest("123456", "secret"))
@@ -256,6 +262,9 @@ class JellyfinConnectorTest {
         checkNotNull(javaClass.getResource("/fixtures/$name")) { "missing fixture $name" }.readText()
 
     private fun json(name: String) = jsonBody(fixture(name))
+
+    private fun quickConnectState(authenticated: Boolean) =
+        fixture("quick-connect-initiate.json").replace("\"Authenticated\": false", "\"Authenticated\": $authenticated")
 
     private fun jsonBody(body: String) =
         MockResponse

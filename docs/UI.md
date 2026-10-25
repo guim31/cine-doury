@@ -32,7 +32,7 @@ pas un tableau de bord. Les fonctionnalités sont dans `FONCTIONNALITES.md`.
 - L'élément focalisé :
   - **grandit** de 1,08 (affiches) ou 1,05 (boutons, vignettes) ;
   - prend un **contour de 3 dp** dans la couleur « focus » (blanc à 90 %), écarté de 2 dp du bord ;
-  - s'entoure d'un **halo** : lueur claire et diffuse (jeton `halo de focus`, blanc à 30 %, flou de 14 dp) qui part du contour, dans les deux thèmes. L'ombre ne se voit pas sur un noir OLED ; le halo, si : le focus se repère d'un coup d'œil à 3 m, même sur un fond noir pur *(retouche du 25/10/2026)* ;
+  - s'entoure d'un **halo** : lueur claire et diffuse (jeton `halo de focus`, blanc à 40 %, flou de 14 dp) qui part du contour, dans les deux thèmes. L'ombre ne se voit pas sur un noir OLED ; le halo, si : le focus se repère d'un coup d'œil à 3 m, même sur un fond noir pur *(retouche du 25/10/2026)* ;
   - reçoit une **ombre portée** douce.
 - Le focus ne repose **jamais sur la couleur seule** : le contour et l'échelle suffisent à le voir sans percevoir les couleurs.
 - Animation : 150 ms en arrivant, 120 ms en partant, courbe de décélération standard. Un défilement rapide (touche maintenue) ne joue pas les animations intermédiaires.
@@ -58,7 +58,7 @@ Thème sombre seulement, sur la TV comme ailleurs. Variante **noir OLED** en ré
 | `texte-2` | `#A9AEB8` | texte secondaire |
 | `texte-3` | `#6E7480` | métadonnées discrètes |
 | `focus` | `#FFFFFF` à 90 % | contour de focus |
-| `halo de focus` | `#FFFFFF` à 30 %, flou de 14 dp | lueur autour de l'élément focalisé (§ 3) |
+| `halo de focus` | `#FFFFFF` à 40 %, flou de 14 dp | lueur autour de l'élément focalisé (§ 3) |
 | `accent` | `#F2C14E` (« jaune projecteur », § 4.1) | bouton principal, progression, sélection |
 | `danger` | `#E5484D` | suppression |
 | `succès` | `#46A758` | confirmations |
