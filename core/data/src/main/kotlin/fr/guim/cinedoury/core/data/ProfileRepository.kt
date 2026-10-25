@@ -9,6 +9,7 @@ import fr.guim.cinedoury.core.model.ImageType
 import fr.guim.cinedoury.core.model.ItemId
 import fr.guim.cinedoury.core.model.User
 import fr.guim.cinedoury.core.model.UserId
+import fr.guim.cinedoury.core.source.FailureLog
 import fr.guim.cinedoury.core.source.ServerAddress
 import fr.guim.cinedoury.core.source.Session
 import kotlinx.coroutines.Dispatchers
@@ -74,7 +75,8 @@ class ProfileRepository(
                 name = session.user.name,
                 isAdministrator = session.user.isAdministrator,
                 imageTag = session.user.image?.tag ?: known?.imageTag,
-                encryptedToken = cipher.encrypt(session.accessToken),
+                // The Keystore may take a while on a slow device (key creation): never the main thread.
+                encryptedToken = withContext(Dispatchers.Default) { cipher.encrypt(session.accessToken) },
                 lastUsedAt = clock(),
             )
         dao.upsert(entity)
@@ -91,8 +93,9 @@ class ProfileRepository(
     ): Session? {
         val entity = dao.get(profile.serverId, profile.user.id.value)
         val encrypted = entity?.encryptedToken ?: return null
-        val token = cipher.decrypt(encrypted)
+        val token = withContext(Dispatchers.Default) { cipher.decrypt(encrypted) }
         // An unreadable token (Keystore key lost) signs the profile out.
+        if (token == null) FailureLog.warn("Profile ${profile.user.id.value}: token unreadable, signed out")
         dao.upsert(if (token == null) entity.copy(encryptedToken = null) else entity.copy(lastUsedAt = clock()))
         return token?.let {
             Session(server = address, serverId = profile.serverId, user = entity.toUser(), accessToken = it)

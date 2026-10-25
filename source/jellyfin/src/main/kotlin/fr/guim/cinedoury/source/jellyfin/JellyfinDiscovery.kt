@@ -1,6 +1,7 @@
 package fr.guim.cinedoury.source.jellyfin
 
 import fr.guim.cinedoury.core.source.DiscoveredServer
+import fr.guim.cinedoury.core.source.FailureLog
 import fr.guim.cinedoury.core.source.ServerAddress
 import fr.guim.cinedoury.core.source.ServerDiscovery
 import kotlinx.coroutines.Dispatchers
@@ -43,7 +44,8 @@ class JellyfinDiscovery(
             val opened =
                 try {
                     DatagramSocket()
-                } catch (_: IOException) {
+                } catch (error: IOException) {
+                    FailureLog.warn("Discovery: no socket", error)
                     return@flow
                 }
             opened.use { socket ->
@@ -61,6 +63,7 @@ class JellyfinDiscovery(
                         destinations.forEach { target ->
                             // An interface may refuse broadcasts: the others still get the question.
                             runCatching { socket.send(DatagramPacket(question, question.size, target)) }
+                                .onFailure { FailureLog.warn("Discovery: cannot send to $target", it) }
                         }
                         sent++
                     }
@@ -80,8 +83,10 @@ class JellyfinDiscovery(
             socket.receive(packet)
             parseAnswer(String(packet.data, packet.offset, packet.length, Charsets.UTF_8), packet.address)
         } catch (_: SocketTimeoutException) {
+            // No answer in this slice: the normal case, not a failure.
             null
-        } catch (_: IOException) {
+        } catch (error: IOException) {
+            FailureLog.warn("Discovery: receive failed", error)
             null
         }
     }

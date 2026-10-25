@@ -5,6 +5,7 @@ import fr.guim.cinedoury.core.data.server.AddressResolver
 import fr.guim.cinedoury.core.model.ImageRef
 import fr.guim.cinedoury.core.model.User
 import fr.guim.cinedoury.core.source.Credentials
+import fr.guim.cinedoury.core.source.FailureLog
 import fr.guim.cinedoury.core.source.QuickConnectRequest
 import fr.guim.cinedoury.core.source.ServerAddress
 import fr.guim.cinedoury.core.source.Session
@@ -97,8 +98,10 @@ class SessionManager(
     /** Checks the server at [address] (Jellyfin 12.3 or later) and makes it the server in use. */
     suspend fun addServer(address: ServerAddress): Connection {
         val info = connector.serverInfo(address)
-        val server = servers.save(info, address)
-        preferences.setLastServer(server.id)
+        val server =
+            local("Server: could not be saved") {
+                servers.save(info, address).also { preferences.setLastServer(it.id) }
+            }
         currentSession.value = null
         return Connection(server, address, ConnectionMode.Local).also { currentConnection.value = it }
     }
@@ -139,10 +142,32 @@ class SessionManager(
     suspend fun signIn(credentials: Credentials): Profile {
         val connection = requireConnection()
         val session = connector.signIn(connection.address, credentials)
-        val profile = profiles.saveSession(session)
-        activate(connection, profile, session)
-        return profile
+        return local("Sign-in: the session could not be kept") {
+            profiles.saveSession(session).also { activate(connection, it, session) }
+        }
     }
+
+    /**
+     * Runs what happens on the device after the server answered (Keystore, database, settings):
+     * a failure there is logged and becomes a [SourceException.Unexpected], shown with its detail
+     * instead of closing the app.
+     */
+    private suspend fun <T> local(
+        what: String,
+        block: suspend () -> T,
+    ): T =
+        try {
+            block()
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: SourceException) {
+            throw error
+        } catch (
+            @Suppress("TooGenericExceptionCaught") error: Exception,
+        ) {
+            FailureLog.error(what, error)
+            throw SourceException.Unexpected(error)
+        }
 
     /** Opens a signed-in profile (its PIN already checked); false if it is not signed in any more. */
     suspend fun open(profile: Profile): Boolean {
@@ -227,7 +252,7 @@ class SessionManager(
         } catch (error: CancellationException) {
             throw error
         } catch (_: SourceException) {
-            // Unreachable server: the token is forgotten here anyway.
+            // Unreachable server (already logged): the token is forgotten here anyway.
         }
     }
 

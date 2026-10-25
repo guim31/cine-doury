@@ -10,6 +10,9 @@ import fr.guim.cinedoury.core.source.ServerAddress
 import fr.guim.cinedoury.core.source.Session
 import fr.guim.cinedoury.core.source.SourceConnector
 import fr.guim.cinedoury.core.source.SourceException
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import okhttp3.OkHttpClient
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.HttpClientOptions
 import org.jellyfin.sdk.api.client.extensions.authenticateUserByName
@@ -36,16 +39,28 @@ data class ClientIdentity(
     val deviceName: String,
 )
 
-/** [SourceConnector] for a Jellyfin 12.3 server, built on the official Kotlin SDK. */
-class JellyfinConnector(
+/**
+ * [SourceConnector] for a Jellyfin 12.3 server, built on the official Kotlin SDK.
+ *
+ * @param http the OkHttp client every request is built on (tests watch it).
+ * @param io where requests run: never the main thread (see [TracingApiClient]).
+ */
+class JellyfinConnector internal constructor(
     identity: ClientIdentity,
-    requestTimeout: Duration = 30.seconds,
+    requestTimeout: Duration,
+    http: OkHttpClient,
+    private val io: CoroutineDispatcher,
 ) : SourceConnector {
+    constructor(
+        identity: ClientIdentity,
+        requestTimeout: Duration = 30.seconds,
+    ) : this(identity, requestTimeout, OkHttpClient(), Dispatchers.IO)
+
     private val httpOptions = HttpClientOptions(requestTimeout = requestTimeout)
 
     // The SDK's `createJellyfin` needs an Android Context in its Android variant, which Gradle picks
     // for the app: the clients are built directly by the OkHttp factory, the same on every platform.
-    private val factory = OkHttpFactory()
+    private val factory = OkHttpFactory(http)
 
     // ASCII on purpose: the SDK copies the client name into User-Agent, where OkHttp rejects any
     // non-ASCII character (CLAUDE.md, « Pièges »).
@@ -65,13 +80,16 @@ class JellyfinConnector(
         }
 
     private fun api(address: ServerAddress, token: String? = null): ApiClient =
-        factory.create(
-            baseUrl = address.url,
-            accessToken = token,
-            clientInfo = clientInfo,
-            deviceInfo = deviceInfo,
-            httpClientOptions = httpOptions,
-            socketConnectionFactory = factory,
+        TracingApiClient(
+            factory.create(
+                baseUrl = address.url,
+                accessToken = token,
+                clientInfo = clientInfo,
+                deviceInfo = deviceInfo,
+                httpClientOptions = httpOptions,
+                socketConnectionFactory = factory,
+            ),
+            io,
         )
 
     override suspend fun publicUsers(address: ServerAddress): List<User> =

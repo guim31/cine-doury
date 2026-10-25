@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -75,7 +77,12 @@ fun FormScreen(
                 topEnd?.invoke()
             }
             Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
-                Column(verticalArrangement = Arrangement.spacedBy(CineSpacing.s)) {
+                // Scrolls when the content outgrows the screen (the detail of an error): the focused
+                // element is always brought into view.
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(CineSpacing.s),
+                ) {
                     Text(text = title, style = CineTheme.typography.title1, color = colors.text)
                     if (subtitle != null) {
                         Text(
