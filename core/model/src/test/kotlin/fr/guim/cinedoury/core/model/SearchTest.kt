@@ -10,7 +10,7 @@ class SearchTest {
     private fun score(
         query: String,
         title: String,
-    ) = SearchMatcher.score(SearchQuery.of(query), SearchTitle.of(title))
+    ) = SearchMatcher.score(SearchQuery.of(query), PreparedTitle.of(title))
 
     private fun matches(
         query: String,
@@ -90,7 +90,7 @@ class SearchTest {
     @Test
     fun `the original and sort titles count, a little less`() {
         val query = SearchQuery.of("amelie poulain")
-        val titles = listOf("Le Fabuleux Destin d'Amélie Poulain", "Amélie").map(SearchTitle::of)
+        val titles = listOf("Le Fabuleux Destin d'Amélie Poulain", "Amélie").map(PreparedTitle::of)
         assertNotNull(SearchMatcher.best(query, titles))
         assertEquals(SearchMatcher.EXACT - 5, SearchMatcher.best(SearchQuery.of("amelie"), titles))
     }

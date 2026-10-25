@@ -73,6 +73,13 @@ abstract class SearchDao {
     @Query("SELECT * FROM search_titles WHERE server_id = :serverId")
     abstract fun observeTitles(serverId: String): Flow<List<SearchTitleEntity>>
 
+    /** Forgets titles deleted on the server, at once (the next update would find it too). */
+    @Query("DELETE FROM search_titles WHERE server_id = :serverId AND item_id IN (:itemIds)")
+    abstract suspend fun forget(
+        serverId: String,
+        itemIds: List<String>,
+    )
+
     @Query("SELECT COUNT(*) FROM search_titles WHERE server_id = :serverId AND library_id = :libraryId")
     abstract suspend fun count(
         serverId: String,

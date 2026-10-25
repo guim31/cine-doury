@@ -13,12 +13,12 @@ import fr.guim.cinedoury.core.model.LibraryKind
 import fr.guim.cinedoury.core.model.MAX_IDS
 import fr.guim.cinedoury.core.model.MediaItem
 import fr.guim.cinedoury.core.model.PageRequest
+import fr.guim.cinedoury.core.model.PreparedTitle
 import fr.guim.cinedoury.core.model.SearchHit
 import fr.guim.cinedoury.core.model.SearchMatcher
 import fr.guim.cinedoury.core.model.SearchQuery
 import fr.guim.cinedoury.core.model.SearchRanking
 import fr.guim.cinedoury.core.model.SearchText
-import fr.guim.cinedoury.core.model.SearchTitle
 import fr.guim.cinedoury.core.model.SortField
 import fr.guim.cinedoury.core.source.LibrarySource
 import fr.guim.cinedoury.core.source.SourceException
@@ -38,7 +38,7 @@ import java.util.Locale
 class IndexedTitle internal constructor(
     val item: MediaItem,
     val library: LibraryId,
-    internal val titles: List<SearchTitle>,
+    internal val titles: List<PreparedTitle>,
 )
 
 /** What the search shows while nothing is typed (`FONCTIONNALITES.md` § 6). */

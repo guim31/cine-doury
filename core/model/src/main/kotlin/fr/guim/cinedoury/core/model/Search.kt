@@ -54,7 +54,7 @@ class SearchQuery private constructor(
  * A title ready to be compared with queries: computed once per title (the local index holds a few
  * thousand), then each keystroke compares the query with every one of them.
  */
-class SearchTitle private constructor(
+class PreparedTitle private constructor(
     val text: String,
     val words: List<String>,
 ) {
@@ -62,9 +62,9 @@ class SearchTitle private constructor(
     internal val joined: String = words.joinToString("")
 
     companion object {
-        fun of(title: String): SearchTitle {
+        fun of(title: String): PreparedTitle {
             val words = SearchText.words(title)
-            return SearchTitle(words.joinToString(" "), words)
+            return PreparedTitle(words.joinToString(" "), words)
         }
     }
 }
@@ -119,7 +119,7 @@ object SearchMatcher {
 
     fun score(
         query: SearchQuery,
-        title: SearchTitle,
+        title: PreparedTitle,
     ): Int? =
         when {
             query.isEmpty || title.words.isEmpty() -> {
@@ -143,7 +143,7 @@ object SearchMatcher {
     /** The best score of a query against several titles of one item (title, original, sort title). */
     fun best(
         query: SearchQuery,
-        titles: List<SearchTitle>,
+        titles: List<PreparedTitle>,
     ): Int? =
         titles
             .mapIndexedNotNull {
@@ -157,7 +157,7 @@ object SearchMatcher {
 
     private fun wordScore(
         query: SearchQuery,
-        title: SearchTitle,
+        title: PreparedTitle,
     ): Int? {
         val used = BooleanArray(title.words.size)
         var typos = 0
@@ -201,7 +201,7 @@ object SearchMatcher {
     }
 
     /** The first word of the title that is not an article: « Le Seigneur… » starts at « seigneur ». */
-    private fun firstWordIndex(title: SearchTitle): Int {
+    private fun firstWordIndex(title: PreparedTitle): Int {
         val index = title.words.indexOfFirst { it !in linkingWords }
         return if (index < 0) 0 else index
     }
@@ -214,7 +214,7 @@ object SearchMatcher {
 
     private fun bestWord(
         word: String,
-        title: SearchTitle,
+        title: PreparedTitle,
         used: BooleanArray,
     ): WordMatch? {
         var best: WordMatch? = null
@@ -351,14 +351,19 @@ object SearchRanking {
     const val ROW_LIMIT = 24
 
     /** The titles of an item a query is compared with: title, original title, sort title. */
-    fun titles(item: MediaItem): List<SearchTitle> {
+    fun titles(item: MediaItem): List<PreparedTitle> {
         // An episode is also found by its series and its title together.
         val withSeries =
             item.episode
                 ?.seriesTitle
                 ?.takeIf { item.kind == ItemKind.Episode }
                 ?.let { "$it ${item.title}" }
-        return listOfNotNull(item.title, item.originalTitle, item.sortTitle, withSeries).distinct().map(SearchTitle::of)
+        return listOfNotNull(
+            item.title,
+            item.originalTitle,
+            item.sortTitle,
+            withSeries,
+        ).distinct().map(PreparedTitle::of)
     }
 
     /**
