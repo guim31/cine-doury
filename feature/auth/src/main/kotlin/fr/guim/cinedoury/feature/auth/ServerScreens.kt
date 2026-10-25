@@ -175,7 +175,8 @@ fun AddressScreen(
     FormScreen(
         brand = stringResource(UiR.string.brand_name),
         title = stringResource(title),
-        subtitle = stringResource(subtitle),
+        // The error panel takes the room of the explanation.
+        subtitle = stringResource(subtitle).takeIf { error == null },
         modifier = modifier,
     ) {
         if (error != null) {
