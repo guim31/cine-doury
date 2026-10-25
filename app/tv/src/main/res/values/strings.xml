@@ -40,7 +40,7 @@
     <string name="token_progress_track">rail de progression</string>
     <string name="token_danger">danger</string>
     <string name="token_success">succès</string>
-    <string name="color_with_alpha">%1$s à %2$d\u00A0%%</string>
+    <string name="color_with_alpha">%1$s · %2$d\u00A0%%</string>
     <string name="type_display">Affiche</string>
     <string name="type_title1">Titre 1</string>
     <string name="type_title2">Titre 2</string>

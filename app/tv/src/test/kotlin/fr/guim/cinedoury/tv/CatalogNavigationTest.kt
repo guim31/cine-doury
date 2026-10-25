@@ -40,7 +40,7 @@ class CatalogNavigationTest {
     }
 
     private fun showCatalog(firstSection: Int = CatalogSection.HEADER) {
-        compose.setContent {
+        compose.setTvContent {
             CineTheme(ThemeVariant.Dark) {
                 CatalogScreen(
                     variant = ThemeVariant.Dark,

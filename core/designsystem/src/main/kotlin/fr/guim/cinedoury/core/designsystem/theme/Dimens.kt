@@ -32,7 +32,7 @@ object CineSizes {
     val thumbnail = DpSize(300.dp, 169.dp)
     val cardCorner = 8.dp
     val hairline = 1.dp
-    val swatch = DpSize(96.dp, 64.dp)
+    val swatch = DpSize(104.dp, 64.dp)
     val progressHeight = 4.dp
     val unwatchedTriangle = 22.dp
 

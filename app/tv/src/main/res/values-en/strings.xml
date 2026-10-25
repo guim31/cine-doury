@@ -39,7 +39,7 @@
     <string name="token_progress_track">progress track</string>
     <string name="token_danger">danger</string>
     <string name="token_success">success</string>
-    <string name="color_with_alpha">%1$s at %2$d%%</string>
+    <string name="color_with_alpha">%1$s · %2$d%%</string>
     <string name="type_display">Display</string>
     <string name="type_title1">Title 1</string>
     <string name="type_title2">Title 2</string>

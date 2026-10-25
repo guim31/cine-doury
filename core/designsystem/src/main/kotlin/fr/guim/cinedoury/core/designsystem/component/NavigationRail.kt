@@ -50,7 +50,6 @@ data class RailDestination(
 )
 
 private val RailItemShape = RoundedCornerShape(percent = 50)
-private const val RAIL_PANEL_ALPHA = 0.97f
 private const val RAIL_SCRIM_ALPHA = 0.72f
 
 /**
@@ -86,7 +85,8 @@ fun NavigationRail(
                 .width(lerp(CineSizes.railCollapsed, CineSizes.railExpanded, expansion))
                 .drawBehind {
                     if (expansion > 0f) {
-                        drawRect(colors.surface1.copy(alpha = RAIL_PANEL_ALPHA * expansion))
+                        // Opaque: the open rail covers the content (`UI.md` § 2).
+                        drawRect(colors.surface1.copy(alpha = expansion))
                         val scrim = scrimWidth.toPx()
                         drawRect(
                             brush =

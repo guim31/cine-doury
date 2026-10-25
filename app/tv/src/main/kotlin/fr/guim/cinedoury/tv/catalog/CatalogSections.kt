@@ -58,6 +58,7 @@ private val SwatchShape = RoundedCornerShape(CineSizes.cardCorner)
 private const val SWATCHES_PER_ROW = 7
 private const val PERCENT = 100
 private const val RGB_MASK = 0xFFFFFF
+private const val BACKDROP_GLOW_ALPHA = 0.35f
 
 @Composable
 private fun Section(
@@ -129,7 +130,7 @@ internal fun ColorsSection() {
     Section(R.string.section_colors, R.string.section_colors_hint) {
         Column(verticalArrangement = Arrangement.spacedBy(CineSpacing.m)) {
             swatches.chunked(SWATCHES_PER_ROW).forEach { row ->
-                Row(horizontalArrangement = Arrangement.spacedBy(CineSpacing.s)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(CineSpacing.xs)) {
                     row.forEach { (name, color, value) -> Swatch(stringResource(name), color, value) }
                 }
             }
@@ -157,7 +158,7 @@ private fun Swatch(
             name,
             style = CineTheme.typography.minimum,
             color = colors.text,
-            maxLines = 1,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(top = CineSpacing.xs),
         )
@@ -413,11 +414,20 @@ internal fun ScrimsSection() {
                 Modifier
                     .fillMaxWidth()
                     .height(CineSizes.posterLarge.height + CineSpacing.xl)
-                    .clip(SwatchShape)
-                    .background(Brush.radialGradient(listOf(top, bottom, colors.background)))
-                    .readabilityScrims(colors.background),
+                    .clip(SwatchShape),
             contentAlignment = Alignment.BottomStart,
         ) {
+            // A stand-in for a full-screen backdrop, with its veils; the text sits above both.
+            Box(
+                Modifier
+                    .matchParentSize()
+                    .background(Brush.linearGradient(listOf(top, bottom)))
+                    .background(
+                        Brush.radialGradient(
+                            colors = listOf(colors.accent.copy(alpha = BACKDROP_GLOW_ALPHA), Color.Transparent),
+                        ),
+                    ).readabilityScrims(colors.background),
+            )
             Column(Modifier.padding(CineSpacing.xl)) {
                 Text(stringResource(R.string.sample_display), style = typography.display, color = colors.text)
                 Text(
