@@ -125,7 +125,8 @@ class J2FlowTest {
             }
         }
         val card = HomePreview.card("latest:${J2Samples.films.id.value}", 2)
-        waitForTag(card)
+        // The rows below the first one are composed once scrolled to.
+        waitForTag(HomePreview.card("resume", 0))
         focusable(HomePreview.PLAY).assertIsFocused()
         // « Reprendre » (« Fréquences » is started), then « Ajouts récents dans Films ».
         press(Key.DirectionDown, times = 2)
