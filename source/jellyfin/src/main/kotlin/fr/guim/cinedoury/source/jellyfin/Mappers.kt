@@ -16,6 +16,7 @@ import fr.guim.cinedoury.core.model.User
 import fr.guim.cinedoury.core.model.UserData
 import fr.guim.cinedoury.core.model.UserId
 import fr.guim.cinedoury.core.model.VideoRange
+import org.jellyfin.sdk.model.DateTime
 import org.jellyfin.sdk.model.UUID
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
@@ -26,6 +27,8 @@ import org.jellyfin.sdk.model.api.UserDto
 import org.jellyfin.sdk.model.api.UserItemDataDto
 import org.jellyfin.sdk.model.api.VideoRangeType
 import org.jellyfin.sdk.model.serializer.toUUID
+import java.time.Instant
+import java.time.ZoneId
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.microseconds
 import fr.guim.cinedoury.core.model.ImageType as ModelImageType
@@ -36,6 +39,9 @@ import org.jellyfin.sdk.model.api.MediaStream as JellyfinMediaStream
 internal fun UUID.toJellyfinId(): String = toString().replace("-", "")
 
 internal fun String.toJellyfinUuid(): UUID = toUUID()
+
+/** The SDK reads dates in the zone of the device; `DateTime.MIN` stands for a date the server left empty. */
+internal fun DateTime.toInstant(): Instant? = takeIf { it != DateTime.MIN }?.atZone(ZoneId.systemDefault())?.toInstant()
 
 /** Jellyfin durations are in ticks of 100 ns. */
 internal fun Long.ticksToDuration(): Duration = (this / TICKS_PER_MICROSECOND).microseconds
@@ -89,7 +95,9 @@ internal fun BaseItemDto.toMediaItem(): MediaItem =
         originalTitle = originalTitle,
         year = productionYear,
         premiereDate = premiereDate?.toLocalDate(),
+        dateAdded = dateCreated?.toInstant(),
         overview = overview,
+        tagline = taglines?.firstOrNull(),
         runtime = runTimeTicks?.ticksToDuration(),
         officialRating = officialRating,
         communityRating = communityRating,
@@ -109,6 +117,13 @@ internal fun BaseItemDto.toMediaItem(): MediaItem =
                     },
                 logo = image(JellyfinImageType.LOGO),
                 thumb = image(JellyfinImageType.THUMB),
+                seriesPrimary = seriesPrimaryImageTag?.let { parentImage(seriesId, JellyfinImageType.PRIMARY, it) },
+                parentBackdrop =
+                    parentBackdropImageTags?.firstOrNull()?.let {
+                        parentImage(parentBackdropItemId, JellyfinImageType.BACKDROP, it)
+                    },
+                parentLogo = parentLogoImageTag?.let { parentImage(parentLogoItemId, JellyfinImageType.LOGO, it) },
+                parentThumb = parentThumbImageTag?.let { parentImage(parentThumbItemId, JellyfinImageType.THUMB, it) },
             ),
         userData = userData?.toModel(),
         episode =
@@ -129,15 +144,22 @@ internal fun BaseItemDto.toMediaItem(): MediaItem =
 
 private fun BaseItemDto.image(type: JellyfinImageType): ImageRef? {
     val tag = imageTags?.get(type) ?: return null
-    val modelType =
-        when (type) {
-            JellyfinImageType.LOGO -> ModelImageType.Logo
-            JellyfinImageType.THUMB -> ModelImageType.Thumb
-            JellyfinImageType.BACKDROP -> ModelImageType.Backdrop
-            else -> ModelImageType.Primary
-        }
-    return ImageRef(ItemId(id.toJellyfinId()), modelType, tag, blurHash = blurHash(type, tag))
+    return ImageRef(ItemId(id.toJellyfinId()), type.toModel(), tag, blurHash = blurHash(type, tag))
 }
+
+/** An image of the series or season of an item, whose tag and BlurHash come with the item. */
+private fun BaseItemDto.parentImage(owner: UUID?, type: JellyfinImageType, tag: String): ImageRef? {
+    val id = owner ?: return null
+    return ImageRef(ItemId(id.toJellyfinId()), type.toModel(), tag, blurHash = blurHash(type, tag))
+}
+
+private fun JellyfinImageType.toModel(): ModelImageType =
+    when (this) {
+        JellyfinImageType.LOGO -> ModelImageType.Logo
+        JellyfinImageType.THUMB -> ModelImageType.Thumb
+        JellyfinImageType.BACKDROP -> ModelImageType.Backdrop
+        else -> ModelImageType.Primary
+    }
 
 private fun BaseItemDto.blurHash(type: JellyfinImageType, tag: String): String? = imageBlurHashes?.get(type)?.get(tag)
 
@@ -161,6 +183,7 @@ private fun UserItemDataDto.toModel() =
         playCount = playCount,
         isFavorite = isFavorite,
         unplayedCount = unplayedItemCount,
+        lastPlayed = lastPlayedDate?.toInstant(),
     )
 
 private fun MediaSourceInfo.toModel() =

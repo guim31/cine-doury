@@ -7,6 +7,13 @@ android {
     namespace = "fr.guim.cinedoury.core.data"
 }
 
+// The schema of each database version is versioned in schemas/ (CI checks it is up to date): the
+// automatic migrations are generated from it, and the migration tests read it.
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+    arg("room.generateKotlin", "true")
+}
+
 dependencies {
     api(projects.core.source)
     implementation(libs.androidx.room.runtime)

@@ -68,7 +68,11 @@ library() {
 }
 library "Films" movies films
 library "Séries" tvshows series
+library "Spectacles" movies spectacles
 
+# generate-media.sh: 45 films and 2 shows (« Spectacles »), 11 episodes.
+EXPECTED_MOVIES=47
+EXPECTED_EPISODES=11
 log "scanning"
 api POST /Library/Refresh
 # The scan runs as a scheduled task; wait until every expected item is indexed.
@@ -79,11 +83,11 @@ for _ in $(seq 1 120); do
   movies="$(count Movie)"
   episodes="$(count Episode)"
   running="$(api GET /ScheduledTasks | jq -r '[.[] | select(.Key == "RefreshLibrary") | .State] | first')"
-  [ "$movies" -ge 4 ] && [ "$episodes" -ge 7 ] && [ "$running" = "Idle" ] && break
+  [ "$movies" -ge "$EXPECTED_MOVIES" ] && [ "$episodes" -ge "$EXPECTED_EPISODES" ] && [ "$running" = "Idle" ] && break
   sleep 2
 done
 log "indexed $movies films and $episodes episodes"
-[ "$movies" -ge 4 ] && [ "$episodes" -ge 7 ] || { log "scan incomplete"; exit 1; }
+[ "$movies" -ge "$EXPECTED_MOVIES" ] && [ "$episodes" -ge "$EXPECTED_EPISODES" ] || { log "scan incomplete"; exit 1; }
 
 if ! api GET /Users | jq -e --arg n "$CHILD_USER" 'any(.[]; .Name == $n)' > /dev/null; then
   log "child profile $CHILD_USER"
@@ -114,12 +118,68 @@ if [ "$(api GET "/Users/$admin_id" | jq -r '.PrimaryImageTag // empty')" = "" ] 
   rm -f "$avatar"
 fi
 
-collection="Le Phare : la saga"
-if [ "$(api GET "/Items?Recursive=true&IncludeItemTypes=BoxSet&Limit=0" | jq -r .TotalRecordCount)" = "0" ]; then
-  log "collection $collection"
-  ids="$(api GET "/Items?Recursive=true&IncludeItemTypes=Movie&CollapseBoxSetItems=false&SearchTerm=phare" \
-    | jq -r '[.Items[].Id] | join(",")')"
-  api POST "/Collections?name=$(jq -rn --arg v "$collection" '$v|@uri')&ids=$ids" > /dev/null
+# id_of TYPE NAME: the id of the item of that type and name.
+id_of() {
+  api GET "/Items?Recursive=true&IncludeItemTypes=$1&CollapseBoxSetItems=false" \
+    | jq -r --arg n "$2" '.Items[] | select(.Name == $n) | .Id'
+}
+
+# collection NAME FILM...: a collection (TMDb Box Sets does this on a real server).
+collection() {
+  local name="$1"
+  shift
+  [ -n "$(id_of BoxSet "$name")" ] && return
+  log "collection $name"
+  local ids=()
+  for film in "$@"; do ids+=("$(id_of Movie "$film")"); done
+  api POST "/Collections?name=$(jq -rn --arg v "$name" '$v|@uri')&ids=$(IFS=,; echo "${ids[*]}")" > /dev/null
+}
+collection "Le Phare : la saga" "Le Phare" "Retour au phare"
+collection "Les Étoiles filantes : la trilogie" "Les Étoiles filantes" "Les Étoiles filantes 2" "Les Étoiles filantes 3"
+
+# Home preferences of the administrator (J2): libraries in the order Séries, Films, Spectacles (not
+# the alphabetical one), and « Spectacles » excluded from the home and from « Ajouts récents ».
+library_id() { api GET "/Library/VirtualFolders" | jq -r --arg n "$1" '.[] | select(.Name == $n) | .ItemId'; }
+films_id="$(library_id Films)"
+series_id="$(library_id Séries)"
+shows_id="$(library_id Spectacles)"
+config="$(api GET "/Users/$admin_id" | jq -c --arg f "$films_id" --arg s "$series_id" --arg x "$shows_id" \
+  '.Configuration | .OrderedViews = [$s, $f, $x] | .MyMediaExcludes = [$x] | .LatestItemsExcludes = [$x]')"
+api POST "/Users/Configuration?userId=$admin_id" "$config"
+
+# What the administrator watched (J2), set through the API as a player would: « Reprendre » gets a
+# film and an episode, « À suivre » gets « Une saison » (recent) but not « Brume » (two months ago).
+# ago DAYS: an ISO date DAYS days ago.
+ago() { date -u -d "$1 days ago" +%Y-%m-%dT%H:%M:%S.0000000Z; }
+episode_id() {
+  api GET "/Items?Recursive=true&IncludeItemTypes=Episode" | jq -r --arg n "$1" --argjson s "$2" --argjson e "$3" \
+    '.Items[] | select(.SeriesName == $n and .ParentIndexNumber == $s and .IndexNumber == $e) | .Id'
+}
+# user_data ID JSON
+user_data() { api POST "/UserItems/$1/UserData?userId=$admin_id" "$2" > /dev/null; }
+# watched ID DAYS_AGO [PLAY_COUNT]
+watched() {
+  user_data "$1" "$(jq -nc --arg d "$(ago "$2")" --argjson c "${3:-1}" '{Played:true,PlayCount:$c,LastPlayedDate:$d,PlaybackPositionTicks:0}')"
+}
+# in_progress ID DAYS_AGO MINUTES
+in_progress() {
+  user_data "$1" "$(jq -nc --arg d "$(ago "$2")" --argjson t "$(($3 * 600000000))" \
+    '{Played:false,PlaybackPositionTicks:$t,LastPlayedDate:$d}')"
+}
+if [ "$(api GET "/Items?Recursive=true&IncludeItemTypes=Episode&IsPlayed=true&userId=$admin_id&Limit=0" | jq -r .TotalRecordCount)" = "0" ]; then
+  log "watch history of $ADMIN_USER"
+  for film in "Le Phare" "Bleu acier" "Givre" "Orage"; do watched "$(id_of Movie "$film")" 20; done
+  watched "$(id_of Movie "Le Cerf-volant")" 30 3
+  in_progress "$(id_of Movie "Fréquences")" 1 40
+  in_progress "$(id_of Movie "Marée basse")" 4 25
+  watched "$(episode_id "Les Marées" 1 1)" 3
+  in_progress "$(episode_id "Les Marées" 1 2)" 2 18
+  watched "$(episode_id "Une saison" 1 1)" 5
+  watched "$(episode_id "Brume" 1 1)" 61
+  watched "$(episode_id "Brume" 1 2)" 60
+  for film in "Zéphyr" "L'Odyssée des sables"; do
+    api POST "/UserFavoriteItems/$(id_of Movie "$film")?userId=$admin_id" > /dev/null
+  done
 fi
 
 log "done"

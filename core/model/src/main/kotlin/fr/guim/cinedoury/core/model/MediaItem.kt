@@ -1,5 +1,6 @@
 package fr.guim.cinedoury.core.model
 
+import java.time.Instant
 import java.time.LocalDate
 import kotlin.time.Duration
 
@@ -27,7 +28,11 @@ data class MediaItem(
     val originalTitle: String? = null,
     val year: Int? = null,
     val premiereDate: LocalDate? = null,
+    /** When the item entered the library. */
+    val dateAdded: Instant? = null,
     val overview: String? = null,
+    /** One line that sells the title (a TMDb tagline), when the server has one. */
+    val tagline: String? = null,
     val runtime: Duration? = null,
     val officialRating: String? = null,
     val communityRating: Float? = null,
@@ -37,7 +42,27 @@ data class MediaItem(
     val episode: EpisodeInfo? = null,
     val childCount: Int? = null,
     val mediaSources: List<MediaSource> = emptyList(),
-)
+) {
+    /** Playback progress between 0 and 1, or null when not started. */
+    val progress: Float?
+        get() {
+            val position = userData?.playbackPosition ?: return null
+            val total = runtime ?: return null
+            if (position <= Duration.ZERO || total <= Duration.ZERO) return null
+            return (position / total).toFloat().coerceIn(0f, 1f)
+        }
+
+    /** Not watched yet: a film or an episode never finished. */
+    val isUnwatched: Boolean
+        get() = userData?.played == false && kind in PLAYABLE
+
+    private companion object {
+        val PLAYABLE = setOf(ItemKind.Movie, ItemKind.Episode, ItemKind.Video)
+    }
+
+    /** Episodes left to watch in a series. */
+    val unwatchedEpisodes: Int? get() = userData?.unplayedCount?.takeIf { kind == ItemKind.Series }
+}
 
 /** Where an episode or a season sits in its series. */
 data class EpisodeInfo(
@@ -55,4 +80,5 @@ data class UserData(
     val playCount: Int,
     val isFavorite: Boolean,
     val unplayedCount: Int? = null,
+    val lastPlayed: Instant? = null,
 )
