@@ -143,12 +143,9 @@ jobs:
         run: ci/jellyfin/bootstrap.sh http://localhost:8096
       - name: OpenAPI matches docs/api
         run: |
-          curl -fsS http://localhost:8096/api-docs/openapi.json | python3 -m json.tool --indent 2 > /tmp/openapi.json
-          if ! diff -u docs/api/jellyfin-openapi-12.3.json /tmp/openapi.json > /tmp/openapi.diff; then
-            head -n 80 /tmp/openapi.diff
-            echo "::error::docs/api/jellyfin-openapi-12.3.json differs from the server"
-            exit 1
-          fi
+          curl -fsS http://localhost:8096/api-docs/openapi.json > /tmp/openapi.json
+          python3 ci/jellyfin/check-openapi.py docs/api/jellyfin-openapi-12.3.json /tmp/openapi.json \
+            || { echo "::error::docs/api/jellyfin-openapi-12.3.json differs from the server"; exit 1; }
       - name: Integration tests
         env:
           JELLYFIN_URL: http://localhost:8096

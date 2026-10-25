@@ -6,6 +6,9 @@ dependencies {
     api(projects.core.source)
     // The SDK stays an implementation detail: none of its types leaves this module.
     implementation(libs.jellyfin.core)
+    // The SDK logs through kotlin-logging, which needs the SLF4J API at runtime; without a binding
+    // SLF4J stays silent.
+    runtimeOnly(libs.slf4j.api)
     testImplementation(libs.okhttp.mockwebserver)
 }
 

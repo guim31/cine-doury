@@ -45,7 +45,7 @@ class CatalogNavigationTest {
                 CatalogScreen(
                     variant = ThemeVariant.Dark,
                     onToggleVariant = {},
-                    listState = rememberLazyListState(firstVisibleItemIndex = firstSection),
+                    listState = rememberLazyListState(initialFirstVisibleItemIndex = firstSection),
                     requestInitialFocus = firstSection == CatalogSection.HEADER,
                 )
             }

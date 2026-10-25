@@ -78,7 +78,7 @@ class CatalogScreenshotTest(private val variant: ThemeVariant) {
                 CatalogScreen(
                     variant = variant,
                     onToggleVariant = {},
-                    listState = rememberLazyListState(firstVisibleItemIndex = firstSection),
+                    listState = rememberLazyListState(initialFirstVisibleItemIndex = firstSection),
                     requestInitialFocus = firstSection == CatalogSection.HEADER,
                 )
             }

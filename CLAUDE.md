@@ -72,7 +72,7 @@ ci/jellyfin/run-local.sh down
   ```
 - ktlint seul, sans Gradle : `java -jar ktlint-cli-1.8.0-all.jar -F "**/*.kt" "**/*.kts" "!**/build/**"` (jar sur Maven Central).
 - Médias de test : `ci/jellyfin/generate-media.sh DOSSIER` (9 s). Amorçage : `ci/jellyfin/bootstrap.sh URL`.
-- OpenAPI : `curl http://localhost:8096/api-docs/openapi.json | python3 -m json.tool --indent 2 > docs/api/jellyfin-openapi-12.3.json`. La CI vérifie que le fichier versionné est identique.
+- OpenAPI : `curl http://localhost:8096/api-docs/openapi.json | python3 -m json.tool --indent 2 > docs/api/jellyfin-openapi-12.3.json`. La CI vérifie qu'il correspond au serveur (descriptions exclues).
 
 ## Pièges
 
@@ -80,6 +80,9 @@ ci/jellyfin/run-local.sh down
 - Sur un serveur qui a des collections, `/Items` regroupe les films dans leurs collections par défaut : `CollapseBoxSetItems=false` pour les lister ou les compter.
 - Un appel authentifié crée une session Jellyfin à notre `DeviceId` : la filtrer quand on liste les lectures en cours.
 - **SDK Kotlin de Jellyfin et caractères non ASCII** : le SDK recopie `ClientInfo.name` tel quel dans `User-Agent`, et OkHttp refuse tout caractère non ASCII dans un en-tête (exception à chaque appel). Le client s'annonce donc `Cine Doury`. Dans `Authorization`, le SDK encode les valeurs en URL (`Client="Cine%20Doury"`, `Device="Salon%20%C3%A9tage"`) : un nom d'appareil accentué y passe sans risque.
+- Le SDK journalise par kotlin-logging, qui exige `org.slf4j:slf4j-api` à l'exécution sans que le SDK l'apporte (`NoClassDefFoundError: org/slf4j/LoggerFactory` au premier appel) : `:source:jellyfin` le déclare en `runtimeOnly`.
+- L'OpenAPI servie par Jellyfin n'est pas stable d'un démarrage à l'autre : la description d'une propriété `$ref` change (« Gets or sets the user. » ou « Class UserDto. »). La CI la compare donc sans les descriptions (`ci/jellyfin/check-openapi.py`).
+- `rememberLazyListState` prend `initialFirstVisibleItemIndex` (pas `firstVisibleItemIndex`).
 - Le SDK 1.9 a déplacé les appels : authentification dans `authenticationApi` (pas `userApi`), éléments et détail dans `libraryApi.getItems` / `libraryApi.getItem` (`/Items`, `/Items/{id}`), bibliothèques dans `userViewApi.getUserViews`. Ses exceptions : `InvalidStatusException(status)`, `TimeoutException` (hôte injoignable, connexion refusée, délai), `SecureConnectionException`, `InvalidContentException`.
 - Sans fournisseur de métadonnées en ligne (`EnableInternetProviders: false`, réglage du serveur de test), Jellyfin garde le nom du dossier comme titre (« Le Phare (2001) ») : les médias de test portent donc un `.nfo` (titre, année, synopsis, genres).
 - Jellyfin regroupe deux fichiers d'un même dossier nommés `Titre (Année) - 1080p.mkv` et `Titre (Année) - 720p.mkv` en **un seul élément à deux sources média**.
