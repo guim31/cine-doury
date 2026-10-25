@@ -77,8 +77,8 @@ fun ProfilesRoute(
  * « Qui regarde ? » (`FONCTIONNALITES.md` § 1): the profiles of the server with their pictures (or
  * an initial on a coloured disc), a padlock on those with a PIN, and « Autre compte » for a user
  * the server does not list. Jellyfin hides new users, the administrator made by its startup wizard
- * included: a line says so, and when no profile is listed at all, Quick Connect and the password
- * are offered right here.
+ * included: the line under the title says so, and when no profile is listed at all, Quick Connect
+ * and the password are offered right here.
  */
 @Composable
 fun ProfilesScreen(
@@ -95,6 +95,8 @@ fun ProfilesScreen(
     FormScreen(
         brand = stringResource(UiR.string.brand_name),
         title = stringResource(R.string.profiles_title),
+        // Hidden accounts (Jellyfin's default) are not listed: the line says where they are.
+        subtitle = stringResource(R.string.profiles_hidden_hint).takeIf { error == null },
         topEnd = if (state.remote) ({ RemoteIndicator() }) else null,
         modifier = modifier,
     ) {
@@ -107,11 +109,9 @@ fun ProfilesScreen(
             )
         } else {
             ProfileRow(state.profiles, avatarUrl, onChoose, onOtherAccount, first)
-            HiddenAccountHint(
-                offerSignIn = !state.loading && state.profiles.isEmpty(),
-                onQuickConnect = onOtherAccount,
-                onPassword = onPassword,
-            )
+            if (!state.loading && state.profiles.isEmpty()) {
+                DirectSignIn(onQuickConnect = onOtherAccount, onPassword = onPassword)
+            }
         }
     }
     // Once the profiles known here are listed, the first one takes the focus.
@@ -157,35 +157,24 @@ private fun ProfileRow(
     }
 }
 
-/** « Votre compte n'apparaît pas ? », and the two ways to sign in when no profile is listed. */
+/** With no profile listed (hidden accounts only), the two ways to sign in, right here. */
 @Composable
-private fun HiddenAccountHint(
-    offerSignIn: Boolean,
+private fun DirectSignIn(
     onQuickConnect: () -> Unit,
     onPassword: () -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(CineSpacing.m)) {
-        Text(
-            text = stringResource(R.string.profiles_hidden_hint),
-            style = CineTheme.typography.body,
-            color = CineTheme.colors.text2,
-            modifier = Modifier.testTag("profiles-hidden-hint"),
+    Row(horizontalArrangement = Arrangement.spacedBy(CineSpacing.m)) {
+        SecondaryButton(
+            text = stringResource(R.string.profiles_quick_connect),
+            onClick = onQuickConnect,
+            focus = rememberCineFocus(AuthPreview.PROFILES_QUICK_CONNECT),
+            modifier = Modifier.testTag(AuthPreview.PROFILES_QUICK_CONNECT),
         )
-        if (offerSignIn) {
-            Row(horizontalArrangement = Arrangement.spacedBy(CineSpacing.m)) {
-                SecondaryButton(
-                    text = stringResource(R.string.profiles_quick_connect),
-                    onClick = onQuickConnect,
-                    focus = rememberCineFocus(AuthPreview.PROFILES_QUICK_CONNECT),
-                    modifier = Modifier.testTag(AuthPreview.PROFILES_QUICK_CONNECT),
-                )
-                SecondaryButton(
-                    text = stringResource(R.string.use_password),
-                    onClick = onPassword,
-                    modifier = Modifier.testTag("profiles-password"),
-                )
-            }
-        }
+        SecondaryButton(
+            text = stringResource(R.string.use_password),
+            onClick = onPassword,
+            modifier = Modifier.testTag("profiles-password"),
+        )
     }
 }
 

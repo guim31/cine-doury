@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -126,12 +128,19 @@ private fun MessageDetails(
 ) {
     val colors = CineTheme.colors
     val shape = RoundedCornerShape(CineSizes.cardCorner)
+    val inView = remember { BringIntoViewRequester() }
+    // Opened under the fold of a scrolling parent: brought on screen at once, focus or not.
+    LaunchedEffect(Unit) {
+        withFrameNanos { }
+        inView.bringIntoView()
+    }
     Text(
         text = details,
         style = CineTheme.typography.caption,
         color = colors.text2,
         modifier =
             modifier
+                .bringIntoViewRequester(inView)
                 .padding(top = CineSpacing.s)
                 .cineFocusDecoration(focus, shape, CineScale.FIELD)
                 .background(if (focus.isFocused) colors.surface2 else colors.surface1)

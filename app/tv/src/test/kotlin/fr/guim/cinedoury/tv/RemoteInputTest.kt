@@ -11,6 +11,7 @@ import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performImeAction
@@ -246,7 +247,7 @@ class RemoteInputTest {
                 onRetry = {},
             )
         }
-        compose.onNode(hasTestTag("profiles-hidden-hint")).assertExists()
+        compose.onNode(hasText("Votre compte n'apparaît pas", substring = true)).assertExists()
         compose.onNode(hasClickAction() and inside("profile-other")).assertIsFocused()
         press(Key.DirectionDown)
         compose.onNode(hasClickAction() and inside("profiles-quick-connect")).assertIsFocused()

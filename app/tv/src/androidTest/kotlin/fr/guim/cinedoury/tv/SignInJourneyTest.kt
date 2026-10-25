@@ -74,7 +74,7 @@ class SignInJourneyTest {
 
         // « Qui regarde ? »: the public users, and the line about hidden accounts.
         waitFor(hasText("enfant"))
-        waitFor(hasTestTag("profiles-hidden-hint"))
+        waitFor(hasText("Votre compte n'apparaît pas", substring = true))
         // Sorted by name, « admin » first; its name sits under the focused avatar.
         waitFor(isFocused() and hasAnyAncestor(hasTestTag("profile-0")))
         remote(KeyEvent.KEYCODE_DPAD_CENTER)
