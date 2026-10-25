@@ -49,7 +49,7 @@ data class PagedItems(
  * (and the neighbour the user is heading to). A page is read once; a failed page can be asked again.
  */
 class ItemPager(
-    private val scope: CoroutineScope,
+    scope: CoroutineScope,
     private val pageSize: Int = PageRequest.DEFAULT_LIMIT,
 ) {
     private val state = MutableStateFlow(PagedItems(pageSize = pageSize))
@@ -59,15 +59,15 @@ class ItemPager(
     private val requested = mutableSetOf<Int>()
     private val failed = mutableSetOf<Int>()
 
-    // Children of the screen's scope: they end with it, and a new query cancels them all.
-    private val jobs = SupervisorJob(scope.coroutineContext[Job])
+    // A child of the screen's scope: its pages end with it, and a new query cancels them all.
+    private val pages = CoroutineScope(scope.coroutineContext + SupervisorJob(scope.coroutineContext[Job]))
 
     /** Replaces the list by the results of [read], starting with the page of [around]. */
     fun load(
         around: Int = 0,
         read: suspend (PageRequest) -> Page<MediaItem>,
     ) {
-        jobs.cancelChildren()
+        pages.coroutineContext.cancelChildren()
         requested.clear()
         failed.clear()
         reader = read
@@ -99,7 +99,7 @@ class ItemPager(
         if (total != null && page * pageSize >= total) return
         if (!requested.add(page)) return
         val generation = state.value.generation
-        scope.launch(jobs) {
+        pages.launch {
             try {
                 val result = read(PageRequest(page * pageSize, pageSize))
                 state.update { if (it.generation == generation) it.with(result) else it }

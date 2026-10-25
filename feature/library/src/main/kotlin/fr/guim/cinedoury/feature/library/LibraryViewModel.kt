@@ -174,9 +174,8 @@ class LibraryViewModel(
                 }
             }
 
-            LibraryTab.Genres -> {
-                Unit
-            }
+            // The genres come with the filter values.
+            LibraryTab.Genres -> {}
         }
     }
 

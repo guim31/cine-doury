@@ -84,7 +84,7 @@ internal fun HomeRowView(
                 }, contentType = { _, _ -> row.style }) { index, item ->
                     val requester = if (index == last.coerceAtMost(row.items.lastIndex)) restore else null
                     val cardModifier =
-                        Modifier.onFocusChanged {
+                        Modifier.testTag(HomePreview.card(row.key, index)).onFocusChanged {
                             if (it.hasFocus) {
                                 last = index
                                 focused(item)

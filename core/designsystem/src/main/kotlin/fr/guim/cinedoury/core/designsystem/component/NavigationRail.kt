@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -80,6 +81,8 @@ fun NavigationRail(
     focusRequester: FocusRequester? = null,
 ) {
     var hasFocus by remember { mutableStateOf(false) }
+    // Entering the rail lands on the entry focused last, else on the selected one.
+    val selected = focusRequester ?: remember { FocusRequester() }
     val open = expanded ?: (hasFocus || previewFocusedIndex != null)
     val expansion by animateFloatAsState(
         targetValue = if (open) 1f else 0f,
@@ -114,6 +117,7 @@ fun NavigationRail(
                         )
                     }
                 }.onFocusChanged { hasFocus = it.hasFocus }
+                .focusRestorer(selected)
                 .focusGroup()
                 .padding(vertical = CineSpacing.safeVertical + CineSpacing.m, horizontal = CineSpacing.xs),
         verticalArrangement = Arrangement.spacedBy(CineSpacing.xs),
@@ -125,7 +129,7 @@ fun NavigationRail(
                 labelAlpha = expansion,
                 onClick = { onSelect(index) },
                 preview = index == previewFocusedIndex,
-                focusRequester = focusRequester.takeIf { index == selectedIndex },
+                focusRequester = selected.takeIf { index == selectedIndex },
             )
         }
         Spacer(Modifier.weight(1f))
@@ -137,7 +141,7 @@ fun NavigationRail(
                 labelAlpha = expansion,
                 onClick = { onSelect(index) },
                 preview = index == previewFocusedIndex,
-                focusRequester = focusRequester.takeIf { index == selectedIndex },
+                focusRequester = selected.takeIf { index == selectedIndex },
             )
         }
     }

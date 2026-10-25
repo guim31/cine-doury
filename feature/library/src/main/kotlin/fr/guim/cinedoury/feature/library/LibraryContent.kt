@@ -219,7 +219,7 @@ private fun ItemGrid(
                 onClick = { onOpen(item) },
                 focusRequester = if (index == focusIndex) target else null,
                 modifier =
-                    Modifier.onFocusChanged {
+                    Modifier.testTag(LibraryPreview.item(index)).onFocusChanged {
                         if (it.hasFocus) {
                             actions.onFocused(index)
                             focused(item)
