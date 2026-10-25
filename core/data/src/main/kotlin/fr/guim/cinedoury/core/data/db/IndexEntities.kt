@@ -110,6 +110,18 @@ abstract class IndexDao {
         seriesId: String,
     ): List<IndexedItemEntity>
 
+    /** Forgets an item deleted on the server (J6), and the episodes of a series. */
+    @Query(
+        """
+        DELETE FROM media_index WHERE server_id = :serverId
+        AND (item_id IN (:itemIds) OR series_id IN (:itemIds))
+        """,
+    )
+    abstract suspend fun forget(
+        serverId: String,
+        itemIds: List<String>,
+    )
+
     @Query("SELECT COUNT(*) FROM media_index WHERE server_id = :serverId AND library_id = :libraryId")
     abstract suspend fun count(
         serverId: String,

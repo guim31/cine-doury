@@ -49,4 +49,8 @@
         <item quantity="many">%1$d saisons</item>
         <item quantity="other">%1$d saisons</item>
     </plurals>
+    <string name="file_item">La fiche</string>
+    <string name="file_added">Ajouté le %1$s</string>
+    <string name="file_no_ids">Aucun identifiant de fournisseur</string>
+    <string name="file_id">%1$s\u00A0: %2$s</string>
 </resources>

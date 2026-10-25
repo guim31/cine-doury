@@ -13,7 +13,7 @@ case "${1:-up}" in
     docker rm -f "$NAME" > /dev/null 2>&1 || true
     rm -rf "$MEDIA"
     "$HERE/generate-media.sh" "$MEDIA" > /dev/null
-    docker run -d --name "$NAME" -p 8096:8096 -v "$MEDIA:/media:ro" "$IMAGE" > /dev/null
+    docker run -d --name "$NAME" -p 8096:8096 -v "$MEDIA:/media" "$IMAGE" > /dev/null
     "$HERE/bootstrap.sh" http://localhost:8096
     ;;
   down)

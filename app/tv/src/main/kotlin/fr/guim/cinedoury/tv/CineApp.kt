@@ -43,6 +43,7 @@ import fr.guim.cinedoury.core.designsystem.theme.CineMotion
 import fr.guim.cinedoury.core.designsystem.theme.CineSpacing
 import fr.guim.cinedoury.core.designsystem.theme.CineTheme
 import fr.guim.cinedoury.core.designsystem.theme.ThemeVariant
+import fr.guim.cinedoury.core.model.LibraryId
 import fr.guim.cinedoury.core.model.MediaItem
 import fr.guim.cinedoury.core.model.PlaybackRequest
 import fr.guim.cinedoury.core.model.RemoteTrailer
@@ -65,6 +66,9 @@ import fr.guim.cinedoury.feature.home.HomeRoute
 import fr.guim.cinedoury.feature.home.HomeSettingsRoute
 import fr.guim.cinedoury.feature.library.LibraryNavigation
 import fr.guim.cinedoury.feature.library.LibraryRoute
+import fr.guim.cinedoury.feature.manage.IdentifyRoute
+import fr.guim.cinedoury.feature.manage.ImagesRoute
+import fr.guim.cinedoury.feature.manage.ProblemsRoute
 import fr.guim.cinedoury.feature.player.DeviceProfileRoute
 import fr.guim.cinedoury.feature.player.PlaybackSettingsRoute
 import fr.guim.cinedoury.feature.player.PlayerRoute
@@ -283,6 +287,18 @@ private fun SessionScreen(
             )
         }
 
+        is Route.Identify -> {
+            IdentifyRoute(route.item, onDone = { navigator.pop() })
+        }
+
+        is Route.Images -> {
+            ImagesRoute(route.item, onDone = { navigator.pop() })
+        }
+
+        is Route.Problems -> {
+            ProblemsRoute(route.library, route.name, onIdentify = { navigator.push(Route.Identify(it)) })
+        }
+
         Route.Settings -> {
             SettingsRoute(navigation = settingsNavigation(navigator), showCatalog = showCatalog)
         }
@@ -412,6 +428,11 @@ private fun libraryNavigation(
 
     override fun open(item: MediaItem) = navigator.push(Route.Details(item))
 
+    override fun problems(
+        library: LibraryId,
+        name: String,
+    ) = navigator.push(Route.Problems(library, name))
+
     override fun sessionEnded() = navigator.replaceAll(Route.Profiles)
 }
 
@@ -424,6 +445,14 @@ private fun detailsNavigation(
     override fun play(request: PlaybackRequest) = navigator.push(Route.Player(request))
 
     override fun openTrailer(url: String) = openTrailerApp(context, url)
+
+    override fun identify(item: MediaItem) = navigator.push(Route.Identify(item))
+
+    override fun images(item: MediaItem) = navigator.push(Route.Images(item))
+
+    override fun close() {
+        navigator.pop()
+    }
 
     override fun sessionEnded() = navigator.replaceAll(Route.Profiles)
 }

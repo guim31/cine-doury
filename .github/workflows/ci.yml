@@ -112,11 +112,11 @@ jobs:
         env:
           HEAD_REF: ${{ github.head_ref }}
         run: |
-          mkdir -p docs/screenshots/j5
-          cp app/tv/src/test/screenshots/*.png docs/screenshots/j5/
+          mkdir -p docs/screenshots/j6
+          cp app/tv/src/test/screenshots/*.png docs/screenshots/j6/
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add app/tv/src/test/screenshots docs/screenshots/j5
+          git add app/tv/src/test/screenshots docs/screenshots/j6
           if git diff --cached --quiet; then
             echo "Screenshots unchanged."
           else
@@ -174,6 +174,8 @@ jobs:
       - name: Integration tests
         env:
           JELLYFIN_URL: http://localhost:8096
+          # The folder the server reads as /media: the management tests make (and delete) a film there.
+          JELLYFIN_MEDIA_DIR: /tmp/cine-doury-media
         run: |
           set -o pipefail
           ./gradlew :source:jellyfin:integrationTest 2>&1 | tee gradle.log

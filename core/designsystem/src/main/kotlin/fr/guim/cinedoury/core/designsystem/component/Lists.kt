@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -253,6 +254,50 @@ fun ListSectionTitle(
 }
 
 /**
+ * A message over the screen, with one button that closes it (a failure in two sentences): the same
+ * `surface-2` box as [ConfirmDialog].
+ */
+@Composable
+fun MessageDialog(
+    title: String,
+    message: String,
+    buttonLabel: String,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+    buttonFocusRequester: FocusRequester? = null,
+    buttonFocus: CineFocus = rememberCineFocus(),
+) {
+    val colors = CineTheme.colors
+    Box(
+        modifier =
+            modifier
+                .fillMaxSize()
+                .background(colors.dialogScrim),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .width(CineSizes.dialogWidth)
+                    .background(colors.surface2, RowShape)
+                    .padding(CineSpacing.l),
+            verticalArrangement = Arrangement.spacedBy(CineSpacing.s),
+        ) {
+            Text(text = title, style = CineTheme.typography.title1, color = colors.text)
+            Text(text = message, style = CineTheme.typography.body, color = colors.text2)
+            Row(modifier = Modifier.padding(top = CineSpacing.m)) {
+                PrimaryButton(
+                    text = buttonLabel,
+                    onClick = onDismiss,
+                    focusRequester = buttonFocusRequester,
+                    focus = buttonFocus,
+                )
+            }
+        }
+    }
+}
+
+/**
  * A confirmation over the screen (`UI.md` § 8, « Action destructrice »): a `surface-2` box that
  * says exactly what will happen, « Annuler » with the initial focus, the action in `danger` (in the
  * accent when it destroys nothing: « Quitter »).
@@ -272,6 +317,17 @@ fun ConfirmDialog(
     destructive: Boolean = true,
 ) {
     val colors = CineTheme.colors
+    // While a button closes the box, the focus may leave it: the caller gives the focus back to the
+    // element the box came from before the box goes away.
+    val closing = remember { BooleanArray(1) }
+    val close: (() -> Unit) -> Unit = { action ->
+        closing[0] = true
+        try {
+            action()
+        } finally {
+            closing[0] = false
+        }
+    }
     Box(
         modifier =
             modifier
@@ -283,7 +339,7 @@ fun ConfirmDialog(
             modifier =
                 Modifier
                     // The focus stays in the box: the screen behind it is out of reach.
-                    .focusProperties { onExit = { cancelFocusChange() } }
+                    .focusProperties { onExit = { if (!closing[0]) cancelFocusChange() } }
                     .focusGroup()
                     .width(CineSizes.dialogWidth)
                     .background(colors.surface2, RowShape)
@@ -298,11 +354,16 @@ fun ConfirmDialog(
             ) {
                 SecondaryButton(
                     text = cancelLabel,
-                    onClick = onCancel,
+                    onClick = { close(onCancel) },
                     focusRequester = cancelFocusRequester,
                     focus = cancelFocus,
                 )
-                PrimaryButton(text = confirmLabel, onClick = onConfirm, destructive = destructive, focus = confirmFocus)
+                PrimaryButton(
+                    text = confirmLabel,
+                    onClick = { close(onConfirm) },
+                    destructive = destructive,
+                    focus = confirmFocus,
+                )
             }
         }
     }

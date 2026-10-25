@@ -10,6 +10,7 @@ import fr.guim.cinedoury.core.source.ServerAddress
 import fr.guim.cinedoury.core.source.Session
 import fr.guim.cinedoury.core.source.SourceConnector
 import fr.guim.cinedoury.core.source.SourceException
+import fr.guim.cinedoury.core.source.SourceLog
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import okhttp3.OkHttpClient
@@ -44,17 +45,20 @@ data class ClientIdentity(
  *
  * @param http the OkHttp client every request is built on (tests watch it).
  * @param io where requests run: never the main thread (see [TracingApiClient]).
+ * @param log receives a line for each management call (logcat in the app).
  */
 class JellyfinConnector internal constructor(
     identity: ClientIdentity,
     requestTimeout: Duration,
     http: OkHttpClient,
     private val io: CoroutineDispatcher,
+    private val log: SourceLog = SourceLog.NONE,
 ) : SourceConnector {
     constructor(
         identity: ClientIdentity,
         requestTimeout: Duration = 30.seconds,
-    ) : this(identity, requestTimeout, OkHttpClient(), Dispatchers.IO)
+        log: SourceLog = SourceLog.NONE,
+    ) : this(identity, requestTimeout, OkHttpClient(), Dispatchers.IO, log)
 
     private val httpOptions = HttpClientOptions(requestTimeout = requestTimeout)
 
@@ -173,7 +177,7 @@ class JellyfinConnector internal constructor(
     }
 
     override fun open(session: Session): LibrarySource =
-        JellyfinLibrarySource(api = api(session.server, session.accessToken), session = session)
+        JellyfinLibrarySource(api = api(session.server, session.accessToken), session = session, log = log)
 
     override fun imageUrl(server: ServerAddress, image: ImageRef, width: Int, height: Int): String =
         imageUrlOf(server, image, width, height)

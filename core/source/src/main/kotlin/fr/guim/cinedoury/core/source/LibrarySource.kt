@@ -22,6 +22,9 @@ interface LibrarySource {
     /** Playback of the items of this session (J4, `SPEC.md` § 4.11). */
     val playback: PlaybackSource
 
+    /** Management of the server, for an administrator (J6, `SPEC.md` § 4.14). */
+    val manage: ManageSource
+
     /**
      * Every library of the user, hidden ones included, in the order the user chose on the server
      * (Jellyfin: `OrderedViews`).

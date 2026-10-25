@@ -27,13 +27,19 @@ import fr.guim.cinedoury.core.designsystem.component.rememberCineFocus
 import fr.guim.cinedoury.core.designsystem.theme.CineSizes
 import fr.guim.cinedoury.core.designsystem.theme.CineSpacing
 import fr.guim.cinedoury.core.model.ItemKind
-import fr.guim.cinedoury.core.model.MediaSource
+import fr.guim.cinedoury.core.model.MediaItem
+import fr.guim.cinedoury.core.model.MetadataRefresh
+import fr.guim.cinedoury.core.model.ProviderKeys
 import fr.guim.cinedoury.core.model.StreamType
 import fr.guim.cinedoury.core.ui.SEPARATOR
 import fr.guim.cinedoury.core.ui.attributes
 import fr.guim.cinedoury.core.ui.describe
 import fr.guim.cinedoury.core.ui.label
 import fr.guim.cinedoury.core.ui.sizeText
+import fr.guim.cinedoury.core.ui.toDateText
+import fr.guim.cinedoury.feature.manage.ItemManager
+import java.time.ZoneId
+import fr.guim.cinedoury.feature.manage.R as ManageR
 
 /** A line of a panel: a section title, or a row that may be chosen. */
 @Immutable
@@ -56,6 +62,8 @@ private sealed interface PanelLine {
         val initial: Boolean = false,
         /** The attributes of a track, in pills after its title; the title then never gets cut. */
         val pills: List<String>? = null,
+        /** In `danger`: « Supprimer ». */
+        val destructive: Boolean = false,
     ) : PanelLine
 }
 
@@ -75,6 +83,8 @@ internal fun DetailsPanels(
     actions: DetailsActions,
     onPanel: (DetailsPanel?) -> Unit,
     onPlay: () -> Unit,
+    onIdentify: () -> Unit = {},
+    onImages: () -> Unit = {},
 ) {
     // While the panel fades out, it keeps its lines: none of them leaves with the focus on it.
     var last by remember { mutableStateOf(panel) }
@@ -90,8 +100,8 @@ internal fun DetailsPanels(
     val lines =
         when (shown) {
             DetailsPanel.Tracks -> trackLines(state, actions, onPlay)
-            DetailsPanel.More -> moreLines(state, actions, onPanel)
-            DetailsPanel.FileInfo -> fileLines(state.item.mediaSources)
+            DetailsPanel.More -> moreLines(state, actions, onPanel, onIdentify, onImages)
+            DetailsPanel.FileInfo -> fileLines(state.item)
             null -> emptyList()
         }
     val wide = shown != DetailsPanel.More
@@ -127,6 +137,7 @@ internal fun DetailsPanels(
                             focus = rememberCineFocus(panelLine(index)),
                             pills = line.pills.orEmpty(),
                             wrapTitle = line.pills != null,
+                            destructive = line.destructive,
                             modifier = Modifier.testTag(panelLine(index)),
                         )
                     }
@@ -204,28 +215,36 @@ private fun trackLines(
     }
 }
 
-/** « ⋯ »: no management before J6, only « Marquer comme non vu » and the file. */
+/**
+ * « ⋯ »: « Marquer comme vu », the file, then for an administrator « Gestion » (`SPEC.md` § 4.14):
+ * each action is one press away, « Supprimer » included (`FONCTIONNALITES.md` § 9).
+ */
 @Composable
 private fun moreLines(
     state: DetailsState,
     actions: DetailsActions,
     onPanel: (DetailsPanel?) -> Unit,
+    onIdentify: () -> Unit,
+    onImages: () -> Unit,
 ): List<PanelLine> {
     val item = state.item
     val watched = item.userData?.played == true
+    val close = { onPanel(null) }
     return buildList {
-        add(
-            PanelLine.Choice(
-                "watched",
-                stringResource(if (watched) R.string.action_unwatched else R.string.action_watched),
-                {
-                    actions.toggleWatched(item)
-                    onPanel(null)
-                },
-                icon = if (watched) CineIcons.Unwatched else CineIcons.Watched,
-            ),
-        )
-        if (item.kind != ItemKind.Series && item.mediaSources.isNotEmpty()) {
+        if (item.kind != ItemKind.Collection) {
+            add(
+                PanelLine.Choice(
+                    "watched",
+                    stringResource(if (watched) R.string.action_unwatched else R.string.action_watched),
+                    {
+                        actions.toggleWatched(item)
+                        close()
+                    },
+                    icon = if (watched) CineIcons.Unwatched else CineIcons.Watched,
+                ),
+            )
+        }
+        if (item.mediaSources.isNotEmpty() || (state.loaded && item.path != null)) {
             add(
                 PanelLine.Choice(
                     "file",
@@ -235,13 +254,102 @@ private fun moreLines(
                 ),
             )
         }
+        if (state.rights.canManage) addAll(manageLines(state, actions, close, onIdentify, onImages))
     }
 }
 
-/** For each version: its path, container, size and bitrate, then each stream as the server describes it. */
+/** The entries of « Gestion », for an administrator. */
 @Composable
-private fun fileLines(sources: List<MediaSource>): List<PanelLine> =
+private fun manageLines(
+    state: DetailsState,
+    actions: DetailsActions,
+    close: () -> Unit,
+    onIdentify: () -> Unit,
+    onImages: () -> Unit,
+): List<PanelLine> =
     buildList {
+        add(PanelLine.Section("manage", stringResource(ManageR.string.manage_section)))
+        refreshes().forEach { (mode, title, description) ->
+            add(
+                PanelLine.Choice(
+                    "refresh-${mode.name}",
+                    title,
+                    {
+                        actions.refresh(mode)
+                        close()
+                    },
+                    description = description,
+                    icon = CineIcons.Retry,
+                ),
+            )
+        }
+        if (state.item.kind in ItemManager.IDENTIFIABLE) {
+            add(
+                PanelLine.Choice(
+                    "identify",
+                    stringResource(ManageR.string.manage_identify),
+                    {
+                        close()
+                        onIdentify()
+                    },
+                    description = stringResource(ManageR.string.manage_identify_description),
+                    icon = CineIcons.Search,
+                ),
+            )
+        }
+        add(
+            PanelLine.Choice(
+                "images",
+                stringResource(ManageR.string.manage_images),
+                {
+                    close()
+                    onImages()
+                },
+                icon = CineIcons.Image,
+            ),
+        )
+        if (state.canDelete) {
+            add(
+                PanelLine.Choice(
+                    "delete",
+                    stringResource(ManageR.string.manage_delete),
+                    {
+                        close()
+                        actions.askDelete()
+                    },
+                    description = stringResource(ManageR.string.manage_delete_description),
+                    icon = CineIcons.Delete,
+                    destructive = true,
+                ),
+            )
+        }
+    }
+
+/** The three refreshes, from the gentlest. */
+@Composable
+private fun refreshes(): List<Triple<MetadataRefresh, String, String?>> =
+    listOf(
+        Triple(
+            MetadataRefresh.FillMissing,
+            stringResource(ManageR.string.manage_refresh_missing),
+            stringResource(ManageR.string.manage_refresh_missing_description),
+        ),
+        Triple(
+            MetadataRefresh.ReplaceAll,
+            stringResource(ManageR.string.manage_refresh_all),
+            stringResource(ManageR.string.manage_refresh_all_description),
+        ),
+        Triple(MetadataRefresh.ReplaceAllAndImages, stringResource(ManageR.string.manage_refresh_all_images), null),
+    )
+
+/**
+ * For each version: its path, container, size and bitrate, then each stream as the server describes
+ * it; then the item: where it is, when it was added, its ids at the providers (TMDb, IMDb, TVDB).
+ */
+@Composable
+private fun fileLines(item: MediaItem): List<PanelLine> =
+    buildList {
+        val sources = item.mediaSources
         sources.forEach { source ->
             if (sources.size > 1) add(PanelLine.Section("source-${source.id}", source.describe()))
             val facts =
@@ -272,6 +380,38 @@ private fun fileLines(sources: List<MediaSource>): List<PanelLine> =
                 )
             }
         }
+        add(PanelLine.Section("item", stringResource(R.string.file_item)))
+        if (sources.isEmpty() && item.path != null) {
+            add(PanelLine.Choice("item-path", item.path.orEmpty(), {}, icon = CineIcons.Folder))
+        }
+        item.dateAdded?.let { added ->
+            val date = added.atZone(ZoneId.systemDefault()).toLocalDate().toDateText()
+            add(PanelLine.Choice("added", stringResource(R.string.file_added, date), {}, icon = CineIcons.Add))
+        }
+        val ids = ProviderKeys.SHOWN.mapNotNull { key -> item.providerIds[key]?.let { key to it } }
+        if (ids.isEmpty()) {
+            add(PanelLine.Choice("ids", stringResource(R.string.file_no_ids), {}, icon = CineIcons.Warning))
+        } else {
+            ids.forEach { (key, value) ->
+                add(
+                    PanelLine.Choice(
+                        "id-$key",
+                        stringResource(R.string.file_id, providerName(key), value),
+                        {},
+                        icon = CineIcons.Info,
+                    ),
+                )
+            }
+        }
+    }
+
+/** The name a provider goes by (« TMDb »), for its id. */
+private fun providerName(key: String): String =
+    when (key) {
+        ProviderKeys.TMDB -> "TMDb"
+        ProviderKeys.IMDB -> "IMDb"
+        ProviderKeys.TVDB -> "TVDB"
+        else -> key
     }
 
 private const val KILO = 1_000

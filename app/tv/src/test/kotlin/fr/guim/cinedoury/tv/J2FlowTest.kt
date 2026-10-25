@@ -26,6 +26,7 @@ import fr.guim.cinedoury.feature.home.HomePreview
 import fr.guim.cinedoury.feature.home.homeModule
 import fr.guim.cinedoury.feature.library.LibraryPreview
 import fr.guim.cinedoury.feature.library.libraryModule
+import fr.guim.cinedoury.feature.manage.manageModule
 import fr.guim.cinedoury.feature.settings.settingsModule
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.runBlocking
@@ -88,6 +89,7 @@ class J2FlowTest {
                 authModule,
                 homeModule,
                 libraryModule,
+                manageModule,
                 detailsModule,
                 settingsModule,
             )

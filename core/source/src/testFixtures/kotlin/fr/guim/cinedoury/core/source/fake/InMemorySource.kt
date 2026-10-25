@@ -19,6 +19,7 @@ import fr.guim.cinedoury.core.model.UserData
 import fr.guim.cinedoury.core.model.UserId
 import fr.guim.cinedoury.core.source.Credentials
 import fr.guim.cinedoury.core.source.LibrarySource
+import fr.guim.cinedoury.core.source.ManageSource
 import fr.guim.cinedoury.core.source.PlaybackSource
 import fr.guim.cinedoury.core.source.QuickConnectRequest
 import fr.guim.cinedoury.core.source.ServerAddress
@@ -60,8 +61,13 @@ class InMemorySource(
     var preferences: PlaybackPreferences = PlaybackPreferences(),
     /** Playback, shared by every session. */
     val playback: InMemoryPlayback = InMemoryPlayback(),
+    /** Management (J6), shared by every session: what was deleted or changed applies everywhere. */
+    val manage: InMemoryManage = InMemoryManage(),
 ) : SourceConnector {
-    private val items: Map<ItemId, MediaItem> = (contents.values.flatten() + extras).associateBy { it.id }
+    private val all: Map<ItemId, MediaItem> = (contents.values.flatten() + extras).associateBy { it.id }
+
+    /** The items not deleted (J6). */
+    private val items: Map<ItemId, MediaItem> get() = all.filterKeys { it !in manage.deleted }
 
     init {
         playback.lookup = { id -> items[id]?.mediaSources?.takeIf { it.isNotEmpty() } }
@@ -73,7 +79,10 @@ class InMemorySource(
     /** Number of calls of each function of the libraries, by name, for tests that count requests. */
     val calls: MutableMap<String, Int> = mutableMapOf()
 
-    private fun MediaItem.current(): MediaItem = changes[id]?.let { copy(userData = it) } ?: this
+    private fun MediaItem.current(): MediaItem {
+        val base = manage.changed[id] ?: this
+        return changes[id]?.let { base.copy(userData = it) } ?: base
+    }
 
     /** Addresses that do not answer. */
     val unreachable: MutableSet<ServerAddress> = mutableSetOf()
@@ -173,6 +182,15 @@ class InMemorySource(
 
     private inner class InMemoryLibrary(override val session: Session) : LibrarySource {
         override val playback: PlaybackSource get() = this@InMemorySource.playback
+
+        override val manage: ManageSource =
+            this@InMemorySource.manage.Session(
+                user = session.user,
+                find = { id -> items[id]?.current() },
+                pool = { library -> pool(library) },
+                episodesOf = { series -> episodesOf(series) },
+                checkSession = { checkSession() },
+            )
 
         private fun checkSession() {
             check(session.server)
@@ -437,7 +455,8 @@ class InMemorySource(
             return (
                 library?.let { contents[it] ?: throw SourceException.NotFound("library ${it.value}") }
                     ?: contents.values.flatten()
-            ).map { it.current() }
+            ).filter { it.id !in this@InMemorySource.manage.deleted }
+                .map { it.current() }
         }
 
         override suspend fun item(id: ItemId): MediaItem {

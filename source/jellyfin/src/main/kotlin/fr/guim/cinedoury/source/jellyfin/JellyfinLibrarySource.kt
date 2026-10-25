@@ -16,8 +16,11 @@ import fr.guim.cinedoury.core.model.PlaybackPreferences
 import fr.guim.cinedoury.core.model.SubtitleMode
 import fr.guim.cinedoury.core.model.UserData
 import fr.guim.cinedoury.core.source.LibrarySource
+import fr.guim.cinedoury.core.source.LoggingManageSource
+import fr.guim.cinedoury.core.source.ManageSource
 import fr.guim.cinedoury.core.source.PlaybackSource
 import fr.guim.cinedoury.core.source.Session
+import fr.guim.cinedoury.core.source.SourceLog
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import org.jellyfin.sdk.api.client.ApiClient
@@ -50,12 +53,16 @@ import java.time.ZoneId
 internal class JellyfinLibrarySource(
     private val api: ApiClient,
     override val session: Session,
+    log: SourceLog = SourceLog.NONE,
 ) : LibrarySource {
     private val userId =
         session.user.id.value
             .toJellyfinUuid()
 
     override val playback: PlaybackSource = JellyfinPlaybackSource(api, userId)
+
+    // Every management call is logged (`SPEC.md` § 4.14).
+    override val manage: ManageSource = LoggingManageSource(JellyfinManageSource(api, userId), log)
 
     override suspend fun libraries(): List<Library> =
         jellyfinCall(what = "libraries") {

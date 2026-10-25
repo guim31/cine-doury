@@ -21,6 +21,7 @@ import fr.guim.cinedoury.core.source.fake.InMemorySource
 import fr.guim.cinedoury.feature.auth.authModule
 import fr.guim.cinedoury.feature.home.homeModule
 import fr.guim.cinedoury.feature.library.libraryModule
+import fr.guim.cinedoury.feature.manage.manageModule
 import fr.guim.cinedoury.feature.settings.settingsModule
 import kotlinx.coroutines.flow.flowOf
 import org.junit.After
@@ -79,6 +80,7 @@ class AppFlowTest {
                 authModule,
                 homeModule,
                 libraryModule,
+                manageModule,
                 settingsModule,
             )
         }

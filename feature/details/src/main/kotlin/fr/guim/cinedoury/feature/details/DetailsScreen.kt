@@ -18,6 +18,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
@@ -60,6 +61,9 @@ import fr.guim.cinedoury.core.ui.cardTitle
 import fr.guim.cinedoury.core.ui.imageSource
 import fr.guim.cinedoury.core.ui.label
 import fr.guim.cinedoury.core.ui.rememberArt
+import fr.guim.cinedoury.feature.manage.DeleteDialog
+import fr.guim.cinedoury.feature.manage.ManageErrorDialog
+import fr.guim.cinedoury.feature.manage.ManageNoticePill
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
@@ -76,6 +80,15 @@ interface DetailsNavigation {
     fun openTrailer(url: String)
 
     fun sessionEnded()
+
+    /** « Corriger l'identification » of [item] (J6). */
+    fun identify(item: MediaItem) {}
+
+    /** « Changer l'affiche, le fond ou le logo » of [item] (J6). */
+    fun images(item: MediaItem) {}
+
+    /** The item was deleted: back to the screen before (J6). */
+    fun close() {}
 }
 
 /** The side panels of a details screen. */
@@ -99,6 +112,7 @@ fun DetailsRoute(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     CollectEvents(viewModel.sessionEnded) { navigation.sessionEnded() }
+    CollectEvents(viewModel.deleted) { navigation.close() }
     DetailsScreen(state = state, sources = sessions::imageSource, actions = viewModel, navigation = navigation)
 }
 
@@ -159,6 +173,10 @@ fun DetailsScreen(
     }
     BackHandler(enabled = panel != null) {
         if (panel == DetailsPanel.FileInfo) panel = DetailsPanel.More else closePanel()
+    }
+    val restoreFocus = { focused?.let { runCatching { requesters[it].requestFocus() } } }
+    BackHandler(enabled = state.deletion != null || state.manageError != null) {
+        if (state.deletion != null) actions.cancelDelete() else actions.dismissManageError()
     }
 
     val play: () -> Unit = { actions.playRequest()?.let(navigation::play) }
@@ -221,7 +239,43 @@ fun DetailsScreen(
                 closePanel()
                 play()
             },
+            onIdentify = { navigation.identify(item) },
+            onImages = { navigation.images(item) },
         )
+        ManageNoticePill(state.notice)
+        // A dialog that closes gives the focus back to the element it came from, as a panel does:
+        // the focus never falls out of the screen. Its buttons do it at once (`ConfirmDialog` lets
+        // the focus leave while a button closes it); Back does it once the dialog is gone.
+        val dialogShown = state.deletion != null || state.manageError != null
+        var hadDialog by remember { mutableStateOf(false) }
+        LaunchedEffect(dialogShown) {
+            if (dialogShown) {
+                hadDialog = true
+            } else if (hadDialog) {
+                hadDialog = false
+                withFrameNanos { }
+                restoreFocus()
+            }
+        }
+        state.deletion?.let {
+            DeleteDialog(
+                it,
+                onConfirm = actions::confirmDelete,
+                onCancel = {
+                    restoreFocus()
+                    actions.cancelDelete()
+                },
+            )
+        }
+        state.manageError?.let {
+            ManageErrorDialog(
+                it,
+                onDismiss = {
+                    restoreFocus()
+                    actions.dismissManageError()
+                },
+            )
+        }
     }
     // The first focus: « Lire », or the element left when coming back (or that opened the panel just
     // closed); for a person or a collection, the first card, once read.
@@ -235,11 +289,13 @@ fun DetailsScreen(
             else -> state.firstRowKey()?.let(::rowKey) ?: DetailsPreview.FAVORITE.takeIf { state.loaded }
         }
     val ready = target != null && (target == KEY_PLAY || state.loaded)
+    // A dialog keeps the focus: the page does not take it back under it.
+    val dialog by rememberUpdatedState(state.deletion != null || state.manageError != null)
     if (target != null) {
         LaunchedEffect(target, ready, panel == null) {
             if (ready && panel == null) {
                 withFrameNanos { }
-                runCatching { requesters[target].requestFocus() }
+                if (!dialog) runCatching { requesters[target].requestFocus() }
             }
         }
     }
@@ -521,7 +577,7 @@ private fun Buttons(
                 onFocused,
             )
         }
-        if (state.playable) {
+        if (state.playable || state.rights.canManage) {
             Round(CineIcons.More, stringResource(R.string.action_more), {
                 onPanel(DetailsPanel.More)
             }, DetailsPreview.MORE, requesters, onFocused)

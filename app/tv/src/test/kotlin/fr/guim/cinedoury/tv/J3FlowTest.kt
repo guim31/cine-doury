@@ -30,6 +30,7 @@ import fr.guim.cinedoury.feature.details.detailsModule
 import fr.guim.cinedoury.feature.details.panelLine
 import fr.guim.cinedoury.feature.home.homeModule
 import fr.guim.cinedoury.feature.library.libraryModule
+import fr.guim.cinedoury.feature.manage.manageModule
 import fr.guim.cinedoury.feature.player.playerModule
 import fr.guim.cinedoury.feature.settings.settingsModule
 import kotlinx.coroutines.flow.emptyFlow
@@ -96,6 +97,7 @@ class J3FlowTest {
                 authModule,
                 homeModule,
                 libraryModule,
+                manageModule,
                 detailsModule,
                 playbackModule,
                 playerModule,

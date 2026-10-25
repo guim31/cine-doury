@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The entries of « ⋯ » (J6). -->
+    <string name="manage_section">Gestion</string>
+    <string name="manage_refresh_missing">Actualiser : compléter ce qui manque</string>
+    <string name="manage_refresh_missing_description">Métadonnées et images absentes, sans rien remplacer</string>
+    <string name="manage_refresh_all">Actualiser : tout remplacer</string>
+    <string name="manage_refresh_all_description">Toutes les métadonnées, les images restent</string>
+    <string name="manage_refresh_all_images">Actualiser : tout remplacer, images comprises</string>
+    <string name="manage_identify">Corriger l\'identification</string>
+    <string name="manage_identify_description">Rechercher le bon titre chez les fournisseurs</string>
+    <string name="manage_images">Changer l\'affiche, le fond ou le logo</string>
+    <string name="manage_delete">Supprimer</string>
+    <string name="manage_delete_description">Fichiers compris, après confirmation</string>
+    <!-- Notices. -->
+    <string name="notice_refresh_requested">Actualisation demandée. Le serveur la fait en arrière-plan.</string>
+    <string name="notice_refreshed">Métadonnées actualisées</string>
+    <string name="notice_identified">Identification corrigée</string>
+    <string name="notice_image">Image changée</string>
+    <string name="notice_deleted">« %1$s » a été supprimé</string>
+    <string name="action_close">Fermer</string>
+    <!-- Deletion (UI.md § 8). -->
+    <string name="delete_title">Supprimer « %1$s » ?</string>
+    <string name="delete_message">Ces fichiers seront supprimés des disques du serveur. Cette action est définitive.</string>
+    <string name="delete_message_collection">La collection sera supprimée. Ses films restent dans la bibliothèque.</string>
+    <string name="delete_size">Taille : %1$s</string>
+    <plurals name="delete_episodes">
+        <item quantity="one">%1$d épisode</item>
+        <item quantity="many">%1$d d\'épisodes</item>
+        <item quantity="other">%1$d épisodes</item>
+    </plurals>
+    <string name="delete_confirm">Supprimer</string>
+    <string name="delete_cancel">Annuler</string>
+    <string name="delete_series_title">Supprimer toute la série ?</string>
+    <plurals name="delete_series_message">
+        <item quantity="one">« %2$s » et son épisode seront supprimés, fichiers compris. Ils ne pourront pas être récupérés.</item>
+        <item quantity="many">« %2$s » et ses %1$d d\'épisodes seront supprimés, fichiers compris. Ils ne pourront pas être récupérés.</item>
+        <item quantity="other">« %2$s » et ses %1$d épisodes seront supprimés, fichiers compris. Ils ne pourront pas être récupérés.</item>
+    </plurals>
+    <string name="delete_series_confirm">Supprimer la série</string>
+    <!-- « Corriger l'identification ». -->
+    <string name="identify_title">Corriger l\'identification</string>
+    <string name="identify_current">Sur le serveur : %1$s</string>
+    <string name="identify_field_title">Titre</string>
+    <string name="identify_field_year">Année</string>
+    <string name="identify_search">Rechercher</string>
+    <string name="identify_replace_images">Remplacer aussi les images</string>
+    <string name="identify_empty_title">Aucun résultat.</string>
+    <string name="identify_empty_message">Vérifiez l\'orthographe du titre ou retirez l\'année, puis relancez la recherche.</string>
+    <string name="identify_hint">OK sur un résultat l\'applique.</string>
+    <!-- « Changer l'affiche, le fond ou le logo ». -->
+    <string name="images_title">Changer les images</string>
+    <string name="images_primary">Affiche</string>
+    <string name="images_backdrop">Fond</string>
+    <string name="images_logo">Logo</string>
+    <string name="images_all_languages">Toutes les langues</string>
+    <string name="images_all_providers">Tous les fournisseurs</string>
+    <string name="images_resolution">%1$d × %2$d</string>
+    <string name="images_empty_title">Aucune image proposée.</string>
+    <string name="images_empty_message">Les fournisseurs du serveur n\'en ont pas de ce type. Essayez « Toutes les langues » ou un autre fournisseur.</string>
+    <string name="images_language_none">Sans texte</string>
+    <!-- « Éléments à problème ». -->
+    <string name="problems_title">Éléments à problème</string>
+    <string name="problems_unidentified">Non identifiés (%1$d)</string>
+    <string name="problems_no_poster">Sans affiche (%1$d)</string>
+    <string name="problems_missing">Fichiers disparus</string>
+    <string name="problems_missing_count">Fichiers disparus (%1$d)</string>
+    <string name="problems_none_unidentified">Tous les titres sont identifiés.</string>
+    <string name="problems_none_poster">Tous les titres ont une affiche.</string>
+    <string name="problems_none_missing">Aucun fichier ne manque.</string>
+    <string name="problems_check_files">Vérifier les fichiers</string>
+    <string name="problems_check_explained">Le serveur relit le début de chaque fichier. Un fichier déplacé ou supprimé hors de Ciné Doury apparaît ici jusqu\'à la prochaine analyse.</string>
+    <string name="problems_checking">Vérification des fichiers : %1$d sur %2$d</string>
+    <string name="problems_remove">Supprimer de la bibliothèque</string>
+    <string name="problems_unidentified_reason">Aucun identifiant de fournisseur</string>
+    <string name="problems_no_poster_reason">Aucune affiche</string>
+    <string name="problems_missing_reason">Fichier introuvable sur le serveur</string>
+    <!-- The « ⋯ » of a library. -->
+    <string name="library_manage">Gestion</string>
+    <string name="scan_new_files">Rechercher les nouveaux fichiers</string>
+    <string name="scan_new_files_description">Toutes les bibliothèques, rapide</string>
+    <string name="scan_refresh_all">Tout actualiser</string>
+    <string name="scan_refresh_all_description">Relire les métadonnées de chaque titre de cette bibliothèque</string>
+    <string name="scan_running">Analyse en cours : %1$d %%</string>
+    <string name="scan_running_unknown">Analyse en cours</string>
+    <string name="scan_done">Analyse terminée</string>
+    <string name="scan_requested">Actualisation demandée. Le serveur la fait en arrière-plan.</string>
+    <string name="library_problems_description">Non identifiés, sans affiche, fichiers disparus</string>
+    <string name="library_select">Sélectionner des titres</string>
+    <string name="library_select_description">Ou maintenez OK sur une affiche</string>
+    <plurals name="selection_count">
+        <item quantity="one">%1$d titre sélectionné</item>
+        <item quantity="many">%1$d de titres sélectionnés</item>
+        <item quantity="other">%1$d titres sélectionnés</item>
+    </plurals>
+    <string name="selection_watched">Marquer comme vus</string>
+    <string name="selection_unwatched">Marquer comme non vus</string>
+    <string name="selection_refresh">Actualiser</string>
+    <string name="selection_done">Terminer</string>
+    <string name="selection_applied">Fait pour la sélection</string>
+</resources>

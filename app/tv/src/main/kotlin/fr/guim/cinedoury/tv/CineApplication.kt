@@ -16,10 +16,12 @@ import fr.guim.cinedoury.core.source.FailureLog
 import fr.guim.cinedoury.core.source.RequestConnector
 import fr.guim.cinedoury.core.source.ServerDiscovery
 import fr.guim.cinedoury.core.source.SourceConnector
+import fr.guim.cinedoury.core.source.SourceLog
 import fr.guim.cinedoury.feature.auth.authModule
 import fr.guim.cinedoury.feature.details.detailsModule
 import fr.guim.cinedoury.feature.home.homeModule
 import fr.guim.cinedoury.feature.library.libraryModule
+import fr.guim.cinedoury.feature.manage.manageModule
 import fr.guim.cinedoury.feature.player.playerModule
 import fr.guim.cinedoury.feature.search.searchModule
 import fr.guim.cinedoury.feature.settings.settingsModule
@@ -59,6 +61,7 @@ class CineApplication :
                 homeModule,
                 libraryModule,
                 detailsModule,
+                manageModule,
                 playerModule,
                 searchModule,
                 settingsModule,
@@ -89,7 +92,8 @@ val jellyfinModule =
                     .orEmpty()
             ClientIdentity(appVersion = version, deviceId = device.deviceId, deviceName = device.deviceName)
         }
-        single<SourceConnector> { JellyfinConnector(get()) }
+        // Every management call goes to logcat, without a secret (SPEC.md § 4.14).
+        single<SourceConnector> { JellyfinConnector(get(), log = SourceLog { Log.i(LOG_TAG, it) }) }
         single<ServerDiscovery> { JellyfinDiscovery() }
     }
 
@@ -99,7 +103,7 @@ val requestsModule =
         single<RequestConnector> { SeerrConnector() }
     }
 
-/** The logcat tag of the app (`SPEC.md` § 4.13). */
+/** The tag of the lines of the app in logcat. */
 const val LOG_TAG = "CineDoury"
 
 /** Whether this is a debug build: the catalogue is offered in the settings. */

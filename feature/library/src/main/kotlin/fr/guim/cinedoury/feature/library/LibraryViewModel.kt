@@ -17,20 +17,28 @@ import fr.guim.cinedoury.core.data.library.LibraryStateRepository
 import fr.guim.cinedoury.core.data.library.LibraryTab
 import fr.guim.cinedoury.core.data.library.LibraryView
 import fr.guim.cinedoury.core.data.library.PagedItems
+import fr.guim.cinedoury.core.data.manage.ManageUpdates
 import fr.guim.cinedoury.core.model.FilterOptions
 import fr.guim.cinedoury.core.model.ItemFilters
+import fr.guim.cinedoury.core.model.ItemId
 import fr.guim.cinedoury.core.model.ItemKind
 import fr.guim.cinedoury.core.model.ItemQuery
 import fr.guim.cinedoury.core.model.ItemSort
 import fr.guim.cinedoury.core.model.Library
 import fr.guim.cinedoury.core.model.LibraryId
 import fr.guim.cinedoury.core.model.LibraryKind
+import fr.guim.cinedoury.core.model.LibraryScan
+import fr.guim.cinedoury.core.model.ManageRights
 import fr.guim.cinedoury.core.model.MediaItem
+import fr.guim.cinedoury.core.model.MetadataRefresh
+import fr.guim.cinedoury.core.model.ScanStatus
 import fr.guim.cinedoury.core.model.SortField
 import fr.guim.cinedoury.core.source.SourceException
 import fr.guim.cinedoury.core.ui.Events
 import fr.guim.cinedoury.core.ui.RailState
 import fr.guim.cinedoury.core.ui.railState
+import fr.guim.cinedoury.feature.manage.ItemManager
+import fr.guim.cinedoury.feature.manage.ManageNotice
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -52,6 +60,9 @@ import kotlinx.coroutines.launch
  * grid opens at the right place.
  * @param index where the local index stands: its filters (HDR, audio, codec) are complete once it is
  * [IndexStatus.ready].
+ * @param rights what the profile may manage: the « Gestion » button (J6).
+ * @param scan where the scan started from « Gestion » stands; null when none was started.
+ * @param selection the items ticked, while a selection is on (J6); null otherwise.
  */
 @Immutable
 data class LibraryUiState(
@@ -65,6 +76,11 @@ data class LibraryUiState(
     val restored: Boolean = false,
     val error: SourceException? = null,
     val index: IndexStatus? = null,
+    val rights: ManageRights = ManageRights.NONE,
+    val scan: ScanStatus? = null,
+    val selection: Set<ItemId>? = null,
+    val notice: ManageNotice? = null,
+    val manageError: SourceException? = null,
 ) {
     val tabs: List<LibraryTab> get() = library?.kind.tabs()
 
@@ -99,12 +115,21 @@ class LibraryViewModel(
     private val states: LibraryStateRepository,
     icons: LibraryIconRepository,
     private val index: LibraryIndex,
+    private val manager: ItemManager? = null,
+    manageUpdates: ManageUpdates? = null,
 ) : ViewModel(),
     LibraryActions {
     private val active = sessions.active.value
     private val profile = active?.let { ProfileKey(it.profile.serverId, it.profile.user.id.value) }
     private val pager = ItemPager(viewModelScope)
-    private val local = MutableStateFlow(LibraryUiState(remote = active?.connection?.mode == ConnectionMode.Remote))
+    private val local =
+        MutableStateFlow(
+            LibraryUiState(
+                remote = active?.connection?.mode == ConnectionMode.Remote,
+                rights = manager?.cachedRights ?: ManageRights.NONE,
+            ),
+        )
+    private var noticeJob: Job? = null
     private var saving: Job? = null
 
     /** The server rejected the token: the profile is signed out. */
@@ -145,6 +170,19 @@ class LibraryViewModel(
             local.update { it.copy(library = known, browse = remembered, restored = true) }
             reload(around = remembered.position)
             loadOptions()
+        }
+        if (manager != null) {
+            viewModelScope.launch {
+                val rights = guardedOrNull { manager.rights() } ?: return@launch
+                local.update { it.copy(rights = rights) }
+            }
+        }
+        // An item deleted, identified again or given a new picture: its page is read again, at the
+        // same place (J6).
+        manageUpdates?.let { flow ->
+            viewModelScope.launch {
+                flow.updates.collect { reload(around = browse.position) }
+            }
         }
     }
 
@@ -306,10 +344,104 @@ class LibraryViewModel(
         if (local.value.options == null) loadOptions()
     }
 
+    private suspend fun managed(block: suspend (ItemManager) -> Unit): Boolean {
+        val manager = manager ?: return false
+        return try {
+            guarded { block(manager) }
+            true
+        } catch (_: SourceException.Unauthorized) {
+            false
+        } catch (error: SourceException) {
+            local.update { it.copy(manageError = error) }
+            false
+        }
+    }
+
+    private fun show(notice: ManageNotice) {
+        local.update { it.copy(notice = notice) }
+        noticeJob?.cancel()
+        noticeJob =
+            viewModelScope.launch {
+                delay(NOTICE_MILLIS)
+                local.update { it.copy(notice = null) }
+            }
+    }
+
+    /**
+     * A scan of new files shows its progress (the scheduled task of the server) until it ends, then
+     * the library is read again; « Tout actualiser » is done by the server in the background.
+     */
+    override fun scan(mode: LibraryScan) {
+        if (local.value.scan?.running == true) return
+        viewModelScope.launch {
+            if (!managed { it.scan(libraryId, mode) }) return@launch
+            if (mode == LibraryScan.RefreshAll) {
+                show(ManageNotice.ScanRequested)
+                return@launch
+            }
+            local.update { it.copy(scan = ScanStatus(running = true)) }
+            // The task takes a moment to start: never seen running means already done.
+            delay(SCAN_POLL_MILLIS)
+            var running = true
+            while (running) {
+                val status = guardedOrNull { manager?.scanStatus() }
+                status?.let { found -> local.update { it.copy(scan = found) } }
+                running = status?.running == true
+                if (running) delay(SCAN_POLL_MILLIS)
+            }
+            local.update { it.copy(scan = ScanStatus.IDLE) }
+            show(ManageNotice.ScanDone)
+            reload(around = browse.position)
+        }
+    }
+
+    override fun startSelection(item: MediaItem?) =
+        local.update { it.copy(selection = it.selection.orEmpty() + listOfNotNull(item?.id)) }
+
+    override fun toggleSelected(item: MediaItem) =
+        local.update { state ->
+            val selection = state.selection ?: return@update state
+            state.copy(selection = if (item.id in selection) selection - item.id else selection + item.id)
+        }
+
+    override fun endSelection() = local.update { it.copy(selection = null) }
+
+    override fun markSelection(played: Boolean) {
+        val chosen =
+            local.value.selection
+                ?.toList()
+                .orEmpty()
+        if (chosen.isEmpty()) return
+        viewModelScope.launch {
+            if (managed { it.setPlayed(chosen, played) }) {
+                local.update { it.copy(selection = null) }
+                show(ManageNotice.SelectionDone)
+            }
+        }
+    }
+
+    override fun refreshSelection() {
+        val chosen =
+            local.value.selection
+                ?.toList()
+                .orEmpty()
+        if (chosen.isEmpty()) return
+        viewModelScope.launch {
+            if (managed { manager -> chosen.forEach { manager.refresh(it, MetadataRefresh.FillMissing) } }) {
+                local.update { it.copy(selection = null) }
+                show(ManageNotice.RefreshRequested)
+            }
+        }
+    }
+
+    override fun dismissManageError() = local.update { it.copy(manageError = null) }
+
     companion object {
         const val DIGITS = "#"
         val LETTERS = listOf(DIGITS) + ('A'..'Z').map { it.toString() }
         private const val NEXT_UP_LIMIT = 100
         private const val SAVE_DELAY_MILLIS = 500L
+        private const val SCAN_POLL_MILLIS = 1_000L
+        private const val NOTICE_MILLIS = 4_000L
     }
 }

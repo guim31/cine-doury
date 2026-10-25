@@ -63,6 +63,12 @@ object CineSizes {
     val avatarSmall = 32.dp
     val textFieldHeight = 52.dp
     val textFieldWidth = 400.dp
+
+    /** A field for a year (« Corriger l'identification », J6). */
+    val yearFieldWidth = 160.dp
+
+    /** The list of « Éléments à problème » (J6): the poster, the title and the path of the file. */
+    val problemsListWidth = 720.dp
     val keypadKey = 52.dp
     val pinDot = 16.dp
     val formWidth = 480.dp
