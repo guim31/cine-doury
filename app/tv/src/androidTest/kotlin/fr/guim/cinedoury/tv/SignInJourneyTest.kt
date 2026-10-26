@@ -1,5 +1,6 @@
 package fr.guim.cinedoury.tv
 
+import android.os.ParcelFileDescriptor
 import android.view.KeyEvent
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
@@ -58,10 +59,26 @@ class SignInJourneyTest {
         try {
             compose.waitUntil(timeout) { compose.onAllNodes(matcher).fetchSemanticsNodes().isNotEmpty() }
         } catch (timeout: ComposeTimeoutException) {
-            // What the screen shows, and where the focus is, for the log of the CI.
-            throw AssertionError("Not found: ${matcher.description}\n" + compose.onRoot().printToString(), timeout)
+            // What the screen shows, where the focus is, and which window takes the keys (an open
+            // keyboard takes OK), for the log of the CI.
+            throw AssertionError(
+                "Not found: ${matcher.description}\n" + compose.onRoot().printToString() + "\n" + inputState(),
+                timeout,
+            )
         }
     }
+
+    /** Whether the keyboard is shown, and the window with the input focus (`dumpsys`). */
+    private fun inputState(): String {
+        val keyboard = shell("dumpsys input_method").filter { "mInputShown" in it || "mShowRequested" in it }
+        val window = shell("dumpsys window windows").filter { "mCurrentFocus" in it || "mFocusedApp" in it }
+        return (keyboard + window).joinToString("\n") { it.trim() }
+    }
+
+    private fun shell(command: String): List<String> =
+        ParcelFileDescriptor.AutoCloseInputStream(instrumentation.uiAutomation.executeShellCommand(command)).use {
+            it.bufferedReader().readLines()
+        }
 
     private fun appeared(
         matcher: SemanticsMatcher,
