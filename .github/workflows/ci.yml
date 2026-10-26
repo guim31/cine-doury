@@ -251,7 +251,7 @@ jobs:
           script: |
             ci/emulator-smoke.sh apk
             ci/emulator-playback.sh http://10.0.2.2:8096
-            for run in 1 2 3 4; do echo "sign-in run $run"; ci/emulator-signin.sh http://10.0.2.2:8096 || exit 1; done
+            ci/emulator-signin.sh http://10.0.2.2:8096
       - name: Failure summary
         if: failure()
         run: ci/failure-summary.sh gradle.log

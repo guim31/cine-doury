@@ -1273,7 +1273,11 @@ par `InputMethodManager.hideSoftInputFromWindow` : en Android 11, la première v
 fenêtre) est parfois ignorée juste après l'ouverture du clavier (vu sur l'émulateur). Diagnostic :
 `SignInJourneyTest` relève l'état du clavier (`WindowInsets`), les touches qui atteignent
 l'activité et les changements de focus de la fenêtre ; la touche OK perdue n'atteignait jamais
-l'activité, le clavier la prenait.
+l'activité, le clavier la prenait. Le test attend aussi que le clavier soit affiché avant d'y
+saisir, comme une main sur la télécommande : sinon, au premier lancement de l'émulateur (clavier
+démarré à froid), saisie et validation 1 s après OK croisaient l'ouverture et la fermeture du
+clavier, qui prenait encore la touche suivante. Vérifié : quatre connexions de suite sur chaque
+émulateur, dont la première après le démarrage (run 40338655999).
 Tests : `RemoteInputTest` (le clavier se ferme à « OK » et en sortant du champ par le bas) ;
 `SignInJourneyTest` vérifie sur l'émulateur que le clavier est fermé avant OK sur le profil.
 Le passage par « Autre compte », sans saisie préalable sur l'écran, échappait au défaut.
