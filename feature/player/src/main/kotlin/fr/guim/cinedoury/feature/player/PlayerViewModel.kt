@@ -24,6 +24,7 @@ import fr.guim.cinedoury.core.model.PlaybackProfiles
 import fr.guim.cinedoury.core.model.PlaybackReport
 import fr.guim.cinedoury.core.model.PlaybackRequest
 import fr.guim.cinedoury.core.model.PlaybackRules
+import fr.guim.cinedoury.core.model.PlaybackStream
 import fr.guim.cinedoury.core.model.PlayerSettings
 import fr.guim.cinedoury.core.model.SegmentAction
 import fr.guim.cinedoury.core.model.StillWatching
@@ -33,6 +34,7 @@ import fr.guim.cinedoury.core.model.UserData
 import fr.guim.cinedoury.core.playback.PlaybackReporter
 import fr.guim.cinedoury.core.playback.PlayerEvent
 import fr.guim.cinedoury.core.playback.PlayerSettingsStore
+import fr.guim.cinedoury.core.source.PlaybackLog
 import fr.guim.cinedoury.core.playback.VideoPlayer
 import fr.guim.cinedoury.core.playback.VideoPlayerFactory
 import fr.guim.cinedoury.core.source.LibrarySource
@@ -131,31 +133,19 @@ class PlayerViewModel(
                     subtitleIndex = selection?.subtitleIndex,
                     duration = item.runtime ?: it.duration,
                     // The default quality of the settings (`SPEC.md` § 4.16), unless one was chosen.
-                    maxBitrate = it.maxBitrate ?: (if (remote) settings.remoteQuality else settings.localQuality),
+                    maxBitrate = it.maxBitrate ?: settings.defaultQuality(remote),
                 )
             }
             if (!request.trailer) {
                 viewModelScope.launch { loadSegments(source, item) }
                 viewModelScope.launch { loadNext(source, item) }
             }
-            val stream =
-                source.playback.playbackInfo(
-                    PlaybackInfoRequest(
-                        item = item.id,
-                        profile = profile,
-                        sourceId = selection?.sourceId,
-                        audioIndex = selection?.audioIndex,
-                        subtitleIndex = selection?.subtitleIndex,
-                        start = start,
-                        maxBitrate = local.value.maxBitrate,
-                        allowDirect = !fellBack && settings.directPlay != DirectPlayMode.Never,
-                        forceDirect = !fellBack && settings.directPlay == DirectPlayMode.Forced,
-                    ),
-                )
+            val stream = source.playback.playbackInfo(firstRequest(item, profile, settings, selection, start))
             val player = player ?: players.create(capabilities, settings).also { created -> watch(created) }
             this.player = player
             surfacePlayer.value = player.player
             local.update { it.copy(stream = stream, loading = false, error = null) }
+            logDecision(item, stream, fallback = false, settings.directPlay == DirectPlayMode.Forced)
             player.load(stream, start, selection?.audioIndex, selection?.subtitleIndex)
             if (!request.trailer) {
                 reporter = PlaybackReporter(source.playback, reportScope) { report() }.also { it.start() }
@@ -396,6 +386,7 @@ class PlayerViewModel(
                             forceDirect = allowDirect && local.value.settings.directPlay == DirectPlayMode.Forced,
                         ),
                     )
+                logDecision(state.item, stream, fallback = fellBack, forced = false)
                 local.update {
                     it.copy(
                         stream = stream,
@@ -408,6 +399,50 @@ class PlayerViewModel(
                 reporter?.start()
             }
         }
+    }
+
+    /** What the server is first asked: the choices of the details screen, the settings of the device. */
+    private fun firstRequest(
+        item: MediaItem,
+        profile: PlaybackProfile,
+        settings: PlayerSettings,
+        selection: TrackSelection?,
+        start: Duration,
+    ) = PlaybackInfoRequest(
+        item = item.id,
+        profile = profile,
+        sourceId = selection?.sourceId,
+        audioIndex = selection?.audioIndex,
+        subtitleIndex = selection?.subtitleIndex,
+        start = start,
+        maxBitrate = local.value.maxBitrate,
+        allowDirect = !fellBack && settings.directPlay != DirectPlayMode.Never,
+        forceDirect = !fellBack && settings.directPlay == DirectPlayMode.Forced,
+    )
+
+    private fun PlayerSettings.defaultQuality(remote: Boolean): Int? = if (remote) remoteQuality else localQuality
+
+    /** What was played and how, for the diagnostic report (`SPEC.md` § 4.18). */
+    private fun logDecision(
+        item: MediaItem,
+        stream: PlaybackStream,
+        fallback: Boolean,
+        forced: Boolean,
+    ) {
+        PlaybackLog.record(
+            PlaybackLog.Entry(
+                at = clock.instant(),
+                title = item.title,
+                method = stream.method,
+                reasons = stream.reasons,
+                container = stream.container,
+                video = stream.source.video?.codec,
+                audio = stream.source.audio.firstOrNull { it.index == stream.audioIndex }?.codec,
+                bitrate = stream.maxBitrate,
+                fallback = fallback,
+                forced = forced && stream.reasons.isNotEmpty(),
+            ),
+        )
     }
 
     override fun interacted() = stillWatching.onInteraction()

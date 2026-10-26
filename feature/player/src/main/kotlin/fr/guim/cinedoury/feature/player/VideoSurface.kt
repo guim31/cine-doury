@@ -172,7 +172,8 @@ fun MatchFrameRate(
         val display = activity?.window?.decorView?.display
         val previous = window?.attributes?.preferredDisplayModeId ?: 0
         val rate = frameRate.takeIf { enabled } ?: 0f
-        if (window != null && display != null && (rate > 0f || videoHeight != null)) {
+        val wanted = rate > 0f || videoHeight != null
+        if (window != null && display != null && wanted) {
             val current =
                 display.mode.let {
                     ScreenMode(

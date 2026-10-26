@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="update_title">Mise à jour</string>
+    <string name="update_current">Version installée : %1$s</string>
+    <string name="update_checking">Recherche d\'une mise à jour…</string>
+    <string name="update_development_title">Version de développement</string>
+    <string name="update_development_message">Cette version (%1$s) n\'est pas publiée : aucune mise à jour ne lui est proposée. Installez une version publiée pour recevoir les mises à jour.</string>
+    <string name="update_up_to_date_title">Ciné Doury est à jour</string>
+    <string name="update_up_to_date_message">Vous avez la dernière version publiée, la %1$s.</string>
+    <string name="update_available_title">Ciné Doury %1$s est disponible</string>
+    <string name="update_published">Publiée le %1$s. Vous avez la %2$s.</string>
+    <string name="update_ignored">Vous avez ignoré cette version : elle ne vous est plus proposée au démarrage.</string>
+    <string name="update_no_notes">Pas de journal des changements pour cette version.</string>
+    <string name="update_install">Installer</string>
+    <string name="update_later">Plus tard</string>
+    <string name="update_ignore">Ignorer cette version</string>
+    <string name="update_downloading_title">Téléchargement de la %1$s</string>
+    <string name="update_downloading_progress">%1$d %% de %2$s</string>
+    <string name="update_cancel">Annuler</string>
+    <string name="update_ready_title">La mise à jour est prête</string>
+    <string name="update_ready_message">Le fichier est vérifié : c\'est bien celui publié. Android va vous demander de confirmer l\'installation, puis Ciné Doury redémarrera.</string>
+    <string name="update_install_now">Installer maintenant</string>
+    <string name="update_permission_title">Autorisez l\'installation</string>
+    <string name="update_permission_message">Android n\'installe une application venue d\'ailleurs que si vous l\'y autorisez, une fois pour toutes. Ouvrez les réglages, activez Ciné Doury, puis revenez ici.</string>
+    <string name="update_permission_google_tv">Google TV : Paramètres → Applications → Sécurité et restrictions → Sources inconnues → Ciné Doury.</string>
+    <string name="update_permission_shield">NVIDIA Shield : Paramètres → Préférences de l\'appareil → Sécurité et restrictions → Sources inconnues → Ciné Doury.</string>
+    <string name="update_open_settings">Ouvrir les réglages</string>
+    <string name="update_signature_title">Désinstallez d\'abord cette version</string>
+    <string name="update_signature_message">La version installée n\'est pas signée par la même clé que les versions publiées (c\'est le cas d\'une version de développement) : Android refuserait de la remplacer. Désinstallez une fois Ciné Doury depuis les réglages de la télévision, puis installez la %1$s ; vos profils devront se reconnecter.</string>
+    <string name="update_open_app_settings">Ouvrir les réglages de l\'appli</string>
+    <string name="update_failed_title">La mise à jour n\'a pas abouti</string>
+    <string name="update_failed_unreachable">GitHub ne répond pas. Vérifiez que la télévision a accès à Internet, puis réessayez.</string>
+    <string name="update_failed_rate_limited">GitHub limite les vérifications pour le moment. Réessayez après %1$s.</string>
+    <string name="update_failed_rate_limited_later">GitHub limite les vérifications pour le moment. Réessayez dans une heure.</string>
+    <string name="update_failed_invalid">La réponse de GitHub est illisible. Réessayez plus tard.</string>
+    <string name="update_failed_checksum">Le fichier téléchargé n\'est pas celui qui a été publié. Rien n\'a été installé ; réessayez.</string>
+    <string name="update_failed_install">Android a refusé l\'installation. Réessayez ; si cela recommence, envoyez le rapport de diagnostic.</string>
+    <string name="update_retry">Réessayer</string>
+    <string name="update_close">Fermer</string>
+</resources>

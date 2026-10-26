@@ -11,6 +11,7 @@ import fr.guim.cinedoury.core.data.home.HomeRepository
 import fr.guim.cinedoury.core.data.home.HomeRowType
 import fr.guim.cinedoury.core.data.home.HomeRows
 import fr.guim.cinedoury.core.data.home.ProfileKey
+import fr.guim.cinedoury.core.data.prefs.AppPreferences
 import fr.guim.cinedoury.core.data.library.LibraryIconRepository
 import fr.guim.cinedoury.core.model.Library
 import fr.guim.cinedoury.core.model.MediaItem
@@ -49,6 +50,8 @@ data class HomeState(
     val remote: Boolean = false,
     val rows: List<HomeRow>? = null,
     val error: SourceException? = null,
+    /** « Bandeau à la une » (J7). */
+    val featuredBanner: Boolean = true,
 )
 
 /**
@@ -59,6 +62,7 @@ class HomeViewModel(
     private val sessions: SessionManager,
     private val home: HomeRepository,
     icons: LibraryIconRepository,
+    preferences: AppPreferences,
 ) : ViewModel() {
     private val active: ActiveSession? = sessions.active.value
     private val profile = active?.let { ProfileKey(it.profile.serverId, it.profile.user.id.value) }
@@ -83,9 +87,10 @@ class HomeViewModel(
                 cached,
                 home.railHidden(profile),
                 icons.chosen(profile.serverId),
-                refreshed,
-                error,
-            ) { (libraries, rows, specs), hidden, chosen, done, failure ->
+                combine(refreshed, error, preferences.browsing(profile)) { done, failure, browsing ->
+                    Triple(done, failure, browsing.featuredBanner)
+                },
+            ) { (libraries, rows, specs), hidden, chosen, (done, failure, banner) ->
                 val shown =
                     specs.mapNotNull { spec ->
                         rows[spec.key]?.takeIf { it.isNotEmpty() }?.let { items ->
@@ -103,6 +108,7 @@ class HomeViewModel(
                     remote = active.connection.mode == ConnectionMode.Remote,
                     rows = if (rows.isEmpty() && !done) null else shown,
                     error = failure,
+                    featuredBanner = banner,
                 )
             }.stateIn(viewModelScope, SharingStarted.Eagerly, HomeState())
         }

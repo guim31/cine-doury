@@ -121,23 +121,17 @@ class ReleaseClient(
     }
 
     private fun JsonObject.toRelease(): Release? {
-        if (bool("draft") == true || bool("prerelease") == true) return null
-        val tag = string("tag_name") ?: return null
-        val version = AppVersion.parse(tag) ?: return null
+        val published = bool("draft") != true && bool("prerelease") != true
+        val tag = string("tag_name")?.takeIf { published }
+        val version = AppVersion.parse(tag)
         val assets = (this["assets"] as? JsonArray).orEmpty().mapNotNull { (it as? JsonObject)?.toAsset() }
-        val apk = assets.firstOrNull { it.name.endsWith(".apk") } ?: return null
+        val apk = assets.firstOrNull { it.name.endsWith(".apk") }
+        if (tag == null || version == null || apk == null) return null
         return Release(
             version = version,
             tag = tag,
             title = string("name")?.takeIf { it.isNotBlank() } ?: tag,
-            publishedAt =
-                string("published_at")?.let {
-                    try {
-                        Instant.parse(it)
-                    } catch (_: DateTimeParseException) {
-                        null
-                    }
-                },
+            publishedAt = string("published_at")?.let(::instantOrNull),
             notes = string("body").orEmpty(),
             apk = apk,
             checksum =
@@ -146,6 +140,13 @@ class ReleaseClient(
             page = string("html_url"),
         )
     }
+
+    private fun instantOrNull(text: String): Instant? =
+        try {
+            Instant.parse(text)
+        } catch (_: DateTimeParseException) {
+            null
+        }
 
     private fun JsonObject.toAsset(): ReleaseAsset? {
         val name = string("name") ?: return null

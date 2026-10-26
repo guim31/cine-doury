@@ -24,6 +24,7 @@ import fr.guim.cinedoury.core.data.search.TitleIndex
 import fr.guim.cinedoury.core.data.security.KeystoreTokenCipher
 import fr.guim.cinedoury.core.data.security.TokenCipher
 import fr.guim.cinedoury.core.data.server.AddressResolver
+import kotlinx.coroutines.flow.first
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 
@@ -49,7 +50,10 @@ val dataModule =
         single { LibraryIconRepository(get()) }
         single { IndexScheduler(get(), get(), get()) }
         single { HomeRepository(get(), get()) }
-        single { LibraryStateRepository(get()) }
+        single {
+            val preferences = get<AppPreferences>()
+            LibraryStateRepository(get()) { profile -> preferences.browsing(profile).first().defaultView }
+        }
         single { UserDataUpdates() }
         single { ManageUpdates() }
         single { ManageRepository(get(), get(), get()) }

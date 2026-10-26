@@ -139,4 +139,13 @@ class HomeRepositoryTest {
             assertEquals(state, states.load(profile, Samples.films.id))
             assertEquals(LibraryState(), states.load(profile, Samples.series.id))
         }
+
+    @Test
+    fun `a library never opened starts in the default view of the profile`() =
+        runTest {
+            val states = LibraryStateRepository(database.preferences(), defaultView = { LibraryView.Thumbnails })
+            assertEquals(LibraryView.Thumbnails, states.load(profile, Samples.films.id).view)
+            states.save(profile, Samples.films.id, LibraryState(view = LibraryView.List))
+            assertEquals(LibraryView.List, states.load(profile, Samples.films.id).view, "its own choice wins")
+        }
 }

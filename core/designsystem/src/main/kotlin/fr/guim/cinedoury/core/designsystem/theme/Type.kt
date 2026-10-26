@@ -58,3 +58,17 @@ val TvCineTypography =
 
 /** Tabular figures, for durations and times (« 1 h 52 », « 22 h 47 »). */
 fun TextStyle.tabular(): TextStyle = copy(fontFeatureSettings = "tnum")
+
+/** The scale with every size and line height times [factor] (« Taille du texte », J7). */
+fun CineTypography.scaled(factor: Float): CineTypography {
+    fun TextStyle.times() = copy(fontSize = fontSize * factor, lineHeight = lineHeight * factor)
+    return CineTypography(
+        display = display.times(),
+        title1 = title1.times(),
+        title2 = title2.times(),
+        body = body.times(),
+        label = label.times(),
+        caption = caption.times(),
+        minimum = minimum.times(),
+    )
+}

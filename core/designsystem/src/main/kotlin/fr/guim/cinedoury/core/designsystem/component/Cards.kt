@@ -87,7 +87,7 @@ fun PosterCard(
         CardCaption(
             title = title.takeIf { image != null },
             subtitle = subtitle,
-            visible = alwaysShowTitle || focus.isFocused,
+            visible = alwaysShowTitle || CineTheme.cards.alwaysShowTitles || focus.isFocused,
             modifier = Modifier.padding(top = CineSpacing.s),
         )
     }
@@ -147,6 +147,7 @@ internal fun BoxScope.UnwatchedMark(
     unwatched: Boolean,
     unwatchedCount: Int?,
 ) {
+    if (!CineTheme.cards.unwatchedMarks) return
     when {
         unwatchedCount != null && unwatchedCount > 0 -> {
             UnwatchedCountBadge(

@@ -7,8 +7,21 @@ import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 
-/** Durations and curves of `UI.md` § 3 and § 7. */
+/**
+ * Durations and curves of `UI.md` § 3 and § 7, and the one rule of reduced motion: with
+ * [isReduced], what moves (focus growing, panels sliding, posters flying) snaps, and only fades
+ * remain.
+ */
 object CineMotion {
+    /**
+     * « Animations réduites » (J7): asked in the settings, or by the system (its animator duration
+     * scale set to 0 in the accessibility or developer options).
+     */
+    fun isReduced(
+        asked: Boolean,
+        systemAnimatorScale: Float,
+    ): Boolean = asked || systemAnimatorScale == 0f
+
     /** Standard deceleration curve: an element arriving. */
     val Decelerate: Easing = CubicBezierEasing(0f, 0f, 0f, 1f)
 

@@ -74,6 +74,9 @@ object CineSizes {
     val formWidth = 480.dp
     val settingsWidth = 560.dp
     val settingsRowHeight = 56.dp
+
+    /** The changelog of an update: what is longer scrolls (J7). */
+    val changelogHeight = 200.dp
     val dialogWidth = 480.dp
 
     val logoMax = DpSize(360.dp, 140.dp)

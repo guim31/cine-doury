@@ -47,6 +47,7 @@ data class ClientIdentity(
  * @param io where requests run: never the main thread (see [TracingApiClient]).
  * @param log receives a line for each management call (logcat in the app).
  */
+@Suppress("TooManyFunctions") // One function per call of SourceConnector.
 class JellyfinConnector internal constructor(
     identity: ClientIdentity,
     requestTimeout: Duration,

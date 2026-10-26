@@ -115,7 +115,10 @@ class PlayerSettingsStore(
         )
     }
 
-    private fun Preferences.toSettings(): PlayerSettings {
+    private fun Preferences.toSettings(): PlayerSettings = ofProfile(ofDevice())
+
+    /** The settings of the device, those of the profile at their defaults. */
+    private fun Preferences.ofDevice(): PlayerSettings {
         val defaults = PlayerSettings()
         return PlayerSettings(
             passthrough =
@@ -145,6 +148,13 @@ class PlayerSettingsStore(
             directPlay = enumOf(this[DIRECT_PLAY], defaults.directPlay),
             burnInAss = this[BURN_IN_ASS] ?: defaults.burnInAss,
             aspect = enumOf(this[ASPECT], defaults.aspect),
+        )
+    }
+
+    /** [device] with the settings of the profile. */
+    private fun Preferences.ofProfile(device: PlayerSettings): PlayerSettings {
+        val defaults = PlayerSettings()
+        return device.copy(
             segments = enumOf(own { it.segments }, defaults.segments),
             autoplayNext = own { it.autoplay } ?: defaults.autoplayNext,
             nextCountdownSeconds = own { it.countdown } ?: defaults.nextCountdownSeconds,

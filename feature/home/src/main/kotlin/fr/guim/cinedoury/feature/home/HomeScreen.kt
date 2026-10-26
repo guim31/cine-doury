@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -164,7 +165,7 @@ fun HomeScreen(
                 focusedRow = null
                 scope.launch {
                     listState.animateScrollToItem(0)
-                    runCatching { play.requestFocus() }
+                    runCatching { top.requestFocus() }
                 }
             }
 
@@ -176,11 +177,15 @@ fun HomeScreen(
 
     val featured = featuredItem?.toFeatured(sources)
     val shared = remember(rows) { rows.orEmpty().firstAppearances() }
+    // « Bandeau à la une » off (`SPEC.md` § 4.16): the rows from the top, the first one focused. The
+    // skeletons, an error or an empty home still use the space of the banner.
+    val banner = state.featuredBanner || rows.isNullOrEmpty()
+    val top = if (banner) play else rowRequesters.requester(rows.orEmpty().first().key)
     Box(modifier = modifier.fillMaxSize()) {
         AmbientBackdrop(ambience = featuredItem?.ambience)
         BoxWithConstraints(Modifier.fillMaxSize()) {
             val heroHeight = maxHeight * CineSizes.HERO_HEIGHT_FRACTION
-            FeaturedBackdrop(featured, Modifier.fillMaxWidth().height(heroHeight))
+            if (banner) FeaturedBackdrop(featured, Modifier.fillMaxWidth().height(heroHeight))
             FocusPivot(fraction = ROW_PIVOT) {
                 LazyColumn(
                     state = listState,
@@ -188,8 +193,14 @@ fun HomeScreen(
                     contentPadding = PaddingValues(bottom = CineSpacing.xxl),
                     verticalArrangement = Arrangement.spacedBy(CineSpacing.l),
                 ) {
-                    item(key = "hero", contentType = "hero") {
-                        Hero(
+                    if (!banner) {
+                        item(key = "top", contentType = "top") {
+                            Spacer(Modifier.height(CineSpacing.safeVertical))
+                        }
+                    }
+                    if (banner) {
+                        item(key = "hero", contentType = "hero") {
+                            Hero(
                             state = state,
                             featured = featured,
                             item = featuredItem,
@@ -203,6 +214,7 @@ fun HomeScreen(
                                         if (it.hasFocus) focusedRow = null
                                     },
                         )
+                        }
                     }
                     if (rows == null) {
                         items(SKELETON_ROWS) { SkeletonRow() }
@@ -282,7 +294,7 @@ fun HomeScreen(
     // Made here, not when the lazy row composes (later): the requester is the same for both.
     val initial = focusedRow?.let { rowRequesters.requester(it) }
     // Not keyed on the quit dialog: closing it gives the focus back to the rail, not to « Lire ».
-    InitialFocus(initial ?: play, key = rows?.isEmpty())
+    InitialFocus(initial ?: top, key = rows?.isEmpty())
 }
 
 private val LazyListState.isScrolled: Boolean get() = firstVisibleItemIndex > 0 || firstVisibleItemScrollOffset > 0

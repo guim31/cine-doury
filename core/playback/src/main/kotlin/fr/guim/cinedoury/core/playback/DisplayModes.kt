@@ -37,22 +37,17 @@ object DisplayModes {
     ): ScreenMode? {
         val size = videoHeight?.let { targetSize(modes, it) } ?: (current.width to current.height)
         val sameSize = modes.filter { (it.width to it.height) == size }
-        if (sameSize.isEmpty()) return null
         val byRate =
-            if (frameRate > 0f) {
-                sameSize
-                    .mapNotNull { mode -> multipleOf(mode.refreshRate, frameRate)?.let { mode to it } }
-                    .minWithOrNull(compareBy({ it.second }, { abs(it.first.refreshRate / frameRate - it.second) }))
-                    ?.first
-            } else {
-                null
-            }
-        val sizeChanges = size != current.width to current.height
-        val best =
-            byRate
-                ?: if (sizeChanges) sameSize.minBy { abs(it.refreshRate - current.refreshRate) } else return null
-        if (sizeChanges) return best
-        return best.takeIf { multipleOf(current.refreshRate, frameRate) != multipleOf(best.refreshRate, frameRate) }
+            sameSize
+                .mapNotNull { mode -> multipleOf(mode.refreshRate, frameRate)?.let { mode to it } }
+                .minWithOrNull(compareBy({ it.second }, { abs(it.first.refreshRate / frameRate - it.second) }))
+                ?.first
+        return if (size != current.width to current.height) {
+            // Another size: at the cadence of the film, else at the refresh rate closest to the current one.
+            byRate ?: sameSize.minByOrNull { abs(it.refreshRate - current.refreshRate) }
+        } else {
+            byRate?.takeIf { multipleOf(current.refreshRate, frameRate) != multipleOf(it.refreshRate, frameRate) }
+        }
     }
 
     /** The smallest size of the screen at least as tall as the film, else the tallest. */
