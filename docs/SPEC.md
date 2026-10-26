@@ -1267,8 +1267,13 @@ pas.
 OK sur un profil de « Qui regarde ? » restait sans effet. `CineTextField` remplace l'action du
 clavier de Compose (qui le fermait sur « Terminé ») et ne le fermait pas en fin de saisie ;
 Android 14 le ferme quand le focus quitte le champ, Android 11 le laisse ouvert par-dessus l'écran
-suivant, où il prend le OK de la télécommande. Correction : `CineTextField` ferme le clavier
-(`SoftwareKeyboardController.hide()`) à l'action du clavier et quand le focus quitte la saisie.
+suivant, où il prend le OK de la télécommande. Correction : `CineTextField` ferme le clavier à
+l'action du clavier et quand le focus quitte la saisie, par `SoftwareKeyboardController.hide()` et
+par `InputMethodManager.hideSoftInputFromWindow` : en Android 11, la première voie (encarts de la
+fenêtre) est parfois ignorée juste après l'ouverture du clavier (vu sur l'émulateur). Diagnostic :
+`SignInJourneyTest` relève l'état du clavier (`WindowInsets`), les touches qui atteignent
+l'activité et les changements de focus de la fenêtre ; la touche OK perdue n'atteignait jamais
+l'activité, le clavier la prenait.
 Tests : `RemoteInputTest` (le clavier se ferme à « OK » et en sortant du champ par le bas) ;
 `SignInJourneyTest` vérifie sur l'émulateur que le clavier est fermé avant OK sur le profil.
 Le passage par « Autre compte », sans saisie préalable sur l'écran, échappait au défaut.

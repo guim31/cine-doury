@@ -70,11 +70,8 @@ class SignInJourneyTest {
     /** A key of the remote, through the whole input pipeline of Android (IME stage included). */
     private fun remote(keyCode: Int) {
         compose.waitForIdle()
-        // Android drops a key that reaches a window without the focus (ViewRootImpl): when the
-        // window has just lost it, the key waits for it, as a hand on the remote would.
-        val focused = windowFocus.get()
-        if (!focused) compose.waitUntil(TIMEOUT) { windowFocus.get() }
-        record("sent ${KeyEvent.keyCodeToString(keyCode)}, window focus: $focused")
+        // In the log of the CI, with the focus changes of the window: a key lost on its way shows.
+        record("sent ${KeyEvent.keyCodeToString(keyCode)}, window focus: ${windowFocus.get()}")
         instrumentation.sendKeyDownUpSync(keyCode)
         compose.waitForIdle()
     }
