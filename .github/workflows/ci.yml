@@ -265,5 +265,6 @@ jobs:
             emulator-playback.txt
             emulator-signin.txt
             emulator-signin.png
+            emulator-input.txt
             emulator-logcat.txt
           if-no-files-found: ignore

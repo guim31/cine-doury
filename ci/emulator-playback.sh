@@ -12,12 +12,14 @@ adb install -r "$app"
 adb install -r -t "$tests"
 adb logcat -c || true
 set +e
-adb shell am instrument -w -r -e jellyfinUrl "$url" \
+# Bounded: a test stuck on the device must not hold the job until its own timeout.
+timeout 900 adb shell am instrument -w -r -e jellyfinUrl "$url" \
   -e class fr.guim.cinedoury.tv.PlaybackOnDeviceTest \
   fr.guim.cinedoury.test/androidx.test.runner.AndroidJUnitRunner | tee emulator-playback.txt
 set -e
 if grep -q -E "FAILURES!!!|INSTRUMENTATION_FAILED|Process crashed" emulator-playback.txt \
   || ! grep -q "OK (2 tests)" emulator-playback.txt; then
+  adb shell am force-stop fr.guim.cinedoury || true
   adb logcat -d -b crash || true
   adb logcat -d | grep -E "ExoPlayer|MediaCodec|AndroidRuntime|cinedoury" | tail -n 120 || true
   echo "::error::playback on the emulator failed"

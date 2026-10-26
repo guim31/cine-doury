@@ -1,7 +1,8 @@
 package fr.guim.cinedoury.tv
 
-import android.os.ParcelFileDescriptor
+import android.util.Log
 import android.view.KeyEvent
+import android.view.WindowInsets
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ComposeTimeoutException
@@ -42,6 +43,7 @@ class SignInJourneyTest {
     val compose = createEmptyComposeRule()
 
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
+    private var scenario: ActivityScenario<MainActivity>? = null
     private val server = InstrumentationRegistry.getArguments().getString("jellyfinUrl") ?: "http://10.0.2.2:8096"
     private val password = InstrumentationRegistry.getArguments().getString("jellyfinPassword") ?: "cinedoury-test"
 
@@ -59,8 +61,8 @@ class SignInJourneyTest {
         try {
             compose.waitUntil(timeout) { compose.onAllNodes(matcher).fetchSemanticsNodes().isNotEmpty() }
         } catch (timeout: ComposeTimeoutException) {
-            // What the screen shows, where the focus is, and which window takes the keys (an open
-            // keyboard takes OK), for the log of the CI.
+            // What the screen shows, where the focus is, and whether a keyboard is open (it would
+            // take OK), for the log of the CI.
             throw AssertionError(
                 "Not found: ${matcher.description}\n" + compose.onRoot().printToString() + "\n" + inputState(),
                 timeout,
@@ -68,17 +70,17 @@ class SignInJourneyTest {
         }
     }
 
-    /** Whether the keyboard is shown, and the window with the input focus (`dumpsys`). */
+    /** Whether the keyboard is shown over the app, and which view holds the focus of the window. */
     private fun inputState(): String {
-        val keyboard = shell("dumpsys input_method").filter { "mInputShown" in it || "mShowRequested" in it }
-        val window = shell("dumpsys window windows").filter { "mCurrentFocus" in it || "mFocusedApp" in it }
-        return (keyboard + window).joinToString("\n") { it.trim() }
-    }
-
-    private fun shell(command: String): List<String> =
-        ParcelFileDescriptor.AutoCloseInputStream(instrumentation.uiAutomation.executeShellCommand(command)).use {
-            it.bufferedReader().readLines()
+        var state = "no activity"
+        scenario?.onActivity { activity ->
+            val window = activity.window.decorView
+            val keyboard = window.rootWindowInsets?.isVisible(WindowInsets.Type.ime())
+            state = "keyboard shown: $keyboard, window focus: ${window.hasWindowFocus()}, " +
+                "focused view: ${activity.currentFocus?.javaClass?.name}"
         }
+        return state
+    }
 
     private fun appeared(
         matcher: SemanticsMatcher,
@@ -122,7 +124,10 @@ class SignInJourneyTest {
         // elements; a TV has no touch screen. Out of touch mode first, then a key of the remote that
         // does nothing on the first screen, as a key pressed in touch mode only leaves it.
         instrumentation.setInTouchMode(false)
-        ActivityScenario.launch(MainActivity::class.java).use { journey() }
+        ActivityScenario.launch(MainActivity::class.java).use {
+            scenario = it
+            journey()
+        }
     }
 
     private fun journey() {
@@ -149,6 +154,7 @@ class SignInJourneyTest {
         waitFor(hasText(text(AuthR.string.profiles_hidden_hint)))
         // Sorted by name, « admin » first; its name sits under the focused avatar.
         waitFor(isFocused() and hasAnyAncestor(hasTestTag("profile-0")))
+        Log.i(LOG_TAG, "OK on the first profile; ${inputState()}")
         remote(KeyEvent.KEYCODE_DPAD_CENTER)
 
         // Quick Connect asks the server for a code at once (it failed on the device).
@@ -174,6 +180,7 @@ class SignInJourneyTest {
     }
 
     private companion object {
+        const val LOG_TAG = "SignInJourney"
         const val TIMEOUT = 10_000L
         const val FIRST_FOCUS_TIMEOUT = 3_000L
         const val DISCOVERY_TIMEOUT = 15_000L
