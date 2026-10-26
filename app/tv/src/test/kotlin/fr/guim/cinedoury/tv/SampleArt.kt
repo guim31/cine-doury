@@ -17,10 +17,12 @@ import coil3.compose.AsyncImagePainter
 import coil3.compose.AsyncImagePreviewHandler
 import coil3.compose.LocalAsyncImagePreviewHandler
 import coil3.compose.asPainter
+import coil3.request.NullRequestData
 import coil3.request.SuccessResult
 import coil3.request.crossfade
 import fr.guim.cinedoury.core.designsystem.component.artworkColors
 import fr.guim.cinedoury.core.designsystem.image.ImageSource
+import fr.guim.cinedoury.core.designsystem.image.SizedImage
 import fr.guim.cinedoury.core.model.ImageRef
 import fr.guim.cinedoury.core.model.ImageType
 import fr.guim.cinedoury.core.model.ItemId
@@ -49,7 +51,14 @@ internal object SampleArt {
     @OptIn(ExperimentalCoilApi::class)
     private val handler =
         AsyncImagePreviewHandler { _, request ->
-            val parts = request.data.toString().split(":")
+            // RemoteImage asks for a SizedImage, whose URL Coil makes once it knows the size.
+            val data = request.data
+            val url =
+                (if (data is SizedImage) data.url(request.sizeResolver.size()) else data.toString())
+                    // No URL (J2Samples.noImages): Coil's null data, drawn as before RemoteImage asked for a
+                    // SizedImage, so that the references stay the same.
+                    ?: NullRequestData.toString()
+            val parts = url.split(":")
             // An image that is not one of ours (the samples of J2 have none): a backdrop of its name.
             val image =
                 if (parts.size > HEIGHT && parts[0] == SCHEME) {
@@ -60,7 +69,7 @@ internal object SampleArt {
                         parts[HEIGHT].toInt(),
                     )
                 } else {
-                    draw(ImageType.Backdrop, request.data.toString(), FALLBACK_SIZE, FALLBACK_SIZE)
+                    draw(ImageType.Backdrop, url, FALLBACK_SIZE, FALLBACK_SIZE)
                 }.asImage()
             // Without a crossfade: Coil times it on the real clock, and a capture would catch it at its start.
             val shown = request.newBuilder().crossfade(false).build()

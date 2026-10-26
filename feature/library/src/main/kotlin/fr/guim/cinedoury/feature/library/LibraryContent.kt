@@ -83,6 +83,13 @@ interface LibraryActions {
 
     fun onFocused(index: Int)
 
+    /**
+     * The item focused last, where a grid opens: kept out of the state of the screen, so that a step
+     * of the focus does not recompose the screen and every card of the grid (perf/fluidite). Null: the
+     * remembered [LibraryState.position].
+     */
+    val focusedIndex: Int? get() = null
+
     fun jumpTo(letter: String)
 
     fun retry()
@@ -168,7 +175,7 @@ internal fun LibraryContent(
                     selection = state.selection,
                     onLongPress = if (state.rights.canManage) actions::startSelection else null,
                     view = if (browse.tab == LibraryTab.Collections) LibraryView.Posters else browse.view,
-                    position = browse.position,
+                    position = actions.focusedIndex ?: browse.position,
                     sources = sources,
                     actions = actions,
                     onOpen = onOpen,
@@ -226,7 +233,8 @@ private fun ItemGrid(
     autoFocus: Boolean,
 ) {
     val total = items.total ?: 0
-    val start = position.coerceIn(0, (total - 1).coerceAtLeast(0))
+    // Where the grid opens: read once, the grid then keeps its own place.
+    val start = remember { position.coerceIn(0, (total - 1).coerceAtLeast(0)) }
     val target = remember { FocusRequester() }
     val focusIndex = jump?.index ?: start
     val padding = PaddingValues(top = CineSpacing.s, end = contentEnd, bottom = CineSpacing.xxl, start = CineSpacing.xs)

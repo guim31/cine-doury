@@ -132,6 +132,13 @@ class LibraryViewModel(
     private var noticeJob: Job? = null
     private var saving: Job? = null
 
+    /** The item focused last; written at each step of the focus, never emitted ([LibraryActions.focusedIndex]). */
+    override var focusedIndex: Int? = null
+        private set
+
+    /** Where the list stands: the item focused last, else the remembered one. */
+    private val position get() = focusedIndex ?: browse.position
+
     /** The server rejected the token: the profile is signed out. */
     val sessionEnded = Events<Unit>()
 
@@ -181,7 +188,7 @@ class LibraryViewModel(
         // same place (J6).
         manageUpdates?.let { flow ->
             viewModelScope.launch {
-                flow.updates.collect { reload(around = browse.position) }
+                flow.updates.collect { reload(around = position) }
             }
         }
     }
@@ -261,6 +268,7 @@ class LibraryViewModel(
         reload: Boolean = true,
         transform: (LibraryState) -> LibraryState,
     ) {
+        focusedIndex = 0
         local.update { it.copy(browse = transform(it.browse).copy(position = 0), error = null) }
         save()
         if (reload) reload()
@@ -302,8 +310,8 @@ class LibraryViewModel(
 
     /** The item at [index] took the focus: remembered for the next visit, without writing at each step. */
     override fun onFocused(index: Int) {
-        if (browse.position == index) return
-        local.update { it.copy(browse = it.browse.copy(position = index)) }
+        if (position == index) return
+        focusedIndex = index
         saving?.cancel()
         saving =
             viewModelScope.launch {
@@ -314,7 +322,7 @@ class LibraryViewModel(
 
     private fun save() {
         val profile = profile ?: return
-        val state = browse
+        val state = browse.copy(position = position)
         viewModelScope.launch { states.save(profile, libraryId, state) }
     }
 
@@ -340,7 +348,7 @@ class LibraryViewModel(
 
     override fun retry() {
         local.update { it.copy(error = null) }
-        if (pager.items.value.error != null) pager.retry() else reload(browse.position)
+        if (pager.items.value.error != null) pager.retry() else reload(position)
         if (local.value.options == null) loadOptions()
     }
 
@@ -391,7 +399,7 @@ class LibraryViewModel(
             }
             local.update { it.copy(scan = ScanStatus.IDLE) }
             show(ManageNotice.ScanDone)
-            reload(around = browse.position)
+            reload(around = position)
         }
     }
 
