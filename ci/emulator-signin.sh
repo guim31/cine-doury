@@ -24,12 +24,11 @@ adb exec-out screencap -p > emulator-signin.png || true
   adb shell dumpsys window | grep -E "mCurrentFocus|mFocusedApp" || true
 } | tee emulator-input.txt
 # Every failure the app caught, with its stack (FailureLog).
-adb logcat -d -s CineDoury:V SignInJourney:V AndroidRuntime:E > emulator-logcat.txt || true
+adb logcat -d -s CineDoury:V AndroidRuntime:E > emulator-logcat.txt || true
 if grep -q -E "FAILURES!!!|INSTRUMENTATION_FAILED|Process crashed" emulator-signin.txt \
   || ! grep -q "OK (5 tests)" emulator-signin.txt; then
   adb shell am force-stop "$package" || true
   adb logcat -d -b crash || true
-  grep SignInJourney emulator-logcat.txt || true
   tail -n 120 emulator-logcat.txt || true
   echo "::error::the sign-in with the remote on the emulator failed"
   exit 1

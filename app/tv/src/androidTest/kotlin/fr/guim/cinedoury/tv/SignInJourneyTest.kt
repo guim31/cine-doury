@@ -1,6 +1,5 @@
 package fr.guim.cinedoury.tv
 
-import android.util.Log
 import android.view.KeyEvent
 import android.view.WindowInsets
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -25,6 +24,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import kotlin.test.assertTrue
 import fr.guim.cinedoury.feature.auth.R as AuthR
 import fr.guim.cinedoury.feature.home.R as HomeR
 
@@ -70,7 +70,18 @@ class SignInJourneyTest {
         }
     }
 
-    /** Whether the keyboard is shown over the app, and which view holds the focus of the window. */
+    /** Whether the keyboard is shown over the app (null without an activity). */
+    private fun keyboardShown(): Boolean? {
+        var shown: Boolean? = null
+        scenario?.onActivity {
+            shown =
+                it.window.decorView.rootWindowInsets
+                    ?.isVisible(WindowInsets.Type.ime())
+        }
+        return shown
+    }
+
+    /** Whether the keyboard is shown, and which view holds the focus of the window. */
     private fun inputState(): String {
         var state = "no activity"
         scenario?.onActivity { activity ->
@@ -85,9 +96,14 @@ class SignInJourneyTest {
     private fun appeared(
         matcher: SemanticsMatcher,
         timeout: Long,
+    ): Boolean = appeared(timeout) { compose.onAllNodes(matcher).fetchSemanticsNodes().isNotEmpty() }
+
+    private fun appeared(
+        timeout: Long,
+        condition: () -> Boolean,
     ): Boolean =
         try {
-            compose.waitUntil(timeout) { compose.onAllNodes(matcher).fetchSemanticsNodes().isNotEmpty() }
+            compose.waitUntil(timeout, condition)
             true
         } catch (_: ComposeTimeoutException) {
             false
@@ -154,7 +170,10 @@ class SignInJourneyTest {
         waitFor(hasText(text(AuthR.string.profiles_hidden_hint)))
         // Sorted by name, « admin » first; its name sits under the focused avatar.
         waitFor(isFocused() and hasAnyAncestor(hasTestTag("profile-0")))
-        Log.i(LOG_TAG, "OK on the first profile; ${inputState()}")
+        // The keyboard of the address closed with its typing: left open (Android 11, the Shield),
+        // it took the OK meant for the profile (essai réel 2).
+        val closed = appeared(TIMEOUT) { keyboardShown() != true }
+        assertTrue(closed, "the keyboard stays open over the profiles: ${inputState()}")
         remote(KeyEvent.KEYCODE_DPAD_CENTER)
 
         // Quick Connect asks the server for a code at once (it failed on the device).
@@ -180,7 +199,6 @@ class SignInJourneyTest {
     }
 
     private companion object {
-        const val LOG_TAG = "SignInJourney"
         const val TIMEOUT = 10_000L
         const val FIRST_FOCUS_TIMEOUT = 3_000L
         const val DISCOVERY_TIMEOUT = 15_000L

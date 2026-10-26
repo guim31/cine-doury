@@ -43,6 +43,7 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Dp
@@ -99,6 +100,7 @@ fun CineTextField(
         snapshotFlow { state.text.toString() }.collect { if (it != currentValue) currentOnValueChange(it) }
     }
     val focusManager = LocalFocusManager.current
+    val keyboard = LocalSoftwareKeyboardController.current
     val frame = remember { FocusRequester() }
     val input = remember { FocusRequester() }
     var typing by remember { mutableStateOf(false) }
@@ -111,6 +113,10 @@ fun CineTextField(
     }
     val currentOnImeAction by rememberUpdatedState(onImeAction)
     val runImeAction: () -> Unit = {
+        // The keyboard closes with the typing, before the focus moves on: our action replaces
+        // Compose's, which hid it for « Terminé », and Android 11 leaves it open over the next
+        // screen, where it takes the OK of the remote (essai réel 2).
+        keyboard?.hide()
         val action = currentOnImeAction
         when {
             action != null -> {
@@ -138,8 +144,12 @@ fun CineTextField(
             .fillMaxWidth()
             .focusRequester(input)
             .focusProperties { canFocus = typing }
-            .onFocusChanged { if (!it.isFocused && typing) typing = false }
-            .onPreviewKeyEvent { event -> typingKey(event, state, focusManager, onEnter = runImeAction) }
+            .onFocusChanged {
+                if (!it.isFocused && typing) {
+                    typing = false
+                    keyboard?.hide()
+                }
+            }.onPreviewKeyEvent { event -> typingKey(event, state, focusManager, onEnter = runImeAction) }
     Column(modifier = modifier.width(width)) {
         Text(
             text = label,

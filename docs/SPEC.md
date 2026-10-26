@@ -20,7 +20,7 @@ son domaine :
 | J5 — Recherche (index des titres, clavier à l'écran, recherche vocale, Seerr) | terminé, fusionné (captures dans `docs/screenshots/j5/`, numéros 110 à 120) | [#7](https://github.com/guim31/cine-doury/pull/7) |
 | Essai réel 1 (25/10/2026, Chromecast avec Google TV) : connexion, Quick Connect, saisie à la télécommande, « Plus d'infos », journal | terminé, fusionné (§ 4.13 ; captures 35 et 36) | [#6](https://github.com/guim31/cine-doury/pull/6) |
 | J6 — Gestion (P0, plus éléments à problème et actions en série) | terminé, fusionné (§ 4.14 ; captures dans `docs/screenshots/j6/`, numéros 130 à 147) | [#8](https://github.com/guim31/cine-doury/pull/8) |
-| Essai réel 2 (26/10/2026, NVIDIA Shield TV, Android 11) : plantage à la première image (API Java absente de l'API 30), garde-fou Animal Sniffer, émulateur de la CI en API 30 et 34 | en revue (§ 4.15) | [#9](https://github.com/guim31/cine-doury/pull/9) |
+| Essai réel 2 (26/10/2026, NVIDIA Shield TV, Android 11) : plantage à la première image (API Java absente de l'API 30), clavier resté ouvert, garde-fou Animal Sniffer, émulateur de la CI en API 30 et 34 | en revue (§ 4.15) | [#9](https://github.com/guim31/cine-doury/pull/9) |
 
 *(Chaque jalon met à jour ce tableau et ajoute ses contrats au § 4.)*
 
@@ -1263,7 +1263,23 @@ pas.
   connexion jusqu'à l'accueil puis « Lire »). Sur l'API 30, `SignInJourneyTest` et la lecture
   transcodée de `PlaybackOnDeviceTest` auraient planté avec l'ancien code.
 
-**Reste à vérifier sur la Shield** : connexion et accueil avec images, lecture directe et
+**Le clavier qui restait ouvert** (révélé par l'émulateur API 30) : après la saisie de l'adresse,
+OK sur un profil de « Qui regarde ? » restait sans effet. `CineTextField` remplace l'action du
+clavier de Compose (qui le fermait sur « Terminé ») et ne le fermait pas en fin de saisie ;
+Android 14 le ferme quand le focus quitte le champ, Android 11 le laisse ouvert par-dessus l'écran
+suivant, où il prend le OK de la télécommande. Correction : `CineTextField` ferme le clavier
+(`SoftwareKeyboardController.hide()`) à l'action du clavier et quand le focus quitte la saisie.
+Tests : `RemoteInputTest` (le clavier se ferme à « OK » et en sortant du champ par le bas) ;
+`SignInJourneyTest` vérifie sur l'émulateur que le clavier est fermé avant OK sur le profil.
+Le passage par « Autre compte », sans saisie préalable sur l'écran, échappait au défaut.
+
+**Tests instables corrigés au passage** : `J3FlowTest` (environ un échec sur cinq, `main`
+compris) attendait le lecteur sans faire tourner le *looper* principal de Robolectric, où reprend
+la lecture DataStore des réglages ; l'attente le fait tourner. Les scripts d'émulateur bornent
+`am instrument` (15 min) et relèvent `dumpsys` depuis l'hôte.
+
+**Reste à vérifier sur la Shield** : saisie d'une adresse puis OK sur un profil public (le clavier
+doit se fermer), connexion et accueil avec images, lecture directe et
 transcodée (HEVC HDR, Dolby Vision, passthrough audio vers l'ampli), recherche Seerr.
 
 ## 5. Tests et CI
