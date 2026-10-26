@@ -387,8 +387,9 @@ jobs:
           disable-animations: false
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: ci/emulator-perf.sh http://10.0.2.2:8096
+      # The profiles are committed once generated, whatever the benchmarks after them say.
       - name: Commit the profiles
-        if: steps.mode.outputs.record == 'true'
+        if: always() && steps.mode.outputs.record == 'true' && hashFiles('app/tv/src/release/generated/baselineProfiles/baseline-prof.txt') != ''
         env:
           HEAD_REF: ${{ github.head_ref }}
         run: |

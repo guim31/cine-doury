@@ -94,11 +94,19 @@ internal class Remote(
         return element.isFocused || element.hasObject(By.focused(true))
     }
 
-    /** The text of the focused element, or the first text inside it (the label of a rail entry). */
-    fun focusedText(): String? {
-        val focused = device.findObject(By.focused(true)) ?: return null
-        focused.text?.takeIf { it.isNotEmpty() }?.let { return it }
-        return focused.findObjects(By.text(Pattern.compile(".+"))).firstOrNull()?.text
+    /**
+     * The label of the focused element inside the element tagged [tag] (a rail entry): its text, its
+     * first text inside, or its description. Searched inside [tag], as the view that holds Compose is
+     * the first focused node of the window.
+     */
+    fun focusedText(tag: String): String? {
+        val focused = device.findObject(By.res(tag))?.findObjects(By.focused(true))?.lastOrNull()
+        return focused?.let {
+            it.text?.takeIf(String::isNotEmpty)
+                ?: it.findObjects(By.text(Pattern.compile(".+"))).firstOrNull()?.text
+                ?: it.contentDescription
+                ?: it.findObject(By.desc(Pattern.compile(".+")))?.contentDescription
+        }
     }
 
     /**
@@ -259,10 +267,10 @@ internal fun Remote.openLibrary(name: String) {
     press(KeyEvent.KEYCODE_DPAD_LEFT)
     waitFocusIn(RAIL)
     repeat(RAIL_ENTRIES) {
-        if (focusedText() == name) {
+        if (focusedText(RAIL) == name) {
             press(KeyEvent.KEYCODE_DPAD_CENTER)
             waitFor(LIBRARY_ITEMS, SIGN_IN_TIMEOUT)
-            waitFocusIn(LIBRARY_ITEMS, SIGN_IN_TIMEOUT)
+            waitFocusIn(LIBRARY_ITEMS, SIGN_IN_TIMEOUT, nudge = KeyEvent.KEYCODE_DPAD_DOWN)
             return
         }
         press(KeyEvent.KEYCODE_DPAD_DOWN)
