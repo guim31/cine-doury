@@ -191,10 +191,15 @@ jobs:
           if-no-files-found: ignore
 
   emulator:
-    name: Install, start, play and sign in on an API 34 TV emulator
+    name: Install, start, play and sign in on an API ${{ matrix.api-level }} TV emulator
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 50
+    strategy:
+      fail-fast: false
+      matrix:
+        # 30: minSdk, Android 11 (NVIDIA Shield TV, the reference device). 34: Chromecast with Google TV.
+        api-level: [30, 34]
     services:
       jellyfin:
         image: jellyfin/jellyfin:12.3.20261023-013714
@@ -236,7 +241,7 @@ jobs:
       - name: Start the app, then play
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 34
+          api-level: ${{ matrix.api-level }}
           target: android-tv
           arch: x86
           profile: tv_1080p
@@ -254,11 +259,12 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: emulator-screenshot
+          name: emulator-api${{ matrix.api-level }}
           path: |
             emulator-start.png
             emulator-playback.txt
             emulator-signin.txt
             emulator-signin.png
+            emulator-input.txt
             emulator-logcat.txt
           if-no-files-found: ignore

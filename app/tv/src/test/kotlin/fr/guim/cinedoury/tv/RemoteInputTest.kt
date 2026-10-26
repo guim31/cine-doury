@@ -1,10 +1,13 @@
 package fr.guim.cinedoury.tv
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.SoftwareKeyboardController
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ExperimentalTestApi
@@ -165,6 +168,48 @@ class RemoteInputTest {
         assertFrameFocused(ADDRESS)
         press(Key.DirectionDown)
         compose.onNode(hasClickAction() and inside("address-submit")).assertIsFocused()
+    }
+
+    /** Counts the times the fields close the keyboard (Compose opens it through its input session). */
+    private class RecordingKeyboard : SoftwareKeyboardController {
+        var hidden = 0
+
+        override fun show() = Unit
+
+        override fun hide() {
+            hidden++
+        }
+    }
+
+    @Test
+    fun `the keyboard closes with the typing - Go, then down out of the field`() {
+        // Android 11 (the Shield) left it open over the next screen, where it took the OK of the
+        // remote (essai réel 2): the field closes it itself.
+        val keyboard = RecordingKeyboard()
+        var state by mutableStateOf(AddressState(mode = AddressMode.Add))
+        show {
+            CompositionLocalProvider(LocalSoftwareKeyboardController provides keyboard) {
+                AddressScreen(
+                    state = state,
+                    onEdit = { state = state.copy(text = it) },
+                    onSubmit = {},
+                    onDismissError = {},
+                )
+            }
+        }
+        press(Key.DirectionCenter)
+        assertTyping(ADDRESS)
+        input(ADDRESS).performTextInput("192.0.2.10")
+        val beforeGo = keyboard.hidden
+        input(ADDRESS).performImeAction()
+        compose.waitForIdle()
+        assertTrue(keyboard.hidden > beforeGo)
+
+        press(Key.DirectionCenter)
+        assertTyping(ADDRESS)
+        val beforeDown = keyboard.hidden
+        press(Key.DirectionDown)
+        assertTrue(keyboard.hidden > beforeDown)
     }
 
     @Test

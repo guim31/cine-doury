@@ -301,7 +301,7 @@ internal fun normalizeAddress(address: String): String {
 }
 
 /** Every character encoded, spaces as `%20`. */
-private fun encode(value: String): String = URLEncoder.encode(value, Charsets.UTF_8).replace("+", "%20")
+private fun encode(value: String): String = URLEncoder.encode(value, "UTF-8").replace("+", "%20")
 
 /** A Jellyfin id as 32 hexadecimal digits, without dashes, in lower case. */
 private fun String.bareId(): String = replace("-", "").lowercase()

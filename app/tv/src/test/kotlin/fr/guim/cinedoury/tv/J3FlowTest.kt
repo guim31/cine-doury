@@ -1,5 +1,6 @@
 package fr.guim.cinedoury.tv
 
+import android.os.Looper
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
@@ -47,6 +48,7 @@ import org.koin.dsl.module
 import org.koin.java.KoinJavaComponent.getKoin
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -169,6 +171,7 @@ class J3FlowTest {
         focusable(DetailsPreview.WATCHED).assertIsFocused()
         press(Key.DirectionCenter)
         compose.waitUntil(TIMEOUT) {
+            shadowOf(Looper.getMainLooper()).idle()
             runBlocking { source.calls["setPlayed"] == 1 }
         }
         val active = getKoin().get<SessionManager>().active.value!!
@@ -184,7 +187,12 @@ class J3FlowTest {
 
     /** The player asks the server for the English track, from the saved position. */
     private fun assertPlayerAskedForEnglish() {
-        compose.waitUntil(TIMEOUT) { players.player.loads.isNotEmpty() }
+        // The player reads its settings from DataStore, which answers on the main looper: run it while
+        // waiting, or the answer can arrive only after the timeout.
+        compose.waitUntil(TIMEOUT) {
+            shadowOf(Looper.getMainLooper()).idle()
+            players.player.loads.isNotEmpty()
+        }
         val english =
             J3Samples.phare.mediaSources
                 .first()

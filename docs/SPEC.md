@@ -19,7 +19,8 @@ son domaine :
 | J4 — Lecteur (et retouches du J3 : pastilles des pistes, groupes insécables, logo à la place de l'affiche) | terminé, fusionné (captures dans `docs/screenshots/j4/`, numéros 90 à 108 ; ajout : taille des sous-titres en cours de lecture) | [#5](https://github.com/guim31/cine-doury/pull/5) |
 | J5 — Recherche (index des titres, clavier à l'écran, recherche vocale, Seerr) | terminé, fusionné (captures dans `docs/screenshots/j5/`, numéros 110 à 120) | [#7](https://github.com/guim31/cine-doury/pull/7) |
 | Essai réel 1 (25/10/2026, Chromecast avec Google TV) : connexion, Quick Connect, saisie à la télécommande, « Plus d'infos », journal | terminé, fusionné (§ 4.13 ; captures 35 et 36) | [#6](https://github.com/guim31/cine-doury/pull/6) |
-| J6 — Gestion (P0, plus éléments à problème et actions en série) | terminé, en revue (§ 4.14 ; captures dans `docs/screenshots/j6/`, numéros 130 à 147) | [#8](https://github.com/guim31/cine-doury/pull/8) |
+| J6 — Gestion (P0, plus éléments à problème et actions en série) | terminé, fusionné (§ 4.14 ; captures dans `docs/screenshots/j6/`, numéros 130 à 147) | [#8](https://github.com/guim31/cine-doury/pull/8) |
+| Essai réel 2 (26/10/2026, NVIDIA Shield TV, Android 11) : plantage à la première image (API Java absente de l'API 30), clavier resté ouvert, garde-fou Animal Sniffer, émulateur de la CI en API 30 et 34 | en revue (§ 4.15) | [#9](https://github.com/guim31/cine-doury/pull/9) |
 
 *(Chaque jalon met à jour ce tableau et ajoute ses contrats au § 4.)*
 
@@ -138,6 +139,7 @@ configuration.
 | Coroutines | kotlinx.coroutines | 1.11.0 |
 | Tests | JUnit 4, kotlin-test, MockWebServer 3, Robolectric, Roborazzi | 4.13.2, —, 5.5.1, 4.17, 1.77.0 |
 | Analyse statique | Spotless + ktlint (`ktlint_official`), Detekt, Android Lint | 8.10.4 + 1.8.0, 1.23.8 |
+| API Android des modules Kotlin purs (essai réel 2) | Animal Sniffer (`ru.vyarus.animalsniffer`, MIT) et la signature `com.toasttab.android:gummy-bears-api-30` (Apache 2.0) ; ni l'un ni l'autre n'entre dans l'APK | 2.0.1, 0.16.0 |
 | Images | Coil 3 (`coil-compose`, `coil-network-okhttp`) | 3.6.3 |
 | Stockage | Room (avec KSP, qui fonctionne avec le Kotlin intégré d'AGP 9), DataStore Preferences | 2.8.5 (KSP 2.3.12), 1.3.0 |
 | Injection | Koin (`koin-android`, `koin-androidx-compose`), plutôt que Hilt : pas de traitement d'annotations | 4.2.2 |
@@ -888,142 +890,6 @@ d'un bloc) et les pistes (78, 79 : pastilles). Le lecteur provisoire (86) dispar
 - **Logo ou affiche** : un film, une série ou une collection qui a un logo n'affiche plus son
   affiche ; l'affiche de la carte vole vers le logo en s'y fondant (`sharedBounds`, des deux côtés).
 
-### 4.14 Gestion (J6)
-
-**Module** : `:feature:manage` (`cinedoury.android.library` + `.compose`) : `ItemManager` (toutes les
-actions, par la source du profil ouvert), « Corriger l'identification », « Changer les images »,
-« Éléments à problème », la confirmation de suppression (`DeleteDialog`), les messages
-(`ManageNoticePill`, `ManageErrorDialog`). `:feature:details` et `:feature:library` en dépendent
-pour leurs menus « ⋯ » ; l'appli y ajoute trois écrans (`Route.Identify`, `Route.Images`,
-`Route.Problems`).
-
-**Source** (`:core:source`, `LibrarySource.manage: ManageSource`) :
-
-| Fonction | Appel Jellyfin | Notes |
-|---|---|---|
-| `rights()` | `GET /Users/Me` | `Policy.IsAdministrator`, `EnableContentDeletion`, `EnableContentDeletionFromFolders` (identifiants de bibliothèques) |
-| `refresh(id, mode)` | `POST /Items/{id}/Refresh` | toujours `FullRefresh` (métadonnées et images) ; « Compléter ce qui manque » : rien n'est remplacé ; « Tout remplacer » : `replaceAllMetadata` ; « …, images comprises » : `replaceAllImages` en plus. Le serveur répond 204 et travaille en arrière-plan |
-| `identifyProviders(id, type)` | `GET /Items/{id}/ExternalIdInfos` | les fournisseurs de recherche installés parmi TheMovieDb, AniDB, TheTVDB (TMDb d'abord) |
-| `searchIdentity(id, recherche)` | `POST /Items/RemoteSearch/Movie`, `/Series`, `/BoxSet` | `SearchInfo` (titre, année), `SearchProviderName`, `IncludeDisabledProviders=true` (un fournisseur coupé dans la bibliothèque répond quand même à l'administrateur) |
-| `applyIdentity(id, résultat, images)` | `POST /Items/RemoteSearch/Apply/{id}?replaceAllImages=` | le `RemoteSearchResult` choisi (identifiants des fournisseurs) ; le serveur relit les métadonnées |
-| `remoteImages(id, type, fournisseur, toutes langues)` | `GET /Items/{id}/RemoteImages` | `type`, `providerName`, `includeAllLanguages` ; résolution, langue, fournisseur de chaque image, et la liste des fournisseurs |
-| `setImage(id, type, url)` | `POST /Items/{id}/RemoteImages/Download` | le serveur télécharge l'image ; l'étiquette (`tag`) de l'image change, donc son URL : Coil la relit |
-| `deletionPreview(élément)` | `GET /Items/{id}` puis, pour une saison ou une série, `GET /Shows/{id}/Episodes?fields=MediaSources` | chemins et tailles des fichiers, épisodes (nombre et identifiants) |
-| `delete(id)` | `DELETE /Items/{id}` | **fichiers compris** : Jellyfin supprime le fichier et le dossier du film |
-| `scan(bibliothèque, mode)` | « Rechercher les nouveaux fichiers » : `POST /Library/Refresh` ; « Tout actualiser » : `POST /Items/{bibliothèque}/Refresh` (`FullRefresh`, `replaceAllMetadata`) | voir l'écart ci-dessous |
-| `scanStatus()` | `GET /ScheduledTasks?isHidden=false` | la tâche `RefreshLibrary` (« Scan Media Library ») : `State`, `CurrentProgressPercentage` |
-| `problems(bibliothèque)` | `GET /Items?parentId=…&recursive=true&includeItemTypes=Movie,Series&fields=ProviderIds,Path&enableImageTypes=Primary` | **non identifiés** : aucun identifiant de fournisseur ; **sans affiche** : pas d'image `Primary` |
-| `missingFiles(bibliothèque)` | la liste des films et épisodes, puis `GET /Items/{id}/File` avec `Range: bytes=0-0`, 8 à la fois | **fichiers disparus** : 404 (le serveur garde l'élément jusqu'à la prochaine analyse, qui l'efface ; `HEAD` répond 405) |
-
-`item(id)` donne aussi le chemin (`Path`), les identifiants des fournisseurs (`ProviderIds`) et
-`CanDelete` (le serveur supprimerait l'élément pour ce profil).
-
-**Droits** (`ManageRights`, `:core:model`) : toute l'entrée « Gestion » est réservée aux
-administrateurs ; « Supprimer » exige en plus `EnableContentDeletion`, ou une bibliothèque dans
-`EnableContentDeletionFromFolders`, **et** `CanDelete` sur l'élément. Un profil sans droit ne voit
-aucune entrée de gestion (ni dans « ⋯ », ni le bouton « Gestion » d'une bibliothèque). En attendant
-la réponse du serveur, le drapeau administrateur du profil (Room) suffit à montrer les entrées, sauf
-« Supprimer ». Le serveur vérifie de toute façon chaque appel (403 → `SourceException.Forbidden`).
-
-**Journal** : chaque appel de gestion passe par `LoggingManageSource`, qui écrit une ligne par appel
-dans logcat (balise `CineDoury`, `JellyfinConnector(log = …)`) : « manage delete item=… ok »,
-« manage refresh item=… mode=FillMissing failed: Forbidden ». Identifiants et modes seulement :
-jamais de jeton, de chemin ni d'adresse. `scanStatus`, interrogé chaque seconde, n'est pas journalisé.
-
-**Invalidation** (`ManageRepository`, `ManageUpdates`, `:core:data`) :
-- après une suppression, l'élément, ses saisons et ses épisodes quittent **tout de suite** le cache
-  de l'accueil de tous les profils du serveur (`HomeCacheDao.forgetItem`) et l'index local
-  (`IndexDao.forget`, épisodes d'une série et de la saison compris), puis `ItemChange.Deleted` est
-  publié ;
-- après une actualisation, une identification, une image ou une action en série, `ItemChange.Changed`
-  (avec sa nature) est publié ;
-- les écouteurs : la bibliothèque relit ses pages à la même place ; une fiche relit l'élément changé
-  (nouvelle étiquette d'image, donc nouvelle image) ou retire de ses rangées ce qui a été supprimé ;
-  « Éléments à problème » relit sa liste ou retire l'élément supprimé ; l'accueil se rafraîchit en y
-  revenant (§ 4.9). Aucun schéma Room ne change (requêtes ajoutées seulement).
-
-**Interface** (`UI.md` § 8, « Gestion ») :
-- **« ⋯ » d'une fiche** (film, série, saison, épisode, collection ; le bouton « ⋯ » apparaît dès
-  que le profil gère, même sans lecture possible) : « Marquer comme vu », « Informations sur le
-  fichier », puis la section « Gestion » : les trois actualisations, « Corriger l'identification »
-  (film, série, collection), « Changer l'affiche, le fond ou le logo », « Supprimer » en `danger`.
-  **Deux appuis** : « ⋯ » puis l'action (la croix ne compte pas).
-- **Actualiser** : le panneau se ferme, « Actualisation demandée. Le serveur la fait en
-  arrière-plan. » s'affiche en bas ; 5 s plus tard la fiche est relue et « Métadonnées actualisées »
-  s'affiche. Jellyfin ne publie pas la progression d'une actualisation d'élément.
-- **Corriger l'identification** : titre et année pré-remplis par `SearchTitle` (le nom du dossier
-  nettoyé : points et soulignés, crochets, année, étiquettes de version comme « 1080p », « BluRay »,
-  « x265-GROUPE », « MULTi » ; un titre-nombre comme « 1917 » reste ; l'orthographe n'est pas
-  corrigée), modifiables ; onglets des fournisseurs (s'il y en a plusieurs) ; « Remplacer aussi les
-  images » (coché) ; résultats en **galerie d'affiches** avec l'année, et sous la galerie le titre,
-  l'année, le fournisseur et trois lignes de résumé du résultat focalisé ; OK l'applique et ferme
-  l'écran ; la fiche se relit (« Identification corrigée »). Sans résultat : deux phrases, et le
-  focus sur le titre.
-- **Changer les images** : onglets Affiche, Fond, Logo ; « Tous les fournisseurs » et chaque
-  fournisseur ; « Toutes les langues » ; galerie (affiches 2:3, fonds et logos 16:9) avec résolution,
-  langue (« Sans texte ») et fournisseur ; OK la pose et ferme l'écran ; la fiche se relit
-  (« Image changée »).
-- **Supprimer** : boîte `surface-2` (`ConfirmDialog`) : « Supprimer « Le Phare » ? », les chemins,
-  la taille, le nombre d'épisodes, « Ces fichiers seront supprimés des disques du serveur. Cette
-  action est définitive. » ; **focus initial sur « Annuler »** ; une série demande une **seconde
-  confirmation** (« Supprimer toute la série ? », focus de nouveau sur « Annuler ») ; après la
-  suppression, retour à l'écran précédent. « Retour » annule.
-- **Informations sur le fichier** : par version, chemin, conteneur, taille, débit, chaque piste ;
-  puis « La fiche » : chemin (série), date d'ajout, identifiants TMDb, IMDb, TVDB, AniDB (« Aucun
-  identifiant de fournisseur » sinon).
-- **« Gestion » d'une bibliothèque** (bouton de la barre, administrateurs seulement) : « Rechercher
-  les nouveaux fichiers » (sous lui, « Analyse en cours : 42 % » tant que la tâche tourne ; à la fin
-  « Analyse terminée » et la bibliothèque relue), « Tout actualiser » (« Actualisation demandée »),
-  « Éléments à problème », « Sélectionner des titres ».
-- **Éléments à problème** : onglets « Non identifiés (n) », « Sans affiche (n) », « Fichiers
-  disparus » (vérification à la demande, « Vérification des fichiers : 3 200 sur 11 523 ») ; liste
-  (affiche, titre, raison, chemin) ; OK ouvre un panneau : « Corriger l'identification »,
-  « Supprimer de la bibliothèque » (la même confirmation).
-- **Actions en série** : **OK maintenu** sur une carte (`Modifier.onLongPress` : la première
-  répétition de la touche, le relâchement qui suit est absorbé) ou « Sélectionner des titres » ;
-  chaque carte porte une case (`SelectionMark`), OK la coche ; la barre d'outils devient « 3 titres
-  sélectionnés », « Marquer comme vus », « Marquer comme non vus », « Actualiser » (compléter ce qui
-  manque), « Terminer » ; « Retour » termine.
-- **Échec** : une boîte en deux phrases (`toErrorText`) et « Fermer » ; jamais de message de succès
-  avant la réponse du serveur.
-
-**Écarts** :
-- « Rechercher les nouveaux fichiers » analyse **toutes** les bibliothèques (`/Library/Refresh`) :
-  c'est la seule analyse dont Jellyfin publie la progression (`/ScheduledTasks`) ; l'analyse d'une
-  seule bibliothèque (`/Items/{id}/Refresh`) n'en publie aucune. Elle ne relit que ce qui a changé.
-- « Tout actualiser » et l'actualisation d'un élément n'ont pas de progression : une confirmation.
-- Les actions de bibliothèque sont dans « ⋯ » de la bibliothèque seulement ; les réglages
-  « Bibliothèques » gardent le choix de l'icône (J7 les reprendra avec les pages de réglages).
-- « Envoyer une image depuis le téléphone » (FONCTIONNALITES § 9) attend l'appli mobile.
-
-**Serveur de test** : sans fournisseur en ligne (`bootstrap.sh`), une recherche d'identité répond
-vide (en CI, qui atteint TMDb, elle peut répondre) et les galeries d'images sont vides ; les tests
-appliquent donc une identité construite (identifiant TMDb factice) et posent une image que le
-serveur télécharge **de lui-même** (`http://localhost:8096/Items/{autre}/Images/Primary`).
-**« Tout remplacer » vide les métadonnées** d'un film du serveur de test (il ne relit pas son
-`.nfo`) : les tests n'actualisent qu'un film créé pour eux. `run-local.sh` monte les médias en
-écriture (la suppression efface des fichiers) ; la CI donne `JELLYFIN_MEDIA_DIR`.
-
-**Tests** : unitaires `ManageTest` (droits, double confirmation), `SearchTitleTest` (nettoyage),
-`ManageRepositoryTest` (invalidation : rangées de l'accueil, index, épisodes d'une série,
-annonces) ; intégration `JellyfinManageIntegrationTest` (droits de l'administrateur et du profil
-enfant, refus 403, fournisseurs et galeries, analyse et sa progression, puis un film **créé exprès**
-sous un nom de dossier mal orthographié, `Le.Phrae.2001.1080p` : actualisé, non identifié, titre de
-recherche nettoyé, identité appliquée, sans affiche puis affiche posée, fichier disparu puis revenu,
-aperçu de la suppression, supprimé avec son dossier) ; interface `J6NavigationTest` (« Supprimer »
-en deux appuis, focus sur « Annuler », seconde confirmation d'une série, profil enfant sans gestion,
-OK maintenu), `J6FlowTest` (appli entière : actualiser puis supprimer depuis la fiche, retour).
-
-**Captures** (`docs/screenshots/j6/`, 1920 × 1080, sombre et noir OLED) : « ⋯ » d'un film (130),
-d'une série (131), d'un profil enfant (132), identification (133) et sans résultat (134), galerie
-d'affiches (135), onglet des fonds sans image (136), suppression d'un film (137), d'une série (138)
-et sa seconde confirmation (139), informations sur le fichier (140), « Gestion » d'une bibliothèque
-avec une analyse en cours (141), éléments à problème (142) et leurs actions (143), vérification des
-fichiers (144), sélection multiple (145), actualisation demandée (146), échec (147).
-
-**Pour le J7** : les réglages « Bibliothèques » peuvent reprendre `ItemManager.scan` et
-`ManageRights` ; les utilisateurs, tâches planifiées et journal d'activité (FONCTIONNALITES § 9,
-« Serveur ») ont leur place dans `ManageSource`.
 ### 4.12 Recherche (J5)
 
 **Modules** : `:feature:search` (`cinedoury.android.library` + `.compose`) — l'écran, le clavier à
@@ -1222,14 +1088,220 @@ Jellyfin 12.3 de la maison, avec l'APK du J3. Défauts et corrections :
 - **Captures** (`docs/screenshots/j4/`, où la CI les copie) : erreur avec « Plus d'infos » déplié
   (35), « Qui regarde ? » sans profil listé (36) ; « Qui regarde ? » (25) porte désormais la phrase sur les comptes masqués.
 
+### 4.14 Gestion (J6)
+
+**Module** : `:feature:manage` (`cinedoury.android.library` + `.compose`) : `ItemManager` (toutes les
+actions, par la source du profil ouvert), « Corriger l'identification », « Changer les images »,
+« Éléments à problème », la confirmation de suppression (`DeleteDialog`), les messages
+(`ManageNoticePill`, `ManageErrorDialog`). `:feature:details` et `:feature:library` en dépendent
+pour leurs menus « ⋯ » ; l'appli y ajoute trois écrans (`Route.Identify`, `Route.Images`,
+`Route.Problems`).
+
+**Source** (`:core:source`, `LibrarySource.manage: ManageSource`) :
+
+| Fonction | Appel Jellyfin | Notes |
+|---|---|---|
+| `rights()` | `GET /Users/Me` | `Policy.IsAdministrator`, `EnableContentDeletion`, `EnableContentDeletionFromFolders` (identifiants de bibliothèques) |
+| `refresh(id, mode)` | `POST /Items/{id}/Refresh` | toujours `FullRefresh` (métadonnées et images) ; « Compléter ce qui manque » : rien n'est remplacé ; « Tout remplacer » : `replaceAllMetadata` ; « …, images comprises » : `replaceAllImages` en plus. Le serveur répond 204 et travaille en arrière-plan |
+| `identifyProviders(id, type)` | `GET /Items/{id}/ExternalIdInfos` | les fournisseurs de recherche installés parmi TheMovieDb, AniDB, TheTVDB (TMDb d'abord) |
+| `searchIdentity(id, recherche)` | `POST /Items/RemoteSearch/Movie`, `/Series`, `/BoxSet` | `SearchInfo` (titre, année), `SearchProviderName`, `IncludeDisabledProviders=true` (un fournisseur coupé dans la bibliothèque répond quand même à l'administrateur) |
+| `applyIdentity(id, résultat, images)` | `POST /Items/RemoteSearch/Apply/{id}?replaceAllImages=` | le `RemoteSearchResult` choisi (identifiants des fournisseurs) ; le serveur relit les métadonnées |
+| `remoteImages(id, type, fournisseur, toutes langues)` | `GET /Items/{id}/RemoteImages` | `type`, `providerName`, `includeAllLanguages` ; résolution, langue, fournisseur de chaque image, et la liste des fournisseurs |
+| `setImage(id, type, url)` | `POST /Items/{id}/RemoteImages/Download` | le serveur télécharge l'image ; l'étiquette (`tag`) de l'image change, donc son URL : Coil la relit |
+| `deletionPreview(élément)` | `GET /Items/{id}` puis, pour une saison ou une série, `GET /Shows/{id}/Episodes?fields=MediaSources` | chemins et tailles des fichiers, épisodes (nombre et identifiants) |
+| `delete(id)` | `DELETE /Items/{id}` | **fichiers compris** : Jellyfin supprime le fichier et le dossier du film |
+| `scan(bibliothèque, mode)` | « Rechercher les nouveaux fichiers » : `POST /Library/Refresh` ; « Tout actualiser » : `POST /Items/{bibliothèque}/Refresh` (`FullRefresh`, `replaceAllMetadata`) | voir l'écart ci-dessous |
+| `scanStatus()` | `GET /ScheduledTasks?isHidden=false` | la tâche `RefreshLibrary` (« Scan Media Library ») : `State`, `CurrentProgressPercentage` |
+| `problems(bibliothèque)` | `GET /Items?parentId=…&recursive=true&includeItemTypes=Movie,Series&fields=ProviderIds,Path&enableImageTypes=Primary` | **non identifiés** : aucun identifiant de fournisseur ; **sans affiche** : pas d'image `Primary` |
+| `missingFiles(bibliothèque)` | la liste des films et épisodes, puis `GET /Items/{id}/File` avec `Range: bytes=0-0`, 8 à la fois | **fichiers disparus** : 404 (le serveur garde l'élément jusqu'à la prochaine analyse, qui l'efface ; `HEAD` répond 405) |
+
+`item(id)` donne aussi le chemin (`Path`), les identifiants des fournisseurs (`ProviderIds`) et
+`CanDelete` (le serveur supprimerait l'élément pour ce profil).
+
+**Droits** (`ManageRights`, `:core:model`) : toute l'entrée « Gestion » est réservée aux
+administrateurs ; « Supprimer » exige en plus `EnableContentDeletion`, ou une bibliothèque dans
+`EnableContentDeletionFromFolders`, **et** `CanDelete` sur l'élément. Un profil sans droit ne voit
+aucune entrée de gestion (ni dans « ⋯ », ni le bouton « Gestion » d'une bibliothèque). En attendant
+la réponse du serveur, le drapeau administrateur du profil (Room) suffit à montrer les entrées, sauf
+« Supprimer ». Le serveur vérifie de toute façon chaque appel (403 → `SourceException.Forbidden`).
+
+**Journal** : chaque appel de gestion passe par `LoggingManageSource`, qui écrit une ligne par appel
+dans logcat (balise `CineDoury`, `JellyfinConnector(log = …)`) : « manage delete item=… ok »,
+« manage refresh item=… mode=FillMissing failed: Forbidden ». Identifiants et modes seulement :
+jamais de jeton, de chemin ni d'adresse. `scanStatus`, interrogé chaque seconde, n'est pas journalisé.
+
+**Invalidation** (`ManageRepository`, `ManageUpdates`, `:core:data`) :
+- après une suppression, l'élément, ses saisons et ses épisodes quittent **tout de suite** le cache
+  de l'accueil de tous les profils du serveur (`HomeCacheDao.forgetItem`) et l'index local
+  (`IndexDao.forget`, épisodes d'une série et de la saison compris), puis `ItemChange.Deleted` est
+  publié ;
+- après une actualisation, une identification, une image ou une action en série, `ItemChange.Changed`
+  (avec sa nature) est publié ;
+- les écouteurs : la bibliothèque relit ses pages à la même place ; une fiche relit l'élément changé
+  (nouvelle étiquette d'image, donc nouvelle image) ou retire de ses rangées ce qui a été supprimé ;
+  « Éléments à problème » relit sa liste ou retire l'élément supprimé ; l'accueil se rafraîchit en y
+  revenant (§ 4.9). Aucun schéma Room ne change (requêtes ajoutées seulement).
+
+**Interface** (`UI.md` § 8, « Gestion ») :
+- **« ⋯ » d'une fiche** (film, série, saison, épisode, collection ; le bouton « ⋯ » apparaît dès
+  que le profil gère, même sans lecture possible) : « Marquer comme vu », « Informations sur le
+  fichier », puis la section « Gestion » : les trois actualisations, « Corriger l'identification »
+  (film, série, collection), « Changer l'affiche, le fond ou le logo », « Supprimer » en `danger`.
+  **Deux appuis** : « ⋯ » puis l'action (la croix ne compte pas).
+- **Actualiser** : le panneau se ferme, « Actualisation demandée. Le serveur la fait en
+  arrière-plan. » s'affiche en bas ; 5 s plus tard la fiche est relue et « Métadonnées actualisées »
+  s'affiche. Jellyfin ne publie pas la progression d'une actualisation d'élément.
+- **Corriger l'identification** : titre et année pré-remplis par `SearchTitle` (le nom du dossier
+  nettoyé : points et soulignés, crochets, année, étiquettes de version comme « 1080p », « BluRay »,
+  « x265-GROUPE », « MULTi » ; un titre-nombre comme « 1917 » reste ; l'orthographe n'est pas
+  corrigée), modifiables ; onglets des fournisseurs (s'il y en a plusieurs) ; « Remplacer aussi les
+  images » (coché) ; résultats en **galerie d'affiches** avec l'année, et sous la galerie le titre,
+  l'année, le fournisseur et trois lignes de résumé du résultat focalisé ; OK l'applique et ferme
+  l'écran ; la fiche se relit (« Identification corrigée »). Sans résultat : deux phrases, et le
+  focus sur le titre.
+- **Changer les images** : onglets Affiche, Fond, Logo ; « Tous les fournisseurs » et chaque
+  fournisseur ; « Toutes les langues » ; galerie (affiches 2:3, fonds et logos 16:9) avec résolution,
+  langue (« Sans texte ») et fournisseur ; OK la pose et ferme l'écran ; la fiche se relit
+  (« Image changée »).
+- **Supprimer** : boîte `surface-2` (`ConfirmDialog`) : « Supprimer « Le Phare » ? », les chemins,
+  la taille, le nombre d'épisodes, « Ces fichiers seront supprimés des disques du serveur. Cette
+  action est définitive. » ; **focus initial sur « Annuler »** ; une série demande une **seconde
+  confirmation** (« Supprimer toute la série ? », focus de nouveau sur « Annuler ») ; après la
+  suppression, retour à l'écran précédent. « Retour » annule.
+- **Informations sur le fichier** : par version, chemin, conteneur, taille, débit, chaque piste ;
+  puis « La fiche » : chemin (série), date d'ajout, identifiants TMDb, IMDb, TVDB, AniDB (« Aucun
+  identifiant de fournisseur » sinon).
+- **« Gestion » d'une bibliothèque** (bouton de la barre, administrateurs seulement) : « Rechercher
+  les nouveaux fichiers » (sous lui, « Analyse en cours : 42 % » tant que la tâche tourne ; à la fin
+  « Analyse terminée » et la bibliothèque relue), « Tout actualiser » (« Actualisation demandée »),
+  « Éléments à problème », « Sélectionner des titres ».
+- **Éléments à problème** : onglets « Non identifiés (n) », « Sans affiche (n) », « Fichiers
+  disparus » (vérification à la demande, « Vérification des fichiers : 3 200 sur 11 523 ») ; liste
+  (affiche, titre, raison, chemin) ; OK ouvre un panneau : « Corriger l'identification »,
+  « Supprimer de la bibliothèque » (la même confirmation).
+- **Actions en série** : **OK maintenu** sur une carte (`Modifier.onLongPress` : la première
+  répétition de la touche, le relâchement qui suit est absorbé) ou « Sélectionner des titres » ;
+  chaque carte porte une case (`SelectionMark`), OK la coche ; la barre d'outils devient « 3 titres
+  sélectionnés », « Marquer comme vus », « Marquer comme non vus », « Actualiser » (compléter ce qui
+  manque), « Terminer » ; « Retour » termine.
+- **Échec** : une boîte en deux phrases (`toErrorText`) et « Fermer » ; jamais de message de succès
+  avant la réponse du serveur.
+
+**Écarts** :
+- « Rechercher les nouveaux fichiers » analyse **toutes** les bibliothèques (`/Library/Refresh`) :
+  c'est la seule analyse dont Jellyfin publie la progression (`/ScheduledTasks`) ; l'analyse d'une
+  seule bibliothèque (`/Items/{id}/Refresh`) n'en publie aucune. Elle ne relit que ce qui a changé.
+- « Tout actualiser » et l'actualisation d'un élément n'ont pas de progression : une confirmation.
+- Les actions de bibliothèque sont dans « ⋯ » de la bibliothèque seulement ; les réglages
+  « Bibliothèques » gardent le choix de l'icône (J7 les reprendra avec les pages de réglages).
+- « Envoyer une image depuis le téléphone » (FONCTIONNALITES § 9) attend l'appli mobile.
+
+**Serveur de test** : sans fournisseur en ligne (`bootstrap.sh`), une recherche d'identité répond
+vide (en CI, qui atteint TMDb, elle peut répondre) et les galeries d'images sont vides ; les tests
+appliquent donc une identité construite (identifiant TMDb factice) et posent une image que le
+serveur télécharge **de lui-même** (`http://localhost:8096/Items/{autre}/Images/Primary`).
+**« Tout remplacer » vide les métadonnées** d'un film du serveur de test (il ne relit pas son
+`.nfo`) : les tests n'actualisent qu'un film créé pour eux. `run-local.sh` monte les médias en
+écriture (la suppression efface des fichiers) ; la CI donne `JELLYFIN_MEDIA_DIR`.
+
+**Tests** : unitaires `ManageTest` (droits, double confirmation), `SearchTitleTest` (nettoyage),
+`ManageRepositoryTest` (invalidation : rangées de l'accueil, index, épisodes d'une série,
+annonces) ; intégration `JellyfinManageIntegrationTest` (droits de l'administrateur et du profil
+enfant, refus 403, fournisseurs et galeries, analyse et sa progression, puis un film **créé exprès**
+sous un nom de dossier mal orthographié, `Le.Phrae.2001.1080p` : actualisé, non identifié, titre de
+recherche nettoyé, identité appliquée, sans affiche puis affiche posée, fichier disparu puis revenu,
+aperçu de la suppression, supprimé avec son dossier) ; interface `J6NavigationTest` (« Supprimer »
+en deux appuis, focus sur « Annuler », seconde confirmation d'une série, profil enfant sans gestion,
+OK maintenu), `J6FlowTest` (appli entière : actualiser puis supprimer depuis la fiche, retour).
+
+**Captures** (`docs/screenshots/j6/`, 1920 × 1080, sombre et noir OLED) : « ⋯ » d'un film (130),
+d'une série (131), d'un profil enfant (132), identification (133) et sans résultat (134), galerie
+d'affiches (135), onglet des fonds sans image (136), suppression d'un film (137), d'une série (138)
+et sa seconde confirmation (139), informations sur le fichier (140), « Gestion » d'une bibliothèque
+avec une analyse en cours (141), éléments à problème (142) et leurs actions (143), vérification des
+fichiers (144), sélection multiple (145), actualisation demandée (146), échec (147).
+
+**Pour le J7** : les réglages « Bibliothèques » peuvent reprendre `ItemManager.scan` et
+`ManageRights` ; les utilisateurs, tâches planifiées et journal d'activité (FONCTIONNALITES § 9,
+« Serveur ») ont leur place dans `ManageSource`.
+
+### 4.15 Essai réel 2 : la Shield et le `minSdk` (26/10/2026)
+
+Premier essai sur l'appareil de référence (NVIDIA Shield TV, Android 11, API 30, notre `minSdk`)
+avec l'APK de `b1aea97` : Quick Connect aboutit, puis l'appli se ferme aussitôt, et à chaque
+relance. Le même APK marche sur le Chromecast avec Google TV (API 34).
+
+**Cause** : `java.lang.NoSuchMethodError: URLEncoder.encode(String, Charset)` dans `imageUrlOf`
+(`:source:jellyfin`), à la première image de l'accueil. Cette surcharge est une API Java 10
+qu'Android n'a qu'à partir de l'API 33. L'APK comparé appel par appel à l'`android.jar` de
+l'API 30 en avait deux autres dans notre code : `URLEncoder.encode(String, Charset)` dans le client
+Seerr (plantage à la première recherche Seerr) et `URLDecoder.decode(String, Charset)` dans
+`JellyfinPlaybackSource.reasonsOf` (plantage à la lecture d'un média transcodé). Les autres appels
+au-delà de l'API 30 viennent des bibliothèques (androidx, Media3, OkHttp, kotlinx) et sont gardés
+par une vérification de version.
+
+**Pourquoi rien ne l'a vu** : les modules Kotlin purs (`:core:model`, `:core:source`,
+`:source:jellyfin`, `:source:seerr`) se compilent avec le JDK 21 et Android Lint ne les vérifie pas
+(`NewApi` est sauté hors d'un module Android) ; D8 ne rétroporte qu'une partie des API Java ; les
+tests JVM et Robolectric tournent sur un JDK ; l'émulateur de la CI était en API 34.
+
+**Correction** : les surcharges à nom de jeu de caractères, présentes depuis toujours
+(`URLEncoder.encode(s, "UTF-8")`, `URLDecoder.decode(s, "UTF-8")`) ; les URL produites ne changent
+pas.
+
+**Garde-fous** :
+- **Animal Sniffer** sur chaque module Kotlin pur (plugin de convention `cinedoury.jvm.library`) :
+  `animalsnifferMain`, dans `check`, compare le code principal compilé à la signature de l'API 30
+  d'Android publiée par Toast (`gummy-bears-api-30`, qui connaît les rétroportages de D8). Un appel
+  absent d'Android 11 fait échouer la CI (« [Undefined reference] … », repris par le résumé
+  d'échec). Les tests ne sont pas vérifiés : ils tournent sur la JVM. Preuve : le run [40299467089](https://github.com/guim31/cine-doury/actions/runs/40299467089) échoue sur `:source:jellyfin:animalsnifferMain` seul quand l'appel fautif est réintroduit.
+- **Android Lint écarté** : `com.android.lint` sur les modules JVM et `checkDependencies = true`
+  dans l'appli font bien analyser leur code par `:app:tv:lintDebug`, mais l'analyse partielle d'un
+  module JVM n'enregistre aucun `NewApi` : l'appel fautif passe (essayé en session).
+- **Deux émulateurs en CI** : le job « Emulator » est une matrice **API 30** (Android TV 11, la
+  Shield) et **API 34** (le Chromecast), mêmes scripts (démarrage, lecture directe et transcodée,
+  connexion jusqu'à l'accueil puis « Lire »). Sur l'API 30, `SignInJourneyTest` et la lecture
+  transcodée de `PlaybackOnDeviceTest` auraient planté avec l'ancien code.
+
+**Le clavier qui restait ouvert** (révélé par l'émulateur API 30) : après la saisie de l'adresse,
+OK sur un profil de « Qui regarde ? » restait sans effet. `CineTextField` remplace l'action du
+clavier de Compose (qui le fermait sur « Terminé ») et ne le fermait pas en fin de saisie ;
+Android 14 le ferme quand le focus quitte le champ, Android 11 le laisse ouvert par-dessus l'écran
+suivant, où il prend le OK de la télécommande. Correction : `CineTextField` ferme le clavier à
+l'action du clavier et quand le focus quitte la saisie, par `SoftwareKeyboardController.hide()` et
+par `InputMethodManager.hideSoftInputFromWindow` : en Android 11, la première voie (encarts de la
+fenêtre) est parfois ignorée juste après l'ouverture du clavier (vu sur l'émulateur). Diagnostic :
+`SignInJourneyTest` relève l'état du clavier (`WindowInsets`), les touches qui atteignent
+l'activité et les changements de focus de la fenêtre ; la touche OK perdue n'atteignait jamais
+l'activité, le clavier la prenait. Le test attend aussi que le clavier soit affiché avant d'y
+saisir, comme une main sur la télécommande : sinon, au premier lancement de l'émulateur (clavier
+démarré à froid), saisie et validation 1 s après OK croisaient l'ouverture et la fermeture du
+clavier, qui prenait encore la touche suivante. Vérifié : quatre connexions de suite sur chaque
+émulateur, dont la première après le démarrage (run 40338655999).
+Tests : `RemoteInputTest` (le clavier se ferme à « OK » et en sortant du champ par le bas) ;
+`SignInJourneyTest` vérifie sur l'émulateur que le clavier est fermé avant OK sur le profil.
+Le passage par « Autre compte », sans saisie préalable sur l'écran, échappait au défaut.
+
+**Tests instables corrigés au passage** : `J3FlowTest` (environ un échec sur cinq, `main`
+compris) attendait le lecteur sans faire tourner le *looper* principal de Robolectric, où reprend
+la lecture DataStore des réglages ; l'attente le fait tourner. Les scripts d'émulateur bornent
+`am instrument` (15 min) et relèvent `dumpsys` depuis l'hôte.
+
+**Reste à vérifier sur la Shield** : saisie d'une adresse puis OK sur un profil public (le clavier
+doit se fermer), connexion et accueil avec images, lecture directe et
+transcodée (HEVC HDR, Dolby Vision, passthrough audio vers l'ampli), recherche Seerr.
+
 ## 5. Tests et CI
 
 - GitHub Actions sur `ubuntu-latest` :
   - construction ;
-  - analyse statique (ktlint ou Spotless, Detekt, Android Lint) ;
+  - analyse statique (ktlint ou Spotless, Detekt, Android Lint ; Animal Sniffer contre l'API 30
+    d'Android sur les modules Kotlin purs, que Lint ne vérifie pas, § 4.15) ;
   - tests unitaires ;
   - **vérification des captures Roborazzi** ;
-  - **tests d'intégration contre un vrai Jellyfin**.
+  - **tests d'intégration contre un vrai Jellyfin** ;
+  - **deux émulateurs Android TV**, API 30 (`minSdk`, la Shield) et API 34 (le Chromecast) :
+    installation et démarrage, lecture directe et transcodée, connexion à la télécommande (§ 4.15).
   - `concurrency` avec `cancel-in-progress`, `timeout-minutes`, cache Gradle.
 - **Jellyfin de test** : conteneur de service `jellyfin/jellyfin:12.3.20261023-013714`.
   - Un script d'amorçage versionné fait l'assistant de démarrage, crée les utilisateurs (un administrateur, un profil enfant), les bibliothèques et des collections.

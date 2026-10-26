@@ -241,7 +241,7 @@ internal class JellyfinPlaybackSource(
                     .firstOrNull { it.startsWith(REASONS, ignoreCase = true) }
                     ?.substring(REASONS.length) ?: return emptySet()
             return URLDecoder
-                .decode(value, Charsets.UTF_8)
+                .decode(value, "UTF-8")
                 .split(',')
                 .mapNotNull { TranscodeReason.of(it) }
                 .toSet()
