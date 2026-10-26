@@ -18,11 +18,27 @@ private val LocalReducedMotion = staticCompositionLocalOf { false }
  * the same tokens.
  *
  * @param reducedMotion fades only (`UI.md` § 7): set from the settings or from the system.
+ * @param tvLayout lays the content out on the 960 × 540 dp of the design, whatever the screen
+ * ([TvLayoutDensity]).
  */
 @Composable
 fun CineTheme(
     variant: ThemeVariant = ThemeVariant.Dark,
     reducedMotion: Boolean = false,
+    tvLayout: Boolean = true,
+    content: @Composable () -> Unit,
+) {
+    if (tvLayout) {
+        TvLayoutDensity { CineThemeContent(variant, reducedMotion, content) }
+    } else {
+        CineThemeContent(variant, reducedMotion, content)
+    }
+}
+
+@Composable
+private fun CineThemeContent(
+    variant: ThemeVariant,
+    reducedMotion: Boolean,
     content: @Composable () -> Unit,
 ) {
     val colors = variant.colors()
