@@ -218,18 +218,14 @@ class UpdateRepository(
         if (installing?.isActive == true) return
         installing =
             scope.launch {
-                when (val result = gate.install(File(downloads, release.apk.name))) {
-                    InstallResult.Started, InstallResult.Cancelled -> {
-                        Unit
-                    }
-
-                    is InstallResult.Failed -> {
-                        FailureLog.warn("Update: Android refused ${release.apk.name}: ${result.message}")
-                        local.update {
-                            it.copy(
-                                phase = UpdatePhase.Failed(release, UpdateFailure.Install(result.message)),
-                            )
-                        }
+                val result = gate.install(File(downloads, release.apk.name))
+                // Started: Android asks the user, then restarts the app; cancelled: still ready.
+                if (result is InstallResult.Failed) {
+                    FailureLog.warn("Update: Android refused ${release.apk.name}: ${result.message}")
+                    local.update {
+                        it.copy(
+                            phase = UpdatePhase.Failed(release, UpdateFailure.Install(result.message)),
+                        )
                     }
                 }
             }

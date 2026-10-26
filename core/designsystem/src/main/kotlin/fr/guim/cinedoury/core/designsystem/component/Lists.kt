@@ -188,9 +188,11 @@ fun StepperRow(
         if (icon != null) {
             Icon(icon, contentDescription = null, tint = secondary, modifier = Modifier.size(CineSizes.icon))
         }
-        Column(Modifier.weight(1f, fill = description != null)) {
+        if (description == null) {
             Text(text = title, style = CineTheme.typography.label, color = primary, maxLines = 1)
-            if (description != null) {
+        } else {
+            Column(Modifier.weight(1f)) {
+                Text(text = title, style = CineTheme.typography.label, color = primary, maxLines = 1)
                 Text(
                     text = description,
                     style = CineTheme.typography.caption,
