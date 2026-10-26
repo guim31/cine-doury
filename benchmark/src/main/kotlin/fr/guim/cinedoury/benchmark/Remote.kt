@@ -12,6 +12,7 @@ import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiObject2
 import androidx.test.uiautomator.Until
 import java.io.ByteArrayOutputStream
+import java.util.regex.Pattern
 
 /** The app under test: the debug or the optimised APK, both `fr.guim.cinedoury`. */
 internal const val PACKAGE = "fr.guim.cinedoury"
@@ -93,16 +94,29 @@ internal class Remote(
         return element.isFocused || element.hasObject(By.focused(true))
     }
 
-    /** Waits until the focus is in the element tagged [tag]. */
+    /** The text of the focused element, or the first text inside it (the label of a rail entry). */
+    fun focusedText(): String? {
+        val focused = device.findObject(By.focused(true)) ?: return null
+        focused.text?.takeIf { it.isNotEmpty() }?.let { return it }
+        return focused.findObjects(By.text(Pattern.compile(".+"))).firstOrNull()?.text
+    }
+
+    /**
+     * Waits until the focus is in the element tagged [tag]. When nothing in the app has the focus (the
+     * screen came later than its first focus, on a slow build), a key of the remote gives it, as on a
+     * TV: [nudge] is pressed once, halfway.
+     */
     fun waitFocusIn(
         tag: String,
         timeout: Long = TIMEOUT,
-    ) = waitUntil("the focus in $tag", timeout) { focusedIn(tag) }
-
-    /** The text of the focused element, or of the first text inside it. */
-    fun focusedText(): String? {
-        val focused = device.findObject(By.focused(true)) ?: return null
-        return focused.text ?: focused.findObject(By.textStartsWith(""))?.text ?: focused.contentDescription
+        nudge: Int? = null,
+    ) {
+        if (nudge != null) {
+            val focused = runCatching { waitUntil("the focus in $tag", timeout / 2) { focusedIn(tag) } }.isSuccess
+            if (focused) return
+            if (!device.hasObject(By.pkg(PACKAGE).focused(true))) press(nudge)
+        }
+        waitUntil("the focus in $tag", timeout) { focusedIn(tag) }
     }
 
     fun waitUntil(
@@ -212,7 +226,7 @@ internal fun Remote.signInIfNeeded() {
     }
     if (!has(HOME_PLAY)) {
         // « Qui regarde ? »: « admin » first.
-        waitFocusIn(PROFILE_0, SIGN_IN_TIMEOUT)
+        waitFocusIn(PROFILE_0, SIGN_IN_TIMEOUT, nudge = KeyEvent.KEYCODE_DPAD_LEFT)
         press(KeyEvent.KEYCODE_DPAD_CENTER)
         waitUntil("Quick Connect or the home", SIGN_IN_TIMEOUT) { has(USE_PASSWORD) || has(HOME_PLAY) }
         if (has(USE_PASSWORD)) {
@@ -233,7 +247,7 @@ internal fun Remote.signInIfNeeded() {
 internal fun Remote.waitHome() {
     waitUntil("the home or the profiles", SIGN_IN_TIMEOUT) { has(HOME_PLAY) || has(PROFILE_0) }
     if (!has(HOME_PLAY)) {
-        waitFocusIn(PROFILE_0)
+        waitFocusIn(PROFILE_0, nudge = KeyEvent.KEYCODE_DPAD_LEFT)
         press(KeyEvent.KEYCODE_DPAD_CENTER, pause = 0)
     }
     waitFor(HOME_PLAY, SIGN_IN_TIMEOUT)

@@ -79,7 +79,9 @@ class NavigationBenchmarks {
         packageName = PACKAGE,
         metrics = listOf(FrameTimingMetric()),
         compilationMode = compilation,
-        startupMode = StartupMode.COLD,
+        // Not COLD: Macrobenchmark would kill the app after the setup, for a start to measure. The
+        // setup starts it afresh itself.
+        startupMode = null,
         iterations = FRAME_ITERATIONS,
         setupBlock = { start().setup() },
     ) {
@@ -87,7 +89,7 @@ class NavigationBenchmarks {
     }
 
     private fun MacrobenchmarkScope.start(): Remote {
-        pressHome()
+        killProcess()
         startActivityAndWait()
         return Remote(device).apply { waitHome() }
     }
