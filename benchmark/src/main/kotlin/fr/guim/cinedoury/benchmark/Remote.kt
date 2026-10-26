@@ -1,10 +1,9 @@
 package fr.guim.cinedoury.benchmark
 
 import android.accessibilityservice.AccessibilityServiceInfo
-import android.os.Bundle
 import android.os.SystemClock
+import android.view.KeyCharacterMap
 import android.view.KeyEvent
-import android.view.accessibility.AccessibilityNodeInfo
 import android.view.accessibility.AccessibilityWindowInfo
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
@@ -126,26 +125,31 @@ internal class Remote(
      * Types [text] in the focused field, then the action of the keyboard, as the keyboard would. OK
      * opened the keyboard: a hand types once it is there (`CLAUDE.md`, « Pièges »).
      */
-    fun type(text: String) {
+    fun type(
+        text: String,
+        secret: Boolean = false,
+    ) {
         waitUntil("the keyboard") { keyboardShown() }
+        // The field of the app, not the focus of the keyboard's window.
         val field =
-            automation.rootInActiveWindow?.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)
+            device.findObject(By.pkg(PACKAGE).clazz("android.widget.EditText").focused(true))
                 ?: throw AssertionError("No field has the focus\n${screen()}")
-        field.refresh()
-        val arguments =
-            Bundle().apply {
-                putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, text)
-            }
-        // The text set at once, else typed key by key as the keyboard would send it (the field of
-        // Compose may refuse the action of accessibility: seen on the emulator).
-        if (!field.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, arguments)) {
-            device.executeShellCommand("input text $text")
-            SystemClock.sleep(PAUSE)
-        }
-        if (!field.performAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_IME_ENTER.id)) {
-            device.pressEnter()
-        }
+        field.text = text
+        // Refused by the field (seen on the emulator): typed key by key, slowly, as the keyboard
+        // would; `input text` sends them faster than the keyboard takes them, and loses some.
+        // A password shows as dots: its length says whether it was set.
+        if (field.text.orEmpty().length != text.length || (!secret && field.text != text)) typeKeys(text)
+        device.pressEnter()
         waitUntil("the keyboard to close") { !keyboardShown() }
+    }
+
+    private fun typeKeys(text: String) {
+        val keys = KeyCharacterMap.load(KeyCharacterMap.VIRTUAL_KEYBOARD).getEvents(text.toCharArray())
+        keys.forEach { key ->
+            val now = SystemClock.uptimeMillis()
+            inject(KeyEvent(now, now, key.action, key.keyCode, 0, key.metaState))
+            SystemClock.sleep(KEY_INTERVAL)
+        }
     }
 
     /** What the screen shows, for the message of a failure. */
@@ -165,6 +169,7 @@ internal class Remote(
         private const val REPEAT_DELAY = 500L
         private const val REPEAT_INTERVAL = 50L
         private const val SCREEN_LINES = 150
+        private const val KEY_INTERVAL = 80L
     }
 }
 
@@ -215,7 +220,7 @@ internal fun Remote.signInIfNeeded() {
             press(KeyEvent.KEYCODE_DPAD_CENTER)
             waitFocusIn(PASSWORD_FIELD)
             press(KeyEvent.KEYCODE_DPAD_CENTER)
-            type(password)
+            type(password, secret = true)
         }
     }
     waitHome()
