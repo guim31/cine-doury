@@ -20,7 +20,7 @@ son domaine :
 | J5 — Recherche (index des titres, clavier à l'écran, recherche vocale, Seerr) | terminé, fusionné (captures dans `docs/screenshots/j5/`, numéros 110 à 120) | [#7](https://github.com/guim31/cine-doury/pull/7) |
 | Essai réel 1 (25/10/2026, Chromecast avec Google TV) : connexion, Quick Connect, saisie à la télécommande, « Plus d'infos », journal | terminé, fusionné (§ 4.13 ; captures 35 et 36) | [#6](https://github.com/guim31/cine-doury/pull/6) |
 | J6 — Gestion (P0, plus éléments à problème et actions en série) | terminé, fusionné (§ 4.14 ; captures dans `docs/screenshots/j6/`, numéros 130 à 147) | [#8](https://github.com/guim31/cine-doury/pull/8) |
-| Essai réel 2 (26/10/2026, NVIDIA Shield TV, Android 11) : plantage à la première image (API Java absente de l'API 30), garde-fou Animal Sniffer, émulateur de la CI en API 30 et 34 | en revue (§ 4.15) | PR_LINK |
+| Essai réel 2 (26/10/2026, NVIDIA Shield TV, Android 11) : plantage à la première image (API Java absente de l'API 30), garde-fou Animal Sniffer, émulateur de la CI en API 30 et 34 | en revue (§ 4.15) | [#9](https://github.com/guim31/cine-doury/pull/9) |
 
 *(Chaque jalon met à jour ce tableau et ajoute ses contrats au § 4.)*
 
@@ -1254,7 +1254,7 @@ pas.
   `animalsnifferMain`, dans `check`, compare le code principal compilé à la signature de l'API 30
   d'Android publiée par Toast (`gummy-bears-api-30`, qui connaît les rétroportages de D8). Un appel
   absent d'Android 11 fait échouer la CI (« [Undefined reference] … », repris par le résumé
-  d'échec). Les tests ne sont pas vérifiés : ils tournent sur la JVM. Preuve : RUN_LINK.
+  d'échec). Les tests ne sont pas vérifiés : ils tournent sur la JVM. Preuve : le run [40299467089](https://github.com/guim31/cine-doury/actions/runs/40299467089) échoue sur `:source:jellyfin:animalsnifferMain` seul quand l'appel fautif est réintroduit.
 - **Android Lint écarté** : `com.android.lint` sur les modules JVM et `checkDependencies = true`
   dans l'appli font bien analyser leur code par `:app:tv:lintDebug`, mais l'analyse partielle d'un
   module JVM n'enregistre aucun `NewApi` : l'appel fautif passe (essayé en session).
