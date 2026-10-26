@@ -131,13 +131,19 @@ internal class Remote(
         val field =
             automation.rootInActiveWindow?.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)
                 ?: throw AssertionError("No field has the focus\n${screen()}")
+        field.refresh()
         val arguments =
             Bundle().apply {
                 putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, text)
             }
-        check(field.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, arguments)) { "text not set\n${screen()}" }
-        check(field.performAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_IME_ENTER.id)) {
-            "no action of the keyboard\n${screen()}"
+        // The text set at once, else typed key by key as the keyboard would send it (the field of
+        // Compose may refuse the action of accessibility: seen on the emulator).
+        if (!field.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, arguments)) {
+            device.executeShellCommand("input text $text")
+            SystemClock.sleep(PAUSE)
+        }
+        if (!field.performAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_IME_ENTER.id)) {
+            device.pressEnter()
         }
         waitUntil("the keyboard to close") { !keyboardShown() }
     }
@@ -164,19 +170,29 @@ internal class Remote(
 
 /** Starts the app from the launcher and signs in if it has to: the home, « Lire » focused. */
 internal fun Remote.launchSignedIn() {
-    device.pressHome()
-    device.executeShellCommand("am start -W -n $PACKAGE/$PACKAGE.tv.MainActivity")
+    launch()
+    val known = runCatching { waitUntil("a known screen", SIGN_IN_TIMEOUT) { knownScreen() } }.isSuccess
+    if (!known) {
+        // Left halfway through a sign-in by a run before: from a first launch again.
+        device.executeShellCommand("pm clear $PACKAGE")
+        launch()
+    }
     signInIfNeeded()
 }
+
+private fun Remote.launch() {
+    device.pressHome()
+    device.executeShellCommand("am start -W -n $PACKAGE/$PACKAGE.tv.MainActivity")
+}
+
+private fun Remote.knownScreen() = has(HOME_PLAY) || has(START) || has(PROFILE_0)
 
 /**
  * Signs in to the test Jellyfin from wherever the app stands: the first launch (address, profile,
  * password), « Qui regarde ? », or the home already. Ends on the home, « Lire » focused.
  */
 internal fun Remote.signInIfNeeded() {
-    waitUntil("the first screen", SIGN_IN_TIMEOUT) {
-        has(HOME_PLAY) || has(START) || has(PROFILE_0)
-    }
+    waitUntil("the first screen", SIGN_IN_TIMEOUT) { knownScreen() }
     if (has(START)) {
         // A first focus: an app started from the shell may still be in touch mode.
         press(KeyEvent.KEYCODE_DPAD_DOWN)
@@ -205,8 +221,16 @@ internal fun Remote.signInIfNeeded() {
     waitHome()
 }
 
-/** The home is there with its rows, « Lire » focused. */
+/**
+ * The home is there with its rows, « Lire » focused. The app opens on « Qui regarde ? » (its default,
+ * « Toujours demander »): OK on the first profile, signed in, opens its home.
+ */
 internal fun Remote.waitHome() {
+    waitUntil("the home or the profiles", SIGN_IN_TIMEOUT) { has(HOME_PLAY) || has(PROFILE_0) }
+    if (!has(HOME_PLAY)) {
+        waitFocusIn(PROFILE_0)
+        press(KeyEvent.KEYCODE_DPAD_CENTER, pause = 0)
+    }
     waitFor(HOME_PLAY, SIGN_IN_TIMEOUT)
     waitFocusIn(HOME_PLAY, SIGN_IN_TIMEOUT)
 }

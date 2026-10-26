@@ -17,13 +17,23 @@ class OptimisedApkTest {
     private val remote = Remote()
 
     /**
-     * Installed over the debug APK, signed in by `SignInJourneyTest`: the app opens on the home,
-     * without signing in again (same key, same data: Keystore, DataStore, Room).
+     * Installed over the debug APK, signed in by `SignInJourneyTest`: the app opens on « Qui regarde ? »
+     * and the profile on its home, without signing in again (same key, same data: Keystore,
+     * DataStore, Room).
      */
     @Test
     fun keepsTheSessionOfTheDebugApk() {
         remote.device.pressHome()
         remote.device.executeShellCommand("am start -W -n $PACKAGE/$PACKAGE.tv.MainActivity")
+        remote.waitUntil("the profiles or the home", PLAYER_TIMEOUT) { remote.has(PROFILE_0) || remote.has(HOME_PLAY) }
+        if (remote.has(START)) throw AssertionError("The server is forgotten\n${remote.screen()}")
+        if (remote.has(PROFILE_0)) {
+            remote.waitFocusIn(PROFILE_0)
+            remote.press(KeyEvent.KEYCODE_DPAD_CENTER)
+            // Still signed in: no password, no Quick Connect.
+            remote.waitUntil("the home", PLAYER_TIMEOUT) { remote.has(HOME_PLAY) || remote.has(USE_PASSWORD) }
+            if (remote.has(USE_PASSWORD)) throw AssertionError("The session is lost\n${remote.screen()}")
+        }
         remote.waitHome()
     }
 
