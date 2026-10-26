@@ -162,6 +162,11 @@ class SignInJourneyTest {
     /** Typing in the focused field: the text, then the action of the keyboard. */
     private fun type(text: String) {
         waitFor(isFocused() and hasSetTextAction())
+        // OK opened the keyboard: a hand types on it once it is there. Typing and confirming before
+        // it shows (1 s after OK, a keyboard starting cold on the emulator) crosses its opening with
+        // its closing, and the keyboard, still settling, took the next key.
+        val opened = appeared(TIMEOUT) { keyboardShown() == true }
+        assertTrue(opened, "OK in the field does not open the keyboard: ${inputState()}")
         val input = compose.onNode(isFocused() and hasSetTextAction())
         input.performTextInput(text)
         input.performImeAction()
