@@ -33,6 +33,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.tv.material3.Text
+import coil3.SingletonImageLoader
 import fr.guim.cinedoury.core.data.Profile
 import fr.guim.cinedoury.core.data.SessionManager
 import fr.guim.cinedoury.core.data.StartupTarget
@@ -70,18 +71,24 @@ import fr.guim.cinedoury.feature.manage.IdentifyRoute
 import fr.guim.cinedoury.feature.manage.ImagesRoute
 import fr.guim.cinedoury.feature.manage.ProblemsRoute
 import fr.guim.cinedoury.feature.player.DeviceProfileRoute
-import fr.guim.cinedoury.feature.player.PlaybackSettingsRoute
 import fr.guim.cinedoury.feature.player.PlayerRoute
-import fr.guim.cinedoury.feature.player.SubtitleSettingsRoute
 import fr.guim.cinedoury.feature.search.SearchNavigation
 import fr.guim.cinedoury.feature.search.SearchRoute
 import fr.guim.cinedoury.feature.search.SeerrSettingsRoute
+import fr.guim.cinedoury.feature.settings.DeviceNameRoute
+import fr.guim.cinedoury.feature.settings.DiagnosticRoute
+import fr.guim.cinedoury.feature.settings.LogsScreen
 import fr.guim.cinedoury.feature.settings.SettingsNavigation
+import fr.guim.cinedoury.feature.settings.SettingsPageRoute
 import fr.guim.cinedoury.feature.settings.SettingsRoute
+import fr.guim.cinedoury.feature.settings.SettingsSection
+import fr.guim.cinedoury.feature.update.UpdateRepository
+import fr.guim.cinedoury.feature.update.UpdateRoute
 import fr.guim.cinedoury.tv.catalog.CatalogScreen
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import org.koin.compose.koinInject
+import org.koin.core.context.GlobalContext
 import fr.guim.cinedoury.core.ui.R as UiR
 
 /**
@@ -100,12 +107,19 @@ fun CineApp(
     val onSearchKey: (SearchKey) -> Unit = { key ->
         val route = navigator.current.route
         val allowed =
-            route in SEARCHABLE_FROM || route is Route.Search || route is Route.Details || route is Route.Library
+            searchable(route) || route is Route.Search || route is Route.Details || route is Route.Library
         when {
             !allowed -> Unit
             route is Route.Search && key == SearchKey.Voice -> voiceRequests.tryEmit(Unit)
             else -> navigator.openSearch(voice = key == SearchKey.Voice)
         }
+    }
+    // The update, proposed once the home is shown, at most once a day (SPEC.md § 4.17).
+    val onHome = navigator.current.route == Route.Home
+    LaunchedEffect(onHome) {
+        if (!onHome) return@LaunchedEffect
+        val updates = GlobalContext.getOrNull()?.getOrNull<UpdateRepository>() ?: return@LaunchedEffect
+        if (updates.checkAtStart() && navigator.current.route == Route.Home) navigator.push(Route.Update)
     }
     val saveable = rememberSaveableStateHolder()
     navigator.onRemoved = { saveable.removeState(it.id) }
@@ -300,15 +314,31 @@ private fun SessionScreen(
         }
 
         Route.Settings -> {
-            SettingsRoute(navigation = settingsNavigation(navigator), showCatalog = showCatalog)
+            SettingsRoute(navigation = settingsNavigation(navigator, LocalContext.current, koinInject()))
         }
 
-        Route.PlaybackSettings -> {
-            PlaybackSettingsRoute(onBack = { navigator.pop() })
+        is Route.SettingsPage -> {
+            SettingsPageRoute(
+                section = route.section,
+                navigation = settingsNavigation(navigator, LocalContext.current, koinInject()),
+                showDebug = showCatalog,
+            )
         }
 
-        Route.SubtitleSettings -> {
-            SubtitleSettingsRoute(onBack = { navigator.pop() })
+        Route.DeviceName -> {
+            DeviceNameRoute(onDone = { navigator.pop() })
+        }
+
+        Route.Update -> {
+            UpdateRoute(onClose = { navigator.pop() })
+        }
+
+        Route.Logs -> {
+            LogsScreen()
+        }
+
+        Route.Report -> {
+            DiagnosticRoute()
         }
 
         Route.DeviceProfile -> {
@@ -345,6 +375,9 @@ private fun searchKey(keyCode: Int): SearchKey? =
 
 /** The screens a « Recherche » key leads from: the navigation screens, never the player or sign-in. */
 private val SEARCHABLE_FROM = setOf(Route.Home, Route.Settings, Route.HomeSettings)
+
+/** Whether a « Recherche » key leads from [route] (a page of settings is a navigation screen too). */
+private fun searchable(route: Route) = route in SEARCHABLE_FROM || route is Route.SettingsPage
 
 /** The rail, from any navigation screen: one screen per destination, « Retour » goes home. */
 private fun Navigator.navigate(
@@ -477,32 +510,50 @@ private fun openTrailerApp(
     }
 }
 
-private fun settingsNavigation(navigator: Navigator) =
-    object : SettingsNavigation {
-        override fun customizeHome() = navigator.push(Route.HomeSettings)
+private fun settingsNavigation(
+    navigator: Navigator,
+    context: Context,
+    updates: UpdateRepository,
+) = object : SettingsNavigation {
+    override fun page(section: SettingsSection) = navigator.push(Route.SettingsPage(section))
 
-        override fun pin(
-            profile: Profile,
-            remove: Boolean,
-        ) = navigator.push(Route.Pin(profile, if (remove) PinPurpose.Remove else PinPurpose.Create))
+    override fun customizeHome() = navigator.push(Route.HomeSettings)
 
-        override fun address(remote: Boolean) =
-            navigator.push(Route.Address(if (remote) AddressMode.EditRemote else AddressMode.EditLocal))
+    override fun pin(
+        profile: Profile,
+        remove: Boolean,
+    ) = navigator.push(Route.Pin(profile, if (remove) PinPurpose.Remove else PinPurpose.Create))
 
-        override fun catalog() = navigator.push(Route.Catalog)
+    override fun address(remote: Boolean) =
+        navigator.push(Route.Address(if (remote) AddressMode.EditRemote else AddressMode.EditLocal))
 
-        override fun playback() = navigator.push(Route.PlaybackSettings)
+    override fun seerr() = navigator.push(Route.SeerrSettings)
 
-        override fun subtitles() = navigator.push(Route.SubtitleSettings)
+    override fun deviceName() = navigator.push(Route.DeviceName)
 
-        override fun deviceProfile() = navigator.push(Route.DeviceProfile)
-
-        override fun seerr() = navigator.push(Route.SeerrSettings)
-
-        override fun profileClosed() = navigator.replaceAll(Route.Profiles)
-
-        override fun serverForgotten() = navigator.replaceAll(Route.Welcome)
+    override fun checkUpdate() {
+        updates.check()
+        navigator.push(Route.Update)
     }
+
+    override fun logs() = navigator.push(Route.Logs)
+
+    override fun report() = navigator.push(Route.Report)
+
+    override fun clearImageCache() {
+        val images = SingletonImageLoader.get(context)
+        images.memoryCache?.clear()
+        images.diskCache?.clear()
+    }
+
+    override fun catalog() = navigator.push(Route.Catalog)
+
+    override fun deviceProfile() = navigator.push(Route.DeviceProfile)
+
+    override fun profileClosed() = navigator.replaceAll(Route.Profiles)
+
+    override fun serverForgotten() = navigator.replaceAll(Route.Welcome)
+}
 
 private fun StartupTarget.toRoute(): Route =
     when (this) {

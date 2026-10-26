@@ -45,7 +45,8 @@ class AndroidPackageGate(
     override fun archiveSigners(apk: File): Set<String>? {
         // An archive gives its certificates through GET_SIGNING_CERTIFICATES on recent versions only.
         val info =
-            packages.getPackageArchiveInfo(apk.path, PackageManager.GET_SIGNING_CERTIFICATES)
+            packages
+                .getPackageArchiveInfo(apk.path, PackageManager.GET_SIGNING_CERTIFICATES)
                 ?.takeIf { it.signingInfo != null }
                 ?: packages.getPackageArchiveInfo(apk.path, PackageManager.GET_SIGNATURES)
                 ?: return null
@@ -97,9 +98,19 @@ class AndroidPackageGate(
                         context.unregisterReceiver(this)
                         val result =
                             when (status) {
-                                PackageInstaller.STATUS_SUCCESS -> InstallResult.Started
-                                PackageInstaller.STATUS_FAILURE_ABORTED -> InstallResult.Cancelled
-                                else -> InstallResult.Failed(intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE))
+                                PackageInstaller.STATUS_SUCCESS -> {
+                                    InstallResult.Started
+                                }
+
+                                PackageInstaller.STATUS_FAILURE_ABORTED -> {
+                                    InstallResult.Cancelled
+                                }
+
+                                else -> {
+                                    InstallResult.Failed(
+                                        intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE),
+                                    )
+                                }
                             }
                         if (continuation.isActive) continuation.resume(result)
                     }

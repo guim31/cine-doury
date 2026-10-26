@@ -14,6 +14,7 @@ import fr.guim.cinedoury.core.model.PlaybackRequest
 import fr.guim.cinedoury.core.source.SourceException
 import fr.guim.cinedoury.feature.auth.AddressMode
 import fr.guim.cinedoury.feature.auth.PinPurpose
+import fr.guim.cinedoury.feature.settings.SettingsSection
 
 /** The screens of the app. */
 sealed interface Route {
@@ -91,11 +92,22 @@ sealed interface Route {
 
     data object Settings : Route
 
-    /** « Lecture et son » (J4). */
-    data object PlaybackSettings : Route
+    /** A page of settings (J7): « Lecture », « Image », « Son »… */
+    data class SettingsPage(
+        val section: SettingsSection,
+    ) : Route
 
-    /** « Apparence des sous-titres » (J4). */
-    data object SubtitleSettings : Route
+    /** « Nom de l'appareil » (J7). */
+    data object DeviceName : Route
+
+    /** The update of the app (J7): offered at start, or asked for in the settings. */
+    data object Update : Route
+
+    /** « Journaux de l'appli » (J7). */
+    data object Logs : Route
+
+    /** « Rapport de diagnostic » (J7). */
+    data object Report : Route
 
     /** The playback profile of the device, in debug builds (J4). */
     data object DeviceProfile : Route

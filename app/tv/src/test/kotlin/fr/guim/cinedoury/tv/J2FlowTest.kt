@@ -15,6 +15,7 @@ import fr.guim.cinedoury.core.data.security.TokenCipher
 import fr.guim.cinedoury.core.designsystem.theme.CineTheme
 import fr.guim.cinedoury.core.designsystem.theme.ThemeVariant
 import fr.guim.cinedoury.core.model.ServerInfo
+import fr.guim.cinedoury.core.playback.playbackModule
 import fr.guim.cinedoury.core.source.Credentials
 import fr.guim.cinedoury.core.source.ServerAddress
 import fr.guim.cinedoury.core.source.ServerDiscovery
@@ -28,6 +29,7 @@ import fr.guim.cinedoury.feature.library.LibraryPreview
 import fr.guim.cinedoury.feature.library.libraryModule
 import fr.guim.cinedoury.feature.manage.manageModule
 import fr.guim.cinedoury.feature.settings.settingsModule
+import fr.guim.cinedoury.feature.update.updateModule
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -92,6 +94,8 @@ class J2FlowTest {
                 manageModule,
                 detailsModule,
                 settingsModule,
+                playbackModule,
+                updateModule,
             )
         }
         val sessions = getKoin().get<SessionManager>()

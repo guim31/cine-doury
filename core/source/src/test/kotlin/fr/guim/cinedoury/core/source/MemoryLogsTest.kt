@@ -35,7 +35,18 @@ class MemoryLogsTest {
     @Test
     fun `the last decisions of playback are kept in a ring`() {
         repeat(PlaybackLog.CAPACITY + 1) {
-            PlaybackLog.record(PlaybackLog.Entry(Instant.EPOCH, "Film $it", PlayMethod.DirectPlay, emptySet(), "mkv", "hevc", "eac3", null))
+            PlaybackLog.record(
+                PlaybackLog.Entry(
+                    Instant.EPOCH,
+                    "Film $it",
+                    PlayMethod.DirectPlay,
+                    emptySet(),
+                    "mkv",
+                    "hevc",
+                    "eac3",
+                    null,
+                ),
+            )
         }
         assertEquals(PlaybackLog.CAPACITY, PlaybackLog.recent().size)
         assertEquals("Film 1", PlaybackLog.recent().first().title)

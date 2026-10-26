@@ -76,7 +76,7 @@ object CineSizes {
     val settingsRowHeight = 56.dp
 
     /** The changelog of an update: what is longer scrolls (J7). */
-    val changelogHeight = 200.dp
+    val changelogHeight = 160.dp
     val dialogWidth = 480.dp
 
     val logoMax = DpSize(360.dp, 140.dp)
@@ -138,6 +138,9 @@ object CineSizes {
 
     /** The still picture under the subtitles of « Apparence des sous-titres ». */
     val subtitlePreview = DpSize(320.dp, 180.dp)
+
+    /** The subtitles as they will look, under the title of their page of settings (J7). */
+    val subtitlePreviewSmall = DpSize(224.dp, 126.dp)
     val subtitlePreviewTop = 120.dp
 
     // Search (J5).

@@ -25,6 +25,7 @@ import fr.guim.cinedoury.feature.manage.manageModule
 import fr.guim.cinedoury.feature.player.playerModule
 import fr.guim.cinedoury.feature.search.searchModule
 import fr.guim.cinedoury.feature.settings.settingsModule
+import fr.guim.cinedoury.feature.update.updateModule
 import fr.guim.cinedoury.source.jellyfin.ClientIdentity
 import fr.guim.cinedoury.source.jellyfin.JellyfinConnector
 import fr.guim.cinedoury.source.jellyfin.JellyfinDiscovery
@@ -65,6 +66,7 @@ class CineApplication :
                 playerModule,
                 searchModule,
                 settingsModule,
+                updateModule,
                 requestsModule,
             )
         }

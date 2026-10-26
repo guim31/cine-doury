@@ -80,16 +80,33 @@ class UpdateRepositoryTest {
             object : Dispatcher() {
                 override fun dispatch(request: RecordedRequest): MockResponse =
                     when (request.url.encodedPath) {
-                        "/repos/guim31/cine-doury/releases" -> MockResponse.Builder().body(releases()).build()
-                        "/cine-doury-1.2.0.apk" -> MockResponse.Builder().body(Buffer().write(apk)).build()
-                        "/cine-doury-1.2.0.apk.sha256" -> MockResponse.Builder().body("$published  cine-doury-1.2.0.apk").build()
-                        else -> MockResponse.Builder().code(404).build()
+                        "/repos/guim31/cine-doury/releases" -> {
+                            MockResponse.Builder().body(releases()).build()
+                        }
+
+                        "/cine-doury-1.2.0.apk" -> {
+                            MockResponse.Builder().body(Buffer().write(apk)).build()
+                        }
+
+                        "/cine-doury-1.2.0.apk.sha256" -> {
+                            MockResponse
+                                .Builder()
+                                .body(
+                                    "$published  cine-doury-1.2.0.apk",
+                                ).build()
+                        }
+
+                        else -> {
+                            MockResponse.Builder().code(404).build()
+                        }
                     }
             }
         server.start()
         preferences =
             AppPreferences(
-                PreferenceDataStoreFactory.create(scope = scope.backgroundScope) { folder.root.resolve("settings.preferences_pb") },
+                PreferenceDataStoreFactory.create(
+                    scope = scope.backgroundScope,
+                ) { folder.root.resolve("settings.preferences_pb") },
             )
     }
 
@@ -99,8 +116,12 @@ class UpdateRepositoryTest {
     private fun releases() =
         """[{"tag_name":"v1.2.0","name":"Ciné Doury 1.2.0","draft":false,"prerelease":false,
             "published_at":"2026-10-25T10:00:00Z","body":"- Réglages",
-            "assets":[{"name":"cine-doury-1.2.0.apk","browser_download_url":"${server.url("/cine-doury-1.2.0.apk")}","size":16},
-            {"name":"cine-doury-1.2.0.apk.sha256","browser_download_url":"${server.url("/cine-doury-1.2.0.apk.sha256")}","size":90}]}]"""
+            "assets":[{"name":"cine-doury-1.2.0.apk","browser_download_url":"${server.url(
+            "/cine-doury-1.2.0.apk",
+        )}","size":16},
+            {"name":"cine-doury-1.2.0.apk.sha256","browser_download_url":"${server.url(
+            "/cine-doury-1.2.0.apk.sha256",
+        )}","size":90}]}]"""
 
     /** The download and its checks run on the threads of OkHttp: wait for their outcome. */
     private suspend fun UpdateRepository.afterInstall(): UpdatePhase =
@@ -193,7 +214,9 @@ class UpdateRepositoryTest {
             // From the settings it shows, marked.
             val manual = repository()
             manual.check()
-            assertTrue((manual.state.first { it.phase is UpdatePhase.Available }.phase as UpdatePhase.Available).ignored)
+            assertTrue(
+                (manual.state.first { it.phase is UpdatePhase.Available }.phase as UpdatePhase.Available).ignored,
+            )
         }
 
     @Test

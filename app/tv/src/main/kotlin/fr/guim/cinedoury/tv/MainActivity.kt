@@ -56,7 +56,11 @@ class MainActivity : ComponentActivity() {
                 variant = variant,
                 reducedMotion = CineMotion.isReduced(appearance.reducedMotion, systemAnimatorScale()),
                 textScale = appearance.textSize.scale,
-                cards = CardPreferences(alwaysShowTitles = browsing.posterTitles, unwatchedMarks = browsing.unwatchedMarks),
+                cards =
+                    CardPreferences(
+                        alwaysShowTitles = browsing.posterTitles,
+                        unwatchedMarks = browsing.unwatchedMarks,
+                    ),
             ) {
                 CineApp(
                     variant = variant,
@@ -64,7 +68,14 @@ class MainActivity : ComponentActivity() {
                         scope.launch {
                             preferences.setAppearance {
                                 it.copy(
-                                    theme = if (it.theme == ThemeChoice.Dark) ThemeChoice.OledBlack else ThemeChoice.Dark,
+                                    theme =
+                                        if (it.theme ==
+                                            ThemeChoice.Dark
+                                        ) {
+                                            ThemeChoice.OledBlack
+                                        } else {
+                                            ThemeChoice.Dark
+                                        },
                                 )
                             }
                         }

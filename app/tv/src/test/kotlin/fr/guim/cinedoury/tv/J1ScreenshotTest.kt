@@ -6,9 +6,16 @@ import androidx.compose.ui.test.onRoot
 import com.github.takahirom.roborazzi.captureRoboImage
 import fr.guim.cinedoury.core.data.ConnectionMode
 import fr.guim.cinedoury.core.data.Profile
+import fr.guim.cinedoury.core.data.prefs.Appearance
+import fr.guim.cinedoury.core.data.prefs.Browsing
+import fr.guim.cinedoury.core.data.prefs.NetworkMode
 import fr.guim.cinedoury.core.designsystem.component.LocalPreviewFocus
 import fr.guim.cinedoury.core.designsystem.theme.CineTheme
 import fr.guim.cinedoury.core.designsystem.theme.ThemeVariant
+import fr.guim.cinedoury.core.model.LibraryIcon
+import fr.guim.cinedoury.core.model.LibraryId
+import fr.guim.cinedoury.core.model.PlaybackPreferences
+import fr.guim.cinedoury.core.model.PlayerSettings
 import fr.guim.cinedoury.core.source.SourceException
 import fr.guim.cinedoury.core.ui.PREVIEW_DETAILS
 import fr.guim.cinedoury.core.ui.PREVIEW_RETRY
@@ -29,10 +36,14 @@ import fr.guim.cinedoury.feature.auth.ServerSearchScreen
 import fr.guim.cinedoury.feature.auth.ServerSearchState
 import fr.guim.cinedoury.feature.auth.UnreachableScreen
 import fr.guim.cinedoury.feature.auth.WelcomeScreen
-import fr.guim.cinedoury.feature.settings.PREVIEW_PIN_ROW
+import fr.guim.cinedoury.feature.settings.SettingsActions
 import fr.guim.cinedoury.feature.settings.SettingsNavigation
+import fr.guim.cinedoury.feature.settings.SettingsPageScreen
+import fr.guim.cinedoury.feature.settings.SettingsPreview
 import fr.guim.cinedoury.feature.settings.SettingsScreen
+import fr.guim.cinedoury.feature.settings.SettingsSection
 import fr.guim.cinedoury.feature.settings.SettingsState
+import fr.guim.cinedoury.feature.settings.page.SettingsPagePreview
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -163,24 +174,22 @@ class J1ScreenshotTest(
         }
 
     @Test
-    fun settings() = shoot("33-reglages", PREVIEW_PIN_ROW) { Settings() }
+    fun settings() =
+        shoot("33-reglages", SettingsPagePreview.row(SettingsSection.Playback.name)) {
+            SettingsScreen(state = SettingsState(J1Samples.session(ConnectionMode.Remote)), navigation = NoNavigation)
+        }
 
     @Test
-    fun forgetServer() = shoot("34-oublier-le-serveur", "forget-cancel") { Settings(confirming = true) }
-
-    @Composable
-    private fun Settings(confirming: Boolean = false) {
-        SettingsScreen(
-            state = SettingsState(J1Samples.session(ConnectionMode.Remote)),
-            showCatalog = true,
-            navigation = NoNavigation,
-            onToggleStartup = {},
-            onSwitchProfile = {},
-            onSignOut = {},
-            onForgetServer = {},
-            confirmingForget = confirming,
-        )
-    }
+    fun forgetServer() =
+        shoot("34-oublier-le-serveur", SettingsPreview.FORGET_CANCEL) {
+            SettingsPageScreen(
+                section = SettingsSection.Network,
+                state = SettingsState(J1Samples.session(ConnectionMode.Remote)),
+                actions = NoSettingsActions,
+                navigation = NoNavigation,
+                previewForget = true,
+            )
+        }
 
     private fun shoot(
         name: String,
@@ -204,6 +213,8 @@ class J1ScreenshotTest(
 }
 
 internal object NoNavigation : SettingsNavigation {
+    override fun page(section: SettingsSection) = Unit
+
     override fun customizeHome() = Unit
 
     override fun pin(
@@ -213,15 +224,58 @@ internal object NoNavigation : SettingsNavigation {
 
     override fun address(remote: Boolean) = Unit
 
+    override fun seerr() = Unit
+
+    override fun deviceName() = Unit
+
+    override fun checkUpdate() = Unit
+
+    override fun logs() = Unit
+
+    override fun report() = Unit
+
+    override fun clearImageCache() = Unit
+
     override fun catalog() = Unit
-
-    override fun playback() = Unit
-
-    override fun subtitles() = Unit
 
     override fun deviceProfile() = Unit
 
     override fun profileClosed() = Unit
 
     override fun serverForgotten() = Unit
+}
+
+/** The pages of settings without their view model: nothing changes. */
+internal object NoSettingsActions : SettingsActions {
+    override fun updatePlayer(change: (PlayerSettings) -> PlayerSettings) = Unit
+
+    override fun updateServerPreferences(change: (PlaybackPreferences) -> PlaybackPreferences) = Unit
+
+    override fun placeLibrary(
+        library: LibraryId,
+        position: Int?,
+    ) = Unit
+
+    override fun updateAppearance(change: (Appearance) -> Appearance) = Unit
+
+    override fun setNetworkMode(mode: NetworkMode) = Unit
+
+    override fun updateBrowsing(change: (Browsing) -> Browsing) = Unit
+
+    override fun toggleStartupMode() = Unit
+
+    override fun setIcon(
+        library: LibraryId,
+        icon: LibraryIcon?,
+    ) = Unit
+
+    override fun rebuildIndex() = Unit
+
+    override fun clearCache(clearImages: () -> Unit) = Unit
+
+    override fun switchProfile() = Unit
+
+    override fun signOut() = Unit
+
+    override fun forgetServer() = Unit
 }

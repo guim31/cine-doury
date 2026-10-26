@@ -11,8 +11,8 @@ import fr.guim.cinedoury.core.data.home.HomeRepository
 import fr.guim.cinedoury.core.data.home.HomeRowType
 import fr.guim.cinedoury.core.data.home.HomeRows
 import fr.guim.cinedoury.core.data.home.ProfileKey
-import fr.guim.cinedoury.core.data.prefs.AppPreferences
 import fr.guim.cinedoury.core.data.library.LibraryIconRepository
+import fr.guim.cinedoury.core.data.prefs.AppPreferences
 import fr.guim.cinedoury.core.model.Library
 import fr.guim.cinedoury.core.model.MediaItem
 import fr.guim.cinedoury.core.source.SourceException

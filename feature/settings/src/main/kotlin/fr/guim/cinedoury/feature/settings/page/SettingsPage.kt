@@ -4,7 +4,6 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -60,7 +59,7 @@ object SettingsPagePreview {
  * @param subtitle a line under the title (the profile, the server).
  * @param focusKey the line focused first (the first line otherwise).
  * @param previewChoice the choice whose panel is open (screenshots).
- * @param aside drawn over the page, on the right (the preview of the subtitles).
+ * @param status under the title: a notice, the preview of the subtitles.
  */
 @Composable
 fun SettingsPageScreen(
@@ -70,7 +69,6 @@ fun SettingsPageScreen(
     subtitle: String? = null,
     focusKey: String? = null,
     previewChoice: String? = null,
-    aside: (@Composable BoxScope.() -> Unit)? = null,
     status: (@Composable () -> Unit)? = null,
 ) {
     var open by rememberSaveable { mutableStateOf(previewChoice) }
@@ -110,12 +108,16 @@ fun SettingsPageScreen(
                     ),
                 verticalArrangement = Arrangement.spacedBy(CineSpacing.xs),
             ) {
-                itemsIndexed(items, key = { _, item -> item.key }, contentType = { _, item -> item::class }) { _, item ->
+                itemsIndexed(items, key = {
+                    _,
+                    item,
+                    ->
+                    item.key
+                }, contentType = { _, item -> item::class }) { _, item ->
                     SettingLine(item, requesters.requester(item.key)) { open = item.key }
                 }
             }
         }
-        aside?.invoke(this)
         val choice = items.firstOrNull { it.key == open } as? SettingItem.Choice
         ChoicePanel(
             choice = choice,
@@ -201,6 +203,7 @@ private fun SettingLine(
                 value = item.value,
                 icon = item.icon,
                 destructive = item.destructive,
+                wrapTitle = item.wrap,
                 onClick = item.onClick,
                 focusRequester = requester,
                 focus = rememberCineFocus(tag),
@@ -244,4 +247,6 @@ private fun ChoicePanel(
 }
 
 /** The requester of a line, made on first use: outside composition, where it may not be built. */
-private fun MutableMap<String, FocusRequester>.requester(key: String): FocusRequester = getOrPut(key) { FocusRequester() }
+private fun MutableMap<String, FocusRequester>.requester(
+    key: String,
+): FocusRequester = getOrPut(key) { FocusRequester() }

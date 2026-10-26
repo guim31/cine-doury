@@ -119,12 +119,16 @@ class UpdateRepository(
     val state: StateFlow<UpdateState> = local.asStateFlow()
     private var job: Job? = null
     private var installing: Job? = null
+    private var checkedAtStart = false
 
     /**
      * At start: reads the releases if the last check is a day old, and tells whether to show the
      * update (available, not ignored). Never fails: a failure waits for the next day.
      */
     suspend fun checkAtStart(): Boolean {
+        // Once per run of the app: coming back to the home asks nothing more.
+        if (checkedAtStart) return false
+        checkedAtStart = true
         val memory = preferences.updates.first()
         local.update { it.copy(lastCheck = memory.lastCheck) }
         if (!UpdatePolicy.shouldCheckAtStart(current, memory.lastCheck, clock.instant())) return false
@@ -195,7 +199,8 @@ class UpdateRepository(
                     local.update { it.copy(phase = UpdatePhase.Downloading(release, progress)) }
                 }
                 val sums = release.checksum ?: throw UpdateException.NoChecksum()
-                val expected = Checksums.parse(client.text(sums), release.apk.name) ?: throw UpdateException.NoChecksum()
+                val expected =
+                    Checksums.parse(client.text(sums), release.apk.name) ?: throw UpdateException.NoChecksum()
                 Checksums.verify(file, expected)
                 if (SignatureCheck.differs(gate.installedSigners(), gate.archiveSigners(file))) {
                     UpdatePhase.SignatureMismatch(release)
@@ -214,10 +219,17 @@ class UpdateRepository(
         installing =
             scope.launch {
                 when (val result = gate.install(File(downloads, release.apk.name))) {
-                    InstallResult.Started, InstallResult.Cancelled -> Unit
+                    InstallResult.Started, InstallResult.Cancelled -> {
+                        Unit
+                    }
+
                     is InstallResult.Failed -> {
                         FailureLog.warn("Update: Android refused ${release.apk.name}: ${result.message}")
-                        local.update { it.copy(phase = UpdatePhase.Failed(release, UpdateFailure.Install(result.message))) }
+                        local.update {
+                            it.copy(
+                                phase = UpdatePhase.Failed(release, UpdateFailure.Install(result.message)),
+                            )
+                        }
                     }
                 }
             }

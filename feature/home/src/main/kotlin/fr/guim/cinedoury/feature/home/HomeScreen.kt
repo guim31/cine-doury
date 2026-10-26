@@ -149,6 +149,10 @@ fun HomeScreen(
     val play = remember { FocusRequester() }
     val rail = remember { FocusRequester() }
     val rowRequesters = remember { mutableMapOf<String, FocusRequester>() }
+    // « Bandeau à la une » off (`SPEC.md` § 4.16): the rows from the top, the first one focused. The
+    // skeletons, an error or an empty home still use the space of the banner.
+    val banner = state.featuredBanner || rows.isNullOrEmpty()
+    val top = if (banner) play else rowRequesters.requester(rows.orEmpty().first().key)
 
     BackHandler {
         when {
@@ -177,10 +181,6 @@ fun HomeScreen(
 
     val featured = featuredItem?.toFeatured(sources)
     val shared = remember(rows) { rows.orEmpty().firstAppearances() }
-    // « Bandeau à la une » off (`SPEC.md` § 4.16): the rows from the top, the first one focused. The
-    // skeletons, an error or an empty home still use the space of the banner.
-    val banner = state.featuredBanner || rows.isNullOrEmpty()
-    val top = if (banner) play else rowRequesters.requester(rows.orEmpty().first().key)
     Box(modifier = modifier.fillMaxSize()) {
         AmbientBackdrop(ambience = featuredItem?.ambience)
         BoxWithConstraints(Modifier.fillMaxSize()) {
@@ -201,19 +201,19 @@ fun HomeScreen(
                     if (banner) {
                         item(key = "hero", contentType = "hero") {
                             Hero(
-                            state = state,
-                            featured = featured,
-                            item = featuredItem,
-                            navigation = navigation,
-                            onRetry = onRetry,
-                            play = play,
-                            modifier =
-                                Modifier
-                                    .height(heroHeight)
-                                    .onFocusChanged {
-                                        if (it.hasFocus) focusedRow = null
-                                    },
-                        )
+                                state = state,
+                                featured = featured,
+                                item = featuredItem,
+                                navigation = navigation,
+                                onRetry = onRetry,
+                                play = play,
+                                modifier =
+                                    Modifier
+                                        .height(heroHeight)
+                                        .onFocusChanged {
+                                            if (it.hasFocus) focusedRow = null
+                                        },
+                            )
                         }
                     }
                     if (rows == null) {

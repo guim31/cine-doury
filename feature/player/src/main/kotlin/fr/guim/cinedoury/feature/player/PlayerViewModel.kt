@@ -34,10 +34,10 @@ import fr.guim.cinedoury.core.model.UserData
 import fr.guim.cinedoury.core.playback.PlaybackReporter
 import fr.guim.cinedoury.core.playback.PlayerEvent
 import fr.guim.cinedoury.core.playback.PlayerSettingsStore
-import fr.guim.cinedoury.core.source.PlaybackLog
 import fr.guim.cinedoury.core.playback.VideoPlayer
 import fr.guim.cinedoury.core.playback.VideoPlayerFactory
 import fr.guim.cinedoury.core.source.LibrarySource
+import fr.guim.cinedoury.core.source.PlaybackLog
 import fr.guim.cinedoury.core.source.SourceException
 import fr.guim.cinedoury.core.ui.Events
 import kotlinx.coroutines.CoroutineScope
@@ -437,7 +437,10 @@ class PlayerViewModel(
                 reasons = stream.reasons,
                 container = stream.container,
                 video = stream.source.video?.codec,
-                audio = stream.source.audio.firstOrNull { it.index == stream.audioIndex }?.codec,
+                audio =
+                    stream.source.audio
+                        .firstOrNull { it.index == stream.audioIndex }
+                        ?.codec,
                 bitrate = stream.maxBitrate,
                 fallback = fallback,
                 forced = forced && stream.reasons.isNotEmpty(),

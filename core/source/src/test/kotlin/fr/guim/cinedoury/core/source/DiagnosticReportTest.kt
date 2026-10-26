@@ -21,7 +21,13 @@ class DiagnosticReportTest {
     private fun input(failures: List<FailureLog.Entry> = emptyList()) =
         DiagnosticInput(
             app = DiagnosticInput.App("1.2.0", 10_200, "release"),
-            device = DiagnosticInput.Device("NVIDIA SHIELD Android TV", "11 (API 30)", "3840 × 2160 @ 59.94 Hz", "4.0 (640 dpi), 960 × 540 dp"),
+            device =
+                DiagnosticInput.Device(
+                    "NVIDIA SHIELD Android TV",
+                    "11 (API 30)",
+                    "3840 × 2160 @ 59.94 Hz",
+                    "4.0 (640 dpi), 960 × 540 dp",
+                ),
             capabilities = SampleDevices.shield,
             server = DiagnosticInput.Server("Maison", "12.3.0", remote = true, https = true),
             settings = PlayerSettings(localQuality = 20_000_000),
@@ -30,7 +36,17 @@ class DiagnosticReportTest {
             failures = failures,
             decisions =
                 listOf(
-                    PlaybackLog.Entry(at, "Le Phare", PlayMethod.Transcode, setOf(TranscodeReason.AudioCodecNotSupported), "ts", "hevc", "truehd", 20_000_000, fallback = true),
+                    PlaybackLog.Entry(
+                        at,
+                        "Le Phare",
+                        PlayMethod.Transcode,
+                        setOf(TranscodeReason.AudioCodecNotSupported),
+                        "ts",
+                        "hevc",
+                        "truehd",
+                        20_000_000,
+                        fallback = true,
+                    ),
                 ),
             generatedAt = at,
             zone = ZoneOffset.UTC,
@@ -40,7 +56,16 @@ class DiagnosticReportTest {
     fun `the report says the app, the device, the server, the settings, the failures and the decisions`() {
         val report =
             DiagnosticReport.build(
-                input(listOf(FailureLog.Entry(at, FailureLog.Level.Warning, "GET /Items/{itemId} failed", "Unreachable: Server unreachable"))),
+                input(
+                    listOf(
+                        FailureLog.Entry(
+                            at,
+                            FailureLog.Level.Warning,
+                            "GET /Items/{itemId} failed",
+                            "Unreachable: Server unreachable",
+                        ),
+                    ),
+                ),
             )
         listOf(
             "Version: 1.2.0 (code 10200, release)",
@@ -56,12 +81,13 @@ class DiagnosticReportTest {
             "mode Smart",
             "Network: Automatic",
             "2026-10-26 14:02:00 Warning: GET /Items/{itemId} failed — Unreachable: Server unreachable",
-            "Le Phare: Transcode (fallback after a failure of the player), ts, video hevc, audio truehd, 20 Mb/s, reasons: AudioCodecNotSupported",
+            "Le Phare: Transcode (fallback after a failure of the player), ts, video hevc, audio truehd, 20 Mb/s, " +
+                "reasons: AudioCodecNotSupported",
         ).forEach { assertTrue(it in report, "« $it » in\n$report") }
     }
 
     @Test
-    fun `no secret ever: neither the token, nor a password, nor the key of Seerr`() {
+    fun `no secret ever - neither the token, nor a password, nor the key of Seerr`() {
         // Even a failure that would carry one by mistake.
         val leaky =
             listOf(

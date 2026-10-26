@@ -1,0 +1,111 @@
+name: Release
+
+# Builds the release APK, signs it with the release key and publishes the GitHub release the app
+# offers as an update (SPEC.md § 4.17).
+# - A tag `vX.Y.Z`, set by the maintainer: the release of that version.
+# - By hand (Run workflow), a version built from another ref: a rollback is a new version of older code
+#   (`version: v1.2.1`, `source: v1.1.0`), since Android never installs a lower versionCode.
+# - Every pull request: the same steps, dry run: never signed, never published.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish, vX.Y.Z (higher than the last one)'
+        required: true
+      source:
+        description: 'Ref whose code is built (a former tag for a rollback); empty for the default branch'
+        required: false
+  pull_request:
+
+concurrency:
+  group: release-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: ${{ github.event_name == 'pull_request' && 'Release (dry run)' || 'Release' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      # Only to publish the release (never on a pull request).
+      contents: write
+    env:
+      DRY_RUN: ${{ github.event_name == 'pull_request' }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.source || github.ref }}
+          fetch-depth: 0
+      - name: Version
+        id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+          INPUT_SOURCE: ${{ inputs.source }}
+        run: ci/release/version.sh
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: ${{ github.event_name != 'pull_request' }}
+          add-job-summary: never
+      - name: Release key
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ github.event_name != 'pull_request' && secrets.RELEASE_KEYSTORE_BASE64 || '' }}
+        run: |
+          if [ -z "$RELEASE_KEYSTORE_BASE64" ]; then
+            echo "::warning::No release key (pull request, fork, or secrets not set): the APK is not signed and nothing is published."
+            echo "SIGNED=false" >> "$GITHUB_ENV"
+          else
+            echo "$RELEASE_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.p12"
+            echo "RELEASE_KEYSTORE_FILE=$RUNNER_TEMP/release.p12" >> "$GITHUB_ENV"
+            echo "SIGNED=true" >> "$GITHUB_ENV"
+          fi
+      - name: Build the release APK
+        env:
+          CINE_DOURY_VERSION: ${{ steps.version.outputs.tag }}
+          RELEASE_KEYSTORE_PASSWORD: ${{ github.event_name != 'pull_request' && secrets.RELEASE_KEYSTORE_PASSWORD || '' }}
+          RELEASE_KEY_ALIAS: ${{ github.event_name != 'pull_request' && secrets.RELEASE_KEY_ALIAS || '' }}
+          RELEASE_KEY_PASSWORD: ${{ github.event_name != 'pull_request' && secrets.RELEASE_KEY_PASSWORD || '' }}
+        run: |
+          set -o pipefail
+          ./gradlew :app:tv:assembleRelease 2>&1 | tee gradle.log
+      - name: APK, SHA-256 and changelog
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          TAG: ${{ steps.version.outputs.tag }}
+          ROLLBACK_OF: ${{ inputs.source }}
+        run: ci/release/package.sh
+      - name: Remove the key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/release.p12"
+      - name: Publish the release
+        if: env.DRY_RUN != 'true' && env.SIGNED == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          gh release create "$TAG" dist/*.apk dist/*.apk.sha256 \
+            --title "Ciné Doury $VERSION" \
+            --notes-file dist/notes.md \
+            --target "$(git rev-parse HEAD)"
+      - name: Not published
+        if: env.DRY_RUN == 'true' || env.SIGNED != 'true'
+        run: echo "Dry run or no release key: built and checked, not published." >> "$GITHUB_STEP_SUMMARY"
+      - name: Failure summary
+        if: failure()
+        run: ci/failure-summary.sh gradle.log
+      - name: Release files
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-${{ steps.version.outputs.version || 'unknown' }}
+          path: dist/
+          if-no-files-found: ignore

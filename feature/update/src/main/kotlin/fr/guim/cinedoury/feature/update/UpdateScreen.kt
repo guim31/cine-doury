@@ -2,8 +2,8 @@ package fr.guim.cinedoury.feature.update
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,8 +18,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -168,7 +168,12 @@ fun UpdateScreen(
                 Paragraph(stringResource(R.string.update_permission_message))
                 Paragraph(stringResource(R.string.update_permission_google_tv))
                 Paragraph(stringResource(R.string.update_permission_shield))
-                Buttons(primary, stringResource(R.string.update_open_settings), actions::openPermissionSettings, later = actions::later)
+                Buttons(
+                    primary,
+                    stringResource(R.string.update_open_settings),
+                    actions::openPermissionSettings,
+                    later = actions::later,
+                )
             }
 
             is UpdatePhase.Downloading -> {
@@ -183,7 +188,12 @@ fun UpdateScreen(
 
             is UpdatePhase.SignatureMismatch -> {
                 Paragraph(stringResource(R.string.update_signature_message, phase.release.version.name))
-                Buttons(primary, stringResource(R.string.update_open_app_settings), actions::openAppSettings, later = actions::later)
+                Buttons(
+                    primary,
+                    stringResource(R.string.update_open_app_settings),
+                    actions::openAppSettings,
+                    later = actions::later,
+                )
             }
 
             is UpdatePhase.Failed -> {
@@ -191,7 +201,13 @@ fun UpdateScreen(
                 Buttons(
                     primary,
                     stringResource(R.string.update_retry),
-                    if (phase.release != null && phase.error !is UpdateFailure.Unreachable) actions::install else actions::retry,
+                    if (phase.release != null &&
+                        phase.error !is UpdateFailure.Unreachable
+                    ) {
+                        actions::install
+                    } else {
+                        actions::retry
+                    },
                     later = actions::later,
                 )
             }
@@ -327,7 +343,8 @@ private fun Downloading(phase: UpdatePhase.Downloading) {
         stringResource(
             R.string.update_downloading_progress,
             (phase.progress * PERCENT).toInt(),
-            phase.release.apk.size.sizeText(),
+            phase.release.apk.size
+                .sizeText(),
         ),
     )
 }

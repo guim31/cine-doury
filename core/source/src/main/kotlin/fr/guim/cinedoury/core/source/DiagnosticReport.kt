@@ -84,7 +84,8 @@ object DiagnosticReport {
                     line("Not connected")
                 } else {
                     line("Server: ${server.name}, Jellyfin ${server.version}")
-                    line("Access: ${if (server.remote) "remote" else "local"} (${if (server.https) "https" else "http"})")
+                    val access = if (server.remote) "remote" else "local"
+                    line("Access: $access (${if (server.https) "https" else "http"})")
                 }
                 settings(input)
                 failures(input)
@@ -99,18 +100,20 @@ object DiagnosticReport {
         line("Screen: ${display.width} × ${display.height}, ${display.hdr.joinToString { it.name }.ifEmpty { "SDR" }}")
         line("Refresh rates: ${display.refreshRates.joinToString { "%.3f".format(Locale.ROOT, it) }}")
         device.videoDecoders.forEach { decoder ->
-            line(
-                "Decoder ${decoder.codec.name}: ${decoder.name}, ${if (decoder.hardware) "hardware" else "software"}, " +
-                    "${decoder.maxWidth} × ${decoder.maxHeight}, ${decoder.maxBitDepth} bits, " +
-                    "profiles ${decoder.profiles.sorted().joinToString()}, level ${decoder.maxLevel ?: "?"}",
-            )
+            val kind = if (decoder.hardware) "hardware" else "software"
+            val size = "${decoder.maxWidth} × ${decoder.maxHeight}, ${decoder.maxBitDepth} bits"
+            val profiles = decoder.profiles.sorted().joinToString()
+            val level = decoder.maxLevel ?: "?"
+            val codec = decoder.codec.name.uppercase()
+            line("Decoder $codec: ${decoder.name}, $kind, $size, profiles $profiles, level $level")
         }
         line("Dolby Vision profiles: ${device.dolbyVisionProfiles.sorted().joinToString().ifEmpty { "none" }}")
         line("Audio decoders: ${device.audioDecoders.joinToString { it.codecName }}")
-        line("Audio output: passthrough ${device.passthrough.joinToString { it.name }.ifEmpty { "none" }}, ${device.maxPcmChannels} PCM channels")
+        val passthrough = device.passthrough.joinToString { it.name }.ifEmpty { "none" }
+        line("Audio output: passthrough $passthrough, ${device.maxPcmChannels} PCM channels")
         val profile = PlaybackProfiles.build(device, input.settings.profileOptions(input.server?.remote == true))
         line(
-            "Profile sent: ${profile.video.joinToString { "${it.codec} ${it.ranges.joinToString("/") { range -> range.serverName }}" }}; " +
+            "Profile sent: ${profile.video.joinToString { rule -> rule.summary() }}; " +
                 "audio ${profile.audioCodecs.joinToString()} up to ${profile.maxAudioChannels} channels; " +
                 "transcoding ${profile.transcodeVideoCodecs.joinToString()} in ${profile.transcodeContainer}, " +
                 "${profile.maxBitrate / MEGABIT} Mb/s",
@@ -120,17 +123,24 @@ object DiagnosticReport {
     private fun StringBuilder.settings(input: DiagnosticInput) {
         val settings = input.settings
         section("Playback settings")
-        line("Quality: local ${settings.localQuality.mbps()}, remote ${settings.remoteQuality.mbps()}, ceiling ${settings.bitrateCeiling / MEGABIT} Mb/s")
+        val ceiling = settings.bitrateCeiling / MEGABIT
+        line(
+            "Quality: local ${settings.localQuality.mbps()}, remote ${settings.remoteQuality.mbps()}, " +
+                "ceiling $ceiling Mb/s",
+        )
         line("Direct play: ${settings.directPlay}")
-        line("Passthrough allowed: ${settings.passthrough.joinToString { it.name }.ifEmpty { "none" }}; forced stereo: ${settings.forceStereo}")
+        val allowed = settings.passthrough.joinToString { it.name }.ifEmpty { "none" }
+        line("Passthrough allowed: $allowed; forced stereo: ${settings.forceStereo}")
         line("Audio offset: ${settings.audioOffsetMillis} ms")
         line("Frame rate matching: ${settings.matchFrameRate}; resolution matching: ${settings.matchResolution}")
         line("HDR allowed: ${settings.allowHdr}; Dolby Vision allowed: ${settings.allowDolbyVision}")
         line("ASS drawn by the server: ${settings.burnInAss}; aspect: ${settings.aspect}")
-        line("Intro: ${settings.segments}; next episode: ${settings.autoplayNext} after ${settings.nextCountdownSeconds} s")
+        val next = "${settings.autoplayNext} after ${settings.nextCountdownSeconds} s"
+        line("Intro: ${settings.segments}; next episode: $next")
         input.preferences?.let {
             line(
-                "Profile on the server: audio ${it.audioLanguage ?: "default"}, subtitles ${it.subtitleLanguage ?: "none"}, " +
+                "Profile on the server: audio ${it.audioLanguage ?: "default"}, " +
+                    "subtitles ${it.subtitleLanguage ?: "none"}, " +
                     "mode ${it.subtitleMode}",
             )
         }
@@ -141,7 +151,8 @@ object DiagnosticReport {
         section("Last failures (${input.failures.size})")
         if (input.failures.isEmpty()) line("None")
         input.failures.asReversed().forEach { failure ->
-            line("${failure.at.at(input)} ${failure.level}: ${failure.message}${failure.error?.let { " — $it" }.orEmpty()}")
+            val error = failure.error?.let { " — $it" }.orEmpty()
+            line("${failure.at.at(input)} ${failure.level}: ${failure.message}$error")
         }
     }
 
@@ -159,6 +170,9 @@ object DiagnosticReport {
             )
         }
     }
+
+    private fun fr.guim.cinedoury.core.model.VideoRule.summary(): String =
+        "$codec ${ranges.joinToString("/") { it.serverName }}"
 
     private fun Instant.at(input: DiagnosticInput): String = TIME.format(atZone(input.zone))
 

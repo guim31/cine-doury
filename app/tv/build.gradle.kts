@@ -4,13 +4,28 @@ plugins {
     alias(libs.plugins.roborazzi)
 }
 
+// The version comes from the tag of the release (`vX.Y.Z`, SPEC.md § 4.17): the release workflow sets
+// CINE_DOURY_VERSION. Without it, a development version, which is offered no update.
+val releaseVersion: String? =
+    providers
+        .environmentVariable("CINE_DOURY_VERSION")
+        .orNull
+        ?.removePrefix("v")
+        ?.takeIf { Regex("""\d{1,4}\.\d{1,2}\.\d{1,2}""").matches(it) }
+
+/** X × 10 000 + Y × 100 + Z: grows with the version (AppVersion.versionCode in :core:update). */
+fun versionCodeOf(version: String): Int {
+    val (major, minor, patch) = version.split('.').map(String::toInt)
+    return major * 10_000 + minor * 100 + patch
+}
+
 android {
     namespace = "fr.guim.cinedoury.tv"
 
     defaultConfig {
         applicationId = "fr.guim.cinedoury"
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = releaseVersion?.let(::versionCodeOf) ?: 1
+        versionName = releaseVersion ?: "0.1.0-dev"
         // On the emulator of the CI: real playback (PlaybackOnDeviceTest) and the sign-in with the remote
         // (SignInJourneyTest) against the test Jellyfin, the real Keystore (KeystoreTokenCipherTest).
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -25,15 +40,28 @@ android {
             keyAlias = "androiddebugkey"
             keyPassword = "android"
         }
+        // The release key, distinct from the debug key: read from the environment the release
+        // workflow makes from the secrets of the repository (SPEC.md § 4.17), never in the repository.
+        // Without it (a pull request, a fork, a machine), the release APK is left unsigned.
+        val keystore = providers.environmentVariable("RELEASE_KEYSTORE_FILE").orNull
+        if (keystore != null) {
+            create("release") {
+                storeFile = file(keystore)
+                storeType = "pkcs12"
+                storePassword = providers.environmentVariable("RELEASE_KEYSTORE_PASSWORD").orNull
+                keyAlias = providers.environmentVariable("RELEASE_KEY_ALIAS").orNull
+                keyPassword = providers.environmentVariable("RELEASE_KEY_PASSWORD").orNull
+            }
+        }
     }
 
     buildTypes {
         debug {
             signingConfig = signingConfigs.getByName("debug")
         }
-        // The release APK is signed outside the repository by the maintainer (SPEC.md § 4).
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.findByName("release")
         }
     }
 }
@@ -61,6 +89,7 @@ dependencies {
     implementation(projects.feature.search)
     implementation(projects.core.playback)
     implementation(projects.feature.settings)
+    implementation(projects.feature.update)
     implementation(projects.source.jellyfin)
     implementation(projects.source.seerr)
     implementation(libs.koin.android)

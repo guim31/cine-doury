@@ -58,6 +58,8 @@ sealed interface SettingItem {
         val value: String? = null,
         val icon: ImageVector? = null,
         val destructive: Boolean = false,
+        /** The title on as many lines as it needs (a line of a report, a failure). */
+        val wrap: Boolean = false,
         val onClick: () -> Unit,
     ) : SettingItem
 }

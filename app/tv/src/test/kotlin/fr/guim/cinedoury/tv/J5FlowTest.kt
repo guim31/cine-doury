@@ -49,6 +49,7 @@ import fr.guim.cinedoury.feature.search.SearchPreview
 import fr.guim.cinedoury.feature.search.SearchRows
 import fr.guim.cinedoury.feature.search.searchModule
 import fr.guim.cinedoury.feature.settings.settingsModule
+import fr.guim.cinedoury.feature.update.updateModule
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -179,6 +180,7 @@ class J5FlowTest {
                 playerModule,
                 searchModule,
                 settingsModule,
+                updateModule,
             )
         }
         val sessions = getKoin().get<SessionManager>()

@@ -16,15 +16,12 @@ import fr.guim.cinedoury.core.model.ImageType
 import fr.guim.cinedoury.core.model.PlaybackFailure
 import fr.guim.cinedoury.core.ui.LocalClock
 import fr.guim.cinedoury.feature.player.DeviceProfileScreen
-import fr.guim.cinedoury.feature.player.PlaybackSettingsPreview
-import fr.guim.cinedoury.feature.player.PlaybackSettingsScreen
 import fr.guim.cinedoury.feature.player.PlayerError
 import fr.guim.cinedoury.feature.player.PlayerPanel
 import fr.guim.cinedoury.feature.player.PlayerPreview
 import fr.guim.cinedoury.feature.player.PlayerScreen
 import fr.guim.cinedoury.feature.player.PlayerState
 import fr.guim.cinedoury.feature.player.SubtitleLayer
-import fr.guim.cinedoury.feature.player.SubtitleSettingsScreen
 import fr.guim.cinedoury.feature.player.playerPanelLine
 import org.junit.Rule
 import org.junit.Test
@@ -104,18 +101,6 @@ class J4ScreenshotTest(
                     playing = false,
                 ),
             )
-        }
-
-    @Test
-    fun playbackSettings() =
-        shoot("101-reglages-lecture-et-son", PlaybackSettingsPreview.row(1)) {
-            PlaybackSettingsScreen(J4Samples.settings, onChange = {})
-        }
-
-    @Test
-    fun subtitleSettings() =
-        shoot("102-reglages-apparence-sous-titres", PlaybackSettingsPreview.row(0)) {
-            SubtitleSettingsScreen(J4Samples.subtitleStyle, onChange = {})
         }
 
     @Test
