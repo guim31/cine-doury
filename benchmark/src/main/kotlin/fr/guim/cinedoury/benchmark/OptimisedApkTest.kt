@@ -56,8 +56,8 @@ class OptimisedApkTest {
             position = remote.device.findObject(By.res(PLAYER_POSITION))?.text
             SystemClock.sleep(POLL)
         }
-        // « Retour » hides the controls, then leaves the player.
-        repeat(2) { if (!remote.has(HOME_PLAY)) remote.press(KeyEvent.KEYCODE_BACK, pause = BACK_PAUSE) }
+        // « Retour » closes what is open (a panel, the controls), then leaves the player.
+        repeat(BACKS) { if (remote.has(PLAYER)) remote.press(KeyEvent.KEYCODE_BACK, pause = BACK_PAUSE) }
         remote.waitHome()
         // Started again, the app is still signed in.
         remote.device.executeShellCommand("am force-stop $PACKAGE")
@@ -69,5 +69,6 @@ class OptimisedApkTest {
         const val PLAYER_TIMEOUT = 45_000L
         const val POLL = 500L
         const val BACK_PAUSE = 1_000L
+        const val BACKS = 4
     }
 }
