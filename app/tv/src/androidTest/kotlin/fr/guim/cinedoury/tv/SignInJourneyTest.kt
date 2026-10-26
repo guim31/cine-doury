@@ -1,8 +1,10 @@
 package fr.guim.cinedoury.tv
 
+import android.util.Log
 import android.view.KeyEvent
 import android.view.Window
 import android.view.WindowInsets
+import android.view.inputmethod.InputMethodManager
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ComposeTimeoutException
@@ -104,7 +106,10 @@ class SignInJourneyTest {
         scenario?.onActivity { activity ->
             val window = activity.window.decorView
             val keyboard = window.rootWindowInsets?.isVisible(WindowInsets.Type.ime())
-            state = "keyboard shown: $keyboard, window focus: ${window.hasWindowFocus()}, " +
+            val imm = activity.getSystemService(InputMethodManager::class.java)
+            val view = activity.currentFocus
+            state = "keyboard shown: $keyboard, input method active: ${view?.let { imm.isActive(it) }}, " +
+                "accepting text: ${imm.isAcceptingText}, window focus: ${window.hasWindowFocus()}, " +
                 "touch mode: ${window.isInTouchMode}, focused view: ${activity.currentFocus?.javaClass?.name}\n" +
                 "keys: ${synchronized(keys) { keys.takeLast(KEYS_SHOWN).joinToString() }}"
         }
@@ -193,6 +198,7 @@ class SignInJourneyTest {
         // it took the OK meant for the profile (essai réel 2).
         val closed = appeared(TIMEOUT) { keyboardShown() != true }
         assertTrue(closed, "the keyboard stays open over the profiles: ${inputState()}")
+        Log.i("SignInJourney", "before OK on the profile: ${inputState()}")
         remote(KeyEvent.KEYCODE_DPAD_CENTER)
 
         // Quick Connect asks the server for a code at once (it failed on the device).
