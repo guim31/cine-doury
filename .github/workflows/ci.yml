@@ -159,15 +159,7 @@ jobs:
           # Keeps the end of the log for the failure summary.
           add-job-summary: never
       - name: ffmpeg
-        # A mirror that hangs once held this step for half an hour: short network timeouts, and
-        # bounded attempts.
-        run: |
-          apt="sudo apt-get -q -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30"
-          for attempt in 1 2 3; do
-            timeout 300 $apt update && timeout 300 $apt install -y ffmpeg && break
-            echo "apt attempt $attempt failed"
-          done
-          ffmpeg -version | head -n 1
+        run: sudo apt-get update -q && sudo apt-get install -y -q ffmpeg
       - name: Generate the test media
         run: |
           sudo chown -R "$(id -u):$(id -g)" /tmp/cine-doury-media
@@ -230,15 +222,7 @@ jobs:
           cache-read-only: false
           add-job-summary: never
       - name: ffmpeg
-        # A mirror that hangs once held this step for half an hour: short network timeouts, and
-        # bounded attempts.
-        run: |
-          apt="sudo apt-get -q -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30"
-          for attempt in 1 2 3; do
-            timeout 300 $apt update && timeout 300 $apt install -y ffmpeg && break
-            echo "apt attempt $attempt failed"
-          done
-          ffmpeg -version | head -n 1
+        run: sudo apt-get update -q && sudo apt-get install -y -q ffmpeg
       - name: Generate the test media
         run: |
           sudo chown -R "$(id -u):$(id -g)" /tmp/cine-doury-media
