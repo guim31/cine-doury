@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.cinedoury.android.application)
     alias(libs.plugins.cinedoury.android.compose)
     alias(libs.plugins.roborazzi)
+    alias(libs.plugins.baselineprofile)
 }
 
 android {
@@ -31,11 +32,27 @@ android {
         debug {
             signingConfig = signingConfigs.getByName("debug")
         }
-        // The release APK is signed outside the repository by the maintainer (SPEC.md § 4).
+        // The optimised APK (SPEC.md § 4.16): R8 shrinks and optimises the code and the resources, the
+        // Baseline and Startup Profiles (src/release/generated/baselineProfiles, made on the emulator
+        // of the CI by :benchmark) get it compiled ahead of time, and lay out the dex for the start.
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            // Transitional, until the release key of J7: signed with the versioned debug key, so that it
+            // installs over the debug APK of the CI without uninstalling it (SPEC.md § 4.16).
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
+}
+
+baselineProfile {
+    // Generated on the emulator of the CI and versioned (`[record-profiles]`, CLAUDE.md): a build never
+    // starts an emulator.
+    automaticGenerationDuringBuild = false
+    saveInSrc = true
+    // The Startup Profile lays out the classes of the start first in the dex (R8).
+    dexLayoutOptimization = true
 }
 
 roborazzi {
@@ -70,6 +87,9 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
+    // Applies the Baseline Profile of the APK when it is installed by adb rather than by a store.
+    implementation(libs.androidx.profileinstaller)
+    baselineProfile(projects.benchmark)
 
     testImplementation(testFixtures(projects.core.source))
     testImplementation(libs.kotlinx.coroutines.test)

@@ -1,6 +1,7 @@
 package fr.guim.cinedoury.feature.home
 
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.ReportDrawnWhen
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -94,6 +95,8 @@ fun HomeRoute(
     CollectEvents(viewModel.sessionEnded) { navigation.sessionEnded() }
     // Back from another screen: the rows may have changed (a film watched).
     LaunchedEffect(Unit) { viewModel.refresh() }
+    // The start is over once the rows show: the « fully drawn » time of a cold start (SPEC.md § 4.16).
+    ReportDrawnWhen { state.rows != null }
     HomeScreen(
         state = state,
         sources = sessions::imageSource,

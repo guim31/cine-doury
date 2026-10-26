@@ -26,6 +26,10 @@ gradlePlugin {
             id = "cinedoury.android.application"
             implementationClass = "AndroidApplicationConventionPlugin"
         }
+        register("androidTest") {
+            id = "cinedoury.android.test"
+            implementationClass = "AndroidTestConventionPlugin"
+        }
         register("androidCompose") {
             id = "cinedoury.android.compose"
             implementationClass = "AndroidComposeConventionPlugin"
