@@ -28,6 +28,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.Collections
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.test.assertTrue
 import fr.guim.cinedoury.feature.auth.R as AuthR
 import fr.guim.cinedoury.feature.home.R as HomeR
@@ -69,8 +70,21 @@ class SignInJourneyTest {
     /** A key of the remote, through the whole input pipeline of Android (IME stage included). */
     private fun remote(keyCode: Int) {
         compose.waitForIdle()
+        // Android drops a key that reaches a window without the focus (ViewRootImpl): when the
+        // window has just lost it, the key waits for it, as a hand on the remote would.
+        val focused = windowFocus.get()
+        if (!focused) compose.waitUntil(TIMEOUT) { windowFocus.get() }
+        record("sent ${KeyEvent.keyCodeToString(keyCode)}, window focus: $focused")
         instrumentation.sendKeyDownUpSync(keyCode)
         compose.waitForIdle()
+    }
+
+    /** The window's focus, as its main thread last saw it. */
+    private val windowFocus = AtomicBoolean(false)
+
+    private fun record(event: String) {
+        keys += event
+        Log.i(LOG_TAG, event)
     }
 
     private fun waitFor(
@@ -165,7 +179,15 @@ class SignInJourneyTest {
         instrumentation.setInTouchMode(false)
         ActivityScenario.launch(MainActivity::class.java).use {
             scenario = it
-            it.onActivity { activity -> activity.window.callback = KeyRecorder(activity.window.callback, keys) }
+            it.onActivity { activity ->
+                activity.window.callback = KeyRecorder(activity.window.callback, keys)
+                val window = activity.window.decorView
+                windowFocus.set(window.hasWindowFocus())
+                window.viewTreeObserver.addOnWindowFocusChangeListener { focused ->
+                    windowFocus.set(focused)
+                    record("window focus: $focused")
+                }
+            }
             journey()
         }
     }
@@ -198,7 +220,6 @@ class SignInJourneyTest {
         // it took the OK meant for the profile (essai réel 2).
         val closed = appeared(TIMEOUT) { keyboardShown() != true }
         assertTrue(closed, "the keyboard stays open over the profiles: ${inputState()}")
-        Log.i("SignInJourney", "before OK on the profile: ${inputState()}")
         remote(KeyEvent.KEYCODE_DPAD_CENTER)
 
         // Quick Connect asks the server for a code at once (it failed on the device).
@@ -224,6 +245,7 @@ class SignInJourneyTest {
     }
 
     private companion object {
+        const val LOG_TAG = "SignInJourney"
         const val TIMEOUT = 10_000L
         const val KEYS_SHOWN = 12
         const val FIRST_FOCUS_TIMEOUT = 3_000L
