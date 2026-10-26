@@ -48,7 +48,7 @@ internal val CardOutlineShape =
  * @param image the poster image; without it, a [GeneratedArtwork] stands in.
  * @param progress playback progress between 0 and 1, or null when not started.
  * @param unwatchedCount for a series, the number of unwatched episodes, shown instead of the triangle.
- * @param sharedKey the id of the item: its poster flies to the details screen ([sharedPoster]).
+ * @param sharedKey the id of the item: its poster flies to the details screen, once focused ([sharedPosterSource]).
  */
 @Composable
 fun PosterCard(
@@ -73,7 +73,7 @@ fun PosterCard(
         Box(
             modifier =
                 Modifier
-                    .sharedPoster(sharedKey)
+                    .sharedPosterSource(sharedKey)
                     .size(size.dp)
                     .withFocusRequester(focusRequester)
                     .cineFocusable(

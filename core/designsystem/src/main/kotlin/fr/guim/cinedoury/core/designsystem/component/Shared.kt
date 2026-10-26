@@ -8,8 +8,14 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.layout.ContentScale
 import fr.guim.cinedoury.core.designsystem.theme.CineMotion
 import fr.guim.cinedoury.core.designsystem.theme.CineTheme
@@ -22,7 +28,10 @@ import fr.guim.cinedoury.core.designsystem.theme.CineTheme
 class SharedElements(
     val transition: SharedTransitionScope,
     val visibility: AnimatedVisibilityScope,
-)
+) {
+    /** The card of the screen that had the focus last: the one that may fly ([sharedPosterSource]). */
+    internal var focusedKey by mutableStateOf<String?>(null)
+}
 
 val LocalSharedElements = staticCompositionLocalOf<SharedElements?> { null }
 
@@ -46,6 +55,20 @@ fun Modifier.sharedPoster(key: String?): Modifier {
             resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds(ContentScale.Fit),
         )
     }
+}
+
+/**
+ * [sharedPoster] on a card among many (a row, a grid): only the card focused last takes part in the
+ * transition, as it is the one OK opens. A shared element costs on every card that has one (a layer,
+ * and its state in the transition), even while nothing flies (perf/fluidite).
+ */
+@Composable
+fun Modifier.sharedPosterSource(key: String?): Modifier {
+    val shared = LocalSharedElements.current
+    if (shared == null || key == null || CineTheme.reducedMotion) return this
+    val active by remember(shared, key) { derivedStateOf { shared.focusedKey == key } }
+    return onFocusChanged { if (it.hasFocus) shared.focusedKey = key }
+        .then(if (active) Modifier.sharedPoster(key) else Modifier)
 }
 
 private val PosterFlight =
