@@ -59,6 +59,9 @@ data class RailDestination(
 )
 
 private val RailItemShape = RoundedCornerShape(percent = 50)
+
+/** Centres the icon in the closed rail: (72 − 2 × 16 − 24) / 2. */
+private val RailItemPadding = (CineSizes.railCollapsed - CineSizes.railInset * 2 - CineSizes.icon) / 2
 private const val RAIL_SCRIM_ALPHA = 0.72f
 
 /**
@@ -123,14 +126,21 @@ fun NavigationRail(
                 }.onFocusChanged { hasFocus = it.hasFocus }
                 .focusRestorer(selected)
                 .focusGroup()
-                .padding(vertical = CineSpacing.safeVertical + CineSpacing.m, horizontal = CineSpacing.xs),
+                .padding(vertical = CineSpacing.safeVertical + CineSpacing.m - CineSizes.railInset),
         verticalArrangement = Arrangement.spacedBy(CineSpacing.xs),
     ) {
         // Many libraries: the top of the rail scrolls, « Profil » and « Réglages » stay at the bottom;
-        // what goes on below fades out instead of being cut.
+        // what goes on below fades out instead of being cut. The list spans the whole rail and its
+        // entries stand [CineSizes.railInset] inside it: the scroll and the fade clip at the edges of
+        // the list, never through the outline or the halo of the focused entry.
         val scroll = rememberScrollState()
         Column(
-            modifier = Modifier.weight(1f).fadeBottom(scroll.canScrollForward).verticalScroll(scroll),
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .fadeBottom(scroll.canScrollForward)
+                    .verticalScroll(scroll)
+                    .padding(CineSizes.railInset),
             verticalArrangement = Arrangement.spacedBy(CineSpacing.xs),
         ) {
             destinations.forEachIndexed { index, destination ->
@@ -144,16 +154,26 @@ fun NavigationRail(
                 )
             }
         }
-        bottomDestinations.forEachIndexed { offset, destination ->
-            val index = destinations.size + offset
-            RailItem(
-                destination,
-                selected = index == selectedIndex,
-                labelAlpha = expansion,
-                onClick = { onSelect(index) },
-                preview = index == previewFocusedIndex,
-                focusRequester = selected.takeIf { index == selectedIndex },
-            )
+        Column(
+            modifier =
+                Modifier.padding(
+                    start = CineSizes.railInset,
+                    end = CineSizes.railInset,
+                    bottom = CineSizes.railInset,
+                ),
+            verticalArrangement = Arrangement.spacedBy(CineSpacing.xs),
+        ) {
+            bottomDestinations.forEachIndexed { offset, destination ->
+                val index = destinations.size + offset
+                RailItem(
+                    destination,
+                    selected = index == selectedIndex,
+                    labelAlpha = expansion,
+                    onClick = { onSelect(index) },
+                    preview = index == previewFocusedIndex,
+                    focusRequester = selected.takeIf { index == selectedIndex },
+                )
+            }
         }
     }
 }
@@ -182,9 +202,9 @@ private fun RailItem(
                 .fillMaxWidth()
                 .height(CineSizes.railItemHeight)
                 .withFocusRequester(focusRequester)
-                .cineFocusable(focus, RailItemShape, CineScale.BUTTON, onClick)
+                .cineFocusable(focus, RailItemShape, CineScale.RAIL, onClick, halo = CineSizes.railFocusHalo)
                 .background(if (focused) colors.text else Color.Transparent)
-                .padding(horizontal = CineSpacing.s),
+                .padding(horizontal = RailItemPadding),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(CineSpacing.s),
     ) {
