@@ -1,6 +1,7 @@
 package fr.guim.cinedoury.tv
 
 import android.view.KeyEvent
+import android.view.Window
 import android.view.WindowInsets
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
@@ -24,6 +25,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.Collections
 import kotlin.test.assertTrue
 import fr.guim.cinedoury.feature.auth.R as AuthR
 import fr.guim.cinedoury.feature.home.R as HomeR
@@ -44,6 +46,21 @@ class SignInJourneyTest {
 
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private var scenario: ActivityScenario<MainActivity>? = null
+
+    /** The keys that reached the activity, and whether it used them, for the log of a failure. */
+    private val keys = Collections.synchronizedList(mutableListOf<String>())
+
+    private class KeyRecorder(
+        private val window: Window.Callback,
+        private val keys: MutableList<String>,
+    ) : Window.Callback by window {
+        override fun dispatchKeyEvent(event: KeyEvent): Boolean =
+            window.dispatchKeyEvent(event).also { handled ->
+                val action = if (event.action == KeyEvent.ACTION_DOWN) "down" else "up"
+                keys += "${KeyEvent.keyCodeToString(event.keyCode)} $action handled=$handled"
+            }
+    }
+
     private val server = InstrumentationRegistry.getArguments().getString("jellyfinUrl") ?: "http://10.0.2.2:8096"
     private val password = InstrumentationRegistry.getArguments().getString("jellyfinPassword") ?: "cinedoury-test"
 
@@ -88,7 +105,8 @@ class SignInJourneyTest {
             val window = activity.window.decorView
             val keyboard = window.rootWindowInsets?.isVisible(WindowInsets.Type.ime())
             state = "keyboard shown: $keyboard, window focus: ${window.hasWindowFocus()}, " +
-                "focused view: ${activity.currentFocus?.javaClass?.name}"
+                "touch mode: ${window.isInTouchMode}, focused view: ${activity.currentFocus?.javaClass?.name}\n" +
+                "keys: ${synchronized(keys) { keys.takeLast(KEYS_SHOWN).joinToString() }}"
         }
         return state
     }
@@ -142,6 +160,7 @@ class SignInJourneyTest {
         instrumentation.setInTouchMode(false)
         ActivityScenario.launch(MainActivity::class.java).use {
             scenario = it
+            it.onActivity { activity -> activity.window.callback = KeyRecorder(activity.window.callback, keys) }
             journey()
         }
     }
@@ -200,6 +219,7 @@ class SignInJourneyTest {
 
     private companion object {
         const val TIMEOUT = 10_000L
+        const val KEYS_SHOWN = 12
         const val FIRST_FOCUS_TIMEOUT = 3_000L
         const val DISCOVERY_TIMEOUT = 15_000L
         const val SIGN_IN_TIMEOUT = 30_000L

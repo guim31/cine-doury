@@ -177,8 +177,18 @@ collection() {
   shift
   [ -n "$(id_of BoxSet "$name")" ] && return
   log "collection $name"
-  local ids=()
-  for film in "$@"; do ids+=("$(id_of Movie "$film")"); done
+  local ids=() id
+  for film in "$@"; do
+    # The titles come from the .nfo files, which the server may still be reading: an empty id
+    # would make a collection without that film.
+    for _ in $(seq 60); do
+      id="$(id_of Movie "$film")"
+      [ -n "$id" ] && break
+      sleep 1
+    done
+    [ -n "$id" ] || { log "film not found for the collection $name: $film"; exit 1; }
+    ids+=("$id")
+  done
   api POST "/Collections?name=$(jq -rn --arg v "$name" '$v|@uri')&ids=$(IFS=,; echo "${ids[*]}")" > /dev/null
 }
 collection "Le Phare : la saga" "Le Phare" "Retour au phare"
