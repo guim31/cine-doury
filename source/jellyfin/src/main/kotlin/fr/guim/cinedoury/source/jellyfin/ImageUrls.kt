@@ -19,7 +19,7 @@ internal fun imageUrlOf(
     height: Int,
 ): String {
     val index = if (image.index > 0) "/${image.index}" else ""
-    val tag = URLEncoder.encode(image.tag, "UTF-8")
+    val tag = URLEncoder.encode(image.tag, Charsets.UTF_8)
     return "${server.url}/Items/${image.itemId.value}/Images/${image.type.name}$index" +
         "?fillWidth=$width&fillHeight=$height&quality=$IMAGE_QUALITY&tag=$tag"
 }
