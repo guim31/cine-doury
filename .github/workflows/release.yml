@@ -98,7 +98,8 @@ jobs:
             --target "$(git rev-parse HEAD)"
       - name: Not published
         if: env.DRY_RUN == 'true' || env.SIGNED != 'true'
-        run: echo "Dry run or no release key: built and checked, not published." >> "$GITHUB_STEP_SUMMARY"
+        run: |
+          echo "Dry run or no release key: built and checked, not published." >> "$GITHUB_STEP_SUMMARY"
       - name: Failure summary
         if: failure()
         run: ci/failure-summary.sh gradle.log
