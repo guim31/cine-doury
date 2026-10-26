@@ -9,6 +9,7 @@ dependencies {
     compileOnly(libs.kotlin.gradle.plugin)
     compileOnly(libs.compose.gradle.plugin)
     compileOnly(libs.detekt.gradle.plugin)
+    compileOnly(libs.animalsniffer.gradle.plugin)
 }
 
 gradlePlugin {
