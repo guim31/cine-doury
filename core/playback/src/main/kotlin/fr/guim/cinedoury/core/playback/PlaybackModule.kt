@@ -49,7 +49,14 @@ val playbackModule =
         single<VideoPlayerFactory> {
             val context = androidContext()
             VideoPlayerFactory { capabilities, settings ->
-                ExoVideoPlayer(context, capabilities, settings.passthrough, settings.matchFrameRate)
+                ExoVideoPlayer(
+                    context,
+                    capabilities,
+                    settings.profileOptions().passthrough,
+                    settings.matchFrameRate,
+                    audioOffsetMillis = settings.audioOffsetMillis,
+                    allowDolbyVision = settings.allowDolbyVision,
+                )
             }
         }
     }

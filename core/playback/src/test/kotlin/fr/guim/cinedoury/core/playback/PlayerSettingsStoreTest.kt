@@ -1,7 +1,10 @@
 package fr.guim.cinedoury.core.playback
 
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import fr.guim.cinedoury.core.model.DirectPlayMode
 import fr.guim.cinedoury.core.model.PassthroughFormat
+import fr.guim.cinedoury.core.model.PlayerSettings
+import fr.guim.cinedoury.core.model.SegmentAction
 import fr.guim.cinedoury.core.model.SubtitleBackground
 import fr.guim.cinedoury.core.model.SubtitlePosition
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -64,5 +67,42 @@ class PlayerSettingsStoreTest {
             store.update { it.copy(subtitles = it.subtitles.copy(scale = 1.6f)) }
             profile = "server/carol"
             assertEquals(1.6f, store.current().subtitles.scale)
+        }
+
+    @Test
+    fun theHabitsOfTheViewerFollowTheProfile() =
+        scope.runTest {
+            store.update { it.copy(seekForwardSeconds = 60, nextCountdownSeconds = 20, segments = SegmentAction.Skip) }
+            profile = "server/bob"
+            assertEquals(PlayerSettings.DEFAULT_SEEK_FORWARD, store.current().seekForwardSeconds)
+            assertEquals(SegmentAction.Button, store.current().segments)
+            profile = "server/alice"
+            assertEquals(60, store.current().seekForwardSeconds)
+            assertEquals(20, store.current().nextCountdownSeconds)
+        }
+
+    @Test
+    fun whatJ4KeptForTheDeviceIsTheDefaultOfEveryProfile() =
+        scope.runTest {
+            profile = null
+            store.update { it.copy(watchedThreshold = 0.8f) }
+            profile = "server/dave"
+            assertEquals(0.8f, store.current().watchedThreshold)
+        }
+
+    @Test
+    fun qualitiesStepAndCeiling() =
+        scope.runTest {
+            assertEquals(PlayerSettings.DEFAULT_REMOTE_QUALITY, store.current().remoteQuality)
+            assertEquals(null, store.current().localQuality)
+            store.update { it.copy(remoteQuality = null, localQuality = 20_000_000, bitrateCeiling = 60_000_000) }
+            val settings = store.current()
+            assertEquals(null, settings.remoteQuality, "« Originale » stays original")
+            assertEquals(20_000_000, settings.quality(remote = false))
+            assertEquals(60_000_000, settings.quality(remote = true), "the original is capped by the ceiling")
+            store.update { it.copy(audioOffsetMillis = 10_000, forceStereo = true, directPlay = DirectPlayMode.Never) }
+            assertEquals(PlayerSettings.MAX_AUDIO_OFFSET, store.current().audioOffsetMillis)
+            assertEquals(DirectPlayMode.Never, store.current().directPlay)
+            assertEquals(emptySet(), store.current().profileOptions().passthrough, "stereo: nothing to the amplifier")
         }
 }

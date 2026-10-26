@@ -4,11 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.Player
 import fr.guim.cinedoury.core.data.ActiveSession
+import fr.guim.cinedoury.core.data.ConnectionMode
 import fr.guim.cinedoury.core.data.SessionManager
 import fr.guim.cinedoury.core.data.UserDataUpdates
 import fr.guim.cinedoury.core.data.home.HomeRepository
 import fr.guim.cinedoury.core.data.home.ProfileKey
 import fr.guim.cinedoury.core.model.DeviceCapabilities
+import fr.guim.cinedoury.core.model.DirectPlayMode
 import fr.guim.cinedoury.core.model.FallbackAction
 import fr.guim.cinedoury.core.model.ItemKind
 import fr.guim.cinedoury.core.model.MediaItem
@@ -111,7 +113,8 @@ class PlayerViewModel(
         guarded {
             val settings = settingsStore.current()
             val capabilities = readCapabilities()
-            val profile = PlaybackProfiles.build(capabilities, settings.profileOptions())
+            val remote = active?.connection?.mode == ConnectionMode.Remote
+            val profile = PlaybackProfiles.build(capabilities, settings.profileOptions(remote))
             this.profile = profile
             stillWatching = StillWatching(settings.stillWatchingAfter).also { it.restoreFrom(stillWatching) }
             val item = if (request.trailer) request.item else source.item(request.item.id)
@@ -127,6 +130,8 @@ class PlayerViewModel(
                     audioIndex = selection?.audioIndex,
                     subtitleIndex = selection?.subtitleIndex,
                     duration = item.runtime ?: it.duration,
+                    // The default quality of the settings (`SPEC.md` § 4.16), unless one was chosen.
+                    maxBitrate = it.maxBitrate ?: (if (remote) settings.remoteQuality else settings.localQuality),
                 )
             }
             if (!request.trailer) {
@@ -142,6 +147,9 @@ class PlayerViewModel(
                         audioIndex = selection?.audioIndex,
                         subtitleIndex = selection?.subtitleIndex,
                         start = start,
+                        maxBitrate = local.value.maxBitrate,
+                        allowDirect = !fellBack && settings.directPlay != DirectPlayMode.Never,
+                        forceDirect = !fellBack && settings.directPlay == DirectPlayMode.Forced,
                     ),
                 )
             val player = player ?: players.create(capabilities, settings).also { created -> watch(created) }
@@ -281,7 +289,8 @@ class PlayerViewModel(
         if (shows && snapshot.playing) countdown += TICK
         if (!shows) countdown = Duration.ZERO
         val counting = shows && state.settings.autoplayNext
-        val left = (PlaybackRules.NEXT_COUNTDOWN - countdown).coerceAtLeast(Duration.ZERO)
+        val total = state.settings.nextCountdownSeconds.seconds
+        val left = (total - countdown).coerceAtLeast(Duration.ZERO)
         local.update {
             it.copy(
                 position = position,
@@ -292,7 +301,7 @@ class PlayerViewModel(
                 reconnecting = bufferingFor >= RECONNECTING,
                 skip = skip,
                 nextShown = shows && !it.stillWatching,
-                nextCountdown = (left / PlaybackRules.NEXT_COUNTDOWN).toFloat().takeIf { counting },
+                nextCountdown = (left / total).toFloat().takeIf { counting },
                 nextSeconds = ((left.inWholeMilliseconds + MILLIS - 1) / MILLIS).toInt().takeIf { counting },
                 info = if (infoVisible) snapshot else null,
             )
@@ -363,7 +372,7 @@ class PlayerViewModel(
         audioIndex: Int? = local.value.audioIndex,
         subtitleIndex: Int? = local.value.subtitleIndex,
         maxBitrate: Int? = local.value.maxBitrate,
-        allowDirect: Boolean = !fellBack,
+        allowDirect: Boolean = !fellBack && local.value.settings.directPlay != DirectPlayMode.Never,
     ) {
         val source = source ?: return
         val profile = profile ?: return
@@ -384,6 +393,7 @@ class PlayerViewModel(
                             start = at,
                             maxBitrate = maxBitrate,
                             allowDirect = allowDirect,
+                            forceDirect = allowDirect && local.value.settings.directPlay == DirectPlayMode.Forced,
                         ),
                     )
                 local.update {

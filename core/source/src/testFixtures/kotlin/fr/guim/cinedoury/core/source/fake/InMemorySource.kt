@@ -48,7 +48,7 @@ import kotlin.time.Duration
 class InMemorySource(
     private val server: ServerInfo = ServerInfo(id = "in-memory", name = "En mémoire", version = "12.3.0"),
     private val accounts: Map<String, String> = mapOf("admin" to "password"),
-    private val libraries: List<Library> = emptyList(),
+    libraries: List<Library> = emptyList(),
     private val contents: Map<LibraryId, List<MediaItem>> = emptyMap(),
     private val hiddenUsers: Set<String> = emptySet(),
     private val serverAt: (ServerAddress) -> ServerInfo = { server },
@@ -64,6 +64,10 @@ class InMemorySource(
     /** Management (J6), shared by every session: what was deleted or changed applies everywhere. */
     val manage: InMemoryManage = InMemoryManage(),
 ) : SourceConnector {
+    /** The libraries, in the order of the profile (J7: [LibrarySource.setLibraryOrder]). */
+    var libraries: List<Library> = libraries
+        private set
+
     private val all: Map<ItemId, MediaItem> = (contents.values.flatten() + extras).associateBy { it.id }
 
     /** The items not deleted (J6). */
@@ -179,6 +183,17 @@ class InMemorySource(
 
     override fun userImageUrl(server: ServerAddress, user: User): String? =
         user.image?.let { "$server/user/${user.id.value}?tag=${it.tag}" }
+
+    /** The diagnostic reports sent to the server (J7). */
+    val diagnostics: MutableList<String> = mutableListOf()
+
+    /** The name the device gave itself (J7). */
+    var deviceName: String? = null
+        private set
+
+    override fun setDeviceName(name: String) {
+        deviceName = name
+    }
 
     private inner class InMemoryLibrary(override val session: Session) : LibrarySource {
         override val playback: PlaybackSource get() = this@InMemorySource.playback
@@ -399,6 +414,26 @@ class InMemorySource(
         override suspend fun playbackPreferences(): PlaybackPreferences {
             count("playbackPreferences")
             return preferences
+        }
+
+        override suspend fun setPlaybackPreferences(preferences: PlaybackPreferences) {
+            checkSession()
+            count("setPlaybackPreferences")
+            this@InMemorySource.preferences = preferences
+        }
+
+        override suspend fun sendDiagnostic(report: String): String {
+            checkSession()
+            diagnostics += report
+            return "upload_cine_doury_${diagnostics.size}.log"
+        }
+
+        override suspend fun setLibraryOrder(order: List<LibraryId>) {
+            checkSession()
+            count("setLibraryOrder")
+            val all = this@InMemorySource.libraries
+            this@InMemorySource.libraries =
+                order.mapNotNull { id -> all.firstOrNull { it.id == id } } + all.filter { it.id !in order }
         }
 
         override suspend fun technicalItems(

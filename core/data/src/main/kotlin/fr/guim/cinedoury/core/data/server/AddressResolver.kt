@@ -3,6 +3,7 @@ package fr.guim.cinedoury.core.data.server
 import fr.guim.cinedoury.core.data.Connection
 import fr.guim.cinedoury.core.data.ConnectionMode
 import fr.guim.cinedoury.core.data.SavedServer
+import fr.guim.cinedoury.core.data.prefs.NetworkMode
 import fr.guim.cinedoury.core.source.FailureLog
 import fr.guim.cinedoury.core.source.ServerAddress
 import fr.guim.cinedoury.core.source.SourceConnector
@@ -14,7 +15,8 @@ import kotlin.time.Duration.Companion.seconds
 /**
  * Chooses the address of a saved server at start (`SPEC.md` § 4.7): the local address first, with
  * a short timeout, then the remote one. An address counts only if the server that answers there is
- * the saved one (same id): on another network, the same local address may lead elsewhere.
+ * the saved one (same id): on another network, the same local address may lead elsewhere. The
+ * setting « Basculement automatique » (`SPEC.md` § 4.16) may keep to one of them.
  */
 class AddressResolver(
     private val connector: SourceConnector,
@@ -22,12 +24,21 @@ class AddressResolver(
     private val remoteTimeout: Duration = 10.seconds,
 ) {
     /** The first address that answers, or the most telling failure if none does. */
-    suspend fun resolve(server: SavedServer): Connection {
+    suspend fun resolve(
+        server: SavedServer,
+        mode: NetworkMode = NetworkMode.Automatic,
+    ): Connection {
+        val local = Triple(server.localAddress, ConnectionMode.Local, localTimeout)
+        val remote = server.remoteAddress?.let { Triple(it, ConnectionMode.Remote, remoteTimeout) }
         val candidates =
-            listOfNotNull(
-                Triple(server.localAddress, ConnectionMode.Local, localTimeout),
-                server.remoteAddress?.let { Triple(it, ConnectionMode.Remote, remoteTimeout) },
-            )
+            when (mode) {
+                NetworkMode.Automatic -> listOfNotNull(local, remote)
+
+                NetworkMode.LocalOnly -> listOf(local)
+
+                // Without a remote address, the local one rather than nothing.
+                NetworkMode.RemoteOnly -> listOf(remote ?: local)
+            }
         val failures = mutableListOf<SourceException>()
         for ((address, mode, timeout) in candidates) {
             when (val outcome = probe(server, address, timeout)) {

@@ -45,6 +45,12 @@ interface SourceConnector {
 
     /** URL of the picture of [user], or null when the user has none. */
     fun userImageUrl(server: ServerAddress, user: User): String?
+
+    /**
+     * The name this device shows on the server, from the next request on, for every session (« Nom de
+     * l'appareil », `SPEC.md` § 4.16).
+     */
+    fun setDeviceName(name: String)
 }
 
 /**

@@ -21,19 +21,47 @@ object DisplayModes {
     private const val TOLERANCE = 0.01f
     private const val MAX_MULTIPLE = 5
 
+    /**
+     * The mode to ask for, or null to keep [current].
+     *
+     * @param frameRate the cadence of the film; 0 (or less) leaves the refresh rate alone.
+     * @param videoHeight with « Résolution adaptée » (`SPEC.md` § 4.16), the height of the film: the
+     * smallest size of the screen that holds it (1080p for a 1080p film on a 4K TV), the TV then
+     * scales it up itself; null keeps the size of [current].
+     */
     fun choose(
         modes: List<ScreenMode>,
         current: ScreenMode,
         frameRate: Float,
+        videoHeight: Int? = null,
     ): ScreenMode? {
-        if (frameRate <= 0f) return null
-        val sameSize = modes.filter { it.width == current.width && it.height == current.height }
+        val size = videoHeight?.let { targetSize(modes, it) } ?: (current.width to current.height)
+        val sameSize = modes.filter { (it.width to it.height) == size }
+        if (sameSize.isEmpty()) return null
+        val byRate =
+            if (frameRate > 0f) {
+                sameSize
+                    .mapNotNull { mode -> multipleOf(mode.refreshRate, frameRate)?.let { mode to it } }
+                    .minWithOrNull(compareBy({ it.second }, { abs(it.first.refreshRate / frameRate - it.second) }))
+                    ?.first
+            } else {
+                null
+            }
+        val sizeChanges = size != current.width to current.height
         val best =
-            sameSize
-                .mapNotNull { mode -> multipleOf(mode.refreshRate, frameRate)?.let { mode to it } }
-                .minWithOrNull(compareBy({ it.second }, { abs(it.first.refreshRate / frameRate - it.second) }))
-                ?.first ?: return null
+            byRate
+                ?: if (sizeChanges) sameSize.minBy { abs(it.refreshRate - current.refreshRate) } else return null
+        if (sizeChanges) return best
         return best.takeIf { multipleOf(current.refreshRate, frameRate) != multipleOf(best.refreshRate, frameRate) }
+    }
+
+    /** The smallest size of the screen at least as tall as the film, else the tallest. */
+    private fun targetSize(
+        modes: List<ScreenMode>,
+        videoHeight: Int,
+    ): Pair<Int, Int>? {
+        val sizes = modes.map { it.width to it.height }.distinct()
+        return sizes.filter { it.second >= videoHeight }.minByOrNull { it.second } ?: sizes.maxByOrNull { it.second }
     }
 
     /** n when [refreshRate] is n × [frameRate] (within 1 %), up to 5. */
@@ -41,6 +69,7 @@ object DisplayModes {
         refreshRate: Float,
         frameRate: Float,
     ): Int? {
+        if (frameRate <= 0f) return null
         val ratio = refreshRate / frameRate
         val multiple = ratio.roundToInt()
         return multiple.takeIf { it in 1..MAX_MULTIPLE && abs(ratio - it) <= TOLERANCE * it }

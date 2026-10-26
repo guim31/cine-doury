@@ -84,4 +84,45 @@ class PlaybackProfilesTest {
         assertTrue(burnt.subtitles.any { it.format == "pgssub" && it.method == SubtitleMethod.Embed })
         assertFalse(burnt.subtitles.any { it.format == "pgssub" && it.method == SubtitleMethod.External })
     }
+
+    @Test
+    fun `HDR not allowed - the server tone maps HDR10, the base layer of profile 8 is not taken`() {
+        val profile = PlaybackProfiles.build(SampleDevices.shield, ProfileOptions(allowHdr = false))
+        val hevc = profile.video.single { it.codec == "hevc" }
+        assertFalse(RangeType.Hdr10 in hevc.ranges)
+        assertFalse(RangeType.Hlg in hevc.ranges)
+        // Dolby Vision itself is still allowed.
+        assertTrue(RangeType.DolbyVision in hevc.ranges)
+        assertTrue(RangeType.DolbyVisionWithSdr in hevc.ranges)
+    }
+
+    @Test
+    fun `Dolby Vision not allowed - profile 5 tone mapped, profile 8 plays its HDR10 base layer`() {
+        val profile = PlaybackProfiles.build(SampleDevices.shield, ProfileOptions(allowDolbyVision = false))
+        val hevc = profile.video.single { it.codec == "hevc" }
+        assertFalse(RangeType.DolbyVision in hevc.ranges)
+        assertTrue(RangeType.Hdr10 in hevc.ranges)
+        assertTrue(RangeType.DolbyVisionWithHdr10 in hevc.ranges)
+    }
+
+    @Test
+    fun `forced stereo - two channels, nothing to the amplifier, AAC from the server`() {
+        val profile = PlaybackProfiles.build(SampleDevices.shield, ProfileOptions(stereo = true))
+        assertEquals(2, profile.maxAudioChannels)
+        assertFalse("truehd" in profile.audioCodecs)
+        assertFalse("dts" in profile.audioCodecs)
+        assertEquals("aac", profile.transcodeAudioCodecs.first())
+    }
+
+    @Test
+    fun `the quality chosen is the bitrate asked for`() {
+        val settings =
+            fr.guim.cinedoury.core.model
+                .PlayerSettings(localQuality = 20_000_000)
+        assertEquals(20_000_000, PlaybackProfiles.build(SampleDevices.shield, settings.profileOptions()).maxBitrate)
+        assertEquals(
+            8_000_000,
+            PlaybackProfiles.build(SampleDevices.shield, settings.profileOptions(remote = true)).maxBitrate,
+        )
+    }
 }

@@ -59,7 +59,10 @@ enum class TranscodeReason {
  *
  * @param subtitleIndex the subtitle stream; null for none.
  * @param maxBitrate a lower bitrate chosen in « Qualité »; null for the profile's.
- * @param allowDirect false after the player failed on the file as it is: the server transcodes.
+ * @param allowDirect false after the player failed on the file as it is, or when the settings say
+ * never (`DirectPlayMode.Never`): the server transcodes.
+ * @param forceDirect the file as it is even when the server would not send it so
+ * (`DirectPlayMode.Forced`): the profile of the device may be too cautious.
  */
 data class PlaybackInfoRequest(
     val item: ItemId,
@@ -70,6 +73,7 @@ data class PlaybackInfoRequest(
     val start: Duration = Duration.ZERO,
     val maxBitrate: Int? = null,
     val allowDirect: Boolean = true,
+    val forceDirect: Boolean = false,
 )
 
 /**

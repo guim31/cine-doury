@@ -76,7 +76,7 @@ class SessionManager(
         val server = preferences.lastServerId()?.let { servers.get(it) } ?: return StartupTarget.NoServer
         val connection =
             try {
-                resolver.resolve(server)
+                resolver.resolve(server, preferences.networkMode.first())
             } catch (error: SourceException) {
                 return StartupTarget.Unreachable(server, error)
             }

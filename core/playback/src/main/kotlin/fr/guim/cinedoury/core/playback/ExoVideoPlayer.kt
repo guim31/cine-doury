@@ -24,6 +24,7 @@ import androidx.media3.exoplayer.audio.AudioSink
 import androidx.media3.exoplayer.audio.AudioTrackAudioOutputProvider
 import androidx.media3.exoplayer.audio.DefaultAudioSink
 import androidx.media3.exoplayer.audio.ForwardingAudioOutputProvider
+import androidx.media3.exoplayer.audio.ForwardingAudioSink
 import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.upstream.DefaultLoadErrorHandlingPolicy
@@ -59,6 +60,8 @@ class ExoVideoPlayer(
     capabilities: DeviceCapabilities,
     allowedPassthrough: Set<PassthroughFormat>,
     matchFrameRate: Boolean,
+    audioOffsetMillis: Int = 0,
+    allowDolbyVision: Boolean = true,
 ) : VideoPlayer {
     private val main = Handler(Looper.getMainLooper())
     private val httpFactory =
@@ -70,7 +73,7 @@ class ExoVideoPlayer(
 
     private val exo: ExoPlayer =
         ExoPlayer
-            .Builder(context, Renderers(context, capabilities, allowedPassthrough))
+            .Builder(context, Renderers(context, capabilities, allowedPassthrough, audioOffsetMillis, allowDolbyVision))
             .setMediaSourceFactory(
                 DefaultMediaSourceFactory(
                     httpFactory,
@@ -467,10 +470,13 @@ class ExoVideoPlayer(
         context: Context,
         private val capabilities: DeviceCapabilities,
         private val allowed: Set<PassthroughFormat>,
+        private val audioOffsetMillis: Int,
+        allowDolbyVision: Boolean,
     ) : DefaultRenderersFactory(context) {
         init {
             setEnableDecoderFallback(true)
-            val dolbyVision = DynamicRange.DolbyVision in capabilities.display.hdr
+            // « Dolby Vision autorisé » off (`SPEC.md` § 4.16): never the Dolby Vision decoder either.
+            val dolbyVision = allowDolbyVision && DynamicRange.DolbyVision in capabilities.display.hdr
             setMediaCodecSelector { mimeType, secure, tunneling ->
                 if (mimeType == MimeTypes.VIDEO_DOLBY_VISION && !dolbyVision) {
                     emptyList()
@@ -497,12 +503,20 @@ class ExoVideoPlayer(
                             super.getFormatSupport(formatConfig)
                         }
                 }
-            return DefaultAudioSink
-                .Builder(context)
-                .setEnableFloatOutput(enableFloatOutput)
-                .setEnableAudioOutputPlaybackParameters(enableAudioOutputPlaybackParams)
-                .setAudioOutputProvider(output)
-                .build()
+            val sink =
+                DefaultAudioSink
+                    .Builder(context)
+                    .setEnableFloatOutput(enableFloatOutput)
+                    .setEnableAudioOutputPlaybackParameters(enableAudioOutputPlaybackParams)
+                    .setAudioOutputProvider(output)
+                    .build()
+            if (audioOffsetMillis == 0) return sink
+            // « Décalage audio »: the picture follows the clock of the sound; a clock ahead of the
+            // sound heard shows each picture sooner, so the sound comes later than the picture.
+            return object : ForwardingAudioSink(sink) {
+                override fun getCurrentPositionUs(sourceEnded: Boolean): Long =
+                    AudioOffset.clock(super.getCurrentPositionUs(sourceEnded), audioOffsetMillis)
+            }
         }
 
         private companion object {

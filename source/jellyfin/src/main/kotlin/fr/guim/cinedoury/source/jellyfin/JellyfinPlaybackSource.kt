@@ -47,17 +47,18 @@ internal class JellyfinPlaybackSource(
 
     // Jellyfin 12 only takes the token in this header (CLAUDE.md, « Pièges »): ExoPlayer sends it
     // with every request for the stream, the subtitles and the preview pictures.
-    override val streamHeaders: Map<String, String> =
-        mapOf(
-            "Authorization" to
-                AuthorizationHeaderBuilder.buildHeader(
-                    clientName = api.clientInfo.name,
-                    clientVersion = api.clientInfo.version,
-                    deviceId = api.deviceInfo.id,
-                    deviceName = api.deviceInfo.name,
-                    accessToken = api.accessToken,
-                ),
-        )
+    override val streamHeaders: Map<String, String>
+        get() =
+            mapOf(
+                "Authorization" to
+                    AuthorizationHeaderBuilder.buildHeader(
+                        clientName = api.clientInfo.name,
+                        clientVersion = api.clientInfo.version,
+                        deviceId = api.deviceInfo.id,
+                        deviceName = api.deviceInfo.name,
+                        accessToken = api.accessToken,
+                    ),
+            )
 
     override suspend fun playbackInfo(request: PlaybackInfoRequest): PlaybackStream =
         jellyfinCall(what = "playback of ${request.item.value}") {
@@ -98,9 +99,12 @@ internal class JellyfinPlaybackSource(
         request: PlaybackInfoRequest,
     ): PlaybackStream {
         val transcoding = transcodingUrl
+        // « Lecture directe forcée »: the file itself, whatever the server would have made of it; the
+        // fallback to transcoding still follows a failure of the player.
+        val forced = request.forceDirect && request.allowDirect && !supportsDirectPlay
         val method =
             when {
-                supportsDirectPlay -> PlayMethod.DirectPlay
+                supportsDirectPlay || forced -> PlayMethod.DirectPlay
                 transcoding == null -> throw SourceException.Unplayable("Neither direct play nor transcoding")
                 supportsDirectStream -> PlayMethod.DirectStream
                 else -> PlayMethod.Transcode
@@ -122,6 +126,7 @@ internal class JellyfinPlaybackSource(
         return PlaybackStream(
             url = url,
             method = method,
+            // Forced: what the server would have done, and why, stays visible in the information.
             reasons = transcoding?.let(::reasonsOf).orEmpty(),
             playSessionId = playSessionId,
             source = toModel(),
@@ -131,7 +136,12 @@ internal class JellyfinPlaybackSource(
                 mediaStreams.orEmpty().filter { it.type == MediaStreamType.SUBTITLE }.map { stream ->
                     SubtitleDelivery(
                         index = stream.index,
-                        method = stream.deliveryMethod?.toModel() ?: SubtitleMethod.Embed,
+                        method =
+                            when {
+                                forced && stream.isExternal == true -> SubtitleMethod.External
+                                forced -> SubtitleMethod.Embed
+                                else -> stream.deliveryMethod?.toModel() ?: SubtitleMethod.Embed
+                            },
                         url = stream.deliveryUrl?.let { if (stream.isExternalUrl == true) it else absolute(it) },
                         codec = stream.codec,
                     )

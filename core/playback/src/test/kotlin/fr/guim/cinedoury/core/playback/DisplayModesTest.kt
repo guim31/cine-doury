@@ -28,4 +28,22 @@ class DisplayModesTest {
         assertNull(DisplayModes.choose(listOf(m60), m60, 23.976f))
         assertNull(DisplayModes.choose(listOf(m60, m24), m60, 0f))
     }
+
+    private val hd60 = ScreenMode(7, 1920, 1080, 60f)
+
+    @Test
+    fun `resolution matching - a 1080p film on a 4K screen takes the 1080p mode at its cadence`() {
+        val modes = listOf(m60, m23976, hd24, hd60)
+        assertEquals(hd24, DisplayModes.choose(modes, m60, 23.976f, videoHeight = 1080))
+        // Without frame rate matching, the 1080p mode closest to the current refresh rate.
+        assertEquals(hd60, DisplayModes.choose(modes, m60, 0f, videoHeight = 1080))
+    }
+
+    @Test
+    fun `resolution matching - a 4K film stays in 4K, a 720p film takes the smallest mode that holds it`() {
+        val modes = listOf(m60, m23976, hd24, hd60)
+        assertNull(DisplayModes.choose(modes, m60, 0f, videoHeight = 2160))
+        assertEquals(m23976, DisplayModes.choose(modes, m60, 23.976f, videoHeight = 1608))
+        assertEquals(hd60, DisplayModes.choose(modes, m60, 0f, videoHeight = 720))
+    }
 }

@@ -39,11 +39,13 @@ internal class RequestTrace : AbstractCoroutineContextElement(Key) {
 internal class TracingApiClient(
     private val delegate: ApiClient,
     private val io: CoroutineDispatcher,
+    /** The device as it introduces itself now: its name may change in the settings (J7). */
+    private val device: () -> DeviceInfo = { delegate.deviceInfo },
 ) : ApiClient() {
     override val baseUrl: String? get() = delegate.baseUrl
     override val accessToken: String? get() = delegate.accessToken
     override val clientInfo: ClientInfo get() = delegate.clientInfo
-    override val deviceInfo: DeviceInfo get() = delegate.deviceInfo
+    override val deviceInfo: DeviceInfo get() = device()
     override val httpClientOptions: HttpClientOptions get() = delegate.httpClientOptions
     override val webSocket: SocketApi get() = delegate.webSocket
 
@@ -68,6 +70,10 @@ internal class TracingApiClient(
         queryParameters: Map<String, Any?>,
         requestBody: Any?,
     ): RawResponse {
+        val current = device()
+        if (delegate.deviceInfo != current) {
+            delegate.update(delegate.baseUrl, delegate.accessToken, delegate.clientInfo, current)
+        }
         val trace = currentCoroutineContext()[RequestTrace]
         trace?.request = "$method $pathTemplate"
         trace?.status = null

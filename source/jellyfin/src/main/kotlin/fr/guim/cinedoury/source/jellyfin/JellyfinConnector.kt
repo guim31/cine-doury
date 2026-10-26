@@ -69,7 +69,13 @@ class JellyfinConnector internal constructor(
     // ASCII on purpose: the SDK copies the client name into User-Agent, where OkHttp rejects any
     // non-ASCII character (CLAUDE.md, « Pièges »).
     private val clientInfo = ClientInfo(name = CLIENT_NAME, version = identity.appVersion)
-    private val deviceInfo = DeviceInfo(id = identity.deviceId, name = identity.deviceName)
+
+    @Volatile
+    private var deviceInfo = DeviceInfo(id = identity.deviceId, name = identity.deviceName)
+
+    override fun setDeviceName(name: String) {
+        deviceInfo = deviceInfo.copy(name = name)
+    }
 
     override suspend fun serverInfo(address: ServerAddress): ServerInfo =
         jellyfinCall {
@@ -94,6 +100,7 @@ class JellyfinConnector internal constructor(
                 socketConnectionFactory = factory,
             ),
             io,
+            device = { deviceInfo },
         )
 
     override suspend fun publicUsers(address: ServerAddress): List<User> =

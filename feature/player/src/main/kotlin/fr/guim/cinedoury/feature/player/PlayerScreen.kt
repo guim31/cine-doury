@@ -126,13 +126,12 @@ fun PlayerRoute(
     CollectEvents(viewModel.closed) { onClose() }
     CollectEvents(viewModel.sessionEnded) { onSessionEnded() }
     KeepScreenOn()
+    val video = state.stream?.source?.video
     MatchFrameRate(
         LocalActivity.current,
-        state.stream
-            ?.source
-            ?.video
-            ?.frameRate,
+        video?.frameRate,
         state.settings.matchFrameRate,
+        videoHeight = video?.height?.takeIf { state.settings.matchResolution },
     )
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.pause() }
     PlayerScreen(
