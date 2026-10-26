@@ -253,7 +253,13 @@ internal fun Remote.signInIfNeeded() {
  * « Toujours demander »): OK on the first profile, signed in, opens its home.
  */
 internal fun Remote.waitHome() {
-    waitUntil("the home or the profiles", SIGN_IN_TIMEOUT) { has(HOME_PLAY) || has(PROFILE_0) }
+    val shown = runCatching { waitUntil("the home or the profiles", SIGN_IN_TIMEOUT) { homeOrProfiles() } }.isSuccess
+    if (!shown) {
+        // « Le serveur ne répond pas » (the test server, loaded, missed an answer): OK on « Réessayer »,
+        // which has the focus, as a user would.
+        press(KeyEvent.KEYCODE_DPAD_CENTER)
+        waitUntil("the home or the profiles, after « Réessayer »", SIGN_IN_TIMEOUT) { homeOrProfiles() }
+    }
     if (!has(HOME_PLAY)) {
         waitFocusIn(PROFILE_0, nudge = KeyEvent.KEYCODE_DPAD_LEFT)
         press(KeyEvent.KEYCODE_DPAD_CENTER, pause = 0)
@@ -261,6 +267,8 @@ internal fun Remote.waitHome() {
     waitFor(HOME_PLAY, SIGN_IN_TIMEOUT)
     waitFocusIn(HOME_PLAY, SIGN_IN_TIMEOUT)
 }
+
+private fun Remote.homeOrProfiles() = has(HOME_PLAY) || has(PROFILE_0)
 
 /** From the home, into the rail and onto the library named [name] (a name given by the server). */
 internal fun Remote.openLibrary(name: String) {

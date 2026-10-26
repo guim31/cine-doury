@@ -1365,13 +1365,70 @@ leur place. Avant / après : `docs/screenshots/perf/rail-avant.png`, `rail-apres
 - **Accueil** : le titre focalisé n'est plus lu au sommet de l'écran, mais par le bandeau et les
   fonds seulement ; un pas du focus ne recompose plus l'accueil et ses rangées.
 - **Cartes** : une seule animation de focus par carte (la légende la partage) au lieu de deux.
+- **Éléments partagés** : seule la carte focalisée en dernier porte la transition affiche → fiche
+  (`sharedPosterSource`) ; une grille en portait une par carte, chacune avec son calque et son état
+  dans la scène de transition, même sans transition en cours.
+
+**Effets allégés** : aucun. Le halo flou (`BlurMaskFilter`), le fond d'ambiance (BlurHash 32 × 18),
+le fondu du bandeau et la transition d'éléments partagés sont gardés : la mesure de l'orchestrateur
+montre un GPU sain (90e percentile à 10 ms sur la Shield), et le coût était sur le fil principal. Si
+le Chromecast montre encore des images lentes au GPU (`dumpsys gfxinfo`, « Slow issue draw
+commands »), la première candidate est le halo, dessinable en contour sans flou pour les cartes
+(le rail a déjà le sien réduit).
+
+**Pour le J7 et le J8** :
+- J7 : seule la `signingConfig` de `release` doit changer (clé de release, hors du dépôt) ; garder
+  `isMinifyEnabled`, `isShrinkResources`, `-dontobfuscate` et le bloc `baselineProfile`. Après le
+  changement de clé, l'APK de release ne s'installe plus par-dessus celui de débogage : le dire
+  dans les notes de version. Le rapport de diagnostic peut citer les piles telles quelles (pas de
+  renommage).
+- J8 : régénérer les profils (`[record-profiles]`) après tout changement notable des écrans ;
+  retirer `BEFORE_REF` de `ci.yml` (la comparaison avec l'avant ne vaut que pour cette PR) ;
+  les mesures sur appareil remplacent celles de l'émulateur pour décider d'alléger un effet.
 
 **Mesures** (Macrobenchmark, `NavigationBenchmarks`, émulateur Android TV API 34 de la CI, rendu
 logiciel : comparer les colonnes entre elles, jamais avec un vrai appareil) :
 
-MESURES
+Médianes de `NavigationBenchmarks` (5 démarrages, 3 passages par parcours). Run
+[40403784211](https://github.com/guim31/cine-doury/actions/runs/40403784211) (tentative 3), un seul
+émulateur pour les trois colonnes :
+- **avant, débogage** : l'APK de débogage installé jusqu'ici (code de `main`) ;
+- **avant, optimisé** : le même code en version optimisée (R8, profils des bibliothèques) ;
+- **après** : la version optimisée de cette PR. Elle n'avait pas encore le profil propre à l'appli :
+  il a été enregistré par ce même run (`c5a1f70`).
 
-**À mesurer sur les appareils** (après la fusion) : voir le rapport de la PR #10.
+| Mesure | Avant, débogage | Avant, optimisé | Après |
+|---|---|---|---|
+| Démarrage à froid, première image (`timeToInitialDisplay`) | 1 012 ms | 505 ms | 496 ms |
+| Démarrage à froid jusqu'à l'accueil chargé, profil choisi (`timeToFullDisplay`) | 4 406 ms | 3 266 ms | 3 291 ms |
+| Accueil à la croix : temps CPU par image, P50 / P90 / P99 | 174 / 273 / 382 ms | 164 / 250 / 302 ms | 172 / 266 / 335 ms |
+| Accueil → bibliothèque → fiche → retour : P50 / P90 / P99 | 108 / 208 / 409 ms | 112 / 181 / 333 ms | 113 / 170 / 305 ms |
+| Grille, touche maintenue : P50 / P90 / P99 | 102 / 145 / 183 ms¹ | 106 / 140 / 253 ms | 107 / 144 / 266 ms² |
+
+¹ Sur 78 images seulement (10 par passage pour 2 passages sur 3) : l'APK de débogage ne suit pas la
+touche maintenue, il dessine peu d'images. ² Run 40400044303 : 134 / 176 / 272 ms, contre
+130 / 168 / 218 ms pour « avant, optimisé ».
+
+Lecture :
+- **La version optimisée divise par deux le premier affichage** (1 012 → 496 ms) et retire
+  plus d'une seconde au démarrage jusqu'à l'accueil. Sur les parcours, elle fait baisser surtout les
+  pires images (P99 de 382 à 302 ms sur l'accueil, de 409 à 305 ms vers la fiche), et l'APK de
+  débogage dessine beaucoup moins d'images pour le même geste (accueil : 95 contre 115 à 126 ;
+  grille : 10 à 58 contre 96). Ce sont les saccades signalées.
+- **Sur l'émulateur, les corrections du code ne se distinguent pas de « avant, optimisé »** : les
+  écarts (± 5 %) sont dans le bruit d'un run à l'autre. L'émulateur de la CI dessine en logiciel
+  (SwiftShader), ce qui domine le temps de chaque image (plus de 100 ms) ; une recomposition
+  évitée y pèse peu. Leur effet est à mesurer sur les appareils.
+- Les temps absolus ne disent rien d'un vrai appareil ; seul l'ordre entre colonnes compte.
+
+**À mesurer sur les appareils** (après la fusion, mêmes gestes que l'orchestrateur le 26/10) :
+installer `cine-doury-release-apk` par-dessus l'APK de débogage (`adb install -r`), lancer l'appli
+une fois, puis `adb shell cmd package compile -m speed-profile -f fr.guim.cinedoury` ; vérifier
+`dumpsys package fr.guim.cinedoury` (plus de `DEBUGGABLE`, `status=speed-profile`). Puis
+`adb shell dumpsys gfxinfo fr.guim.cinedoury reset`, la même session de navigation, et
+`dumpsys gfxinfo fr.guim.cinedoury` : images en retard, percentiles 50/90/95/99, « Slow UI
+thread », « High input latency ». Sur la Shield en 4K, vérifier en plus que l'accueil montre
+exactement les captures du 1080p (`am get-config` inchangé : `w1920dp-h1080dp`).
 
 ## 5. Tests et CI
 
