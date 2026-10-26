@@ -267,7 +267,9 @@ internal fun Remote.openLibrary(name: String) {
     press(KeyEvent.KEYCODE_DPAD_LEFT)
     waitFocusIn(RAIL)
     repeat(RAIL_ENTRIES) {
-        if (focusedText(RAIL) == name) {
+        // What accessibility says lags the focus a little: wait for it to say the entry.
+        val reached = runCatching { waitUntil("$name focused", FOCUS_SETTLE) { focusedText(RAIL) == name } }.isSuccess
+        if (reached) {
             press(KeyEvent.KEYCODE_DPAD_CENTER)
             waitFor(LIBRARY_ITEMS, SIGN_IN_TIMEOUT)
             waitFocusIn(LIBRARY_ITEMS, SIGN_IN_TIMEOUT, nudge = KeyEvent.KEYCODE_DPAD_DOWN)
@@ -299,3 +301,4 @@ internal const val FILMS = "Films"
 private const val SIGN_IN_TIMEOUT = 30_000L
 private const val DISCOVERY_TIMEOUT = 20_000L
 private const val RAIL_ENTRIES = 8
+private const val FOCUS_SETTLE = 1_500L

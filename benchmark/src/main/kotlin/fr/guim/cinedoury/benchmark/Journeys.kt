@@ -25,7 +25,7 @@ internal object Journeys {
         waitFor(DETAILS)
         press(KeyEvent.KEYCODE_DPAD_DOWN)
         press(KeyEvent.KEYCODE_BACK)
-        waitFocusIn(LIBRARY_ITEMS)
+        waitFor(LIBRARY_ITEMS)
         press(KeyEvent.KEYCODE_BACK)
         waitHome()
     }
