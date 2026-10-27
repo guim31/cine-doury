@@ -42,6 +42,7 @@ private val PillShape = RoundedCornerShape(percent = 50)
  * button on the screen. It takes the focus when the screen opens.
  *
  * @param destructive a deletion: `danger` background (`dangerButton`) instead of the accent (`UI.md` § 8).
+ * @param small the size of the player, over the picture (« Passer l'intro », essai réel 3).
  */
 @Composable
 fun PrimaryButton(
@@ -53,6 +54,7 @@ fun PrimaryButton(
     focusRequester: FocusRequester? = null,
     focus: CineFocus = rememberCineFocus(),
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
+    small: Boolean = false,
 ) {
     val colors = CineTheme.colors
     val pressed by interactionSource.collectIsPressedAsState()
@@ -63,14 +65,16 @@ fun PrimaryButton(
             else -> colors.accent
         }
     val content = if (destructive) colors.text else colors.onAccent
+    // The player's is smaller all round: its height, its margins, its icon and its label.
+    val padding = if (small) CineSpacing.m else CineSpacing.l
     Row(
         modifier =
             modifier
-                .height(CineSizes.buttonHeight)
+                .height(if (small) CineSizes.playerButtonHeight else CineSizes.buttonHeight)
                 .withFocusRequester(focusRequester)
                 .cineFocusable(focus, PillShape, CineScale.BUTTON, onClick, interactionSource = interactionSource)
                 .background(background)
-                .padding(start = if (icon != null) CineSpacing.m else CineSpacing.l, end = CineSpacing.l),
+                .padding(start = if (icon != null) padding - CineSpacing.xs else padding, end = padding),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(CineSpacing.xs),
     ) {
@@ -79,10 +83,15 @@ fun PrimaryButton(
                 imageVector = icon,
                 contentDescription = null,
                 tint = content,
-                modifier = Modifier.size(CineSizes.icon),
+                modifier = Modifier.size(if (small) CineSizes.playerIcon else CineSizes.icon),
             )
         }
-        Text(text = text, style = CineTheme.typography.label, color = content, maxLines = 1)
+        Text(
+            text = text,
+            style = if (small) CineTheme.typography.caption else CineTheme.typography.label,
+            color = content,
+            maxLines = 1,
+        )
     }
 }
 
@@ -129,6 +138,8 @@ fun SecondaryButton(
  * A secondary action: a round icon button on `surface-2`, whose [label] appears under it only
  * while it has the focus (`UI.md` § 8, « Fiche »). The label does not take part in the layout
  * width, so a row of buttons keeps its rhythm.
+ *
+ * @param small the size of the player's controls, over the picture (essai réel 3).
  */
 @Composable
 fun RoundIconButton(
@@ -140,6 +151,7 @@ fun RoundIconButton(
     focusRequester: FocusRequester? = null,
     focus: CineFocus = rememberCineFocus(),
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
+    small: Boolean = false,
 ) {
     val colors = CineTheme.colors
     val focused = focus.isFocused
@@ -152,7 +164,7 @@ fun RoundIconButton(
         Box(
             modifier =
                 Modifier
-                    .size(CineSizes.roundButton)
+                    .size(if (small) CineSizes.playerRoundButton else CineSizes.roundButton)
                     .withFocusRequester(focusRequester)
                     .cineFocusable(focus, CircleShape, CineScale.BUTTON, onClick, interactionSource = interactionSource)
                     // TalkBack: the label (the icon's description) and, for a favourite or « vu », its state.
@@ -169,7 +181,7 @@ fun RoundIconButton(
                         selected -> colors.accent
                         else -> colors.text
                     },
-                modifier = Modifier.size(CineSizes.icon),
+                modifier = Modifier.size(if (small) CineSizes.playerIcon else CineSizes.icon),
             )
         }
         Text(

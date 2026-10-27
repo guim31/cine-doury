@@ -615,6 +615,7 @@ private fun Controls(
             label = stringResource(if (state.playing) R.string.player_pause else R.string.player_play),
             onClick = actions::togglePlay,
             focus = rememberCineFocus(PlayerPreview.PLAY),
+            small = true,
             modifier = Modifier.testTag(PlayerPreview.PLAY).logFocus(PlayerPreview.PLAY),
         )
         if (state.chapters.isNotEmpty()) {
@@ -623,6 +624,7 @@ private fun Controls(
                 label = stringResource(R.string.player_chapters),
                 onClick = { onPanel(PlayerPanel.Chapters) },
                 focus = rememberCineFocus(PlayerPreview.CHAPTERS),
+                small = true,
                 modifier = Modifier.testTag(PlayerPreview.CHAPTERS).logFocus(PlayerPreview.CHAPTERS),
             )
         }
@@ -631,6 +633,7 @@ private fun Controls(
             label = stringResource(R.string.player_tracks),
             onClick = { onPanel(PlayerPanel.Tracks) },
             focus = rememberCineFocus(PlayerPreview.TRACKS),
+            small = true,
             modifier = Modifier.testTag(PlayerPreview.TRACKS).logFocus(PlayerPreview.TRACKS),
         )
         RoundIconButton(
@@ -638,6 +641,7 @@ private fun Controls(
             label = stringResource(R.string.player_subtitle_size),
             onClick = { onPanel(PlayerPanel.SubtitleSize) },
             focus = rememberCineFocus(PlayerPreview.SUBTITLES),
+            small = true,
             modifier = Modifier.testTag(PlayerPreview.SUBTITLES).logFocus(PlayerPreview.SUBTITLES),
         )
         if (!state.trailer) {
@@ -646,6 +650,7 @@ private fun Controls(
                 label = stringResource(R.string.player_quality),
                 onClick = { onPanel(PlayerPanel.Quality) },
                 focus = rememberCineFocus(PlayerPreview.QUALITY),
+                small = true,
                 modifier = Modifier.testTag(PlayerPreview.QUALITY).logFocus(PlayerPreview.QUALITY),
             )
         }
@@ -654,6 +659,7 @@ private fun Controls(
             label = stringResource(R.string.player_settings),
             onClick = { onPanel(PlayerPanel.Settings) },
             focus = rememberCineFocus(PlayerPreview.SETTINGS),
+            small = true,
             modifier = Modifier.testTag(PlayerPreview.SETTINGS).logFocus(PlayerPreview.SETTINGS),
         )
         RoundIconButton(
@@ -662,6 +668,7 @@ private fun Controls(
             onClick = actions::toggleInfo,
             selected = state.info != null,
             focus = rememberCineFocus(PlayerPreview.INFO),
+            small = true,
             modifier = Modifier.testTag(PlayerPreview.INFO_BUTTON).logFocus(PlayerPreview.INFO_BUTTON),
         )
     }
@@ -718,6 +725,7 @@ private fun Corner(
                 onClick = actions::skipSegment,
                 focusRequester = requester,
                 focus = rememberCineFocus(PlayerPreview.SKIP),
+                small = true,
                 modifier = modifier.then(padding).testTag(PlayerPreview.SKIP),
             )
             LaunchedEffect(skip) {
