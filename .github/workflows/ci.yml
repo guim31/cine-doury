@@ -304,6 +304,7 @@ jobs:
             emulator-release.png
             emulator-release-logcat.txt
             couch-gestures.md
+            couch-gestures.md.logcat.txt
           if-no-files-found: ignore
 
   profiles:

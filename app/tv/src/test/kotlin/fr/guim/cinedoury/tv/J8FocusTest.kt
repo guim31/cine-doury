@@ -1,6 +1,7 @@
 package fr.guim.cinedoury.tv
 
 import android.os.Looper
+import android.util.Log
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.ExperimentalTestApi
@@ -58,6 +59,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowLog
 import java.io.File
 import java.util.UUID
 
@@ -205,6 +207,20 @@ class J8FocusTest {
         assertSomethingFocused("the sort panel")
         back()
         assertFocusOn("the library, the panel closed", LibraryPreview.SORT)
+    }
+
+    /**
+     * `ci/couch-gestures.sh` waits for these lines of the log (`GestureLog`), written only once
+     * `log.tag.CineDoury` is DEBUG: a screen drawn, a key received.
+     */
+    @Test
+    fun theAppLogsWhatTheCouchGesturesWaitFor() {
+        ShadowLog.setLoggable(LOG_TAG, Log.DEBUG)
+        start()
+        press(Key.DirectionDown)
+        val lines = ShadowLog.getLogsForTag(LOG_TAG).map { it.msg }
+        check("gesture screen Home" in lines) { "No « gesture screen Home » in $lines" }
+        check(lines.any { it.startsWith("gesture key ") }) { "No key in $lines" }
     }
 
     private fun start() {

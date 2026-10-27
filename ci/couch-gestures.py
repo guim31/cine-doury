@@ -28,6 +28,8 @@ import threading
 import time
 import xml.etree.ElementTree as ElementTree
 
+LOG_LINE = re.compile(r"^\s*(\d+\.\d+)\s+.*?CineDoury\s*:\s+gesture (.+)$")
+
 KEY = {
     "up": "KEYCODE_DPAD_UP",
     "down": "KEYCODE_DPAD_DOWN",
@@ -77,44 +79,53 @@ class Device:
     # logcat ---------------------------------------------------------------------------------------
 
     def start_log(self):
-        self.shell(f"setprop log.tag.CineDoury DEBUG")
-        self.adb("logcat", "-c")
-        self.reader = subprocess.Popen(
-            ["adb", "-s", self.serial, "logcat", "-v", "epoch", "-s", "CineDoury:D"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
-            text=True,
-        )
-        threading.Thread(target=self._read, daemon=True).start()
+        self.shell("setprop log.tag.CineDoury DEBUG")
+        self.adb("logcat", "-c", check=False)
 
     def stop_log(self):
-        self.reader.terminate()
         self.shell("setprop log.tag.CineDoury ''", check=False)
 
-    def _read(self):
-        pattern = re.compile(r"^\s*(\d+\.\d+)\s+.*CineDoury\s*:\s+gesture (.+)$")
-        for line in self.reader.stdout:
-            match = pattern.match(line)
+    def refresh(self):
+        """Reads the lines of the app logged since the start (`adb logcat -d`: a dump, not a stream)."""
+        out = self.adb("logcat", "-d", "-v", "epoch", "-s", "CineDoury:D", check=False, timeout=30)
+        events = []
+        for line in out.splitlines():
+            match = LOG_LINE.match(line)
             if match:
-                with self.lock:
-                    self.events.append((float(match.group(1)), match.group(2).strip()))
+                events.append((float(match.group(1)), match.group(2).strip()))
+        with self.lock:
+            # The buffer only grows while the script runs: keep what was read, add what is new.
+            if len(events) >= len(self.events):
+                self.events = events
+
+    def diagnose(self):
+        """What the device says when the app is silent: for the message of a failure."""
+        lines = [
+            "log.tag.CineDoury = " + self.shell("getprop log.tag.CineDoury", check=False).strip(),
+            self.shell("dumpsys activity activities | grep -E 'ResumedActivity|topResumed' | head -3", check=False).strip(),
+            self.adb("logcat", "-d", "-v", "epoch", "-t", "30", "-s", "CineDoury:V", "AndroidRuntime:E", check=False).strip(),
+        ]
+        return "\n".join(lines)
 
     def mark(self):
         """Where the events of what follows start."""
+        self.refresh()
         with self.lock:
             return len(self.events)
 
     def wait_event(self, predicate, since, timeout=TIMEOUT, what=""):
         end = time.monotonic() + timeout
         while time.monotonic() < end:
+            self.refresh()
             with self.lock:
                 for at, event in self.events[since:]:
                     if predicate(event):
                         return at
-            time.sleep(0.05)
+            time.sleep(0.2)
         raise Failed(f"no « {what} » in the log after {timeout:.0f} s")
 
     def last_key(self, since):
+        self.refresh()
         with self.lock:
             keys = [at for at, event in self.events[since:] if event.startswith("key ")]
         return keys[-1] if keys else None
@@ -275,7 +286,10 @@ class Couch:
             d.shell(f"am force-stop {d.package}")
         since = d.mark()
         d.shell(f"am start -n {d.package}/{d.package}.tv.MainActivity")
-        first, at = self.next_screen(since, ("Home", "Profiles", "Pin", "Unreachable"))
+        try:
+            first, at = self.next_screen(since, ("Home", "Profiles", "Pin", "Unreachable"))
+        except Failed as failure:
+            raise Failed(f"{failure}\n{d.diagnose()}") from failure
         if first == "Profiles":
             # « Qui regarde ? » (its default, « Toujours demander »): OK on the profile focused, the last one.
             d.wait_ui(lambda s: s.focus_tag("profile-"), what="un profil focalisé")
@@ -734,7 +748,8 @@ def table(results):
     ]
     for number, name, presses, expected, total, response, target, status, approximate in results:
         approx = "≈ " if approximate and total is not None else ""
-        verdict = status
+        # One line in the table: the detail of a failure is in the output of the script.
+        verdict = status.splitlines()[0].replace("|", "/")
         if response is not None and status.startswith("ok") and response > target:
             verdict = f"{status}, au-delà de la cible"
         lines.append(
@@ -788,6 +803,9 @@ def main():
     if args.out:
         with open(args.out, "w", encoding="utf-8") as out:
             out.write(report)
+        # The whole log of the session beside it, for a gesture that failed.
+        with open(args.out + ".logcat.txt", "w", encoding="utf-8") as out:
+            out.write(device.adb("logcat", "-d", "-v", "epoch", check=False, timeout=60))
     failed = [r for r in couch.results if r[7].startswith("échec")]
     sys.exit(1 if failed else 0)
 
