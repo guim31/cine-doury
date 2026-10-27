@@ -295,7 +295,10 @@ class RemoteInputTest {
                 onRetry = {},
             )
         }
-        // The server is asked: no focus yet, rather than on « Autre compte ».
+        // The server is asked: no focus yet, rather than on « Autre compte », even when a key or the
+        // window asks for one (the keyboard of the address that closes, on the emulator).
+        compose.onAllNodes(isFocused()).assertCountEquals(0)
+        press(Key.DirectionDown)
         compose.onAllNodes(isFocused()).assertCountEquals(0)
 
         compose.runOnIdle { state = ProfilesState(J1Samples.profiles, loading = false) }
