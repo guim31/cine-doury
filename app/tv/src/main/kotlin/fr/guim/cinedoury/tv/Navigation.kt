@@ -115,8 +115,12 @@ sealed interface Route {
     data object Catalog : Route
 }
 
-/** The name of the screen in the logs of `ci/couch-gestures.sh`: `Home`, `Details`, `Player`… */
-val Route.name: String get() = this::class.simpleName.orEmpty()
+/**
+ * The name of the screen in the logs of `ci/couch-gestures.sh`: `Home`, `Details`, `Player`… From the
+ * class name, not `simpleName`: R8 drops the attribute of inner classes, and `simpleName` then says
+ * `Route$Home`.
+ */
+val Route.name: String get() = javaClass.name.substringAfterLast('.').substringAfterLast('$')
 
 /** A screen in the back stack, with its own view models: they go when the screen goes. */
 class BackStackEntry(
