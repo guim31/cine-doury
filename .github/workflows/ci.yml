@@ -307,9 +307,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
-      # The app before perf/fluidite (main and the benchmark harness only), measured on the same
-      # emulator as the app now (SPEC.md § 4.16). Empty: only the app now.
-      BEFORE_REF: 6010840b06f331a9f8e7882173904968d6dcb326
+      # A commit to measure as "before" on the same emulator as the app now, for a PR that compares
+      # (perf/fluidite used 6010840b06f331a9f8e7882173904968d6dcb326, SPEC.md § 4.16). Empty: only
+      # the app now.
+      BEFORE_REF: ''
     permissions:
       # Only used to commit the profiles when the head commit asks for it with [record-profiles].
       contents: write
