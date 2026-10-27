@@ -21,8 +21,9 @@ son domaine :
 | Essai réel 1 (25/10/2026, Chromecast avec Google TV) : connexion, Quick Connect, saisie à la télécommande, « Plus d'infos », journal | terminé, fusionné (§ 4.13 ; captures 35 et 36) | [#6](https://github.com/guim31/cine-doury/pull/6) |
 | J6 — Gestion (P0, plus éléments à problème et actions en série) | terminé, fusionné (§ 4.14 ; captures dans `docs/screenshots/j6/`, numéros 130 à 147) | [#8](https://github.com/guim31/cine-doury/pull/8) |
 | Essai réel 2 (26/10/2026, NVIDIA Shield TV, Android 11) : plantage à la première image (API Java absente de l'API 30), clavier resté ouvert, garde-fou Animal Sniffer, émulateur de la CI en API 30 et 34 | terminé, fusionné (§ 4.15) | [#9](https://github.com/guim31/cine-doury/pull/9) |
-| Fluidité (partie performances du J8) : APK optimisé (R8, Baseline et Startup Profiles), `:benchmark` (Macrobenchmark, profils), mise en page à 960 × 540 dp sur toute TV (Shield en 4K), rail, recompositions | terminé, en revue (§ 4.16 ; captures dans `docs/screenshots/perf/` et `j6/`) | [#10](https://github.com/guim31/cine-doury/pull/10) |
-| J7 — Réglages et mise à jour (pages de réglages P0, mise à jour proposée depuis les releases, publication signée, rapport de diagnostic) | en revue (§ 4.17 à 4.19 ; captures dans `docs/screenshots/j7/`, numéros 150 à 174) | voir la PR `feat/j7-reglages` |
+| Fluidité (partie performances du J8) : APK optimisé (R8, Baseline et Startup Profiles), `:benchmark` (Macrobenchmark, profils), mise en page à 960 × 540 dp sur toute TV (Shield en 4K), rail, recompositions | terminé, fusionné (§ 4.16 ; captures dans `docs/screenshots/perf/` et `j6/`) | [#10](https://github.com/guim31/cine-doury/pull/10) |
+| J7 — Réglages et mise à jour (pages de réglages P0, mise à jour proposée depuis les releases, publication signée, rapport de diagnostic) | terminé, fusionné (§ 4.17 à 4.19 ; captures dans `docs/screenshots/j7/`, numéros 150 à 174) | [#11](https://github.com/guim31/cine-doury/pull/11) |
+| J8 — Finitions 1.0 (coût GPU, petits appareils, profils et mesures, accessibilité, captures 4K et grand texte, 20 gestes au canapé, 1.0.0 prête à étiqueter) | en revue (§ 4.20 ; captures dans `docs/screenshots/j8/`, numéros 180 à 198) | [#13](https://github.com/guim31/cine-doury/pull/13) |
 
 *(Chaque jalon met à jour ce tableau et ajoute ses contrats au § 4.)*
 
@@ -456,7 +457,7 @@ arrive. Une case qui entre à l'écran demande sa page, et la suivante passé le
 états immuables (`@Immutable`), un nouvel objet seulement quand il change ; images des cartes
 mémorisées (`rememberArt`) pour ne pas passer une lambda neuve à chaque composition ; animation du
 focus lue au dessin, jamais en composition ; fondus du bandeau et du fond indexés par identifiant ;
-un seul fond d'ambiance (BlurHash 32 × 18). Mesures sur la Shield au J8 (Macrobenchmark).
+un seul fond d'ambiance (BlurHash 32 × 18). Mesures sur la Shield : § 4.16 et § 4.20.
 
 **Captures** (`docs/screenshots/j2/`, 1920 × 1080, sombre et noir OLED) : accueil, bandeau sur un
 épisode à reprendre (40) et sur un film (41), rail ouvert (42), squelettes (43), « Quitter » (44),
@@ -637,7 +638,7 @@ qui la montre ; sur la fiche, le héros).
   (processeur ≈ 4 à 5 fois plus lent pour l'analyse JSON, serveur sur un NAS) pour le premier
   remplissage, en arrière-plan ; ensuite, une mise à jour ne relit que ce qui a changé (quelques
   secondes) ; un filtre ≈ 50 ms sur la Shield, plus une requête d'identifiants (≈ 600 Ko pour 1 500
-  films). À mesurer sur la Shield au J8.
+  films). À mesurer sur la Shield (§ 4.20, « À vérifier sur appareil »).
 - **Migration 2 → 3** : automatique (`@AutoMigration`, trois tables ajoutées), testée par
   `CineDatabaseMigrationTest` (base créée d'après `2.json`, index SQL compris).
 
@@ -885,7 +886,7 @@ d'un bloc) et les pistes (78, 79 : pastilles). Le lecteur provisoire (86) dispar
   qualité choisie pendant la lecture vaut pour la séance, la qualité par défaut est un réglage du J7.
 - Le passage d'un Dolby Vision profil 5 sur un appareil qui ne le décode pas passe par le
   transcodage du serveur (tone mapping) ; seul le profil 8 se replie sur HEVC dans l'appareil.
-- Rien n'a encore été mesuré sur la Shield (60 images/s, cadence, passthrough réel) : c'est le J8.
+- Cadence, passthrough réel et HDR sur la Shield : § 4.20, « À vérifier sur appareil ».
 - Sous-titres incrustés par le serveur : ni taille ni position ne changent (voir plus haut).
 
 **Retouches du J3** :
@@ -1059,7 +1060,7 @@ la section « Recherche ».
   reconnaisseur existe.
 - L'image proxy de Seerr (`/imageproxy/tmdb`) n'existe pas sur un Overseerr ancien : les cartes y sont
   générées. À vérifier sur le Seerr de la maison.
-- Rien n'est mesuré sur la Shield (temps de la recherche locale sur 11 500 titres, J8).
+- Temps de la recherche locale sur 11 500 titres : § 4.20, « À vérifier sur appareil ».
 ### 4.13 Essai réel 1 : diagnostic et saisie (25/10/2026)
 
 Premier essai sur un appareil réel (Chromecast avec Google TV, Android 14, Gboard) branché au
@@ -1388,7 +1389,8 @@ commands »), la première candidate est le halo, dessinable en contour sans flo
   renommage).
 - J8 : régénérer les profils (`[record-profiles]`) après tout changement notable des écrans ;
   retirer `BEFORE_REF` de `ci.yml` (la comparaison avec l'avant ne vaut que pour cette PR) ;
-  les mesures sur appareil remplacent celles de l'émulateur pour décider d'alléger un effet.
+  les mesures sur appareil remplacent celles de l'émulateur pour décider d'alléger un effet. Fait au
+  J8 (§ 4.20) ; `BEFORE_REF` y désigne `main` d'avant le J8, le temps de sa PR.
 
 **Mesures** (Macrobenchmark, `NavigationBenchmarks`, émulateur Android TV API 34 de la CI, rendu
 logiciel : comparer les colonnes entre elles, jamais avec un vrai appareil) :
@@ -1605,6 +1607,155 @@ Sous-titres.
 - La première release publiée et signée (et donc la première mise à jour réelle) attend la clé et les
   secrets posés par le mainteneur.
 
+### 4.20 Finitions 1.0 (J8, 27/10/2026)
+
+**Point de départ** : mesures de l'orchestrateur sur la Shield (Android 11, 4K, version optimisée de
+`main` après le J7, `dumpsys gfxinfo`, parcours à la télécommande) : accueil 15 % d'images en retard
+(8 / 19 / 23 / 32 ms), « Slow UI thread » 24, **GPU 8 / 18 / 22 / 24 ms** ; fiche 11 % en retard, GPU
+au 90e percentile 20 ms ; démarrage à froid 1,3 s jusqu'à « Qui regarde ? » (0,6 s à chaud). Le fil
+principal n'est plus le goulot depuis § 4.16 : c'est le **GPU**, qui remplit un écran 4K.
+
+**Coût GPU, sans changer l'aspect** :
+- **Halo de focus** (`FocusHalo`) : le `BlurMaskFilter` était flouté par le GPU à chaque image de
+  l'animation du focus, sur tout le contour de la carte. Il est désormais flouté **une fois**, en
+  logiciel, dans un bitmap partagé par taille de carte (cache de 24 entrées) et découpé comme un
+  9-patch : les coins tels quels, les bords droits étirés (le flou y est le même tout du long). Une
+  affiche, une vignette, un bouton : une petite image chacun, quelle que soit leur longueur. Il est
+  préparé à la résolution du 1080p au plus (`TvLayout.imageScale`, 0,5 en 4K : 4 fois moins de
+  mémoire, invisible sur un flou de 14 dp). Captures : écart d'au plus 2/255 sur un canal, aucun
+  pixel au-delà (03 à 07, 150).
+- **Fond d'ambiance** : l'assombrissement de 60 % (`CineAmbient.DIM_ALPHA`) était un rectangle plein
+  écran dessiné à chaque image par-dessus le BlurHash ; il est fondu une fois dans les 32 × 18 pixels
+  du BlurHash (ou dans les deux couleurs d'un dégradé), en sRGB comme le GPU : une couche plein écran
+  de moins. Captures identiques à 2/255 près, sauf l'antialiasing de quelques bords (< 0,01 % des
+  pixels).
+- **Laissés tels quels**, après lecture : les voiles de lisibilité et les dégradés du bandeau sont
+  déjà construits une fois par taille (`drawWithCache`) ; le masque du bandeau (`bannerFade`) est un
+  calque hors écran que HWUI garde tant que l'image ne change pas (une texture par image, pas un
+  nouveau rendu) ; les ombres (`shadowElevation`) sont analytiques dans HWUI.
+- **Mesure sur l'émulateur** : l'émulateur de la CI dessine en logiciel (SwiftShader, hors de
+  l'invité) ; `dumpsys gfxinfo` n'y donne pas de temps GPU utilisable, et `FrameTimingMetric` ne voit
+  que le temps CPU des images (`frameDurationCpuMs`) et leur dépassement (`frameOverrunMs`, API 31+).
+  Le job « Baseline Profile and benchmarks » mesure la version optimisée de `main` (avant) et celle
+  de cette PR (après) sur le même émulateur (`BEFORE_REF`) ; le gain sur le GPU réel ne se lit que sur
+  la Shield (`docs/MESURES.md`).
+
+MESURES_J8
+
+**Appareils faibles** (Chromecast avec Google TV : armeabi-v7a, 2 Go, Android 14) :
+- `ImageBudget` (`:core:designsystem`) fixe les caches de Coil d'après `ActivityManager` : mémoire
+  25 % du tas (`memoryClass`), disque 256 Mo et 6 cartes de la rangée suivante chargées d'avance ; tas
+  sous 192 Mo : 20 %, 128 Mo, 3 cartes ; appareil « low RAM » (`isLowRamDevice`) : 15 %, 64 Mo,
+  **aucun préchargement** (il chasserait du cache ce que montre l'écran). Avant, Coil prenait 20 % du
+  tas et 2 % du disque, et l'accueil préchargeait toujours 6 cartes. Le rapport de diagnostic donne le
+  tas, « low RAM » et les ABI.
+- **Bibliothèques natives** : l'APK n'en a que deux, `libandroidx.graphics.path.so` et
+  `libdatastore_shared_counter.so`, présentes pour les quatre ABI (armeabi-v7a, arm64-v8a, x86,
+  x86_64) ; Media3 et Room (SQLite du système) n'en apportent pas. `ci/check-apk.sh` (job « Build »)
+  échoue si une bibliothèque arm64 n'a pas sa version 32 bits, et publie la taille de l'APK. Rien
+  dans le code ne suppose 64 bits (tailles de fichiers et positions en `Long`).
+- **Taille de l'APK optimisé** : TAILLE_APK
+
+**Profils et mesures** :
+- `BaselineProfileGenerator` parcourt en plus une fiche ouverte depuis l'accueil, les réglages, la
+  page « Appareil » et l'écran de mise à jour (J7) ; les profils sont régénérés (`[record-profiles]`).
+- `NavigationBenchmarks` gagne **`openDetails`** (OK sur la première carte de l'accueil) et
+  **`openSettings`** (OK sur « Réglages » dans le rail) : `TraceSectionMetric` sur les sections
+  asynchrones `CineDoury.openDetails` et `CineDoury.openSettings` que l'appli ouvre à la touche
+  (`Navigator.push`) et ferme à la première image de l'écran (`OpeningTrace`), plus `FrameTimingMetric`.
+  Gratuit hors d'une trace ; Perfetto les montre aussi sur un appareil.
+- Entrées du rail étiquetées (`RailTags` : `rail-search`, `rail-home`, `rail-library-<id>`,
+  `rail-profiles`, `rail-settings`) : les tests et les scripts les trouvent sans lire leur libellé,
+  qui suit la langue.
+
+**Accessibilité** (`FONCTIONNALITES.md` § 13) :
+- **Contrastes** : `ContrastTest` calcule le rapport WCAG 2.2 de chaque paire des jetons, sombre et
+  noir OLED : `texte`, `texte-2`, `texte-3` et `accent` sur `fond`, `surface-1`, `surface-2` ; texte sur
+  l'accent (normal et pressé) ; `danger` sur `fond` et `surface-1` ; `succès` ; `fond` sur `texte`
+  (ligne focalisée) ; texte sur les panneaux et les voiles du lecteur et sur le fond d'ambiance,
+  au-dessus d'une image blanche ; le contour du focus (3:1, élément d'interface). Seuil 4,5:1 (texte),
+  3:1 (contour). **Corrigé** : `texte-3` passe de `#6E7480` (4,2:1 sur `fond`, 3,4:1 sur `surface-2`) à
+  `#858B96` (4,7:1 au pire) ; le texte d'un bouton destructif était à 3,5:1 sur `danger` : son fond
+  passe à `dangerButton` `#C9373C` (4,6:1), `danger` reste le rouge du texte. Les éléments désactivés
+  (`surface-3`, flèches éteintes d'un pas à pas) sont exemptés par WCAG.
+- **Focus toujours visible** : `J8FocusTest` (appli entière sur une source en mémoire) ouvre l'accueil,
+  chaque entrée du rail (Recherche, une bibliothèque, Réglages, « Qui regarde ? »), une fiche, la
+  boîte « Quitter », un panneau de bibliothèque, et vérifie qu'un élément a le focus après chaque
+  ouverture et chaque « Retour ». **Défaut trouvé et corrigé** : « Retour » sur un panneau de
+  bibliothèque (Trier, Filtres, Affichage, Gérer) rendait le focus au rail ; il revient au bouton du
+  panneau, comme « Fermer ». Au retour d'une fiche ouverte par « Fiche » du bandeau, le focus revient
+  sur « Lire » (premier bouton du bandeau) : choix gardé.
+- **TalkBack** : les entrées du rail ne sont plus lues deux fois (l'icône répétait le libellé) et
+  disent laquelle est ouverte (`selected`) ; une carte avec image dit son titre et sa ligne secondaire
+  (sa légende est hors de la partie focalisable) ; les boutons ronds gardent leur libellé (description
+  de l'icône), leur légende visible au focus n'est plus lue en double, un favori ou « vu » actif est
+  `selected` ; une case de sélection dit son état ; les lignes des réglages sont des boutons, des
+  interrupteurs (`Role.Switch`, état) ou des choix (`Role.RadioButton`, `selected`) ; les titres d'écran
+  et de rangée sont des titres (`heading()`, `Modifier.asHeading()`). Fonds, halos, voiles, BlurHash et
+  illustrations restent sans description.
+- **Taille du texte** au plus grand réglage (130 %), captures 190 à 198 : les titres d'écran (« Affiche »,
+  « Titre 1 ») grandissent de 15 % au plus (`HEADING_MAX_SCALE`, **écart** au § 4.17 : à 130 %,
+  « Apparence » se coupait en « Apparenc/e » dans sa colonne) ; la barre d'une bibliothèque passe sur
+  deux lignes au lieu de sortir de l'écran (`FlowRow`) ; les touches du clavier de recherche gardent leur
+  taille et réduisent leur libellé (`TextAutoSize`, jusqu'à 14 sp) ; le nom d'un profil tient sur deux
+  lignes ; l'explication d'une ligne de réglage sur trois. Restent coupés, par construction et à toute
+  taille : la légende d'une carte (une ligne, le titre complet est sur la fiche) et le synopsis replié
+  (dépliable par OK).
+
+**Captures** (`docs/screenshots/j8/`) : les écrans clés en **4K** (qualificateurs d'une Shield,
+`w1920dp-h1080dp-xhdpi`, 3840 × 2160, mis en page sur 960 × 540 dp) : « Qui regarde ? » (180), accueil
+(181), bibliothèque (182), fiche film (183), fiche série (184), lecteur et son interface (185), recherche
+(186), une page de réglages (187), mise à jour (188) ; les mêmes en 1080p au texte « Très grande »
+(190 à 198) ; sombre et noir OLED. Toutes les captures 1080p existaient déjà en sombre et en noir OLED.
+Avant / après des changements d'aspect : `avant-*.png` et `apres-*.png` (bibliothèque 50, suppression
+137, « Qui regarde ? » 25, Apparence 159).
+
+**Changements d'aspect** (voulus, vérifiés sur les captures) :
+- `texte-3` plus clair ; fond des boutons destructifs plus sombre (contrastes AA) ;
+- barre d'une bibliothèque sur deux lignes quand elle ne tient pas sur une : c'était déjà le cas en
+  1080p avec trois onglets et quatre boutons (capture 50 : « Affichage » réduit à son icône, rogné) ;
+- explication d'une ligne de réglage sur trois lignes au plus (deux avant).
+
+**Les 20 gestes au canapé** : `docs/GESTES.md` (gestes, appuis, cibles) et `ci/couch-gestures.sh
+ADB_SERIAL` : touches par `adb shell input keyevent`, fin de chaque geste lue dans le journal de
+l'appli (`GestureLog` : touche reçue, écran dessiné, image qui bouge, interface et panneaux du lecteur,
+focus dans le lecteur, sous-titres choisis), muet sauf après `adb shell setprop log.tag.CineDoury
+DEBUG`, ou à défaut dans `uiautomator dump` ; aucun titre supposé, gestes impossibles sautés, rien
+changé sur le serveur. Joué par le job « Emulator » en API 34 contre le Jellyfin de test (temps
+indicatifs, résumé du job).
+
+**Version 1.0.0** : `CHANGELOG.md` (une section par étape, du point de vue de qui regarde),
+`docs/releases/v1.0.0.md` (notes publiées par `release.yml`), README (installation par la release,
+mise à jour, passage depuis un APK de débogage). L'étiquette `v1.0.0` est posée par le mainteneur.
+
+**À vérifier sur appareil** (l'orchestrateur, avec `docs/MESURES.md` et `docs/GESTES.md`) :
+1. Shield, version optimisée de ce jalon : `dumpsys gfxinfo` sur l'accueil, la fiche, la grille ;
+   comparer le **GPU** au 27/10 (accueil 8 / 18 / 22 / 24 ms) ; images en retard sous 5 % visées.
+2. Chromecast avec Google TV : mêmes mesures, démarrage à froid sous 2 s (`FONCTIONNALITES` § 13),
+   `dumpsys meminfo` après 5 min, `memoryClass` et « low RAM » dans le rapport de diagnostic.
+3. `ci/couch-gestures.sh` sur la Shield et le Chromecast ; reporter les tableaux dans `docs/GESTES.md`.
+4. Ouverture d'une fiche sous 300 ms (geste 13, ou Perfetto `CineDoury.openDetails`).
+5. Lecteur (§ 4.11) : cadence de l'écran adaptée, HDR10 et Dolby Vision, passthrough vers l'ampli
+   (AC3, E-AC3, TrueHD, DTS), décalage audio en passthrough (§ 4.17), résolution adaptée.
+6. Index local (§ 4.10) : premier remplissage sur la vraie bibliothèque (estimé 2 à 4 min sur la
+   Shield), filtre HDR ; recherche locale sur ≈ 11 500 titres (§ 4.12).
+7. Mise à jour (§ 4.18) : la première release signée, puis une 1.0.1 proposée et installée par
+   `PackageInstaller`, l'autorisation « Sources inconnues » sur Google TV et sur Shield ; passage
+   depuis un APK de débogage (désinstallation, README).
+8. TalkBack activé sur le Chromecast : rail, cartes, réglages (interrupteurs, choix) lus comme ici.
+9. Taille du texte « Très grande » sur la Shield en 4K : écrans des captures 190 à 198.
+10. Seerr de la maison : affiches par `/imageproxy/tmdb` (§ 4.12), demande d'un film.
+11. Mention de licence du SDK Jellyfin (LGPL) dans « À propos » : confirmée par le mainteneur (§ 4.3).
+12. Shield (§ 4.15) : clavier fermé après la saisie d'une adresse puis OK sur un profil public.
+
+**Limites connues** :
+- Aucune mesure GPU possible en CI (rendu logiciel) : le gain du halo et de l'ambiance se lit sur la
+  Shield ; si le GPU y reste au-delà de 16 ms au 90e percentile, les candidats suivants sont le masque
+  du bandeau (un calque hors écran plein écran, 33 Mo en 4K) et les deux voiles de lisibilité.
+- Les temps de `ci/couch-gestures.sh` comptent l'envoi des touches par `adb` (0,1 à 0,3 s chacune) dans
+  le total ; la réponse (dernier appui → écran) est la mesure à comparer.
+- Le retour d'une fiche ouverte par « Fiche » du bandeau rend le focus à « Lire », pas à « Fiche ».
+
 ## 5. Tests et CI
 
 - GitHub Actions sur `ubuntu-latest` :
@@ -1618,7 +1769,9 @@ Sous-titres.
     installation et démarrage, lecture directe et transcodée, connexion à la télécommande (§ 4.15) ;
     puis l'APK optimisé, installé par-dessus, connexion et lecture (§ 4.16) ;
   - **profils et mesures** (émulateur API 34) : Baseline et Startup Profiles (`[record-profiles]`),
-    Macrobenchmark de l'appli avant et après (§ 4.16) ; artefact `cine-doury-release-apk`.
+    Macrobenchmark de l'appli avant et après (§ 4.16, § 4.20) ; artefact `cine-doury-release-apk` ;
+  - **contenu de l'APK optimisé** : bibliothèques 32 bits et taille (`ci/check-apk.sh`, § 4.20) ;
+  - **20 gestes au canapé** sur l'émulateur API 34 (`ci/couch-gestures.sh`, § 4.20, indicatif).
   - `concurrency` avec `cancel-in-progress`, `timeout-minutes`, cache Gradle.
 - **Jellyfin de test** : conteneur de service `jellyfin/jellyfin:12.3.20261023-013714`.
   - Un script d'amorçage versionné fait l'assistant de démarrage, crée les utilisateurs (un administrateur, un profil enfant), les bibliothèques et des collections.
