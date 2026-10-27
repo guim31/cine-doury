@@ -21,6 +21,8 @@ internal object Journeys {
         openLibrary(FILMS)
         repeat(GRID_ROWS) { press(KeyEvent.KEYCODE_DPAD_DOWN) }
         repeat(GRID_COLUMNS) { press(KeyEvent.KEYCODE_DPAD_RIGHT) }
+        // OK on a card of the grid, not on what the keys reached past it.
+        waitFocusIn(LIBRARY_ITEMS)
         press(KeyEvent.KEYCODE_DPAD_CENTER)
         waitFor(DETAILS)
         press(KeyEvent.KEYCODE_DPAD_DOWN)

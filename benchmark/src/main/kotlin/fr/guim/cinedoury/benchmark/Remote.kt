@@ -175,14 +175,23 @@ internal class Remote(
     }
 
     /** What the screen shows, for the message of a failure. */
-    fun screen(): String =
-        ByteArrayOutputStream()
-            .also { device.dumpWindowHierarchy(it) }
-            .toString()
-            .lineSequence()
-            .filter { "resource-id=\"\"" !in it || "text=\"\"" !in it || "focused=\"true\"" in it }
-            .take(SCREEN_LINES)
-            .joinToString("\n")
+    fun screen(): String {
+        val lines =
+            ByteArrayOutputStream()
+                .also { device.dumpWindowHierarchy(it) }
+                .toString()
+                .lines()
+        // The focused nodes first: a large screen fills the first lines before reaching them (essai
+        // réel 3, the grid of a library under its bar).
+        val focused = lines.filter { "focused=\"true\"" in it }.map { "FOCUSED ${it.trim()}" }
+        return (
+            focused +
+                lines
+                    .asSequence()
+                    .filter { "resource-id=\"\"" !in it || "text=\"\"" !in it || "focused=\"true\"" in it }
+                    .take(SCREEN_LINES)
+        ).joinToString("\n")
+    }
 
     companion object {
         const val TIMEOUT = 15_000L
