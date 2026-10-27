@@ -4,6 +4,7 @@ on:
   pull_request:
   push:
     branches: [main]
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
@@ -13,6 +14,39 @@ permissions:
   contents: read
 
 jobs:
+  # A pull request runs the fast CI: build and analysis, screenshots, integration and the API 30
+  # emulator. The API 34 emulator (and the couch gestures), the profiles and the benchmarks run on a
+  # push to main, on workflow_dispatch, or when the head commit of the PR says [full-ci];
+  # [record-profiles] runs the job of the profiles too (CLAUDE.md).
+  mode:
+    name: What this run covers
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      api-levels: ${{ steps.mode.outputs.api-levels }}
+      profiles: ${{ steps.mode.outputs.profiles }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Mode
+        id: mode
+        run: |
+          message=$(git log -1 --format=%B)
+          full=false
+          if [ "${{ github.event_name }}" != "pull_request" ] || grep -qF '[full-ci]' <<< "$message"; then
+            full=true
+          fi
+          profiles=$full
+          if grep -qF '[record-profiles]' <<< "$message"; then profiles=true; fi
+          if [ "$full" = true ]; then
+            echo "api-levels=[30, 34]" >> "$GITHUB_OUTPUT"
+          else
+            echo "api-levels=[30]" >> "$GITHUB_OUTPUT"
+          fi
+          echo "profiles=$profiles" >> "$GITHUB_OUTPUT"
+          echo "Full CI: $full, profiles and benchmarks: $profiles"
+
   build:
     name: Build, static analysis, unit tests
     runs-on: ubuntu-latest
@@ -212,14 +246,15 @@ jobs:
 
   emulator:
     name: Install, start, play and sign in (debug and optimised APKs) on an API ${{ matrix.api-level }} TV emulator
-    needs: build
+    needs: [build, mode]
     runs-on: ubuntu-latest
     timeout-minutes: 50
     strategy:
       fail-fast: false
       matrix:
         # 30: minSdk, Android 11 (NVIDIA Shield TV, the reference device). 34: Chromecast with Google TV.
-        api-level: [30, 34]
+        # 34 only in the full CI (job mode).
+        api-level: ${{ fromJSON(needs.mode.outputs.api-levels) }}
     services:
       jellyfin:
         image: jellyfin/jellyfin:12.3.20261023-013714
@@ -309,7 +344,8 @@ jobs:
 
   profiles:
     name: Baseline Profile and benchmarks on an API 34 TV emulator
-    needs: build
+    needs: [build, mode]
+    if: needs.mode.outputs.profiles == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:

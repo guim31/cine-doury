@@ -51,6 +51,8 @@ ci/couch-gestures.sh <adresse>:5555 --out gestes-shield.md
 ci/couch-gestures.sh <adresse>:5555 --only 11,12,13,16   # quelques gestes (ils peuvent dépendre des précédents)
 ```
 
+Sur la CI, il ne tourne que dans la CI complète (`[full-ci]`, `main`), avec l'émulateur API 34.
+
 Le script active pour la séance le journal de mesure de l'appli
 (`adb shell setprop log.tag.CineDoury DEBUG`, remis à la fin) : chaque touche reçue, chaque écran
 dessiné, l'image qui bouge. Il attend ces lignes ou, à défaut, ce que montre l'écran
@@ -68,6 +70,6 @@ Lecture du tableau :
 
 | Date | Appareil | Version | Tableau |
 |---|---|---|---|
-| 27/10/2026 | émulateur Android TV API 34 de la CI (rendu logiciel, indicatif) | J8 | résumé du job « Emulator » (API 34), artefact `emulator-api34` |
+| 27/10/2026 | émulateur Android TV API 34 de la CI (rendu logiciel, indicatif) | J8 (`24243cb`) | résumé du job « Emulator » (API 34), artefact `emulator-api34` ; sur le profil de la CI, sautés : 12, 15 (non administrateur), 20 (pas d'« À suivre ») |
 | à faire | NVIDIA Shield TV | 1.0.0 | |
 | à faire | Chromecast avec Google TV | 1.0.0 | |

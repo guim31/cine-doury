@@ -23,7 +23,7 @@ son domaine :
 | Essai réel 2 (26/10/2026, NVIDIA Shield TV, Android 11) : plantage à la première image (API Java absente de l'API 30), clavier resté ouvert, garde-fou Animal Sniffer, émulateur de la CI en API 30 et 34 | terminé, fusionné (§ 4.15) | [#9](https://github.com/guim31/cine-doury/pull/9) |
 | Fluidité (partie performances du J8) : APK optimisé (R8, Baseline et Startup Profiles), `:benchmark` (Macrobenchmark, profils), mise en page à 960 × 540 dp sur toute TV (Shield en 4K), rail, recompositions | terminé, fusionné (§ 4.16 ; captures dans `docs/screenshots/perf/` et `j6/`) | [#10](https://github.com/guim31/cine-doury/pull/10) |
 | J7 — Réglages et mise à jour (pages de réglages P0, mise à jour proposée depuis les releases, publication signée, rapport de diagnostic) | terminé, fusionné (§ 4.17 à 4.19 ; captures dans `docs/screenshots/j7/`, numéros 150 à 174) | [#11](https://github.com/guim31/cine-doury/pull/11) |
-| J8 — Finitions 1.0 (coût GPU, petits appareils, profils et mesures, accessibilité, captures 4K et grand texte, 20 gestes au canapé, 1.0.0 prête à étiqueter) | en revue (§ 4.20 ; captures dans `docs/screenshots/j8/`, numéros 180 à 198) | [#13](https://github.com/guim31/cine-doury/pull/13) |
+| J8 — Finitions 1.0 (coût GPU, petits appareils, profils et mesures, accessibilité, captures 4K et grand texte, 20 gestes au canapé, 1.0.0 prête à étiqueter) | prêt, en revue (§ 4.20 ; captures dans `docs/screenshots/j8/`, numéros 180 à 198 ; CI complète verte sur `24243cb`) | [#13](https://github.com/guim31/cine-doury/pull/13) |
 
 *(Chaque jalon met à jour ce tableau et ajoute ses contrats au § 4.)*
 
@@ -1756,7 +1756,17 @@ l'appli (`GestureLog` : touche reçue, écran dessiné, image qui bouge, interfa
 focus dans le lecteur, sous-titres choisis), muet sauf après `adb shell setprop log.tag.CineDoury
 DEBUG`, ou à défaut dans `uiautomator dump` ; aucun titre supposé, gestes impossibles sautés, rien
 changé sur le serveur. Joué par le job « Emulator » en API 34 contre le Jellyfin de test (temps
-indicatifs, résumé du job).
+indicatifs, résumé du job). **Rouge de l'après-midi du 27/10** : la cause n'était pas l'appli mais le
+script et l'émulateur. Les étiquettes des réglages (`setting-<Section>` pour la ligne,
+`settings-<Section>` pour la page), le tampon de logcat qui tourne pendant la lecture, et le clavier
+de la TV resté attaché après les tests de connexion, qui garde certains « Retour » : le script
+réappuie. CI complète verte ensuite (`24243cb`).
+
+**CI rapide** (écart au § 5, décidé avec le mainteneur le 27/10 : les jobs sur émulateur API 34
+prennent 40 min et plus) : une PR ne lance que construction, analyse et tests, captures,
+intégration et l'émulateur API 30. L'émulateur API 34 (et les gestes), les profils et les mesures
+tournent sur un push vers `main`, sur `workflow_dispatch`, ou quand le commit de tête de la PR
+contient `[full-ci]` ; `[record-profiles]` lance aussi le job des profils (job `mode` de `ci.yml`).
 
 **Version 1.0.0** : `CHANGELOG.md` (une section par étape, du point de vue de qui regarde),
 `docs/releases/v1.0.0.md` (notes publiées par `release.yml`), README (installation par la release,
@@ -1806,6 +1816,9 @@ mise à jour, passage depuis un APK de débogage). L'étiquette `v1.0.0` est pos
     Macrobenchmark de l'appli avant et après (§ 4.16, § 4.20) ; artefact `cine-doury-release-apk` ;
   - **contenu de l'APK optimisé** : bibliothèques 32 bits et taille (`ci/check-apk.sh`, § 4.20) ;
   - **20 gestes au canapé** sur l'émulateur API 34 (`ci/couch-gestures.sh`, § 4.20, indicatif).
+  - **CI rapide sur une PR** (§ 4.20) : l'émulateur API 34, les gestes, les profils et les mesures
+    ne tournent que sur `main`, sur `workflow_dispatch` ou avec `[full-ci]` dans le commit de tête
+    (`[record-profiles]` pour les profils).
   - `concurrency` avec `cancel-in-progress`, `timeout-minutes`, cache Gradle.
 - **Jellyfin de test** : conteneur de service `jellyfin/jellyfin:12.3.20261023-013714`.
   - Un script d'amorçage versionné fait l'assistant de démarrage, crée les utilisateurs (un administrateur, un profil enfant), les bibliothèques et des collections.

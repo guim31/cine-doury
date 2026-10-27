@@ -31,6 +31,7 @@ d'un serveur Jellyfin 12.3. Elle réunit tout ce qui suit, de J0 à J8.
 - Le rapport de diagnostic dit la mémoire de l'appareil et ses architectures.
 - Mesures : ouverture d'une fiche et des réglages, captures 4K et grand texte, 20 gestes au canapé
   chronométrés ([`docs/GESTES.md`](docs/GESTES.md)).
+- Profils de démarrage et de navigation régénérés (fiche, réglages, mise à jour compris).
 
 ## J7 — Réglages et mise à jour (27/10/2026)
 

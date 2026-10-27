@@ -17,6 +17,7 @@ dès qu'un piège est découvert.**
 
 - Un jalon = une branche `feat/j<N>-<sujet>` = une PR vers `main`. Ne jamais pousser sur `main`.
 - **Ne jamais fusionner sa propre PR** et **ne jamais lancer d'autre session** : l'orchestrateur fusionne une PR à la fois et enchaîne les jalons.
+- **CI rapide** (J8) : sur une PR, seulement construction/analyse/tests, Roborazzi, intégration et l'émulateur **API 30**. L'émulateur API 34 (et les gestes au canapé), « Baseline Profile and benchmarks » ne tournent que sur un push vers `main`, sur `workflow_dispatch`, ou si le commit de tête de la PR contient **`[full-ci]`** ; `[record-profiles]` lance aussi le job des profils. Mettre `[full-ci]` dans le dernier commit d'un jalon qui touche lecteur, navigation ou performances.
 - Avant chaque push : `./gradlew check` vert en local. Après chaque push, lire la CI de la PR et corriger jusqu'au vert. En session cloud, les outils du serveur MCP GitHub ne passent pas par le proxy :
   - `mcp__github__actions_list` pour les exécutions ;
   - `mcp__github__get_job_logs` pour les journaux ;
