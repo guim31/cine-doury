@@ -257,11 +257,15 @@ class Couch:
         return self.d.wait_event(self.screen_event(name), since, timeout, f"écran {name}")
 
     def recover(self):
-        """Back to the home, « Lire » focused, from wherever a failed gesture left the app."""
+        """Back to the home, « Lire » focused, from wherever a failed gesture left the app; at worst
+        the app is started again."""
         try:
             self.home()
-        except Failed:
-            self.start(cold=False)
+        except (Failed, Skip, subprocess.TimeoutExpired):
+            try:
+                self.start(cold=True)
+            except (Failed, Skip, subprocess.TimeoutExpired) as failure:
+                print(f"    (l'appli ne revient pas à l'accueil : {failure})", flush=True)
 
     def start(self, cold):
         """Starts the app (from nothing when [cold]) to its home, through « Qui regarde ? » if it asks;
@@ -300,16 +304,18 @@ class Couch:
         """From anywhere in the app: « Retour » until the home, then « Lire »."""
         d = self.d
         for _ in range(12):
-            s = d.screen()
+            root = d.dump()
+            if root is None:
+                # The player, never still for uiautomator: « Retour » leaves it.
+                d.press("back")
+                continue
+            s = Screen(root)
             if s.has("quit-dialog"):
                 d.press("back")
             elif s.has("home"):
                 if s.focus_in("home-play"):
                     return
-                if s.focus_in("rail"):
-                    d.press("right")
-                else:
-                    d.press("back")
+                d.press("right" if s.focus_tag("rail") else "back")
             else:
                 d.press("back")
         raise Failed("impossible de revenir à l'accueil")
@@ -512,7 +518,12 @@ class Couch:
 
     def g12_scroll_grid(self, since):
         d = self.d
-        first = d.wait_ui(lambda s: s.focus_tag("item-"), what="une carte de la grille")
+        try:
+            first = d.wait_ui(lambda s: s.focus_tag("item-"), timeout=5, what="une carte de la grille")
+        except Failed:
+            # The focus stayed on the rail: → enters the grid.
+            d.press("right")
+            first = d.wait_ui(lambda s: s.focus_tag("item-"), what="une carte de la grille")
         start = int(first.removeprefix("item-"))
         d.press(*["down"] * 5)
         moved = d.wait_ui(lambda s: s.focus_tag("item-"), what="une carte de la grille")
