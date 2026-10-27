@@ -179,7 +179,7 @@ jobs:
           # Keeps the end of the log for the failure summary.
           add-job-summary: never
       - name: ffmpeg
-        run: sudo apt-get update -q && sudo apt-get install -y -q ffmpeg
+        run: ci/install-ffmpeg.sh
       - name: Generate the test media
         run: |
           sudo chown -R "$(id -u):$(id -g)" /tmp/cine-doury-media
@@ -250,7 +250,7 @@ jobs:
           cache-read-only: false
           add-job-summary: never
       - name: ffmpeg
-        run: sudo apt-get update -q && sudo apt-get install -y -q ffmpeg
+        run: ci/install-ffmpeg.sh
       - name: Generate the test media
         run: |
           sudo chown -R "$(id -u):$(id -g)" /tmp/cine-doury-media
@@ -362,7 +362,7 @@ jobs:
             echo "record=false" >> "$GITHUB_OUTPUT"
           fi
       - name: ffmpeg
-        run: sudo apt-get update -q && sudo apt-get install -y -q ffmpeg
+        run: ci/install-ffmpeg.sh
       - name: Generate the test media
         run: |
           sudo chown -R "$(id -u):$(id -g)" /tmp/cine-doury-media
