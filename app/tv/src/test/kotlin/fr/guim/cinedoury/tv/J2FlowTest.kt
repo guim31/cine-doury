@@ -13,6 +13,7 @@ import fr.guim.cinedoury.core.data.SessionManager
 import fr.guim.cinedoury.core.data.di.dataModule
 import fr.guim.cinedoury.core.data.security.TokenCipher
 import fr.guim.cinedoury.core.designsystem.theme.CineTheme
+import fr.guim.cinedoury.core.designsystem.theme.LayoutSize
 import fr.guim.cinedoury.core.designsystem.theme.ThemeVariant
 import fr.guim.cinedoury.core.model.ServerInfo
 import fr.guim.cinedoury.core.playback.playbackModule
@@ -127,7 +128,8 @@ class J2FlowTest {
     @Test
     fun `back from a details screen lands on the card left, on the home and in a library`() {
         compose.setTvContent {
-            CineTheme(ThemeVariant.Dark) {
+            // Four columns in the grid of the library: the size of `UI.md`.
+            CineTheme(ThemeVariant.Dark, layoutSize = LayoutSize.Large) {
                 CineApp(ThemeVariant.Dark, onToggleVariant = {}, showCatalog = false, navigator = Navigator(Route.Home))
             }
         }

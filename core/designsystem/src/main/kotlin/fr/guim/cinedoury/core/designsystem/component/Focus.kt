@@ -30,7 +30,7 @@ import androidx.compose.ui.unit.Dp
 import fr.guim.cinedoury.core.designsystem.theme.CineMotion
 import fr.guim.cinedoury.core.designsystem.theme.CineSizes
 import fr.guim.cinedoury.core.designsystem.theme.CineTheme
-import fr.guim.cinedoury.core.designsystem.theme.TvLayout
+import fr.guim.cinedoury.core.designsystem.theme.LocalImageScale
 
 /**
  * Whether an element holds the focus, updated synchronously by the focus system. Components read
@@ -172,6 +172,7 @@ internal fun Modifier.cineFocusDecoration(
     // Read only in the layer and draw phases: the animation never recomposes the element.
     val progress by progressState ?: focusProgress(focus)
     val colors = CineTheme.colors
+    val imageScale = LocalImageScale.current
     return this
         .graphicsLayer {
             val scale = 1f + (focusedScale - 1f) * progress
@@ -199,7 +200,7 @@ internal fun Modifier.cineFocusDecoration(
                     outline = outline,
                     blur = halo.toPx(),
                     color = colors.focusHalo.copy(alpha = 1f).toArgb(),
-                    scale = TvLayout.imageScale(density),
+                    scale = imageScale,
                 )
             }
             val outlineSize = Size(size.width + inset * 2f, size.height + inset * 2f)

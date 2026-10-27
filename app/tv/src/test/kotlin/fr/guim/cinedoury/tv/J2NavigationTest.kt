@@ -16,6 +16,7 @@ import fr.guim.cinedoury.core.data.library.LibraryState
 import fr.guim.cinedoury.core.data.library.LibraryTab
 import fr.guim.cinedoury.core.data.library.LibraryView
 import fr.guim.cinedoury.core.designsystem.theme.CineTheme
+import fr.guim.cinedoury.core.designsystem.theme.LayoutSize
 import fr.guim.cinedoury.core.designsystem.theme.ThemeVariant
 import fr.guim.cinedoury.core.model.ItemFilters
 import fr.guim.cinedoury.core.model.MediaItem
@@ -59,8 +60,12 @@ class J2NavigationTest {
         compose.waitForIdle()
     }
 
-    private fun show(content: @Composable () -> Unit) {
-        compose.setTvContent { CineTheme(ThemeVariant.Dark, content = content) }
+    /** [layoutSize]: the columns of a grid depend on it (« Taille de l'interface », essai réel 3). */
+    private fun show(
+        layoutSize: LayoutSize = LayoutSize.Default,
+        content: @Composable () -> Unit,
+    ) {
+        compose.setTvContent { CineTheme(ThemeVariant.Dark, layoutSize = layoutSize, content = content) }
         compose.waitForIdle()
     }
 
@@ -180,7 +185,8 @@ class J2NavigationTest {
     @Test
     fun `a library opens on the item left last time, and its grid goes item by item`() {
         val actions = LibraryRecorder()
-        show {
+        // Four columns in the size of `UI.md`.
+        show(LayoutSize.Large) {
             LibraryScreen(
                 state = J2Samples.library(LibraryState(position = 5)),
                 sources = J2Samples.noImages,

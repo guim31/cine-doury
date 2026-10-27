@@ -24,7 +24,7 @@ import kotlin.test.assertTrue
 
 /**
  * A Shield TV in 4K lays its apps out on 1920 × 1080 dp at xhdpi (3840 × 2160 pixels): the app must
- * still show the screen of the design, 960 × 540 dp (`SPEC.md` § 4.16). The library grid of J2,
+ * still show the screen of the design, the same as in 1080p (`SPEC.md` § 4.16 and § 4.21). The library grid of J2,
  * shot there, is the reference screenshot of 1080p at twice the size: once scaled down, the same
  * cards at the same places, pixel for pixel but for the edges of the letters.
  */
@@ -90,8 +90,12 @@ class TvLayoutScreenshotTest {
         /** Scaling smooths the edges of letters and shapes: a little difference there. */
         const val TOLERANCE = 48
 
-        /** The edges of the text and the shapes, never a card out of place (one is 3 % of the screen). */
-        const val MAX_DIFFERING = 0.01f
+        /**
+         * The edges of the text and the shapes, never a card out of place (one is 4 % of the screen).
+         * In « Compacte » (essai réel 3) 1080p has 1.6 pixels per dp: the edges fall between pixels
+         * there and not in 4K, 2 % of the pixels; 0.3 % at 2 pixels per dp.
+         */
+        const val MAX_DIFFERING = 0.025f
         const val PERCENT = 100
     }
 }

@@ -26,7 +26,7 @@
     <string name="theme_libraries">Libraries</string>
     <string name="theme_libraries_description">Order and visibility in the menu, icons, local index.</string>
     <string name="theme_appearance">Appearance</string>
-    <string name="theme_appearance_description">Dark or OLED black, reduced motion, text size.</string>
+    <string name="theme_appearance_description">Dark or OLED black, reduced motion, text and interface size.</string>
     <string name="theme_profile">Profile</string>
     <string name="theme_profile_description">PIN, profile at startup, switch profile.</string>
     <string name="theme_network">Network</string>
@@ -185,6 +185,11 @@
     <string name="text_normal">Normal</string>
     <string name="text_large">Large</string>
     <string name="text_larger">Larger</string>
+    <string name="appearance_interface">Interface size</string>
+    <string name="appearance_interface_description">More compact, each screen shows more posters and lines; larger, everything reads from further away.</string>
+    <string name="interface_compact">Compact</string>
+    <string name="interface_normal">Normal</string>
+    <string name="interface_large">Large</string>
 
     <string name="pin_set">Set a PIN</string>
     <string name="pin_change">Change the PIN</string>

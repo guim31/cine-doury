@@ -8,6 +8,7 @@ import com.github.takahirom.roborazzi.captureRoboImage
 import fr.guim.cinedoury.core.data.prefs.TextSize
 import fr.guim.cinedoury.core.designsystem.component.LocalPreviewFocus
 import fr.guim.cinedoury.core.designsystem.theme.CineTheme
+import fr.guim.cinedoury.core.designsystem.theme.LayoutSize
 import fr.guim.cinedoury.core.designsystem.theme.ThemeVariant
 import fr.guim.cinedoury.core.model.SearchGroup
 import fr.guim.cinedoury.core.ui.LocalClock
@@ -56,7 +57,7 @@ class J8Screenshot4kTest(
         name: String,
         focused: String?,
         content: @Composable () -> Unit,
-    ) = compose.shootJ8("$name-4k", variant, textScale = 1f, focused, content)
+    ) = compose.shootJ8("$name-4k", variant, textScale = 1f, focused, LayoutSize.Default, content)
 
     @Test
     fun profiles() = shoot("180-qui-regarde", AuthPreview.PROFILE) { KeyScreens.Profiles() }
@@ -109,7 +110,7 @@ class J8LargeTextScreenshotTest(
         name: String,
         focused: String?,
         content: @Composable () -> Unit,
-    ) = compose.shootJ8("$name-texte-130", variant, TextSize.Larger.scale, focused, content)
+    ) = compose.shootJ8("$name-texte-130", variant, TextSize.Larger.scale, focused, LayoutSize.Default, content)
 
     @Test
     fun profiles() = shoot("190-qui-regarde", AuthPreview.PROFILE) { KeyScreens.Profiles() }
@@ -146,7 +147,7 @@ class J8LargeTextScreenshotTest(
 }
 
 /** The key screens of `UI.md` § 12, on the samples of their own milestone. */
-private object KeyScreens {
+internal object KeyScreens {
     val SEARCH_FOCUS = SearchPreview.card(SearchRows.of(SearchGroup.Movies), 0)
 
     @Composable
@@ -167,6 +168,16 @@ private object KeyScreens {
     fun Library() =
         LibraryScreen(
             state = J2Samples.library(),
+            sources = J2Samples.noImages,
+            actions = NoLibraryActions,
+            navigation = NoLibraryNavigation,
+        )
+
+    /** A library seen by an administrator: « Gestion » in its bar (essai réel 3). */
+    @Composable
+    fun ManagedLibrary() =
+        LibraryScreen(
+            state = J2Samples.library().copy(rights = J6Samples.admin),
             sources = J2Samples.noImages,
             actions = NoLibraryActions,
             navigation = NoLibraryNavigation,
@@ -210,16 +221,20 @@ private object KeyScreens {
 
 private const val SETTLE_MILLIS = 1_000L
 
-/** Shoots [content] in [variant] with the text at [textScale], the element [focused] drawn as focused. */
-private fun ComposeContentTestRule.shootJ8(
+/**
+ * Shoots [content] in [variant] with the text at [textScale] and the interface at [layoutSize], the
+ * element [focused] drawn as focused.
+ */
+internal fun ComposeContentTestRule.shootJ8(
     name: String,
     variant: ThemeVariant,
     textScale: Float,
     focused: String?,
+    layoutSize: LayoutSize,
     content: @Composable () -> Unit,
 ) {
     setContent {
-        CineTheme(variant = variant, textScale = textScale) {
+        CineTheme(variant = variant, textScale = textScale, layoutSize = layoutSize) {
             CompositionLocalProvider(LocalPreviewFocus provides focused, LocalClock provides J3Samples.clock) {
                 SampleArt.Provide(content)
             }

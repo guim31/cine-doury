@@ -25,6 +25,7 @@ import fr.guim.cinedoury.core.designsystem.image.LocalImageBudget
 import fr.guim.cinedoury.core.designsystem.theme.CardPreferences
 import fr.guim.cinedoury.core.designsystem.theme.CineMotion
 import fr.guim.cinedoury.core.designsystem.theme.CineTheme
+import fr.guim.cinedoury.core.designsystem.theme.LayoutSize
 import fr.guim.cinedoury.core.designsystem.theme.ThemeVariant
 import fr.guim.cinedoury.core.source.SourceConnector
 import kotlinx.coroutines.flow.flowOf
@@ -66,6 +67,7 @@ class MainActivity : ComponentActivity() {
                     variant = variant,
                     reducedMotion = CineMotion.isReduced(appearance.reducedMotion, systemAnimatorScale()),
                     textScale = appearance.textSize.scale,
+                    layoutSize = LayoutSize.valueOf(appearance.interfaceSize.name),
                     cards =
                         CardPreferences(
                             alwaysShowTitles = browsing.posterTitles,

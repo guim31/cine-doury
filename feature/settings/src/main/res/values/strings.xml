@@ -27,7 +27,7 @@
     <string name="theme_libraries">Bibliothèques</string>
     <string name="theme_libraries_description">Ordre et visibilité dans le menu, icônes, index local.</string>
     <string name="theme_appearance">Apparence</string>
-    <string name="theme_appearance_description">Sombre ou noir OLED, animations réduites, taille du texte.</string>
+    <string name="theme_appearance_description">Sombre ou noir OLED, animations réduites, taille du texte et de l\'interface.</string>
     <string name="theme_profile">Profil</string>
     <string name="theme_profile_description">Code PIN, profil au démarrage, changer de profil.</string>
     <string name="theme_network">Réseau</string>
@@ -196,6 +196,11 @@
     <string name="text_normal">Normale</string>
     <string name="text_large">Grande</string>
     <string name="text_larger">Très grande</string>
+    <string name="appearance_interface">Taille de l\'interface</string>
+    <string name="appearance_interface_description">Plus compacte, chaque écran montre davantage d\'affiches et de lignes ; plus grande, tout se lit de plus loin.</string>
+    <string name="interface_compact">Compacte</string>
+    <string name="interface_normal">Normale</string>
+    <string name="interface_large">Grande</string>
 
     <!-- Profil -->
     <string name="pin_set">Définir un code PIN</string>

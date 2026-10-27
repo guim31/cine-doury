@@ -33,8 +33,9 @@ data class CardPreferences(
  * @param reducedMotion fades only (`UI.md` § 7): set from the settings or from the system.
  * @param textScale the size of the text against the scale of `UI.md` § 5 (« Taille du texte », J7).
  * @param cards what every card shows (« Accueil et navigation », J7).
- * @param tvLayout lays the content out on the 960 × 540 dp of the design, whatever the screen
+ * @param tvLayout lays the content out on the screen of the design, whatever the screen
  * ([TvLayoutDensity]).
+ * @param layoutSize the width of that screen (« Taille de l'interface », essai réel 3).
  */
 @Composable
 fun CineTheme(
@@ -43,10 +44,11 @@ fun CineTheme(
     textScale: Float = 1f,
     cards: CardPreferences = CardPreferences(),
     tvLayout: Boolean = true,
+    layoutSize: LayoutSize = LayoutSize.Default,
     content: @Composable () -> Unit,
 ) {
     if (tvLayout) {
-        TvLayoutDensity { CineThemeContent(variant, reducedMotion, textScale, cards, content) }
+        TvLayoutDensity(layoutSize) { CineThemeContent(variant, reducedMotion, textScale, cards, content) }
     } else {
         CineThemeContent(variant, reducedMotion, textScale, cards, content)
     }

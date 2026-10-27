@@ -7,6 +7,7 @@ import fr.guim.cinedoury.core.data.StartupMode
 import fr.guim.cinedoury.core.data.index.IndexStatus
 import fr.guim.cinedoury.core.data.library.LibraryView
 import fr.guim.cinedoury.core.data.library.icon
+import fr.guim.cinedoury.core.data.prefs.InterfaceSize
 import fr.guim.cinedoury.core.data.prefs.NetworkMode
 import fr.guim.cinedoury.core.data.prefs.TextSize
 import fr.guim.cinedoury.core.data.prefs.ThemeChoice
@@ -872,6 +873,23 @@ private fun appearanceItems(
                 )
             },
         ) { value -> actions.updateAppearance { it.copy(textSize = value) } },
+        choice(
+            "interface-size",
+            stringResource(R.string.appearance_interface),
+            stringResource(R.string.appearance_interface_description),
+            InterfaceSize.entries,
+            appearance.interfaceSize,
+            InterfaceSize.Compact,
+            {
+                stringResource(
+                    when (it) {
+                        InterfaceSize.Compact -> R.string.interface_compact
+                        InterfaceSize.Normal -> R.string.interface_normal
+                        InterfaceSize.Large -> R.string.interface_large
+                    },
+                )
+            },
+        ) { value -> actions.updateAppearance { it.copy(interfaceSize = value) } },
     )
 }
 

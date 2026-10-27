@@ -27,11 +27,18 @@ enum class TextSize(
     Larger(1.3f),
 }
 
+/**
+ * « Taille de l'interface » (essai réel 3): how much a screen shows, by the width it is laid out on
+ * (`LayoutSize` of the design system, `SPEC.md` § 4.21). Compact by default.
+ */
+enum class InterfaceSize { Compact, Normal, Large }
+
 /** « Apparence » of this device (`SPEC.md` § 4.17). */
 data class Appearance(
     val theme: ThemeChoice = ThemeChoice.Dark,
     val reducedMotion: Boolean = false,
     val textSize: TextSize = TextSize.Normal,
+    val interfaceSize: InterfaceSize = InterfaceSize.Compact,
 )
 
 /** Which address of the server the app tries at start (`SPEC.md` § 4.7 and § 4.17). */
@@ -107,6 +114,7 @@ class AppPreferences(
                     theme = enumOf(prefs[THEME], ThemeChoice.Dark),
                     reducedMotion = prefs[REDUCED_MOTION] ?: false,
                     textSize = enumOf(prefs[TEXT_SIZE], TextSize.Normal),
+                    interfaceSize = enumOf(prefs[INTERFACE_SIZE], InterfaceSize.Compact),
                 )
             }.distinctUntilChanged()
 
@@ -118,11 +126,13 @@ class AppPreferences(
                         enumOf(prefs[THEME], ThemeChoice.Dark),
                         prefs[REDUCED_MOTION] ?: false,
                         enumOf(prefs[TEXT_SIZE], TextSize.Normal),
+                        enumOf(prefs[INTERFACE_SIZE], InterfaceSize.Compact),
                     ),
                 )
             prefs[THEME] = next.theme.name
             prefs[REDUCED_MOTION] = next.reducedMotion
             prefs[TEXT_SIZE] = next.textSize.name
+            prefs[INTERFACE_SIZE] = next.interfaceSize.name
         }
     }
 
@@ -208,6 +218,7 @@ class AppPreferences(
         private val THEME = stringPreferencesKey("theme")
         private val REDUCED_MOTION = booleanPreferencesKey("reduced_motion")
         private val TEXT_SIZE = stringPreferencesKey("text_size")
+        private val INTERFACE_SIZE = stringPreferencesKey("interface_size")
         private val NETWORK = stringPreferencesKey("network_mode")
         private val DEVICE_NAME = stringPreferencesKey("device_name")
         private val LAST_UPDATE_CHECK = longPreferencesKey("last_update_check")
