@@ -302,9 +302,11 @@ private fun SettingsPanel(
 }
 
 /**
- * The size of the subtitles, over the top of the picture so that they stay in sight (`UI.md` § 8):
- * ← and → change it at once, then their height and their background. A line shows while no
- * subtitle is on screen. Subtitles burned into the picture cannot change: the bar says so.
+ * The size, the height and the background of the subtitles, over the top of the picture so that they
+ * stay in sight (`UI.md` § 8): three settings side by side. ← and → go from one to the next, ↑ and ↓
+ * change the one focused, at once (essai réel 3: ← and → changed the size, and nothing reached the two
+ * others). A line shows while no subtitle is on screen. Subtitles burned into the picture cannot
+ * change: the bar says so.
  */
 @Composable
 private fun SubtitleSizeBar(
@@ -322,7 +324,7 @@ private fun SubtitleSizeBar(
     val first = remember { FocusRequester() }
     Box(Modifier.fillMaxSize().padding(top = CineSpacing.safeVertical), contentAlignment = Alignment.TopCenter) {
         SubtitleBar(
-            note = stringResource(if (fixed) R.string.player_subtitle_fixed else R.string.player_subtitle_hint),
+            note = stringResource(if (fixed) R.string.player_subtitle_fixed else R.string.player_subtitle_bar_hint),
             modifier = Modifier.testTag(PlayerPreview.SUBTITLE_BAR),
         ) {
             StepperRow(
@@ -334,24 +336,31 @@ private fun SubtitleSizeBar(
                 icon = CineIcons.TextSize,
                 focusRequester = first,
                 focus = rememberCineFocus(playerPanelLine(0, 0)),
+                vertical = true,
                 modifier = Modifier.weight(1.2f).testTag(playerPanelLine(0, 0)),
             )
             if (fixed) {
                 // The size alone keeps its width: the rest of the bar holds nothing to set.
                 Spacer(Modifier.weight(2f))
             } else {
-                ListRow(
+                StepperRow(
                     title = stringResource(R.string.player_subtitle_position),
                     value = style.position.label(),
-                    onClick = { subtitles { it.copy(position = it.position.next()) } },
+                    onStep = { forward -> subtitles { it.copy(position = it.position.stepped(forward)) } },
+                    canDecrease = style.position.canStep(forward = false),
+                    canIncrease = style.position.canStep(forward = true),
                     focus = rememberCineFocus(playerPanelLine(0, 1)),
+                    vertical = true,
                     modifier = Modifier.weight(1f).testTag(playerPanelLine(0, 1)),
                 )
-                ListRow(
+                StepperRow(
                     title = stringResource(R.string.player_subtitle_background),
                     value = style.background.label(),
-                    onClick = { subtitles { it.copy(background = it.background.next()) } },
+                    onStep = { forward -> subtitles { it.copy(background = it.background.stepped(forward)) } },
+                    canDecrease = style.background.canStep(forward = false),
+                    canIncrease = style.background.canStep(forward = true),
                     focus = rememberCineFocus(playerPanelLine(0, 2)),
+                    vertical = true,
                     modifier = Modifier.weight(1f).testTag(playerPanelLine(0, 2)),
                 )
             }
@@ -359,6 +368,14 @@ private fun SubtitleSizeBar(
     }
     InitialFocus(first, key = enabled, enabled = enabled)
 }
+
+/** The value one step further ([forward]) or back, stopping at the ends. */
+inline fun <reified T : Enum<T>> T.stepped(forward: Boolean): T =
+    enumValues<T>().let { it[(ordinal + if (forward) 1 else -1).coerceIn(0, it.lastIndex)] }
+
+/** Whether there is a value one step further ([forward]) or back. */
+inline fun <reified T : Enum<T>> T.canStep(forward: Boolean): Boolean =
+    if (forward) ordinal < enumValues<T>().lastIndex else ordinal > 0
 
 /** The next value of a setting, back to the first after the last. */
 inline fun <reified T : Enum<T>> T.next(): T = enumValues<T>().let { it[(ordinal + 1) % it.size] }

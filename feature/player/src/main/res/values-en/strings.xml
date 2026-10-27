@@ -38,6 +38,7 @@
     <string name="player_subtitle_look">Size, position and background</string>
     <string name="player_subtitle_fixed">The size of these subtitles cannot be changed. The server burns them into the picture.</string>
     <string name="player_subtitle_hint">Hold ↑ or ↓ during playback to change their size.</string>
+    <string name="player_subtitle_bar_hint">← and → pick a setting, ↑ and ↓ change it. During playback, hold ↑ or ↓ to change the size.</string>
     <string name="player_subtitle_color">Colour</string>
     <string name="player_subtitle_edge">Edge</string>
     <string name="player_subtitle_background">Background</string>

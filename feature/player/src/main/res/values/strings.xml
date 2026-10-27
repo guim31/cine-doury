@@ -39,6 +39,7 @@
     <string name="player_subtitle_look">Taille, position et fond</string>
     <string name="player_subtitle_fixed">La taille de ces sous-titres ne peut pas être modifiée. Le serveur les incruste dans l\'image.</string>
     <string name="player_subtitle_hint">Maintenez ↑ ou ↓ pendant la lecture pour changer leur taille.</string>
+    <string name="player_subtitle_bar_hint">← et → choisissent un réglage, ↑ et ↓ changent sa valeur. Pendant la lecture, maintenez ↑ ou ↓ pour changer la taille.</string>
     <string name="player_subtitle_color">Couleur</string>
     <string name="player_subtitle_edge">Contour</string>
     <string name="player_subtitle_background">Fond</string>
