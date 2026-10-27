@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
@@ -97,9 +99,9 @@ fun FeaturedBackdrop(
 
 /**
  * The featured banner of the home (`FONCTIONNALITES.md` § 2): the logo of the focused title (its
- * title in type otherwise), a line of metadata, one line that sells it, and the [actions] (« Lire »,
- * « Fiche »). It follows the focus like [FeaturedBackdrop]; the [actions] stay out of the fade, so
- * that a button keeps the focus.
+ * title in type otherwise), a line of metadata, two lines that sell it, and the [actions] (« Lire »,
+ * « Fiche »), each always at the same place ([FeaturedText]). It follows the focus like
+ * [FeaturedBackdrop]; the [actions] stay out of the fade, so that a button keeps the focus.
  */
 @Composable
 fun FeaturedBanner(
@@ -128,37 +130,50 @@ fun FeaturedBanner(
     }
 }
 
+/**
+ * The text of the banner on a fixed layout (essai réel 3): the logo or the title in a zone of constant
+ * height, aligned at its bottom; the line of metadata and [TAGLINE_LINES] lines of text always take
+ * their room, even empty or short. Moving from one title to the next changes the content only, in a
+ * fade: nothing above the buttons moves, and neither do the buttons.
+ */
 @Composable
 private fun FeaturedText(featured: Featured) {
     val colors = CineTheme.colors
     val typography = CineTheme.typography
     Column(verticalArrangement = Arrangement.spacedBy(CineSpacing.xs)) {
-        val logo = featured.logo
-        if (logo != null) {
-            Box(Modifier.sizeIn(maxWidth = CineSizes.logoMax.width, maxHeight = CineSizes.logoMax.height)) { logo() }
-        } else {
-            Text(
-                text = featured.title,
-                style = typography.display,
-                color = colors.text,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
+        Box(
+            modifier = Modifier.fillMaxWidth().height(CineSizes.heroTitleHeight),
+            contentAlignment = Alignment.BottomStart,
+        ) {
+            val logo = featured.logo
+            if (logo != null) {
+                Box(
+                    Modifier.sizeIn(maxWidth = CineSizes.logoMax.width, maxHeight = CineSizes.logoMax.height),
+                ) { logo() }
+            } else {
+                Text(
+                    text = featured.title,
+                    style = typography.display,
+                    color = colors.text,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
-        if (featured.metadata != null) {
-            Text(
-                text = featured.metadata,
-                style = typography.caption.tabular(),
-                color = colors.text2,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
+        Text(
+            text = featured.metadata.orEmpty(),
+            style = typography.caption.tabular(),
+            color = colors.text2,
+            minLines = 1,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
         Text(
             text = featured.tagline.orEmpty(),
             style = typography.body,
             color = colors.text,
-            maxLines = 1,
+            minLines = TAGLINE_LINES,
+            maxLines = TAGLINE_LINES,
             overflow = TextOverflow.Ellipsis,
         )
     }
@@ -194,6 +209,9 @@ private fun Modifier.bannerFade(): Modifier =
         }
 
 private const val RECENT_TITLES = 4
+
+/** The lines of text under the metadata: their room is kept, even for a short one. */
+private const val TAGLINE_LINES = 2
 private const val BANNER_SIDE_ALPHA = 0.92f
 private const val BANNER_SIDE_EXTENT = 0.6f
 

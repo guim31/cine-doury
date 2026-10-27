@@ -102,6 +102,13 @@ object CineSizes {
 
     /** Width of the text column of the featured banner. */
     val heroTextWidth = 520.dp
+
+    /**
+     * The zone of the logo or of the title in the featured banner: always this high, the logo scaled
+     * into it and the title (two lines at most) at its bottom, so that nothing under it moves from
+     * one title to the next (essai réel 3).
+     */
+    val heroTitleHeight = 120.dp
     val tabHeight = 40.dp
     val alphabetKey = 18.dp
     val alphabetWidth = 32.dp
@@ -128,10 +135,22 @@ object CineSizes {
     /** Above and below the text of a pill (« par défaut »). */
     val pillPadding = 2.dp
 
-    /** The progress bar of the player, and its knob with the focus. */
-    val progressBar = 6.dp
-    val progressBarFocused = 10.dp
-    val progressKnob = 20.dp
+    /**
+     * The progress bar of the player, and its knob with the focus. Thinner since the essai réel 3
+     * (6 and 10 dp before, a knob of 20): over the picture, the player's controls stay discreet.
+     */
+    val progressBar = 4.dp
+    val progressBarFocused = 8.dp
+    val progressKnob = 16.dp
+
+    /**
+     * The controls of the player (essai réel 3): its round buttons, their icon, and its pill
+     * (« Passer l'intro »). Smaller than those of the other screens (52 dp, icons of 24 dp): they lie
+     * over the picture, which they should hide as little as possible.
+     */
+    val playerRoundButton = 40.dp
+    val playerIcon = 20.dp
+    val playerButtonHeight = 40.dp
     val chapterGap = 3.dp
 
     /** « Épisode suivant », its countdown ring. */
