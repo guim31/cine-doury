@@ -19,6 +19,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -162,6 +163,7 @@ fun LibraryScreen(
 
     val browse = state.browse
     val library = state.library
+    val content = remember { FocusRequester() }
     Box(modifier = modifier.fillMaxSize()) {
         AmbientBackdrop(ambience = focusedItem?.ambience)
         Column(
@@ -203,7 +205,13 @@ fun LibraryScreen(
             if (!browse.filters.isEmpty && browse.tab == LibraryTab.All) {
                 FilterSummary(browse.filters, onClear = actions::clearFilters)
             }
-            Box(Modifier.weight(1f).fillMaxWidth()) {
+            // → from the open rail comes back here: the grid gives back the item left (essai réel 3).
+            Box(
+                Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .focusRequester(content),
+            ) {
                 LibraryContent(
                     state = state,
                     sources = sources,
@@ -235,6 +243,7 @@ fun LibraryScreen(
             state = state.rail,
             selected = library?.let { RailTarget.Library(it.id) } ?: RailTarget.Home,
             onNavigate = navigation::navigate,
+            onContentFocus = content::requestFocus,
         )
         LibraryPanels(
             panel = panel,
@@ -283,23 +292,46 @@ private fun Toolbar(
     buttons: Map<LibraryPanel, FocusRequester>,
 ) {
     val browse = state.browse
-    // A flow: with a large text, the buttons go to a second line instead of out of the screen (J8).
+    // Two groups in a flow (essai réel 3): the tabs on the left, the buttons on the right. Each button
+    // keeps its whole label; when both groups no longer fit on one line (a large text or interface),
+    // the buttons go under the tabs, and wrap among themselves. A weighted spacer between them, as
+    // before, left « Gestion » with no room at all, a pill without its label.
     FlowRow(
-        modifier = Modifier.padding(end = CineSpacing.safeHorizontal),
-        horizontalArrangement = Arrangement.spacedBy(CineSpacing.xs),
+        modifier = Modifier.fillMaxWidth().padding(end = CineSpacing.safeHorizontal),
+        horizontalArrangement = Arrangement.SpaceBetween,
         verticalArrangement = Arrangement.spacedBy(CineSpacing.xs),
         itemVerticalAlignment = Alignment.CenterVertically,
     ) {
-        state.tabs.takeIf { it.size > 1 }?.forEach { tab ->
-            CineTab(
-                label = tab.label(),
-                selected = tab == browse.tab,
-                onClick = { actions.selectTab(tab) },
-                focus = rememberCineFocus(LibraryPreview.tab(tab)),
-                modifier = Modifier.testTag(LibraryPreview.tab(tab)),
-            )
+        // Always there, even empty: with SpaceBetween, it keeps the buttons on the right.
+        Row(
+            modifier = Modifier.padding(end = CineSpacing.m),
+            horizontalArrangement = Arrangement.spacedBy(CineSpacing.xs),
+        ) {
+            state.tabs.takeIf { it.size > 1 }?.forEach { tab ->
+                CineTab(
+                    label = tab.label(),
+                    selected = tab == browse.tab,
+                    onClick = { actions.selectTab(tab) },
+                    focus = rememberCineFocus(LibraryPreview.tab(tab)),
+                    modifier = Modifier.testTag(LibraryPreview.tab(tab)),
+                )
+            }
         }
-        Spacer(Modifier.weight(1f))
+        ToolbarButtons(state, onPanel, buttons)
+    }
+}
+
+@Composable
+private fun ToolbarButtons(
+    state: LibraryUiState,
+    onPanel: (LibraryPanel) -> Unit,
+    buttons: Map<LibraryPanel, FocusRequester>,
+) {
+    val browse = state.browse
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(CineSpacing.xs),
+        verticalArrangement = Arrangement.spacedBy(CineSpacing.xs),
+    ) {
         if (browse.tab == LibraryTab.All) {
             SecondaryButton(
                 text = stringResource(R.string.action_sort, browse.sort.field.label()),
