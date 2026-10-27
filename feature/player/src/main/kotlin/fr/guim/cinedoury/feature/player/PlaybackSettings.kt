@@ -137,6 +137,7 @@ fun DeviceProfileScreen(
         )
         LazyColumn(
             modifier = Modifier.fillMaxSize().testTag("device-profile"),
+            contentPadding = PaddingValues(vertical = CineSizes.focusRoom),
             verticalArrangement = Arrangement.spacedBy(CineSpacing.xs / 2),
         ) {
             lines.forEachIndexed { index, (label, value) ->

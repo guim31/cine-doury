@@ -22,6 +22,8 @@ d'un serveur Jellyfin 12.3. Elle réunit tout ce qui suit, de J0 à J8.
   d'une bibliothèque passe sur deux lignes au lieu de sortir de l'écran (« Affichage » était déjà
   rogné en taille normale), les touches du clavier gardent leur taille, les noms de profils et les
   explications des réglages ne sont plus coupés.
+- **Focus jamais rogné** : le contour du bouton « Utiliser un mot de passe » (Quick Connect) et des
+  lignes en bord de panneau n'est plus coupé.
 - **Focus** : « Retour » sur un panneau d'une bibliothèque (Trier, Filtres, Affichage) rend le focus
   à son bouton, et non plus au menu de gauche.
 - **TalkBack** : les entrées du menu ne sont plus lues deux fois, les cartes disent leur titre, les

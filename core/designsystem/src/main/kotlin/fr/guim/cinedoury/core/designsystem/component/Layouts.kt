@@ -88,29 +88,33 @@ fun FormScreen(
             ) {
                 // Scrolls when the content outgrows the screen (the detail of an error): the focused
                 // element is always brought into view.
-                Column(
-                    modifier = Modifier.verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(CineSpacing.s),
-                ) {
-                    Text(
-                        text = title,
-                        style = CineTheme.typography.title1,
-                        color = colors.text,
-                        modifier = Modifier.asHeading(),
-                    )
-                    if (subtitle != null) {
+                KeepFocusRoom {
+                    Column(
+                        // Room under the last element inside the scroll, which clips: its focus shows
+                        // whole (the title on top is never focused).
+                        modifier = Modifier.verticalScroll(rememberScrollState()).padding(bottom = CineSizes.focusRoom),
+                        verticalArrangement = Arrangement.spacedBy(CineSpacing.s),
+                    ) {
                         Text(
-                            text = subtitle,
-                            style = CineTheme.typography.body,
-                            color = colors.text2,
-                            modifier = Modifier.width(CineSizes.settingsWidth),
+                            text = title,
+                            style = CineTheme.typography.title1,
+                            color = colors.text,
+                            modifier = Modifier.asHeading(),
+                        )
+                        if (subtitle != null) {
+                            Text(
+                                text = subtitle,
+                                style = CineTheme.typography.body,
+                                color = colors.text2,
+                                modifier = Modifier.width(CineSizes.settingsWidth),
+                            )
+                        }
+                        Column(
+                            modifier = Modifier.padding(top = CineSpacing.m),
+                            verticalArrangement = Arrangement.spacedBy(CineSpacing.m),
+                            content = content,
                         )
                     }
-                    Column(
-                        modifier = Modifier.padding(top = CineSpacing.m),
-                        verticalArrangement = Arrangement.spacedBy(CineSpacing.m),
-                        content = content,
-                    )
                 }
             }
         }

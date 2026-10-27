@@ -122,7 +122,7 @@ internal fun DetailsPanels(
                 ?: lines.indexOfFirst { it is PanelLine.Choice }
         LazyColumn(
             state = rememberLazyListState(initialFirstVisibleItemIndex = previewFirstVisible(PANEL_LINE)),
-            contentPadding = PaddingValues(vertical = CineSpacing.xs, horizontal = CineSpacing.xs),
+            contentPadding = PaddingValues(vertical = CineSizes.focusRoom, horizontal = CineSpacing.xs),
             verticalArrangement = Arrangement.spacedBy(CineSpacing.xs),
         ) {
             itemsIndexed(lines, key = { _, line -> line.key }) { index, line ->

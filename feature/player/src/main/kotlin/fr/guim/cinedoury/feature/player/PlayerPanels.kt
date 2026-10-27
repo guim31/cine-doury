@@ -5,6 +5,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -139,6 +140,8 @@ private fun ChoiceColumn(
     LaunchedEffect(column) { GestureLog.mark("column $column lines=${choices.size} checked=$initial") }
     LazyColumn(
         modifier = modifier,
+        // A lazy list clips: room for the focus of its first and last lines.
+        contentPadding = PaddingValues(vertical = CineSizes.focusRoom),
         verticalArrangement = Arrangement.spacedBy(CineSpacing.xs),
     ) {
         if (title != null) item(key = "title") { ListSectionTitle(title) }

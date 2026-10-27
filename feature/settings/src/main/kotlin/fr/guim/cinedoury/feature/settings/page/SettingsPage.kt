@@ -230,7 +230,7 @@ private fun ChoicePanel(
         if (choice == null) return@SidePanel
         val current = remember(choice.key) { FocusRequester() }
         LazyColumn(
-            contentPadding = PaddingValues(CineSpacing.xs),
+            contentPadding = PaddingValues(vertical = CineSizes.focusRoom, horizontal = CineSpacing.xs),
             verticalArrangement = Arrangement.spacedBy(CineSpacing.xs),
         ) {
             itemsIndexed(choice.options, key = { index, _ -> index }) { index, option ->

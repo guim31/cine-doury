@@ -1703,19 +1703,31 @@ MESURES_J8
   taille : la légende d'une carte (une ligne, le titre complet est sur la fiche) et le synopsis replié
   (dépliable par OK).
 
+**Focus jamais rogné** (signalé par l'orchestrateur sur la Shield, v0.7.0) : sur Quick Connect, le
+contour et le halo de « Utiliser un mot de passe » étaient coupés en bas par la colonne défilante de
+`FormScreen` (une colonne qui défile coupe ce qui dépasse, et le défilement n'amène à l'écran que les
+bornes de l'élément, pas son contour). Jeton `CineSizes.focusRoom` (écart + contour + halo, 19 dp) :
+`FormScreen` laisse cette place sous son dernier élément et défile pour montrer l'élément focalisé
+**avec** elle (`KeepFocusRoom`, un `BringIntoViewSpec`) ; le code de Quick Connect est un peu moins
+espacé pour que la page tienne sur un écran (capture 23, avant / après). Les autres conteneurs qui
+coupent et portent des éléments focalisables à leur bord ont reçu la même place : colonnes des
+panneaux du lecteur, panneaux des fiches, des bibliothèques et des réglages, profil de l'appareil
+(captures 92 à 94, 103, 130 à 132, 140, 141, 152…).
+
 **Captures** (`docs/screenshots/j8/`) : les écrans clés en **4K** (qualificateurs d'une Shield,
 `w1920dp-h1080dp-xhdpi`, 3840 × 2160, mis en page sur 960 × 540 dp) : « Qui regarde ? » (180), accueil
 (181), bibliothèque (182), fiche film (183), fiche série (184), lecteur et son interface (185), recherche
 (186), une page de réglages (187), mise à jour (188) ; les mêmes en 1080p au texte « Très grande »
 (190 à 198) ; sombre et noir OLED. Toutes les captures 1080p existaient déjà en sombre et en noir OLED.
 Avant / après des changements d'aspect : `avant-*.png` et `apres-*.png` (bibliothèque 50, suppression
-137, « Qui regarde ? » 25, Apparence 159).
+137, « Qui regarde ? » 25, Apparence 159, Quick Connect 23).
 
 **Changements d'aspect** (voulus, vérifiés sur les captures) :
 - `texte-3` plus clair ; fond des boutons destructifs plus sombre (contrastes AA) ;
 - barre d'une bibliothèque sur deux lignes quand elle ne tient pas sur une : c'était déjà le cas en
   1080p avec trois onglets et quatre boutons (capture 50 : « Affichage » réduit à son icône, rogné) ;
-- explication d'une ligne de réglage sur trois lignes au plus (deux avant).
+- explication d'une ligne de réglage sur trois lignes au plus (deux avant) ;
+- 19 dp de plus en haut et en bas des panneaux et sous les formulaires (focus jamais rogné).
 
 **Les 20 gestes au canapé** : `docs/GESTES.md` (gestes, appuis, cibles) et `ci/couch-gestures.sh
 ADB_SERIAL` : touches par `adb shell input keyevent`, fin de chaque geste lue dans le journal de
