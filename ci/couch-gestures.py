@@ -292,6 +292,20 @@ class Couch:
     def wait_screen(self, name, since, timeout=TIMEOUT):
         return self.d.wait_event(self.screen_event(name), since, timeout, f"écran {name}")
 
+    def back_to(self, name):
+        """« Retour » until the screen [name] is drawn; returns when. A keyboard left attached to the
+        window (seen on the emulator, after the sign-in tests) takes some « Retour » for itself: one
+        more, as a hand would; the response counts from the last."""
+        d = self.d
+        mark = d.mark()
+        for _ in range(3):
+            d.press("back", pause=0)
+            try:
+                return self.wait_screen(name, mark, 4)
+            except Failed:
+                continue
+        return self.wait_screen(name, mark)
+
     def recover(self):
         """Back to the home, « Lire » focused, from wherever a failed gesture left the app; at worst
         the app is started again."""
@@ -551,9 +565,17 @@ class Couch:
         return focus[-1].removeprefix("focus ") if focus else None
 
     def close_panel(self):
+        """« Retour » until the panel of the player closes. A keyboard left attached to the window
+        (seen on the emulator, after the sign-in tests) takes a first « Retour » for itself."""
         d = self.d
         mark = d.mark()
-        d.press("back")
+        for _ in range(3):
+            d.press("back")
+            try:
+                d.wait_event(lambda e: e == "panel closed", mark, 4, "panneau fermé")
+                return
+            except Failed:
+                continue
         d.wait_event(lambda e: e == "panel closed", mark, what="panneau fermé")
 
     def g08_leave_player(self, since):
@@ -566,9 +588,7 @@ class Couch:
         s = d.screen()
         if not s.has("details"):
             raise Skip("pas sur une fiche (un geste précédent n'y a pas mené)")
-        mark = d.mark()
-        d.press("back", pause=0)
-        return self.wait_screen("Home", mark)
+        return self.back_to("Home")
 
     def g10_play_featured(self, since):
         d = self.d
@@ -678,9 +698,7 @@ class Couch:
             # A menu left open: « Retour » closes it, once it is gone the next one leaves the details.
             d.press("back")
             d.wait_ui(lambda s: not s.has(prefix=MENU_LINE), what="le menu ⋯ fermé")
-        mark = d.mark()
-        d.press("back", pause=0)
-        end = self.wait_screen("Library", mark)
+        end = self.back_to("Library")
         focused = d.wait_ui(lambda s: s.focus_tag("item-"), what="la carte quittée")
         if focused != self.grid_card:
             raise Failed(f"focus sur {focused}, pas sur {self.grid_card}")
