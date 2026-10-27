@@ -1388,9 +1388,10 @@ commands »), la première candidate est le halo, dessinable en contour sans flo
   dans les notes de version. Le rapport de diagnostic peut citer les piles telles quelles (pas de
   renommage).
 - J8 : régénérer les profils (`[record-profiles]`) après tout changement notable des écrans ;
-  retirer `BEFORE_REF` de `ci.yml` (la comparaison avec l'avant ne vaut que pour cette PR) ;
-  les mesures sur appareil remplacent celles de l'émulateur pour décider d'alléger un effet. Fait au
-  J8 (§ 4.20) ; `BEFORE_REF` y désigne `main` d'avant le J8, le temps de sa PR.
+  `BEFORE_REF` est vidé dans `ci.yml` depuis le 27/10 (la comparaison avec l'avant ne valait que
+  pour cette PR, et sa mesure de l'ancien APK échouait par intermittence sur `main`) ;
+  les mesures sur appareil remplacent celles de l'émulateur pour décider d'alléger un effet. Le
+  J8 le renseigne le temps de sa PR (`main` d'avant le J8, § 4.20) et le vide à la fin.
 
 **Mesures** (Macrobenchmark, `NavigationBenchmarks`, émulateur Android TV API 34 de la CI, rendu
 logiciel : comparer les colonnes entre elles, jamais avec un vrai appareil) :
