@@ -34,6 +34,7 @@ import fr.guim.cinedoury.feature.library.libraryModule
 import fr.guim.cinedoury.feature.manage.manageModule
 import fr.guim.cinedoury.feature.player.playerModule
 import fr.guim.cinedoury.feature.settings.settingsModule
+import fr.guim.cinedoury.feature.update.updateModule
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -105,6 +106,7 @@ class J3FlowTest {
                 playerModule,
                 module { single<VideoPlayerFactory> { players } },
                 settingsModule,
+                updateModule,
             )
         }
         val sessions = getKoin().get<SessionManager>()

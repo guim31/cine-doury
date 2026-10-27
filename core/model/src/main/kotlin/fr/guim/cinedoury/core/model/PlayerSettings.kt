@@ -1,49 +1,106 @@
 package fr.guim.cinedoury.core.model
 
 /**
- * The settings of the player on this device (`FONCTIONNALITES.md` § 12: « Lecture », « Image »,
- * « Son », « Sous-titres », « Intro et générique »), with their defaults. The full pages come with
- * J7; J4 has the passthrough and the look of the subtitles.
+ * The settings of the player (`FONCTIONNALITES.md` § 12: « Lecture », « Image », « Son »,
+ * « Sous-titres », « Intro et générique »), with their defaults. Some belong to the device (the TV,
+ * its amplifier, its network), the others to the profile that watches (`SPEC.md` § 4.17).
  *
+ * Device:
  * @param passthrough the formats sent to the amplifier as they are (all that the output takes).
+ * @param forceStereo the device takes two channels only: nothing to the amplifier, the server mixes
+ * the rest down.
+ * @param audioOffsetMillis the sound later (positive) or earlier than the picture, for an amplifier
+ * that delays one of them.
  * @param matchFrameRate the screen follows the frame rate of the film (24p), when it can.
+ * @param matchResolution the screen takes the resolution of the film (a 1080p film in a 1080p mode).
+ * @param allowHdr HDR10, HDR10+ and HLG shown as they are; off, the server tone maps them.
+ * @param allowDolbyVision Dolby Vision shown as it is; off, its base layer or a tone mapping.
+ * @param localQuality the bitrate asked for on the local network; null for the original.
+ * @param remoteQuality the bitrate asked for through the remote address; null for the original.
+ * @param bitrateCeiling the most the device asks for, the original included (its network).
+ * @param directPlay how the file reaches the player.
+ * @param burnInAss ASS subtitles drawn into the picture by the server, styles and all.
+ *
+ * Profile:
  * @param segments what to do with an intro or a recap.
  * @param autoplayNext the next episode starts at the end of its countdown.
+ * @param nextCountdownSeconds the countdown of « Épisode suivant ».
  * @param stillWatchingAfter episodes in a row without a key before « Vous êtes toujours là ? »; 0
  * never.
  * @param watchedThreshold the part of the runtime that makes an item watched.
  * @param seekBackSeconds the jump of ←, [seekForwardSeconds] that of →.
- * @param burnInAss ASS subtitles drawn into the picture by the server, styles and all.
- * @param maxBitrate the quality chosen: null for the best the device takes.
+ * @param subtitles the look of the subtitles.
  */
 data class PlayerSettings(
     val passthrough: Set<PassthroughFormat> = PassthroughFormat.entries.toSet(),
+    val forceStereo: Boolean = false,
+    val audioOffsetMillis: Int = 0,
     val matchFrameRate: Boolean = true,
+    val matchResolution: Boolean = false,
+    val allowHdr: Boolean = true,
+    val allowDolbyVision: Boolean = true,
+    val localQuality: Int? = null,
+    val remoteQuality: Int? = DEFAULT_REMOTE_QUALITY,
+    val bitrateCeiling: Int = ProfileOptions.MAX_BITRATE,
+    val directPlay: DirectPlayMode = DirectPlayMode.Auto,
+    val burnInAss: Boolean = false,
+    val aspect: AspectMode = AspectMode.Fit,
     val segments: SegmentAction = SegmentAction.Button,
     val autoplayNext: Boolean = true,
+    val nextCountdownSeconds: Int = DEFAULT_COUNTDOWN,
     val stillWatchingAfter: Int = StillWatching.DEFAULT_LIMIT,
     val watchedThreshold: Float = PlaybackRules.DEFAULT_WATCHED_THRESHOLD,
     val seekBackSeconds: Int = DEFAULT_SEEK_BACK,
     val seekForwardSeconds: Int = DEFAULT_SEEK_FORWARD,
-    val burnInAss: Boolean = false,
-    val maxBitrate: Int? = null,
-    val aspect: AspectMode = AspectMode.Fit,
     val subtitles: SubtitleStyle = SubtitleStyle(),
 ) {
-    fun profileOptions(): ProfileOptions =
+    /** The bitrate to ask for by default, on the local network or through the remote address. */
+    fun quality(remote: Boolean): Int =
+        minOf((if (remote) remoteQuality else localQuality) ?: bitrateCeiling, bitrateCeiling)
+
+    /** What the profile of the device sent to the server allows ([PlaybackProfiles.build]). */
+    fun profileOptions(remote: Boolean = false): ProfileOptions =
         ProfileOptions(
-            passthrough = passthrough,
-            maxBitrate = maxBitrate ?: ProfileOptions.MAX_BITRATE,
+            passthrough = if (forceStereo) emptySet() else passthrough,
+            maxBitrate = quality(remote),
             burnInAss = burnInAss,
+            allowHdr = allowHdr,
+            allowDolbyVision = allowDolbyVision,
+            stereo = forceStereo,
         )
 
     companion object {
         const val DEFAULT_SEEK_BACK = 10
         const val DEFAULT_SEEK_FORWARD = 30
+        const val DEFAULT_COUNTDOWN = 10
+
+        /** 8 Mb/s: a 1080p stream that the upload of a home connection carries. */
+        const val DEFAULT_REMOTE_QUALITY = 8_000_000
+        const val MAX_AUDIO_OFFSET = 500
+        const val AUDIO_OFFSET_STEP = 25
         val SEEK_STEPS = listOf(5, 10, 15, 30, 60)
         val STILL_WATCHING_STEPS = listOf(0, 2, 3, 4, 5)
         val WATCHED_THRESHOLDS = listOf(0.8f, 0.85f, 0.9f, 0.95f)
+        val COUNTDOWN_STEPS = listOf(5, 10, 15, 20, 30)
+
+        /** The most the device may ask for, the original included (Mb/s for the network of the device). */
+        val CEILINGS = listOf(200_000_000, 120_000_000, 80_000_000, 60_000_000, 40_000_000, 20_000_000)
     }
+}
+
+/** How a file reaches the player (`FONCTIONNALITES.md` § 12, « lecture directe forcée ou non »). */
+enum class DirectPlayMode {
+    /** As it is when the profile says the device reads it, else remuxed, else transcoded. */
+    Auto,
+
+    /**
+     * Always the file as it is, even when the profile says the device does not read it (a profile too
+     * cautious); the fallback to transcoding still follows a failure.
+     */
+    Forced,
+
+    /** Always through the server (remux or transcoding): to find what the device does wrong. */
+    Never,
 }
 
 /** How the picture fills the screen (`FONCTIONNALITES.md` § 5, « Image »). */

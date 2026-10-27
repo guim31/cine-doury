@@ -6,13 +6,16 @@ import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
 import fr.guim.cinedoury.core.data.di.dataModule
 import fr.guim.cinedoury.core.data.security.TokenCipher
 import fr.guim.cinedoury.core.designsystem.theme.CineTheme
 import fr.guim.cinedoury.core.designsystem.theme.ThemeVariant
 import fr.guim.cinedoury.core.model.ServerInfo
+import fr.guim.cinedoury.core.playback.playbackModule
 import fr.guim.cinedoury.core.source.DiscoveredServer
 import fr.guim.cinedoury.core.source.ServerAddress
 import fr.guim.cinedoury.core.source.ServerDiscovery
@@ -22,7 +25,9 @@ import fr.guim.cinedoury.feature.auth.authModule
 import fr.guim.cinedoury.feature.home.homeModule
 import fr.guim.cinedoury.feature.library.libraryModule
 import fr.guim.cinedoury.feature.manage.manageModule
+import fr.guim.cinedoury.feature.settings.page.SettingsPagePreview
 import fr.guim.cinedoury.feature.settings.settingsModule
+import fr.guim.cinedoury.feature.update.updateModule
 import kotlinx.coroutines.flow.flowOf
 import org.junit.After
 import org.junit.Before
@@ -82,6 +87,8 @@ class AppFlowTest {
                 libraryModule,
                 manageModule,
                 settingsModule,
+                playbackModule,
+                updateModule,
             )
         }
     }
@@ -133,6 +140,10 @@ class AppFlowTest {
         waitFor(EMPTY_HOME)
 
         compose.onNodeWithContentDescription("Réglages").performClick()
+        waitFor("Lecture")
+        // « Profil » is below the fold of the first page of the settings.
+        compose.onNodeWithTag(SettingsPagePreview.LIST).performScrollToNode(hasText("Profil"))
+        click("Profil")
         click("Définir un code PIN")
         repeat(2) { "2580".forEach { digit -> click(digit.toString()) } }
         waitFor("Changer le code PIN")

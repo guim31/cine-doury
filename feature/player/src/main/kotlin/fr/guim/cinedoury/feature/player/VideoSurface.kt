@@ -156,21 +156,24 @@ fun KeepScreenOn() {
 /**
  * Frame rate matching with a change of mode (`FONCTIONNALITES.md` § 5): the window asks for the mode
  * of the same size whose refresh rate fits the film ([DisplayModes]); the mode of before comes back
- * when the player closes. On by default, in the settings.
+ * when the player closes. On by default, in the settings. With [videoHeight] (« Résolution
+ * adaptée », off by default), the mode of the size of the film.
  */
 @Composable
 fun MatchFrameRate(
     activity: Activity?,
     frameRate: Float?,
     enabled: Boolean,
+    videoHeight: Int? = null,
 ) {
-    DisposableEffect(activity, frameRate, enabled) {
+    DisposableEffect(activity, frameRate, enabled, videoHeight) {
         val window = activity?.window
         // The display of the window's view: `Activity.display` throws where the context has none.
         val display = activity?.window?.decorView?.display
         val previous = window?.attributes?.preferredDisplayModeId ?: 0
-        val rate = frameRate.takeIf { enabled }
-        if (window != null && display != null && rate != null) {
+        val rate = frameRate.takeIf { enabled } ?: 0f
+        val wanted = rate > 0f || videoHeight != null
+        if (window != null && display != null && wanted) {
             val current =
                 display.mode.let {
                     ScreenMode(
@@ -189,7 +192,7 @@ fun MatchFrameRate(
                         it.refreshRate,
                     )
                 }
-            DisplayModes.choose(modes, current, rate)?.let { mode ->
+            DisplayModes.choose(modes, current, rate, videoHeight)?.let { mode ->
                 window.attributes = window.attributes.apply { preferredDisplayModeId = mode.id }
             }
         }

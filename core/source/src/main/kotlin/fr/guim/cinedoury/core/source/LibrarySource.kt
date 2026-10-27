@@ -100,6 +100,26 @@ interface LibrarySource {
     /** How the profile chooses its audio and subtitle tracks. */
     suspend fun playbackPreferences(): PlaybackPreferences
 
+    // Settings (J7, `SPEC.md` § 4.17): what follows the person, on the server.
+
+    /**
+     * Keeps [preferences] on the server (Jellyfin: `POST /Users/Configuration`, the rest of the
+     * configuration untouched): every app of the profile chooses its tracks by them.
+     */
+    suspend fun setPlaybackPreferences(preferences: PlaybackPreferences)
+
+    /**
+     * The order of the libraries of the profile (Jellyfin: `OrderedViews`), as [libraries] gives
+     * them: the rail and the rows of the home follow it. Libraries left out go after, in their order.
+     */
+    suspend fun setLibraryOrder(order: List<LibraryId>)
+
+    /**
+     * Sends a diagnostic report (plain text) to the logs of the server (Jellyfin:
+     * `POST /ClientLog/Document`), where the maintainer reads it; returns the name of the file made.
+     */
+    suspend fun sendDiagnostic(report: String): String
+
     // The local index (J3, `SPEC.md` § 4.10).
 
     /**

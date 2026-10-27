@@ -40,15 +40,20 @@ data class LibraryState(
     val position: Int = 0,
 )
 
-/** The [LibraryState] of each library of each profile, in Room. */
+/**
+ * The [LibraryState] of each library of each profile, in Room. A library the profile never opened
+ * starts in the view of « Vue par défaut » ([defaultView], `SPEC.md` § 4.17).
+ */
 class LibraryStateRepository(
     private val preferences: PreferencesDao,
+    private val defaultView: suspend (ProfileKey) -> LibraryView = { LibraryView.Posters },
 ) {
     suspend fun load(
         profile: ProfileKey,
         library: LibraryId,
     ): LibraryState =
-        preferences.libraryState(profile.serverId, profile.userId, library.value)?.toModel() ?: LibraryState()
+        preferences.libraryState(profile.serverId, profile.userId, library.value)?.toModel()
+            ?: LibraryState(view = defaultView(profile))
 
     suspend fun save(
         profile: ProfileKey,

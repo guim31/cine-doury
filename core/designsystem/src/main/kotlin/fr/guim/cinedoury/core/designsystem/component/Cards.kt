@@ -69,6 +69,7 @@ fun PosterCard(
 ) {
     // One animation for the focus treatment and the caption, which appears with it.
     val focusProgress = focusProgress(focus)
+    val alwaysShowTitles = CineTheme.cards.alwaysShowTitles
     Column(modifier = modifier.width(size.dp.width)) {
         Box(
             modifier =
@@ -93,7 +94,9 @@ fun PosterCard(
         CardCaption(
             title = title.takeIf { image != null },
             subtitle = subtitle,
-            alpha = { if (alwaysShowTitle) 1f else focusProgress.value },
+            alpha = {
+                if (alwaysShowTitle || alwaysShowTitles) 1f else focusProgress.value
+            },
             modifier = Modifier.padding(top = CineSpacing.s),
         )
     }
@@ -153,6 +156,7 @@ internal fun BoxScope.UnwatchedMark(
     unwatched: Boolean,
     unwatchedCount: Int?,
 ) {
+    if (!CineTheme.cards.unwatchedMarks) return
     when {
         unwatchedCount != null && unwatchedCount > 0 -> {
             UnwatchedCountBadge(

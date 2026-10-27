@@ -219,8 +219,6 @@ internal object J4Samples {
                 ),
         )
 
-    val subtitleStyle = PlayerSettings().subtitles
-
     /** A line of the film, as an SRT cue would bring it. */
     const val SUBTITLE_LINE = "Le gardien n'a pas quitté le phare\ndepuis trois hivers."
 

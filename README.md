@@ -17,7 +17,45 @@ par une **clé de débogage fixe, versionnée dans le dépôt** (`app/tv/debug.k
 désinstaller l'appli ni perdre ses réglages (`adb install -r`). **Cette clé n'est pas un secret** :
 elle ne signe que des APK de débogage, que n'importe qui peut reconstruire depuis ce dépôt public.
 
-L'APK de **release** est signé par le mainteneur avec une clé gardée hors du dépôt.
+L'APK de **release** est signé par une **clé de release**, distincte, gardée dans les secrets du
+dépôt et jamais dans le dépôt lui-même.
+
+## Installer
+
+1. Sur la télévision, autorisez l'installation d'applications venues d'ailleurs :
+   - **Google TV** (Chromecast) : Paramètres → Applications → Sécurité et restrictions → Sources
+     inconnues, puis activez l'appli qui ouvrira l'APK (un gestionnaire de fichiers, ou Ciné Doury
+     lui-même pour ses mises à jour) ;
+   - **NVIDIA Shield** : Paramètres → Préférences de l'appareil → Sécurité et restrictions → Sources
+     inconnues.
+2. Téléchargez `cine-doury-X.Y.Z.apk` depuis la [dernière release](https://github.com/guim31/cine-doury/releases/latest)
+   et vérifiez-le : `sha256sum -c cine-doury-X.Y.Z.apk.sha256`.
+3. Installez-le : `adb install cine-doury-X.Y.Z.apk` depuis un ordinateur (débogage réseau activé
+   dans les options pour les développeurs de la TV), ou ouvrez-le avec un gestionnaire de fichiers.
+
+## Mettre à jour
+
+Ciné Doury regarde les releases du dépôt au démarrage (une fois par jour au plus) et dans Réglages →
+Appareil → Mise à jour de l'appli. Une nouvelle version est **proposée, jamais imposée** :
+« Installer », « Plus tard » ou « Ignorer cette version ». L'appli télécharge l'APK, vérifie son
+SHA-256 et sa signature, puis Android demande de confirmer.
+
+- **Une version de développement** (APK de la CI, signé par la clé de débogage) ne se voit rien
+  proposer, et Android refuse de la remplacer par une release (signatures différentes) : désinstallez
+  une fois Ciné Doury, puis installez la release. Les profils devront se reconnecter.
+- **Revenir en arrière** : Android n'installe jamais une version plus ancienne par-dessus une plus
+  récente. Un retour arrière est donc publié comme une **nouvelle version** qui reprend le code
+  d'avant (par exemple la 1.2.1 avec le code de la 1.1.0) : l'appli la propose comme n'importe quelle
+  mise à jour, sans rien perdre. Voir `docs/SPEC.md` § 4.18.
+
+## Publier une version (mainteneur)
+
+Poser l'étiquette `vX.Y.Z` sur `main` et la pousser : le workflow « Release » construit la version
+`release`, la signe avec la clé des secrets (`RELEASE_KEYSTORE_BASE64`, `RELEASE_KEYSTORE_PASSWORD`,
+`RELEASE_KEY_ALIAS`, `RELEASE_KEY_PASSWORD`) et publie la release avec l'APK, son SHA-256 et le journal
+des changements (`docs/releases/vX.Y.Z.md` s'il existe, sinon les commits depuis la version
+précédente). Pour un retour arrière : « Run workflow », `version` = la nouvelle version, `source` =
+l'étiquette dont on reprend le code.
 
 Ciné Doury n'est affilié ni à Jellyfin, ni à Plex.
 

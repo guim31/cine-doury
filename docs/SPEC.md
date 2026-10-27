@@ -22,6 +22,7 @@ son domaine :
 | J6 — Gestion (P0, plus éléments à problème et actions en série) | terminé, fusionné (§ 4.14 ; captures dans `docs/screenshots/j6/`, numéros 130 à 147) | [#8](https://github.com/guim31/cine-doury/pull/8) |
 | Essai réel 2 (26/10/2026, NVIDIA Shield TV, Android 11) : plantage à la première image (API Java absente de l'API 30), clavier resté ouvert, garde-fou Animal Sniffer, émulateur de la CI en API 30 et 34 | terminé, fusionné (§ 4.15) | [#9](https://github.com/guim31/cine-doury/pull/9) |
 | Fluidité (partie performances du J8) : APK optimisé (R8, Baseline et Startup Profiles), `:benchmark` (Macrobenchmark, profils), mise en page à 960 × 540 dp sur toute TV (Shield en 4K), rail, recompositions | terminé, en revue (§ 4.16 ; captures dans `docs/screenshots/perf/` et `j6/`) | [#10](https://github.com/guim31/cine-doury/pull/10) |
+| J7 — Réglages et mise à jour (pages de réglages P0, mise à jour proposée depuis les releases, publication signée, rapport de diagnostic) | en revue (§ 4.17 à 4.19 ; captures dans `docs/screenshots/j7/`, numéros 150 à 174) | voir la PR `feat/j7-reglages` |
 
 *(Chaque jalon met à jour ce tableau et ajoute ses contrats au § 4.)*
 
@@ -114,6 +115,9 @@ panneaux, les pages « Lecture et son », « Apparence des sous-titres » et le 
 Le profil, la décision et les règles (vu, épisode suivant, « toujours là ») sont du Kotlin pur dans
 `:core:model`, testés sans Android. Ajouté au J6 (§ 4.14) : `:feature:manage` (`.compose`), la
 gestion depuis l'appli ; `ManageSource` dans `:core:source`, `ManageRepository` dans `:core:data`.
+Ajoutés au J7 (§ 4.18) : `:core:update` (`cinedoury.jvm.library`, OkHttp et kotlinx.serialization
+JSON déjà présents) — versions, client des releases GitHub, SHA-256, journal des changements — et
+`:feature:update` (`.compose`) — le dépôt de la mise à jour, `PackageInstaller`, l'écran.
 
 `:core:ui` n'était pas prévu au § 3 : les messages d'erreur servent à tous les écrans, mais
 `:core:designsystem` ne doit pas connaître `:core:source`. Le design system reste sans dépendance
@@ -173,7 +177,8 @@ Décision du J0 : **SDK Kotlin officiel 1.9.3**, plutôt qu'un client généré 
   en `SourceException` (`JellyfinCall.kt`).
 - **Licence : LGPL-3.0.** Ce n'est ni GPL ni AGPL (exclues par `CLAUDE.md`). Le code de l'appli
   restant public, quiconque peut la reconstruire avec une version modifiée du SDK, ce que demande la
-  LGPL. La mention de licence sera affichée dans « À propos » (J7). *À confirmer par le mainteneur.*
+  LGPL. La mention de licence est affichée dans Réglages → Appareil → « À propos » (J7). *À confirmer
+  par le mainteneur.*
 - Il est **entièrement caché** derrière `:core:source` (dépendance `implementation`, types
   `internal`) : le remplacer par un client généré ne toucherait que `:source:jellyfin`.
 
@@ -326,7 +331,7 @@ achevé (connecté, serveur oublié) remplace toute la pile.
 - **Aperçus** (trickplay) : métadonnées dans l'élément, tuiles `/Videos/{id}/Trickplay/{largeur}/{index}.jpg`.
 - **Requêtes de films** : un serveur qui a des collections **regroupe** les films par défaut. Passer `CollapseBoxSetItems=false` pour lister ou compter les films.
 - **Textes** : aucune chaîne en dur ; ressources `fr` (langue par défaut) et `en`.
-- **Versions** : semver, étiquettes `vX.Y.Z`. L'APK de release est **signé hors de la CI** par le mainteneur ; la clé n'entre jamais dans le dépôt. La CI produit un APK de débogage.
+- **Versions** : semver, étiquettes `vX.Y.Z`. **Écart (J7)** : l'APK de release est signé **par le workflow « Release »** avec la clé de release lue dans les secrets du dépôt (§ 4.18), plutôt qu'à la main ; la clé n'entre jamais dans le dépôt. La CI produit en plus un APK de débogage.
 
 ### 4.9 Accueil et navigation (J2)
 
@@ -846,7 +851,8 @@ son, puis le profil envoyé, en entier.
 
 **Réglages de l'appareil** (DataStore `player`, pas par profil) : passthrough par format,
 fréquence d'images, intro, épisode suivant, « toujours là », seuil « vu », sauts, ASS par le
-serveur, format, apparence des sous-titres.
+serveur, format, apparence des sous-titres. Au J7, ceux qui tiennent à la personne passent au profil
+(§ 4.17).
 
 **Serveur de test** : `bootstrap.sh` installe **Chapter Segments Provider** depuis le dépôt de
 plugins de jellyfin.org (redémarrage du serveur), puis lance la tâche d'analyse des segments : les
@@ -875,10 +881,8 @@ l'appareil (103), barre de taille des sous-titres (104), un même sous-titre à 
 d'un bloc) et les pistes (78, 79 : pastilles). Le lecteur provisoire (86) disparaît.
 
 **Limites connues** (à reprendre plus tard) :
-- Le mode des sous-titres (désactivés, forcés, toujours, intelligent) suit la pré-sélection du J3
-  et les préférences du profil sur le serveur ; son réglage dans l'appli arrive avec les pages de
-  réglages du J7, comme la langue préférée.
-- La qualité choisie pendant la lecture vaut pour la séance ; le réglage par défaut est au J7.
+- Le mode des sous-titres et la langue préférée se règlent dans l'appli depuis le J7 (§ 4.17) ; la
+  qualité choisie pendant la lecture vaut pour la séance, la qualité par défaut est un réglage du J7.
 - Le passage d'un Dolby Vision profil 5 sur un appareil qui ne le décode pas passe par le
   transcodage du serveur (tone mapping) ; seul le profil 8 se replie sur HEVC dans l'appareil.
 - Rien n'a encore été mesuré sur la Shield (60 images/s, cadence, passthrough réel) : c'est le J8.
@@ -1316,10 +1320,10 @@ bridé par le mode débogable), ni R8 ni profil.
   tête du dex (`dexLayoutOptimization`). `profileinstaller` écrit le profil au premier lancement
   d'un APK installé par `adb install` ; Android le compile ensuite à la maintenance (`bg-dexopt`),
   ou tout de suite par `adb shell cmd package compile -m speed-profile -f fr.guim.cinedoury`.
-- **Signée avec la clé de débogage versionnée — étape transitoire** : elle s'installe par-dessus
-  l'APK de débogage sans désinstallation (même clé, mêmes données). Le J7 la remplacera par la clé
-  de release (seule la `signingConfig` de `release` change) ; on ne pourra plus alors passer de
-  l'une à l'autre sans désinstaller.
+- **Signature** : depuis le J7, la clé de release quand le workflow « Release » l'a (§ 4.18) ;
+  sinon (CI d'une PR, poste de développement), la clé de débogage versionnée, pour que l'APK
+  optimisé s'installe par-dessus celui de débogage sur les émulateurs de la CI. Un APK signé avec
+  la clé de débogage n'est jamais publié. Passer de l'une à l'autre demande une désinstallation.
 - `:benchmark` (plugin `cinedoury.android.test`, `com.android.test` auto-instrumenté) pilote l'appli
   **de l'extérieur**, comme une télécommande : UiAutomator, touches injectées, étiquettes de test
   exposées en identifiants de ressource (`testTagsAsResourceId`, `MainActivity`). Il ne connaît
@@ -1433,6 +1437,174 @@ une fois, puis `adb shell cmd package compile -m speed-profile -f fr.guim.cinedo
 thread », « High input latency ». Sur la Shield en 4K, vérifier en plus que l'accueil montre
 exactement les captures du 1080p (`am get-config` inchangé : `w1920dp-h1080dp`).
 
+### 4.17 Réglages (J7)
+
+**Pages** (`:feature:settings`, `SettingsPageScreen`) : une première page qui liste les thèmes, chacun
+avec une ligne qui dit ce qu'il contient, puis une page par thème : Lecture, Image, Son, Sous-titres,
+Intro et générique, Accueil et navigation, Bibliothèques, Apparence, Profil, Réseau, Recherche (mène
+directement à Seerr, § 4.12), Appareil, Avancé. Chaque ligne dit ce qu'elle fait **et sa valeur par
+défaut** (« … Par défaut : 90 %. »). Les lignes sont groupées par **à qui** elles appartiennent : « Pour
+vous (Léa) » — suivent le profil — et « Pour cette télévision » — tous les profils de cet appareil, de
+son ampli et de son réseau. Un choix s'ouvre dans un panneau à droite, la valeur courante cochée et
+focalisée ; OK choisit, « Retour » referme et rend le focus à la ligne. ← → règlent un pas à pas
+(taille des sous-titres, décalage audio). Focus initial sur la première ligne.
+
+**Où chaque réglage est gardé et ce qu'il fait** :
+
+| Page | Réglage (défaut) | Gardé | Effet |
+|---|---|---|---|
+| Lecture | sauts ← / → (10 s / 30 s), seuil « vu » (90 %) | profil, sur l'appareil (DataStore `player`, clés suffixées `@serveur/utilisateur`, repli sur la valeur de l'appareil) | lecteur (§ 4.11) |
+| Lecture | qualité sur le réseau de la maison (Originale), qualité à distance (8 Mb/s), débit maximal (120 Mb/s) | appareil | `MaxStreamingBitrate` et `maxBitrate` du profil : la qualité selon que l'adresse en service est locale ou distante, plafonnée par le débit maximal ; l'« Originale » vaut le débit maximal. Le panneau « Qualité » du lecteur part de cette valeur |
+| Lecture | lecture directe (Automatique, Forcée, Jamais) | appareil | Forcée : le fichier tel quel (`/Videos/{id}/stream?static=true`) même quand le serveur ne l'aurait pas envoyé ainsi ; ses raisons restent affichées, et le repli vers le transcodage suit un échec (§ 4.11). Jamais : `EnableDirectPlay`/`EnableDirectStream` à faux, le serveur transcode |
+| Lecture | ASS incrustés par le serveur (non) | appareil | § 4.11 |
+| Image | fréquence d'images adaptée (oui), résolution adaptée (non), HDR autorisé (oui), Dolby Vision autorisé (oui), format (Adapter) | appareil | résolution : le mode de l'écran de la plus petite taille qui contient le film (`DisplayModes`), à sa cadence si la fréquence est adaptée ; HDR non autorisé : HDR10, HDR10+ et HLG retirés du profil (le serveur fait le tone mapping) ; Dolby Vision non autorisé : profils DV retirés, profil 8 lu par sa couche de base, et le décodeur Dolby Vision écarté par ExoPlayer |
+| Son | langue audio préférée (celle du fichier) | **profil, sur le serveur** (`AudioLanguagePreference`) | pré-sélection des pistes (§ 4.10), sur tous les appareils du profil |
+| Son | sortie stéréo forcée (non), décalage audio (0 ms, ± 500 par 25), passthrough par format (tous) | appareil | stéréo : deux canaux, rien vers l'ampli, l'audio du serveur en AAC ; décalage : l'horloge du son vue par Media3 est décalée (`AudioOffset`, `ForwardingAudioSink`), l'image suit |
+| Sous-titres | mode (Ceux du fichier), langue (Aucune) | **profil, sur le serveur** (`SubtitleMode`, `SubtitleLanguagePreference`) | pré-sélection (§ 4.10) |
+| Sous-titres | taille, couleur, contour, fond, position | profil, sur l'appareil | **les mêmes clés** que la barre du lecteur (§ 4.11) : un réglage fait en lecture devient la valeur par défaut, et inversement ; aperçu sous le titre de la page |
+| Intro et générique | intro et récapitulatif (Bouton), épisode suivant automatique (oui), compte à rebours (10 s), « toujours là ? » (après 3 épisodes) | profil, sur l'appareil | lecteur |
+| Accueil et navigation | « Personnaliser l'accueil » (rangées, ordre, bibliothèques, fenêtre, § 4.9), bandeau à la une (oui), vue par défaut (Affiches), titres sous les affiches (non), indicateur « non vu » (oui) | profil, sur l'appareil (DataStore `settings`) | bandeau : sans lui, les rangées partent du haut, focus sur la première ; vue : une bibliothèque jamais ouverte s'ouvre dans cette vue ; titres et « non vu » : `CardPreferences` du thème, sur toutes les cartes |
+| Bibliothèques | place dans le menu (1re, 2e… ou masquée), icône, index local | ordre : **profil, sur le serveur** (`OrderedViews`) ; masquée : profil, sur l'appareil (`rail_hidden`) ; icône et index : serveur, sur l'appareil | le rail et les rangées de l'accueil suivent l'ordre du serveur (§ 4.9) |
+| Apparence | thème (Sombre), animations réduites (non), taille du texte (Normale ; Grande 115 %, Très grande 130 %) | appareil | `CineTheme(variant, reducedMotion, textScale)` ; animations réduites aussi quand le système coupe les siennes (`CineMotion.isReduced`) |
+| Profil | code PIN, changer de profil, se déconnecter ; au démarrage (Choix du profil, appareil) | § 4.7 | § 4.7 |
+| Réseau | adresses locale et distante, basculement (Locale puis distante ; Locale seulement ; Distante seulement), oublier le serveur | appareil | `AddressResolver.resolve(server, mode)`, au démarrage |
+| Appareil | nom dans Jellyfin (celui de la télévision), mise à jour (§ 4.18), à propos (licences) | appareil | le nom part dans `Authorization` (`Device="…"`) dès la requête suivante, flux du lecteur compris : la liste des appareils du serveur le prend aussitôt ; une session déjà ouverte garde le nom de son ouverture |
+| Avancé | journaux de l'appli, rapport de diagnostic (§ 4.19), vider le cache | — | vider : mémoire et disque de Coil, puis l'index local relu |
+
+**Source** (`LibrarySource`, Jellyfin) : `setPlaybackPreferences` et `setLibraryOrder` lisent
+`GET /Users/Me` et réécrivent toute la configuration par `POST /Users/Configuration?userId=…` (le
+reste inchangé) ; `SourceConnector.setDeviceName` change le `DeviceInfo` de tous les clients ouverts.
+
+**Écarts et choix** :
+- Mode et langues des sous-titres, langue audio et ordre des bibliothèques sont gardés **sur le
+  serveur** : Jellyfin les a déjà par profil, et l'appli les lisait depuis le J3. Ils suivent la
+  personne sur tous ses appareils, l'interface web comprise.
+- Sauts, seuil « vu », intro, épisode suivant et apparence des sous-titres passent de l'appareil
+  (J4) **au profil sur l'appareil** ; la valeur gardée avant le J7 devient le défaut de chaque profil.
+- Au démarrage seulement, le choix de l'adresse ; en cours de session, l'adresse ne change pas.
+- **Laissés de côté** : moteur mpv, téléchargements, restrictions des profils enfants, statistiques
+  (P1, hors périmètre) ; mode nuit, règles par bibliothèque, couleur d'accent, fond animé, écran de
+  veille, démarrage avec la TV, limite sur données mobiles, taille des affiches par défaut : aucune
+  fonction P0 ne les applique encore, et un réglage sans effet ne s'affiche pas.
+
+### 4.18 Mise à jour, versions et publication (J7)
+
+**Versions** : `versionName` = `X.Y.Z` de l'étiquette `vX.Y.Z`, `versionCode` = X × 10 000 + Y × 100 + Z
+(Y et Z sous 100 : 1.10.0 > 1.9.99), écrits par Gradle depuis `CINE_DOURY_VERSION` (workflow
+« Release »). Sans elle (CI, postes) : `0.1.0-dev`, code 1, une **version de développement** : elle
+le dit (Réglages → Appareil, écran de mise à jour) et ne se voit rien proposer, sans interroger
+GitHub.
+
+**Source** : `GET https://api.github.com/repos/guim31/cine-doury/releases?per_page=30`, sans jeton (60
+requêtes par heure et par adresse). Brouillons, préversions, étiquettes hors `vX.Y.Z` et releases sans
+APK écartés ; la plus haute version au-dessus de l'installée est proposée. 403 et 429 :
+« GitHub limite les vérifications », avec l'heure de `X-RateLimit-Reset` ; réponse illisible,
+injoignable : deux phrases et « Réessayer ». **Écart au § 7** : GitHub est le seul service en ligne
+hors du serveur de la maison ; il n'est interrogé que pour lire les releases, et rien de la maison ne
+lui est envoyé.
+
+**Quand** : au premier affichage de l'accueil, une fois par lancement et **une fois par jour au plus**
+(`last_update_check`) ; une version proposée et non ignorée ouvre l'écran de mise à jour,
+« Installer » focalisé. À la demande : Réglages → Appareil → « Mise à jour de l'appli », qui montre
+aussi une version ignorée (marquée telle).
+
+**Écran** (`UpdateScreen`) : version, date, journal des changements (Markdown simple : titres, puces,
+paragraphes ; gras, code et liens réduits à leur texte ; ↑ ↓ le font défiler), puis « Installer »,
+« Plus tard », « Ignorer cette version ». Puis :
+1. **Autorisation** : sans `canRequestPackageInstalls()`, l'écran explique où activer « Sources
+   inconnues » sur Google TV et sur Shield et y mène (`ACTION_MANAGE_UNKNOWN_APP_SOURCES` de l'appli,
+   à défaut les réglages de sécurité, à défaut les réglages) ; au retour, l'installation reprend seule.
+2. **Téléchargement** dans `cacheDir/updates`, avec sa progression.
+3. **SHA-256** comparé au fichier `cine-doury-X.Y.Z.apk.sha256` publié avec l'APK ; différent ou
+   absent : rien n'est installé, le fichier est effacé.
+4. **Signature** : les certificats de l'APK (`getPackageArchiveInfo`, `GET_SIGNING_CERTIFICATES`) et
+   ceux de l'appli installée, comparés par empreinte SHA-256 ; différents (APK de débogage installé,
+   release signée par la clé de release) : « Désinstallez d'abord cette version » en deux phrases, et
+   « Ouvrir les réglages de l'appli ».
+5. **Prête** : « Installer maintenant » donne l'APK à `PackageInstaller` (session `MODE_FULL_INSTALL`,
+   `REQUEST_INSTALL_PACKAGES` dans le manifeste de `:feature:update`) ; Android demande confirmation,
+   puis l'appli redémarre dans sa nouvelle version. Un refus d'Android s'affiche, son message journalisé.
+
+**Signature et publication** : workflow `.github/workflows/release.yml`.
+- Étiquette `v*` posée par le mainteneur : construit `:app:tv:assembleRelease` (configuration
+  `release` de la PR « fluidité » : R8, ressources, Baseline Profile), le signe avec la **clé de
+  release** — keystore PKCS12 décodé de `RELEASE_KEYSTORE_BASE64` dans `$RUNNER_TEMP`, effacé ensuite ;
+  `RELEASE_KEYSTORE_PASSWORD`, `RELEASE_KEY_ALIAS`, `RELEASE_KEY_PASSWORD` —, vérifie `versionName`,
+  `versionCode` (`aapt2`), la signature (`apksigner`) et qu'elle n'est pas celle de la clé de débogage,
+  écrit le SHA-256 et le journal des changements (`docs/releases/vX.Y.Z.md` s'il existe, sinon les
+  commits depuis l'étiquette précédente), puis publie la release (`gh release create`).
+- Sans secrets (fork, secrets non posés) : construit et vérifie, **ne signe pas et ne publie pas**,
+  le dit par un avertissement, sans échouer.
+- **Chaque PR le joue à blanc** (job « Release (dry run) ») : version `v0.0.1`, jamais de secret
+  (même sur une PR du dépôt), jamais publié ; APK, SHA-256 et journal en artefact.
+- La clé de débogage versionnée (`app/tv/debug.keystore`) ne signe que les APK de débogage.
+
+**Retour arrière** : Android refuse un `versionCode` inférieur pour une appli non système, et
+désinstaller efface tout (profils, jetons chiffrés par une clé du Keystore qui ne s'exporte pas,
+réglages). Pistes étudiées :
+- *garder l'APK précédent et guider une désinstallation* : perd les sessions et les réglages à chaque
+  retour, et les jetons ne peuvent pas être exportés (Keystore) ;
+- *exporter et réimporter les réglages* : sans les jetons, un export n'éviterait pas de se reconnecter
+  à chaque profil ; beaucoup de code pour un geste rare ;
+- **retenu : la version de retour.** Revenir à la 1.1.0 après une 1.2.0 défectueuse, c'est publier une
+  **1.2.1 qui reprend le code de la 1.1.0** : « Run workflow » de « Release », `version: v1.2.1`,
+  `source: v1.1.0` ; le workflow construit le code de `source` avec le numéro de `version`, et le
+  journal dit « Retour à la version 1.1.0 ». L'appli la propose comme toute mise à jour : rien n'est
+  perdu, aucune désinstallation. Un `version` déjà publié est refusé.
+
+### 4.19 Journaux et rapport de diagnostic (J7)
+
+- **Journaux** : `FailureLog` (§ 4.13) garde aussi en mémoire les **50 derniers** échecs (heure,
+  niveau, message, classe et message de l'erreur) ; « Avancé » → « Journaux de l'appli » les montre,
+  le plus récent en haut. `PlaybackLog` garde les **20 dernières décisions de lecture** (titre, mode,
+  raisons, conteneur, codecs, débit, repli, lecture directe forcée), écrites par le lecteur.
+- **Rapport** (`DiagnosticReport`, `:core:source`, texte brut en anglais technique, comme les
+  journaux du serveur qu'il rejoint) : l'appli (version, code, type de build), l'appareil (modèle,
+  Android, mode de l'écran, densité et taille en dp), ses capacités (écran et HDR, décodeurs, Dolby
+  Vision, décodeurs audio, sortie audio et passthrough, profil envoyé), le serveur (nom, version,
+  accès local ou distant, http ou https), les réglages de lecture et ceux du profil sur le serveur,
+  le réseau et l'apparence, les échecs et les décisions de lecture. **Aucun secret** : ni jeton, ni mot
+  de passe, ni clé ni adresse de Seerr, ni adresse du serveur ; le jeton du profil, la clé et l'adresse
+  de Seerr et les adresses du serveur sont en plus **masqués** (`***`) s'ils apparaissaient dans un
+  message.
+- **Envoi** : « Envoyer au serveur » → `POST /ClientLog/Document` (texte, SDK `systemApi.logFile`) ; le
+  serveur répond le nom du fichier créé dans ses journaux (« upload_Cine Doury_… .log »), que l'écran
+  affiche ; le mainteneur le lit dans Tableau de bord → Journaux. Refusé si le serveur désactive
+  `AllowClientLogUpload` (403 : « Le serveur n'a pas reçu le rapport »).
+
+**Tests du J7** : unitaires `PlayerSettingsStoreTest` (profil ou appareil, qualités, plafond, défauts
+du J4), `AppPreferencesTest`, `AddressResolverTest` (basculement), `HomeRepositoryTest` (vue par
+défaut), `PlaybackProfilesTest` (HDR, Dolby Vision, stéréo, qualité locale ou distante),
+`DisplayModesTest` (résolution adaptée), `AudioOffsetTest`, `ReleaseClientTest` (fausse API GitHub :
+à jour, nouvelle version, ignorée, brouillons, réponse invalide, 403 et 429, injoignable,
+téléchargement et SHA-256), `UpdateLogicTest` (versions, une fois par jour, sommes, journal Markdown),
+`UpdateRepositoryTest` (autorisation, SHA-256, signature, version ignorée, version de
+développement, installation), `MemoryLogsTest`, `DiagnosticReportTest` (contenu ; **aucun secret**) ;
+intégration `JellyfinSettingsIntegrationTest` (préférences sur le serveur lues par un autre appareil,
+ordre des bibliothèques, nom de l'appareil, **rapport envoyé par `ClientLog` et relu dans les journaux
+du serveur**) ; interface `J7NavigationTest` (toutes les pages à la télécommande, panneau de choix,
+« Retour », focus initial), `AppFlowTest` (le PIN depuis la page « Profil »).
+
+**Captures** (`docs/screenshots/j7/`, 1920 × 1080, sombre et noir OLED) : réglages (150), Lecture
+(151) et son choix de qualité ouvert (152), Image (153), Son (154), Sous-titres (155), Intro et
+générique (156), Accueil et navigation (157), Bibliothèques (158), Apparence (159), Profil (160),
+Réseau (161), Appareil (162), Avancé (163), nom de l'appareil (164) ; mise à jour disponible (165),
+téléchargement (166), prête (167), signature différente (168), autorisation manquante (169), erreur
+(170), à jour (171), version de développement (172) ; rapport de diagnostic (173), journaux (174). Les
+réglages du J1 (33, 34) et du J3 (87 à 89) sont refaits sur les nouvelles pages ; les pages « Lecture
+et son » et « Apparence des sous-titres » du J4 (101, 102) disparaissent, rangées dans Son et
+Sous-titres.
+
+**Limites connues** :
+- Rien n'est essayé sur un appareil : installation par `PackageInstaller`, autorisation « Sources
+  inconnues » sur Google TV et Shield, décalage audio en passthrough, résolution adaptée (J8 et essais
+  réels).
+- Le nom d'appareil n'atteint pas une session déjà ouverte côté serveur (elle garde son nom jusqu'à sa
+  fin) ; la liste des appareils, si.
+- Le changement d'adresse automatique n'a lieu qu'au démarrage.
+- La première release publiée et signée (et donc la première mise à jour réelle) attend la clé et les
+  secrets posés par le mainteneur.
+
 ## 5. Tests et CI
 
 - GitHub Actions sur `ubuntu-latest` :
@@ -1520,4 +1692,5 @@ rangées intelligentes ; puis le web et la TV en direct (P2).
 ## 7. Hors périmètre
 
 Musique ; iOS et Apple TV ; toute modification du serveur Jellyfin ; tout service en ligne autre
-que le serveur de l'utilisateur, à l'exception des fournisseurs que Jellyfin interroge lui-même.
+que le serveur de l'utilisateur, à l'exception des fournisseurs que Jellyfin interroge lui-même et
+des releases de ce dépôt sur GitHub, lues pour proposer les mises à jour (§ 4.18).

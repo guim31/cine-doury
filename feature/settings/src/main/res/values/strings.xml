@@ -1,41 +1,159 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_title">Réglages</string>
-    <string name="section_profile">Profil : %1$s</string>
-    <string name="pin_set">Définir un code PIN</string>
-    <string name="pin_change">Changer le code PIN</string>
-    <string name="pin_remove">Retirer le code PIN</string>
-    <string name="pin_description">Quatre chiffres, demandés à l\'ouverture de ce profil sur cette télévision.</string>
-    <string name="pin_on">Activé</string>
-    <string name="pin_off">Désactivé</string>
-    <string name="switch_profile">Changer de profil</string>
-    <string name="sign_out">Se déconnecter de ce profil</string>
-    <string name="sign_out_description">Ce profil est oublié sur cette télévision ; les autres restent connectés.</string>
-    <string name="section_startup">Démarrage</string>
-    <string name="startup_title">Au démarrage</string>
-    <string name="startup_last">Dernier profil</string>
-    <string name="startup_ask">Choix du profil</string>
-    <string name="startup_last_description">Ciné Doury ouvre directement le dernier profil utilisé, derrière son code PIN s\'il en a un.</string>
-    <string name="startup_ask_description">Ciné Doury demande toujours qui regarde. Par défaut.</string>
-    <string name="section_server">Serveur : %1$s · %2$s</string>
-    <string name="address_local">Adresse locale</string>
-    <string name="address_remote">Adresse distante</string>
-    <string name="address_remote_none">Aucune</string>
-    <string name="forget_server">Oublier ce serveur</string>
-    <string name="forget_server_description">Déconnecte tous les profils de cette télévision et revient à l\'accueil du premier lancement.</string>
-    <string name="forget_title">Oublier ce serveur ?</string>
-    <string name="forget_message">Tous les profils de « %1$s » seront déconnectés de cette télévision, et ses adresses oubliées. Rien n\'est supprimé sur le serveur.</string>
-    <string name="forget_confirm">Oublier</string>
-    <string name="forget_cancel">Annuler</string>
-    <string name="section_debug">Version de débogage</string>
-    <string name="catalog">Catalogue</string>
-    <string name="catalog_description">Les jetons et composants du design system.</string>
-    <string name="section_home">Accueil</string>
+    <string name="settings_subtitle">Profil : %1$s · Serveur : %2$s</string>
+    <string name="setting_on">Activé</string>
+    <string name="setting_off">Désactivé</string>
+    <string name="setting_default">%1$s Par défaut : %2$s.</string>
+    <string name="section_for_profile">Pour vous (%1$s)</string>
+    <string name="section_for_profile_note">Ces réglages suivent ce profil.</string>
+    <string name="section_for_profile_server_note">Gardés sur le serveur : ils suivent ce profil sur tous ses appareils.</string>
+    <string name="section_for_device">Pour cette télévision</string>
+    <string name="section_for_device_note">Ces réglages valent pour tous les profils de cette télévision, de son ampli et de son réseau.</string>
+
+    <!-- The themes, on the first page. -->
+    <string name="theme_playback">Lecture</string>
+    <string name="theme_playback_description">Qualité, lecture directe, sauts, seuil « vu ».</string>
+    <string name="theme_picture">Image</string>
+    <string name="theme_picture_description">Fréquence d\'images, résolution, HDR et Dolby Vision, format.</string>
+    <string name="theme_sound">Son</string>
+    <string name="theme_sound_description">Langue, passthrough vers l\'ampli, stéréo, décalage audio.</string>
+    <string name="theme_subtitles">Sous-titres</string>
+    <string name="theme_subtitles_description">Mode, langue, taille, couleur, fond et position.</string>
+    <string name="theme_segments">Intro et générique</string>
+    <string name="theme_segments_description">Passer l\'intro, épisode suivant, « toujours là ? ».</string>
+    <string name="theme_browsing">Accueil et navigation</string>
+    <string name="theme_browsing_description">Rangées, bandeau, vue par défaut, titres, « non vu ».</string>
+    <string name="theme_libraries">Bibliothèques</string>
+    <string name="theme_libraries_description">Ordre et visibilité dans le menu, icônes, index local.</string>
+    <string name="theme_appearance">Apparence</string>
+    <string name="theme_appearance_description">Sombre ou noir OLED, animations réduites, taille du texte.</string>
+    <string name="theme_profile">Profil</string>
+    <string name="theme_profile_description">Code PIN, profil au démarrage, changer de profil.</string>
+    <string name="theme_network">Réseau</string>
+    <string name="theme_network_description">Adresses locale et distante, basculement automatique.</string>
+    <string name="theme_search">Recherche</string>
+    <string name="theme_device">Appareil</string>
+    <string name="theme_device_description">Nom dans Jellyfin, mise à jour de l\'appli, à propos.</string>
+    <string name="theme_advanced">Avancé</string>
+    <string name="theme_advanced_description">Journaux, rapport de diagnostic, vider le cache.</string>
+
+    <!-- Lecture -->
+    <string name="playback_seek_back">Saut arrière (←)</string>
+    <string name="playback_seek_back_description">Pendant la lecture, interface masquée.</string>
+    <string name="playback_seek_forward">Saut avant (→)</string>
+    <string name="playback_seek_forward_description">Pendant la lecture, interface masquée.</string>
+    <string name="playback_watched">Seuil « vu »</string>
+    <string name="playback_watched_description">Un titre est vu à cette part de sa durée, ou dès le début du générique.</string>
+    <string name="playback_local_quality">Qualité sur le réseau de la maison</string>
+    <string name="playback_local_quality_description">Ce que le lecteur demande au serveur ; plus bas, le serveur convertit.</string>
+    <string name="playback_remote_quality">Qualité à distance</string>
+    <string name="playback_remote_quality_description">Par l\'adresse distante, où le débit de la maison compte.</string>
+    <string name="playback_ceiling">Débit maximal</string>
+    <string name="playback_ceiling_description">Ce que le réseau de cette télévision tient, même en qualité originale.</string>
+    <string name="playback_direct">Lecture directe</string>
+    <string name="playback_direct_description">Automatique : le fichier tel quel quand l\'appareil le lit, sinon le serveur le convertit.</string>
+    <string name="direct_auto">Automatique</string>
+    <string name="direct_forced">Forcée</string>
+    <string name="direct_never">Jamais</string>
+    <string name="playback_burn_in">Sous-titres ASS incrustés par le serveur</string>
+    <string name="playback_burn_in_description">Garde tous leurs styles, mais le serveur convertit la vidéo.</string>
+    <string name="quality_original">Originale</string>
+    <string name="quality_mbps">%1$d Mb/s</string>
+    <string name="value_percent">%1$d %%</string>
+    <string name="value_seconds">%1$d s</string>
+    <string name="value_never">Jamais</string>
+    <string name="value_episodes">Après %1$d épisodes</string>
+
+    <!-- Image -->
+    <string name="picture_frame_rate">Fréquence d\'images adaptée</string>
+    <string name="picture_frame_rate_description">L\'écran passe à 24 Hz pour un film en 24p, quand il le peut.</string>
+    <string name="picture_resolution">Résolution adaptée</string>
+    <string name="picture_resolution_description">L\'écran prend la résolution du film (1080p pour un film en 1080p) et l\'agrandit lui-même.</string>
+    <string name="picture_hdr">HDR autorisé</string>
+    <string name="picture_hdr_description">HDR10, HDR10+ et HLG tels quels ; désactivé, le serveur les convertit en SDR.</string>
+    <string name="picture_dolby_vision">Dolby Vision autorisé</string>
+    <string name="picture_dolby_vision_description">Désactivé, sa couche HDR10 ou une conversion par le serveur.</string>
+    <string name="picture_not_shown">Votre écran ne l\'affiche pas en ce moment.</string>
+    <string name="picture_aspect">Format de l\'image</string>
+    <string name="picture_aspect_description">Au début de chaque lecture.</string>
+
+    <!-- Son -->
+    <string name="sound_language">Langue audio préférée</string>
+    <string name="sound_language_description">La piste choisie au début d\'une lecture.</string>
+    <string name="sound_stereo">Sortie stéréo forcée</string>
+    <string name="sound_stereo_description">Deux canaux seulement : rien vers l\'ampli, le reste est mélangé.</string>
+    <string name="sound_offset">Décalage audio</string>
+    <string name="sound_offset_description">Le son plus tard (+) ou plus tôt (−) que l\'image, si l\'ampli ou la télévision en retarde un.</string>
+    <string name="sound_offset_value">%1$+d ms</string>
+    <string name="sound_passthrough">Vers l\'ampli tel quel (passthrough)</string>
+    <string name="passthrough_available">La sortie HDMI le prend en ce moment.</string>
+    <string name="passthrough_unavailable">La sortie ne le prend pas en ce moment : l\'appareil le décode, ou le serveur le convertit.</string>
+    <string name="language_default">Celle du fichier</string>
+    <string name="language_none">Aucune</string>
+    <string name="language_fre">Français</string>
+    <string name="language_eng">Anglais</string>
+    <string name="language_jpn">Japonais</string>
+    <string name="language_ger">Allemand</string>
+    <string name="language_spa">Espagnol</string>
+    <string name="language_ita">Italien</string>
+    <string name="server_loading">Lecture des préférences du serveur…</string>
+    <string name="server_failed">Le serveur n\'a pas répondu : ce réglage ne peut pas changer pour l\'instant.</string>
+
+    <!-- Sous-titres -->
+    <string name="subtitles_mode">Mode</string>
+    <string name="subtitles_mode_description">Les sous-titres choisis au début d\'une lecture.</string>
+    <string name="mode_default">Ceux du fichier</string>
+    <string name="mode_none">Désactivés</string>
+    <string name="mode_forced">Forcés seulement</string>
+    <string name="mode_always">Toujours</string>
+    <string name="mode_smart">Intelligent</string>
+    <string name="mode_smart_description">Intelligent : toujours si l\'audio n\'est pas dans votre langue, forcés seulement sinon.</string>
+    <string name="subtitles_language">Langue des sous-titres</string>
+    <string name="subtitles_language_description">Pour le mode et la piste choisie au début d\'une lecture.</string>
+    <string name="subtitles_look">Apparence</string>
+    <string name="subtitles_look_note">Un réglage fait pendant la lecture devient celui-ci, et inversement.</string>
+    <string name="subtitles_size_description">← et → ; une part de la hauteur de l\'image, même rendu en 1080p et en 4K.</string>
+    <string name="subtitles_style_description">Pour les sous-titres sans style propre (SRT).</string>
+    <string name="subtitles_position_description">La hauteur au-dessus du bas de l\'image.</string>
+
+    <!-- Intro et générique -->
+    <string name="segments_action">Intro et récapitulatif</string>
+    <string name="segments_action_description">Quand le serveur connaît ces passages.</string>
+    <string name="segments_autoplay">Épisode suivant automatique</string>
+    <string name="segments_autoplay_description">Après le compte à rebours, pendant le générique.</string>
+    <string name="segments_countdown">Compte à rebours</string>
+    <string name="segments_countdown_description">Avant l\'épisode suivant.</string>
+    <string name="segments_still">« Vous êtes toujours là ? »</string>
+    <string name="segments_still_description">Après ce nombre d\'épisodes enchaînés sans toucher la télécommande.</string>
+
+    <!-- Accueil et navigation -->
     <string name="customize_home">Personnaliser l\'accueil</string>
-    <string name="customize_home_description">Rangées, ordre, bibliothèques et menu latéral de ce profil.</string>
-    <string name="section_libraries">Bibliothèques</string>
-    <string name="library_icon_automatic">Icône choisie d\'après son nom. Choisissez-en une autre pour le menu latéral.</string>
-    <string name="library_icon_chosen">Icône choisie par vous pour le menu latéral.</string>
+    <string name="customize_home_description">Rangées, ordre, bibliothèques de chaque rangée, fenêtre « À suivre ».</string>
+    <string name="browsing_banner">Bandeau à la une</string>
+    <string name="browsing_banner_description">En haut de l\'accueil, le titre focalisé en grand.</string>
+    <string name="browsing_view">Vue par défaut des bibliothèques</string>
+    <string name="browsing_view_description">Pour une bibliothèque où vous n\'en avez pas choisi.</string>
+    <string name="view_posters">Affiches</string>
+    <string name="view_small_posters">Petites affiches</string>
+    <string name="view_large_posters">Grandes affiches</string>
+    <string name="view_list">Liste détaillée</string>
+    <string name="view_thumbnails">Vignettes</string>
+    <string name="browsing_titles">Titres sous les affiches</string>
+    <string name="browsing_titles_description">Désactivé, sous l\'affiche focalisée seulement.</string>
+    <string name="browsing_unwatched">Indicateur « non vu »</string>
+    <string name="browsing_unwatched_description">Le triangle et le nombre d\'épisodes non vus sur les cartes.</string>
+
+    <!-- Bibliothèques -->
+    <string name="section_rail">Menu latéral et accueil (%1$s)</string>
+    <string name="section_rail_note">L\'ordre est gardé sur le serveur ; une bibliothèque masquée reste dans l\'accueil.</string>
+    <string name="library_place_description">Sa place dans le menu latéral et l\'accueil.</string>
+    <string name="library_hidden">Masquée du menu</string>
+    <string name="library_position">%1$de</string>
+    <string name="library_position_first">1re</string>
+    <string name="section_icons">Icônes (cette télévision)</string>
+    <string name="library_icon_automatic">Icône choisie d\'après son nom.</string>
+    <string name="library_icon_chosen">Icône choisie par vous.</string>
     <string name="library_icon_auto">Automatique (%1$s)</string>
     <string name="index_title">Index de la bibliothèque</string>
     <string name="index_running">Mise à jour : %1$d sur %2$d titres.</string>
@@ -64,14 +182,102 @@
         <item quantity="many">%1$d épisodes</item>
         <item quantity="other">%1$d épisodes</item>
     </plurals>
-    <string name="section_playback">Lecture</string>
-    <string name="playback_settings">Lecture et son</string>
-    <string name="playback_settings_description">Passthrough vers l\'ampli, fréquence d\'images, intro, épisode suivant. Réglages de cet appareil.</string>
-    <string name="subtitle_settings">Apparence des sous-titres</string>
-    <string name="subtitle_settings_description">Taille, couleur, contour, fond et position.</string>
-    <string name="device_profile">Profil de lecture de l\'appareil</string>
-    <string name="device_profile_description">Ce que l\'appareil sait lire, et ce qui est demandé au serveur.</string>
-    <string name="section_search">Recherche</string>
+
+    <!-- Apparence -->
+    <string name="appearance_theme">Thème</string>
+    <string name="appearance_theme_description">Noir OLED : un noir pur, pour les écrans OLED.</string>
+    <string name="theme_dark">Sombre</string>
+    <string name="theme_oled">Noir OLED</string>
+    <string name="appearance_motion">Animations réduites</string>
+    <string name="appearance_motion_description">Des fondus seulement : rien ne grandit ni ne glisse.</string>
+    <string name="appearance_motion_system">Le système a coupé ses animations : elles sont réduites ici aussi.</string>
+    <string name="appearance_text">Taille du texte</string>
+    <string name="appearance_text_description">Pour lire de plus loin.</string>
+    <string name="text_normal">Normale</string>
+    <string name="text_large">Grande</string>
+    <string name="text_larger">Très grande</string>
+
+    <!-- Profil -->
+    <string name="pin_set">Définir un code PIN</string>
+    <string name="pin_change">Changer le code PIN</string>
+    <string name="pin_remove">Retirer le code PIN</string>
+    <string name="pin_description">Quatre chiffres, demandés à l\'ouverture de ce profil sur cette télévision.</string>
+    <string name="pin_on">Activé</string>
+    <string name="pin_off">Désactivé</string>
+    <string name="startup_title">Au démarrage</string>
+    <string name="startup_description">Pour tous les profils de cette télévision.</string>
+    <string name="startup_last">Dernier profil</string>
+    <string name="startup_ask">Choix du profil</string>
+    <string name="switch_profile">Changer de profil</string>
+    <string name="sign_out">Se déconnecter de ce profil</string>
+    <string name="sign_out_description">Ce profil est oublié sur cette télévision ; les autres restent connectés.</string>
+
+    <!-- Réseau -->
+    <string name="address_local">Adresse locale</string>
+    <string name="address_remote">Adresse distante</string>
+    <string name="address_remote_none">Aucune</string>
+    <string name="network_mode">Basculement automatique</string>
+    <string name="network_mode_description">Au démarrage, l\'adresse que Ciné Doury essaie.</string>
+    <string name="network_auto">Locale, puis distante</string>
+    <string name="network_local">Locale seulement</string>
+    <string name="network_remote">Distante seulement</string>
+    <string name="section_server">Serveur : %1$s · %2$s</string>
+    <string name="forget_server">Oublier ce serveur</string>
+    <string name="forget_server_description">Déconnecte tous les profils de cette télévision et revient à l\'accueil du premier lancement.</string>
+    <string name="forget_title">Oublier ce serveur ?</string>
+    <string name="forget_message">Tous les profils de « %1$s » seront déconnectés de cette télévision, et ses adresses oubliées. Rien n\'est supprimé sur le serveur.</string>
+    <string name="forget_confirm">Oublier</string>
+    <string name="forget_cancel">Annuler</string>
+
+    <!-- Recherche -->
     <string name="seerr_settings">Demandes (Seerr)</string>
     <string name="seerr_settings_description">Proposer de demander à Seerr les titres absents de la bibliothèque.</string>
+
+    <!-- Appareil -->
+    <string name="device_name">Nom de l\'appareil dans Jellyfin</string>
+    <string name="device_name_description">Celui que montrent les appareils et les lectures du serveur.</string>
+    <string name="device_name_tv">%1$s (nom de la télévision)</string>
+    <string name="device_name_title">Nom de l\'appareil</string>
+    <string name="device_name_subtitle">Le serveur le montre dès la prochaine requête. Vide : le nom de la télévision, « %1$s ».</string>
+    <string name="device_name_field">Nom</string>
+    <string name="device_name_save">Enregistrer</string>
+    <string name="device_name_reset">Nom de la télévision</string>
+    <string name="update_row">Mise à jour de l\'appli</string>
+    <string name="update_version">Version %1$s</string>
+    <string name="update_check">Appuyez pour rechercher une mise à jour.</string>
+    <string name="update_checked">Vérifiée le %1$s à %2$s. Appuyez pour rechercher à nouveau.</string>
+    <string name="update_development">Version de développement : aucune mise à jour proposée.</string>
+    <string name="update_available">La %1$s est disponible.</string>
+    <string name="about">À propos</string>
+    <string name="about_description">Licence MIT. Client Jellyfin : SDK Kotlin officiel (LGPL-3.0). Police Inter (SIL OFL 1.1). Media3, Compose, Coil, Koin, OkHttp (Apache 2.0). Aucune télémétrie.</string>
+
+    <!-- Avancé -->
+    <string name="advanced_logs">Journaux de l\'appli</string>
+    <string name="advanced_logs_description">Les %1$d dernières erreurs rencontrées.</string>
+    <string name="advanced_report">Rapport de diagnostic</string>
+    <string name="advanced_report_description">L\'appli, l\'appareil, le serveur, les réglages, les erreurs ; à envoyer au serveur.</string>
+    <string name="advanced_cache">Vider le cache</string>
+    <string name="advanced_cache_description">Les images gardées sur la télévision, puis l\'index local relu.</string>
+    <string name="notice_cache_cleared">Cache vidé. L\'index se relit en arrière-plan.</string>
+    <string name="notice_index">L\'index se relit en arrière-plan.</string>
+    <string name="notice_save_failed">Le serveur n\'a pas enregistré ce réglage. Vérifiez la connexion, puis réessayez.</string>
+    <string name="section_debug">Version de débogage</string>
+    <string name="catalog">Catalogue</string>
+    <string name="catalog_description">Les jetons et composants du design system.</string>
+    <string name="device_profile">Profil de lecture de l\'appareil</string>
+    <string name="device_profile_description">Ce que l\'appareil sait lire, et ce qui est demandé au serveur.</string>
+
+    <!-- Journaux et rapport -->
+    <string name="logs_title">Journaux de l\'appli</string>
+    <string name="logs_subtitle">Les erreurs attrapées depuis le lancement, la plus récente en haut. Jamais de mot de passe ni de jeton.</string>
+    <string name="logs_empty">Aucune erreur depuis le lancement.</string>
+    <string name="logs_error">Erreur</string>
+    <string name="logs_warning">Avertissement</string>
+    <string name="report_title">Rapport de diagnostic</string>
+    <string name="report_subtitle">Ce qu\'il dit, sans aucun secret : ni mot de passe, ni jeton, ni clé, ni adresse.</string>
+    <string name="report_send">Envoyer au serveur</string>
+    <string name="report_sending">Envoi…</string>
+    <string name="report_sent">Dans les journaux du serveur : « %1$s ».</string>
+    <string name="report_failed">Le serveur n\'a pas reçu le rapport. Vérifiez la connexion, puis réessayez.</string>
+    <string name="report_no_server">Aucun serveur ouvert : le rapport ne peut pas être envoyé.</string>
 </resources>

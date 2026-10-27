@@ -93,13 +93,20 @@ data class SubtitleRule(
 )
 
 /**
- * What the user allows on this device (`FONCTIONNALITES.md` § 12, « Son »): the formats sent to the
- * amplifier, the bitrate, and ASS subtitles drawn by the server rather than by the player.
+ * What the user allows on this device (`FONCTIONNALITES.md` § 12, « Image » and « Son »): the formats
+ * sent to the amplifier, the bitrate, ASS subtitles drawn by the server rather than by the player,
+ * the dynamic ranges and the channels.
  */
 data class ProfileOptions(
     val passthrough: Set<PassthroughFormat> = PassthroughFormat.entries.toSet(),
     val maxBitrate: Int = MAX_BITRATE,
     val burnInAss: Boolean = false,
+    /** HDR10, HDR10+ and HLG as they are; off, the server tone maps them (« Image », J7). */
+    val allowHdr: Boolean = true,
+    /** Dolby Vision as it is; off, its base layer or a tone mapping (« Image », J7). */
+    val allowDolbyVision: Boolean = true,
+    /** Two channels only, nothing to the amplifier (« Sortie stéréo forcée », J7). */
+    val stereo: Boolean = false,
 ) {
     companion object {
         /** 120 Mb/s: a 4K Blu-ray remux. */
@@ -149,9 +156,10 @@ object PlaybackProfiles {
     private val HLS_AUDIO = listOf(AudioCodec.Ac3, AudioCodec.Eac3, AudioCodec.Aac, AudioCodec.Mp3)
 
     fun build(
-        device: DeviceCapabilities,
+        capabilities: DeviceCapabilities,
         options: ProfileOptions = ProfileOptions(),
     ): PlaybackProfile {
+        val device = capabilities.allowed(options)
         val video =
             CODEC_NAMES.mapNotNull { (codec, name) ->
                 device.decoder(codec)?.let { videoRule(device, it, name) }
@@ -185,6 +193,21 @@ object PlaybackProfiles {
             transcodeAudioCodecs = transcodeAudio,
             transcodeContainer = if (hevc != null) "mp4" else "ts",
             subtitles = subtitleRules(device.subtitleFormats, options.burnInAss),
+        )
+    }
+
+    /** The device as the options let it be: no HDR or Dolby Vision on the screen, two channels. */
+    private fun DeviceCapabilities.allowed(options: ProfileOptions): DeviceCapabilities {
+        val hdr =
+            display.hdr.filterNot {
+                (!options.allowHdr && it != DynamicRange.DolbyVision && it != DynamicRange.Sdr) ||
+                    (!options.allowDolbyVision && it == DynamicRange.DolbyVision)
+            }
+        return copy(
+            display = display.copy(hdr = hdr.toSet()),
+            dolbyVisionProfiles = if (options.allowDolbyVision) dolbyVisionProfiles else emptySet(),
+            passthrough = if (options.stereo) emptySet() else passthrough,
+            maxPcmChannels = if (options.stereo) minOf(maxPcmChannels, STEREO) else maxPcmChannels,
         )
     }
 
@@ -248,4 +271,5 @@ object PlaybackProfiles {
     }
 
     private const val SURROUND_71 = 8
+    private const val STEREO = 2
 }

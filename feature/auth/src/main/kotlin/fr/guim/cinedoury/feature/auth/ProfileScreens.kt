@@ -95,6 +95,7 @@ fun ProfilesScreen(
     val first = remember { FocusRequester() }
     val other = remember { FocusRequester() }
     val error = state.error
+    val waiting = state.loading && state.profiles.isEmpty()
     FormScreen(
         brand = stringResource(UiR.string.brand_name),
         title = stringResource(R.string.profiles_title),
@@ -111,7 +112,7 @@ fun ProfilesScreen(
                 onSecondary = onOtherAccount,
             )
         } else {
-            ProfileRow(state.profiles, avatarUrl, onChoose, onOtherAccount, first, other)
+            ProfileRow(state.profiles, avatarUrl, onChoose, onOtherAccount, first, other, showOther = !waiting)
             if (!state.loading && state.profiles.isEmpty()) {
                 DirectSignIn(onQuickConnect = onOtherAccount, onPassword = onPassword)
             }
@@ -121,7 +122,6 @@ fun ProfilesScreen(
     // profile known here, no focus yet: moving it from « Autre compte » to a tile that arrives
     // before it fails in a LazyRow (CLAUDE.md, « Pièges »).
     val target = if (state.profiles.isEmpty()) other else first
-    val waiting = state.loading && state.profiles.isEmpty()
     InitialFocus(target, key = error == null to state.profiles.isEmpty(), enabled = error == null && !waiting)
 }
 
@@ -133,6 +133,7 @@ private fun ProfileRow(
     onOtherAccount: () -> Unit,
     first: FocusRequester,
     other: FocusRequester,
+    showOther: Boolean,
 ) {
     val listState = rememberLazyListState()
     // Profiles that arrive go before « Autre compte », which the list keeps in place by its key:
@@ -160,14 +161,19 @@ private fun ProfileRow(
                 image = url?.let { { AvatarImage(it) } },
             )
         }
-        item(key = "other") {
-            ProfileTile(
-                name = stringResource(R.string.profiles_other),
-                onClick = onOtherAccount,
-                icon = CineIcons.Add,
-                focusRequester = other,
-                modifier = Modifier.testTag("profile-other"),
-            )
+        // Not while the server is asked with no profile known: alone on the screen, « Autre compte »
+        // would get the focus Android gives back to the window (the keyboard of the address that
+        // closes), and keep it when the profiles arrive before it (CLAUDE.md, « Pièges »).
+        if (showOther) {
+            item(key = "other") {
+                ProfileTile(
+                    name = stringResource(R.string.profiles_other),
+                    onClick = onOtherAccount,
+                    icon = CineIcons.Add,
+                    focusRequester = other,
+                    modifier = Modifier.testTag("profile-other"),
+                )
+            }
         }
     }
 }

@@ -1,5 +1,6 @@
 package fr.guim.cinedoury.core.data
 
+import fr.guim.cinedoury.core.data.prefs.NetworkMode
 import fr.guim.cinedoury.core.data.server.AddressResolver
 import fr.guim.cinedoury.core.model.ServerInfo
 import fr.guim.cinedoury.core.source.ServerAddress
@@ -59,5 +60,29 @@ class AddressResolverTest {
                     throw SourceException.Incompatible("10.11.2", "12.3.0")
                 })
             assertFailsWith<SourceException.Incompatible> { AddressResolver(old).resolve(saved) }
+        }
+
+    @Test
+    fun `local only never goes out through the remote address`() =
+        runTest {
+            val source = InMemorySource(server = home).apply { unreachable += local }
+            assertFailsWith<SourceException.Unreachable> {
+                AddressResolver(source).resolve(saved, NetworkMode.LocalOnly)
+            }
+            val connection = AddressResolver(InMemorySource(server = home)).resolve(saved, NetworkMode.LocalOnly)
+            assertEquals(local, connection.address)
+        }
+
+    @Test
+    fun `remote only skips the local address`() =
+        runTest {
+            val connection = AddressResolver(InMemorySource(server = home)).resolve(saved, NetworkMode.RemoteOnly)
+            assertEquals(remote, connection.address)
+            assertEquals(ConnectionMode.Remote, connection.mode)
+            val noRemote =
+                AddressResolver(
+                    InMemorySource(server = home),
+                ).resolve(saved.copy(remoteAddress = null), NetworkMode.RemoteOnly)
+            assertEquals(local, noRemote.address)
         }
 }

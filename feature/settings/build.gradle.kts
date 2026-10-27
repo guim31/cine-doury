@@ -9,6 +9,11 @@ android {
 
 dependencies {
     implementation(projects.core.ui)
+    implementation(projects.core.playback)
+    implementation(projects.feature.player)
+    implementation(projects.feature.update)
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
 
     testImplementation(testFixtures(projects.core.source))
     testImplementation(libs.junit)

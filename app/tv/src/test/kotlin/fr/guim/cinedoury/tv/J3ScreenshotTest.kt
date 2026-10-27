@@ -33,9 +33,10 @@ import fr.guim.cinedoury.feature.library.FilterCategory
 import fr.guim.cinedoury.feature.library.LibraryPanel
 import fr.guim.cinedoury.feature.library.LibraryScreen
 import fr.guim.cinedoury.feature.library.LibraryUiState
-import fr.guim.cinedoury.feature.settings.SettingsPreview
-import fr.guim.cinedoury.feature.settings.SettingsScreen
+import fr.guim.cinedoury.feature.settings.SettingsPageScreen
+import fr.guim.cinedoury.feature.settings.SettingsSection
 import fr.guim.cinedoury.feature.settings.SettingsState
+import fr.guim.cinedoury.feature.settings.page.SettingsPagePreview
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -151,16 +152,22 @@ class J3ScreenshotTest(
 
     @Test
     fun settings() =
-        shoot("87-reglages-bibliotheques-et-index", SettingsPreview.library(2)) {
+        shoot(
+            "87-reglages-bibliotheques-et-index",
+            SettingsPagePreview.row("place-${J3Samples.libraries[2].id.value}"),
+        ) {
             Settings(J3Samples.indexRunning)
         }
 
     @Test
-    fun settingsReady() = shoot("88-reglages-index-a-jour", SettingsPreview.INDEX) { Settings(J3Samples.indexReady) }
+    fun settingsReady() =
+        shoot("88-reglages-index-a-jour", SettingsPagePreview.row("index")) {
+            Settings(J3Samples.indexReady)
+        }
 
     @Test
     fun iconPanel() =
-        shoot("89-icone-de-bibliotheque", SettingsPreview.icon(4)) {
+        shoot("89-icone-de-bibliotheque", SettingsPagePreview.option(4)) {
             Settings(J3Samples.indexReady, iconOf = J3Samples.libraries[4].id)
         }
 
@@ -215,7 +222,8 @@ class J3ScreenshotTest(
         index: IndexStatus,
         iconOf: LibraryId? = null,
     ) {
-        SettingsScreen(
+        SettingsPageScreen(
+            section = SettingsSection.Libraries,
             state =
                 SettingsState(
                     session = J1Samples.session(ConnectionMode.Local),
@@ -223,14 +231,9 @@ class J3ScreenshotTest(
                     chosen = mapOf(J3Samples.libraries[3].id to LibraryIcon.Kids),
                     index = index,
                 ),
-            showCatalog = false,
+            actions = NoSettingsActions,
             navigation = NoNavigation,
-            onToggleStartup = {},
-            onSwitchProfile = {},
-            onSignOut = {},
-            onForgetServer = {},
-            previewIconOf = iconOf,
-            previewFirstItem = SETTINGS_LIBRARIES,
+            previewChoice = iconOf?.let { "icon-${it.value}" },
         )
     }
 
@@ -257,7 +260,6 @@ class J3ScreenshotTest(
         private const val SETTLE_MILLIS = 1_000L
 
         /** The first row of « Bibliothèques » in the settings list. */
-        private const val SETTINGS_LIBRARIES = 6
 
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0}")

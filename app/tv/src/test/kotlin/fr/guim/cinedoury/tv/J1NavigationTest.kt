@@ -24,7 +24,9 @@ import fr.guim.cinedoury.feature.auth.ProfilesState
 import fr.guim.cinedoury.feature.auth.ServerSearchScreen
 import fr.guim.cinedoury.feature.auth.ServerSearchState
 import fr.guim.cinedoury.feature.auth.WelcomeScreen
-import fr.guim.cinedoury.feature.settings.SettingsScreen
+import fr.guim.cinedoury.feature.settings.SettingsActions
+import fr.guim.cinedoury.feature.settings.SettingsPageScreen
+import fr.guim.cinedoury.feature.settings.SettingsSection
 import fr.guim.cinedoury.feature.settings.SettingsState
 import org.junit.Rule
 import org.junit.Test
@@ -147,15 +149,17 @@ class J1NavigationTest {
     fun `forgetting the server asks first, the focus on Cancel`() {
         var forgotten = false
         show {
-            SettingsScreen(
+            SettingsPageScreen(
+                section = SettingsSection.Network,
                 state = SettingsState(J1Samples.session(ConnectionMode.Local)),
-                showCatalog = false,
+                actions =
+                    object : SettingsActions by NoSettingsActions {
+                        override fun forgetServer() {
+                            forgotten = true
+                        }
+                    },
                 navigation = NoNavigation,
-                onToggleStartup = {},
-                onSwitchProfile = {},
-                onSignOut = {},
-                onForgetServer = { forgotten = true },
-                confirmingForget = true,
+                previewForget = true,
             )
         }
         compose

@@ -141,7 +141,7 @@ fun ListRow(
 /**
  * A row whose value goes down with ← and up with → (− and + at its sides, dimmed at the ends), at
  * one step per press and a few per second while the key is held; OK does nothing more. The size of
- * the subtitles (`UI.md` § 8).
+ * the subtitles (`UI.md` § 8). An optional [description] under the title (a page of settings, J7).
  */
 @Composable
 fun StepperRow(
@@ -154,6 +154,7 @@ fun StepperRow(
     icon: ImageVector? = null,
     focusRequester: FocusRequester? = null,
     focus: CineFocus = rememberCineFocus(),
+    description: String? = null,
 ) {
     val colors = CineTheme.colors
     val focused = focus.isFocused
@@ -187,7 +188,20 @@ fun StepperRow(
         if (icon != null) {
             Icon(icon, contentDescription = null, tint = secondary, modifier = Modifier.size(CineSizes.icon))
         }
-        Text(text = title, style = CineTheme.typography.label, color = primary, maxLines = 1)
+        if (description == null) {
+            Text(text = title, style = CineTheme.typography.label, color = primary, maxLines = 1)
+        } else {
+            Column(Modifier.weight(1f)) {
+                Text(text = title, style = CineTheme.typography.label, color = primary, maxLines = 1)
+                Text(
+                    text = description,
+                    style = CineTheme.typography.caption,
+                    color = secondary,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
         Icon(
             CineIcons.Remove,
             contentDescription = null,

@@ -30,6 +30,7 @@ import org.jellyfin.sdk.api.client.extensions.personApi
 import org.jellyfin.sdk.api.client.extensions.searchApi
 import org.jellyfin.sdk.api.client.extensions.showApi
 import org.jellyfin.sdk.api.client.extensions.studioApi
+import org.jellyfin.sdk.api.client.extensions.systemApi
 import org.jellyfin.sdk.api.client.extensions.userApi
 import org.jellyfin.sdk.api.client.extensions.userDataApi
 import org.jellyfin.sdk.api.client.extensions.userViewApi
@@ -384,6 +385,56 @@ internal class JellyfinLibrarySource(
                     },
                 playDefaultAudio = configuration.playDefaultAudioTrack,
             )
+        }
+
+    override suspend fun setPlaybackPreferences(preferences: PlaybackPreferences) {
+        jellyfinCall(what = "user configuration") {
+            val configuration =
+                checkNotNull(
+                    api.userApi
+                        .getCurrentUser()
+                        .content.configuration,
+                ) { "No user configuration" }
+            api.userApi.updateUserConfiguration(
+                userId,
+                configuration.copy(
+                    audioLanguagePreference = preferences.audioLanguage.orEmpty(),
+                    subtitleLanguagePreference = preferences.subtitleLanguage.orEmpty(),
+                    subtitleMode =
+                        when (preferences.subtitleMode) {
+                            SubtitleMode.Default -> SubtitlePlaybackMode.DEFAULT
+                            SubtitleMode.Always -> SubtitlePlaybackMode.ALWAYS
+                            SubtitleMode.OnlyForced -> SubtitlePlaybackMode.ONLY_FORCED
+                            SubtitleMode.None -> SubtitlePlaybackMode.NONE
+                            SubtitleMode.Smart -> SubtitlePlaybackMode.SMART
+                        },
+                    playDefaultAudioTrack = preferences.playDefaultAudio,
+                ),
+            )
+        }
+    }
+
+    override suspend fun setLibraryOrder(order: List<LibraryId>) {
+        jellyfinCall(what = "user configuration") {
+            val configuration =
+                checkNotNull(
+                    api.userApi
+                        .getCurrentUser()
+                        .content.configuration,
+                ) { "No user configuration" }
+            val chosen = order.map { it.value.toJellyfinUuid() }
+            api.userApi.updateUserConfiguration(
+                userId,
+                configuration.copy(orderedViews = chosen + configuration.orderedViews.filter { it !in chosen }),
+            )
+        }
+    }
+
+    override suspend fun sendDiagnostic(report: String): String =
+        jellyfinCall(what = "diagnostic report") {
+            api.systemApi
+                .logFile(report)
+                .content.fileName
         }
 
     override suspend fun technicalItems(

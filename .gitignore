@@ -10,3 +10,4 @@ captures/
 !app/tv/debug.keystore
 *.jks
 keystore.properties
+.kotlin/
