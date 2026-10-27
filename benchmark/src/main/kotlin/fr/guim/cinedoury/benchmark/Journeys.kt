@@ -82,10 +82,10 @@ internal object Journeys {
         toSettingsEntry()
         press(KeyEvent.KEYCODE_DPAD_CENTER)
         waitFocusIn(SETTINGS)
-        downTo(SETTINGS_DEVICE)
+        downTo(SETTINGS, SETTINGS_DEVICE)
         press(KeyEvent.KEYCODE_DPAD_CENTER)
         waitFor(SETTINGS_PAGE)
-        downTo(SETTINGS_UPDATE)
+        downTo(SETTINGS_PAGE, SETTINGS_UPDATE)
         press(KeyEvent.KEYCODE_DPAD_CENTER)
         waitFor(UPDATE)
         repeat(BACK_TO_HOME) {
@@ -95,10 +95,19 @@ internal object Journeys {
         waitFor(HOME)
     }
 
-    private fun Remote.downTo(tag: String) {
+    /**
+     * ↓ in the list [list] until the line [tag] has the focus, one line at a time: accessibility
+     * follows the focus late, and a key pressed before it told the line reached goes past it.
+     */
+    private fun Remote.downTo(
+        list: String,
+        tag: String,
+    ) {
         repeat(SETTINGS_LINES) {
             if (focusedIn(tag)) return
+            val before = focusedText(list)
             press(KeyEvent.KEYCODE_DPAD_DOWN)
+            runCatching { waitUntil("the next line", LINE_TIMEOUT) { focusedText(list) != before } }
         }
         waitFocusIn(tag)
     }
@@ -117,4 +126,5 @@ internal object Journeys {
     private const val RAIL_ENTRIES = 12
     private const val BACK_TO_HOME = 4
     private const val SETTINGS_LINES = 20
+    private const val LINE_TIMEOUT = 2_000L
 }

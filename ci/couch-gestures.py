@@ -677,7 +677,7 @@ class Couch:
         self.wait_screen("Settings", mark)
         for _ in range(14):
             s = d.screen()
-            if s.focus_in("settings-Subtitles"):
+            if s.focus_in("setting-Subtitles"):
                 break
             # The rail may keep the focus as the screen opens: → enters the list.
             d.press("right" if s.focus_tag("rail-") else "down")
