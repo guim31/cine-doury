@@ -14,6 +14,8 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.tv.material3.Icon
 import fr.guim.cinedoury.core.designsystem.theme.CineSizes
 import fr.guim.cinedoury.core.designsystem.theme.CineSpacing
@@ -71,6 +73,8 @@ fun SelectionMark(
         tint = if (selected) colors.accent else colors.text,
         modifier =
             modifier
+                // Inside the card: TalkBack says whether the card is in the selection.
+                .semantics { this.selected = selected }
                 .padding(CineSpacing.xs)
                 .background(colors.background.copy(alpha = SELECTION_VEIL), MarkShape)
                 .size(CineSizes.icon),

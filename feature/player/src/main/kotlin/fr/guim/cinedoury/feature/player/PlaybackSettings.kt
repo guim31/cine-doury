@@ -36,6 +36,7 @@ import fr.guim.cinedoury.core.designsystem.component.InitialFocus
 import fr.guim.cinedoury.core.designsystem.component.ListRow
 import fr.guim.cinedoury.core.designsystem.component.ListSectionTitle
 import fr.guim.cinedoury.core.designsystem.component.StepperRow
+import fr.guim.cinedoury.core.designsystem.component.asHeading
 import fr.guim.cinedoury.core.designsystem.component.rememberCineFocus
 import fr.guim.cinedoury.core.designsystem.theme.CineSizes
 import fr.guim.cinedoury.core.designsystem.theme.CineSpacing
@@ -131,6 +132,7 @@ fun DeviceProfileScreen(
         Text(
             text = stringResource(R.string.device_profile_title),
             style = CineTheme.typography.title1,
+            modifier = Modifier.asHeading(),
             color = CineTheme.colors.text,
         )
         LazyColumn(

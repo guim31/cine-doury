@@ -27,6 +27,13 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsPropertyReceiver
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.toggleableState
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.tv.material3.Icon
@@ -41,10 +48,23 @@ private val RowShape = RoundedCornerShape(CineSizes.cardCorner)
 private val RowOutlineShape =
     RoundedCornerShape(CineSizes.cardCorner + CineSizes.focusOutlineGap + CineSizes.focusOutlineWidth / 2)
 
+/** What a [ListRow] is to TalkBack, beyond a button: an on/off setting, or one value of a choice. */
+sealed interface RowState {
+    data class Switch(
+        val on: Boolean,
+    ) : RowState
+
+    data class Option(
+        val selected: Boolean,
+    ) : RowState
+}
+
 /**
  * A row of a list (servers found, settings): a title, a line of explanation under it, a value at
  * the end. It turns light with the focus. [destructive] writes the title in `danger`.
  *
+ * @param state its role and state for TalkBack (an interrupter, a value of a choice); a button
+ * otherwise.
  * @param pills short attributes after the title (« par défaut », « forcés », « SDH »).
  * @param wrapTitle the title goes on as many lines as it needs, never cut (the tracks).
  */
@@ -62,6 +82,7 @@ fun ListRow(
     focus: CineFocus = rememberCineFocus(),
     pills: List<String> = emptyList(),
     wrapTitle: Boolean = false,
+    state: RowState? = null,
 ) {
     val colors = CineTheme.colors
     val typography = CineTheme.typography
@@ -80,6 +101,7 @@ fun ListRow(
                 .heightIn(min = CineSizes.settingsRowHeight)
                 .withFocusRequester(focusRequester)
                 .cineFocusable(focus, RowShape, CineScale.FIELD, onClick, RowOutlineShape)
+                .semantics { describe(state) }
                 .background(if (focused) colors.text else colors.surface1)
                 .padding(horizontal = CineSpacing.m, vertical = CineSpacing.s),
         verticalAlignment = Alignment.CenterVertically,
@@ -113,7 +135,8 @@ fun ListRow(
                     text = description,
                     style = typography.caption,
                     color = secondary,
-                    maxLines = 2,
+                    // Three lines: with a large text, « Par défaut : … » at the end still shows (J8).
+                    maxLines = 3,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
@@ -134,6 +157,24 @@ fun ListRow(
                 tint = if (focused) colors.background else colors.accent,
                 modifier = Modifier.size(CineSizes.icon),
             )
+        }
+    }
+}
+
+private fun SemanticsPropertyReceiver.describe(state: RowState?) {
+    when (state) {
+        is RowState.Switch -> {
+            role = Role.Switch
+            toggleableState = ToggleableState(state.on)
+        }
+
+        is RowState.Option -> {
+            role = Role.RadioButton
+            selected = state.selected
+        }
+
+        null -> {
+            role = Role.Button
         }
     }
 }
@@ -297,7 +338,12 @@ fun MessageDialog(
                     .padding(CineSpacing.l),
             verticalArrangement = Arrangement.spacedBy(CineSpacing.s),
         ) {
-            Text(text = title, style = CineTheme.typography.title1, color = colors.text)
+            Text(
+                text = title,
+                style = CineTheme.typography.title1,
+                color = colors.text,
+                modifier = Modifier.asHeading(),
+            )
             Text(text = message, style = CineTheme.typography.body, color = colors.text2)
             Row(modifier = Modifier.padding(top = CineSpacing.m)) {
                 PrimaryButton(
@@ -360,7 +406,12 @@ fun ConfirmDialog(
                     .padding(CineSpacing.l),
             verticalArrangement = Arrangement.spacedBy(CineSpacing.s),
         ) {
-            Text(text = title, style = CineTheme.typography.title1, color = colors.text)
+            Text(
+                text = title,
+                style = CineTheme.typography.title1,
+                color = colors.text,
+                modifier = Modifier.asHeading(),
+            )
             Text(text = message, style = CineTheme.typography.body, color = colors.text2)
             Row(
                 modifier = Modifier.padding(top = CineSpacing.m),

@@ -34,6 +34,7 @@ import fr.guim.cinedoury.core.designsystem.component.PosterCard
 import fr.guim.cinedoury.core.designsystem.component.SecondaryButton
 import fr.guim.cinedoury.core.designsystem.component.SkeletonCard
 import fr.guim.cinedoury.core.designsystem.component.ThumbnailCard
+import fr.guim.cinedoury.core.designsystem.component.asHeading
 import fr.guim.cinedoury.core.designsystem.component.previewFirstVisible
 import fr.guim.cinedoury.core.designsystem.component.rememberCineFocus
 import fr.guim.cinedoury.core.designsystem.image.ImageSource
@@ -102,7 +103,12 @@ fun ImagesScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(CineSpacing.m),
             ) {
-                Text(stringResource(R.string.images_title), style = CineTheme.typography.title1, color = colors.text)
+                Text(
+                    stringResource(R.string.images_title),
+                    style = CineTheme.typography.title1,
+                    color = colors.text,
+                    modifier = Modifier.asHeading(),
+                )
                 Text(state.item.cardTitle, style = CineTheme.typography.title2, color = colors.text2, maxLines = 1)
             }
             Row(

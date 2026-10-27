@@ -5,7 +5,6 @@ import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -21,6 +20,7 @@ import fr.guim.cinedoury.core.source.ServerAddress
 import fr.guim.cinedoury.core.source.ServerDiscovery
 import fr.guim.cinedoury.core.source.SourceConnector
 import fr.guim.cinedoury.core.source.fake.InMemorySource
+import fr.guim.cinedoury.core.ui.RailTags
 import fr.guim.cinedoury.feature.auth.authModule
 import fr.guim.cinedoury.feature.home.homeModule
 import fr.guim.cinedoury.feature.library.libraryModule
@@ -139,7 +139,7 @@ class AppFlowTest {
         idleMainLooper(seconds = 3)
         waitFor(EMPTY_HOME)
 
-        compose.onNodeWithContentDescription("Réglages").performClick()
+        compose.onNodeWithTag(RailTags.SETTINGS).performClick()
         waitFor("Lecture")
         // « Profil » is below the fold of the first page of the settings.
         compose.onNodeWithTag(SettingsPagePreview.LIST).performScrollToNode(hasText("Profil"))

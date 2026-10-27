@@ -127,7 +127,8 @@ fun ProfileTile(
                 text = name,
                 style = typography.label,
                 color = if (focus.isFocused) colors.text else colors.text2,
-                maxLines = 1,
+                // Two lines with a large text (« Autre compte »), never cut.
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 textAlign = TextAlign.Center,
             )

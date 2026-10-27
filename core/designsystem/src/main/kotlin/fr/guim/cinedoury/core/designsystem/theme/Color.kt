@@ -32,8 +32,13 @@ data class CineColors(
     val progressTrack: Color,
     /** What the player has loaded ahead, on the progress bar (J4). */
     val progressBuffer: Color,
-    /** `danger`: deletion. */
+    /** `danger`: deletion, errors (as text). */
     val danger: Color,
+    /**
+     * Background of a destructive button, under `texte`: `danger` darkened to keep 4.5:1 (J8,
+     * `SPEC.md` § 4.20).
+     */
+    val dangerButton: Color,
     /** `succès`: confirmations. */
     val success: Color,
     /** Veil behind a dialog. */
@@ -71,7 +76,8 @@ val DarkCineColors =
         surface3 = Color(0xFF2A2E37),
         text = Color(0xFFF2F3F5),
         text2 = Color(0xFFA9AEB8),
-        text3 = Color(0xFF6E7480),
+        // #6E7480 until J8: 4.2:1 on `fond`, 3.4:1 on `surface-2`; now 4.7:1 at worst (AA).
+        text3 = Color(0xFF858B96),
         focus = Color.White.copy(alpha = 0.9f),
         accent = Color(0xFFF2C14E),
         onAccent = Color(0xFF14120B),
@@ -79,6 +85,7 @@ val DarkCineColors =
         progressTrack = Color.White.copy(alpha = 0.25f),
         progressBuffer = Color.White.copy(alpha = 0.45f),
         danger = Color(0xFFE5484D),
+        dangerButton = Color(0xFFC9373C),
         success = Color(0xFF46A758),
         dialogScrim = Ink.copy(alpha = 0.82f),
         shadow = Color.Black,

@@ -23,6 +23,9 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.tv.material3.Icon
 import androidx.tv.material3.Text
@@ -38,7 +41,7 @@ private val PillShape = RoundedCornerShape(percent = 50)
  * The main action of a screen (`UI.md` § 1, principle 5): accent background, the only accent
  * button on the screen. It takes the focus when the screen opens.
  *
- * @param destructive a deletion: `danger` background instead of the accent (`UI.md` § 8).
+ * @param destructive a deletion: `danger` background (`dangerButton`) instead of the accent (`UI.md` § 8).
  */
 @Composable
 fun PrimaryButton(
@@ -55,7 +58,7 @@ fun PrimaryButton(
     val pressed by interactionSource.collectIsPressedAsState()
     val background =
         when {
-            destructive -> colors.danger
+            destructive -> colors.dangerButton
             pressed -> colors.accentPressed
             else -> colors.accent
         }
@@ -152,6 +155,8 @@ fun RoundIconButton(
                     .size(CineSizes.roundButton)
                     .withFocusRequester(focusRequester)
                     .cineFocusable(focus, CircleShape, CineScale.BUTTON, onClick, interactionSource = interactionSource)
+                    // TalkBack: the label (the icon's description) and, for a favourite or « vu », its state.
+                    .semantics { if (selected) this.selected = true }
                     .background(if (focused) colors.text else colors.surface2),
             contentAlignment = Alignment.Center,
         ) {
@@ -178,7 +183,9 @@ fun RoundIconButton(
                 Modifier
                     .padding(top = CineSpacing.s)
                     .ignoreWidth()
-                    .graphicsLayer { alpha = labelAlpha },
+                    .graphicsLayer { alpha = labelAlpha }
+                    // The button says it already: not read a second time.
+                    .clearAndSetSemantics {},
         )
     }
 }

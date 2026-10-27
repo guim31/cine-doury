@@ -38,6 +38,8 @@ jobs:
           set -o pipefail
           ./gradlew check :app:tv:assembleDebug :app:tv:assembleRelease :benchmark:assembleBenchmarkRelease \
             --continue 2>&1 | tee gradle.log
+      - name: What the optimised APK holds (32-bit libraries for the Chromecast, size)
+        run: ci/check-apk.sh app/tv/build/outputs/apk/release/*.apk
       - name: Room schemas are up to date
         run: |
           if [ -n "$(git status --porcelain core/data/schemas)" ]; then
@@ -129,14 +131,12 @@ jobs:
         env:
           HEAD_REF: ${{ github.head_ref }}
         run: |
-          mkdir -p docs/screenshots/j7
-          # The screens of J7 (150 to 174); 150-bibliotheque-grille-4k is the 4K layout of perf/fluidite.
-          for f in app/tv/src/test/screenshots/1[5-7][0-9]-*.png; do
-            case "$f" in *-4k-*) ;; *) cp "$f" docs/screenshots/j7/ ;; esac
-          done
+          mkdir -p docs/screenshots/j8
+          # The screens of J8 (180 to 198): the key screens in 4K, then with the largest text.
+          cp app/tv/src/test/screenshots/1[89][0-9]-*.png docs/screenshots/j8/
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add app/tv/src/test/screenshots docs/screenshots/j7
+          git add app/tv/src/test/screenshots docs/screenshots/j8
           if git diff --cached --quiet; then
             echo "Screenshots unchanged."
           else
@@ -281,6 +281,10 @@ jobs:
             ci/emulator-playback.sh http://10.0.2.2:8096
             ci/emulator-signin.sh http://10.0.2.2:8096
             ci/emulator-release.sh http://10.0.2.2:8096
+            [ "${{ matrix.api-level }}" != 34 ] || ci/couch-gestures.sh "$(adb get-serialno)" --out couch-gestures.md
+      - name: Couch gestures (indicative on an emulator)
+        if: always() && hashFiles('couch-gestures.md') != ''
+        run: cat couch-gestures.md >> "$GITHUB_STEP_SUMMARY"
       - name: Failure summary
         if: failure()
         run: ci/failure-summary.sh gradle.log
@@ -299,6 +303,7 @@ jobs:
             emulator-release.txt
             emulator-release.png
             emulator-release-logcat.txt
+            couch-gestures.md
           if-no-files-found: ignore
 
   profiles:
@@ -307,9 +312,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
-      # The app before perf/fluidite (main and the benchmark harness only), measured on the same
-      # emulator as the app now (SPEC.md § 4.16). Empty: only the app now.
-      BEFORE_REF: 6010840b06f331a9f8e7882173904968d6dcb326
+      # The app before J8 (main after J7), measured on the same emulator as the app now: the cost of
+      # the effects (SPEC.md § 4.20). Empty: only the app now.
+      BEFORE_REF: 962c5f48dc96142cb38c268dd7832d9a89d10c29
     permissions:
       # Only used to commit the profiles when the head commit asks for it with [record-profiles].
       contents: write
@@ -373,6 +378,7 @@ jobs:
           mkdir -p before-debug-apk before-release-apk
           cp ../before/app/tv/build/outputs/apk/debug/*.apk before-debug-apk/
           cp ../before/app/tv/build/outputs/apk/release/*.apk before-release-apk/
+          ci/check-apk.sh before-release-apk/*.apk
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules

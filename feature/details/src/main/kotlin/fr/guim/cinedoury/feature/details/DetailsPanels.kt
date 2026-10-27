@@ -1,6 +1,7 @@
 package fr.guim.cinedoury.feature.details
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -21,6 +22,7 @@ import fr.guim.cinedoury.core.designsystem.component.CineIcons
 import fr.guim.cinedoury.core.designsystem.component.InitialFocus
 import fr.guim.cinedoury.core.designsystem.component.ListRow
 import fr.guim.cinedoury.core.designsystem.component.ListSectionTitle
+import fr.guim.cinedoury.core.designsystem.component.RowState
 import fr.guim.cinedoury.core.designsystem.component.SidePanel
 import fr.guim.cinedoury.core.designsystem.component.previewFirstVisible
 import fr.guim.cinedoury.core.designsystem.component.rememberCineFocus
@@ -69,6 +71,9 @@ private sealed interface PanelLine {
 
 /** Preview tag of the line of a panel at [index]. */
 fun panelLine(index: Int) = "$PANEL_LINE$index"
+
+/** The tag around the line [key] of a panel, whatever its place. */
+fun panelKey(key: String) = "details-line-$key"
 
 private const val PANEL_LINE = "details-panel-"
 
@@ -127,19 +132,27 @@ internal fun DetailsPanels(
                     }
 
                     is PanelLine.Choice -> {
-                        ListRow(
-                            title = line.title,
-                            description = line.description,
-                            icon = line.icon,
-                            trailingIcon = if (line.checked) CineIcons.Watched else null,
-                            onClick = line.onClick,
-                            focusRequester = if (index == initial) first else null,
-                            focus = rememberCineFocus(panelLine(index)),
-                            pills = line.pills.orEmpty(),
-                            wrapTitle = line.pills != null,
-                            destructive = line.destructive,
-                            modifier = Modifier.testTag(panelLine(index)),
-                        )
+                        // Tagged by its key too, for `ci/couch-gestures.sh` (« images », « identify »…).
+                        Box(Modifier.testTag(panelKey(line.key))) {
+                            ListRow(
+                                title = line.title,
+                                description = line.description,
+                                icon = line.icon,
+                                trailingIcon = if (line.checked) CineIcons.Watched else null,
+                                onClick = line.onClick,
+                                focusRequester = if (index == initial) first else null,
+                                focus = rememberCineFocus(panelLine(index)),
+                                pills = line.pills.orEmpty(),
+                                wrapTitle = line.pills != null,
+                                destructive = line.destructive,
+                                modifier = Modifier.testTag(panelLine(index)),
+                                state =
+                                    RowState.Option(line.checked).takeIf {
+                                        shown == DetailsPanel.Tracks &&
+                                            line.icon == null
+                                    },
+                            )
+                        }
                     }
                 }
             }

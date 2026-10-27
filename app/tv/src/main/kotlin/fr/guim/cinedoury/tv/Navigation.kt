@@ -115,6 +115,9 @@ sealed interface Route {
     data object Catalog : Route
 }
 
+/** The name of the screen in the logs of `ci/couch-gestures.sh`: `Home`, `Details`, `Player`… */
+val Route.name: String get() = this::class.simpleName.orEmpty()
+
 /** A screen in the back stack, with its own view models: they go when the screen goes. */
 class BackStackEntry(
     val route: Route,
@@ -144,7 +147,9 @@ class Navigator(
     private fun entry(route: Route) = BackStackEntry(route, nextId++)
 
     fun push(route: Route) {
-        entries = entries + entry(route)
+        val entry = entry(route)
+        OpeningTrace.begin(entry)
+        entries = entries + entry
     }
 
     fun replaceTop(route: Route) {

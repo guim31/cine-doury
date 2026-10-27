@@ -30,9 +30,11 @@ import fr.guim.cinedoury.core.designsystem.component.CineIcons
 import fr.guim.cinedoury.core.designsystem.component.InitialFocus
 import fr.guim.cinedoury.core.designsystem.component.ListRow
 import fr.guim.cinedoury.core.designsystem.component.ListSectionTitle
+import fr.guim.cinedoury.core.designsystem.component.RowState
 import fr.guim.cinedoury.core.designsystem.component.SidePanel
 import fr.guim.cinedoury.core.designsystem.component.StepperRow
 import fr.guim.cinedoury.core.designsystem.component.Wordmark
+import fr.guim.cinedoury.core.designsystem.component.asHeading
 import fr.guim.cinedoury.core.designsystem.component.rememberCineFocus
 import fr.guim.cinedoury.core.designsystem.theme.CineSizes
 import fr.guim.cinedoury.core.designsystem.theme.CineSpacing
@@ -89,7 +91,7 @@ fun SettingsPageScreen(
                     text = title,
                     style = CineTheme.typography.title1,
                     color = CineTheme.colors.text,
-                    modifier = Modifier.padding(top = CineSpacing.l),
+                    modifier = Modifier.asHeading().padding(top = CineSpacing.l),
                 )
                 if (subtitle != null) {
                     Text(text = subtitle, style = CineTheme.typography.caption, color = CineTheme.colors.text2)
@@ -167,6 +169,7 @@ private fun SettingLine(
                 focusRequester = requester,
                 focus = rememberCineFocus(tag),
                 modifier = Modifier.testTag(tag),
+                state = RowState.Switch(item.checked),
             )
         }
 
@@ -239,6 +242,7 @@ private fun ChoicePanel(
                     focusRequester = if (index == choice.selected) current else null,
                     focus = rememberCineFocus(tag),
                     modifier = Modifier.testTag(tag),
+                    state = RowState.Option(index == choice.selected),
                 )
             }
         }

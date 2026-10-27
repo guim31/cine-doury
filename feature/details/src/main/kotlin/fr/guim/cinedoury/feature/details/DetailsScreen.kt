@@ -42,6 +42,7 @@ import fr.guim.cinedoury.core.designsystem.component.GeneratedArtwork
 import fr.guim.cinedoury.core.designsystem.component.PrimaryButton
 import fr.guim.cinedoury.core.designsystem.component.RoundIconButton
 import fr.guim.cinedoury.core.designsystem.component.TechBadges
+import fr.guim.cinedoury.core.designsystem.component.asHeading
 import fr.guim.cinedoury.core.designsystem.component.readabilityScrims
 import fr.guim.cinedoury.core.designsystem.component.rememberCineFocus
 import fr.guim.cinedoury.core.designsystem.component.sharedPoster
@@ -451,6 +452,7 @@ private fun Title(
         Text(
             text = item.numberedTitle(),
             style = typography.title1,
+            modifier = Modifier.asHeading(),
             color = colors.text,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
@@ -466,6 +468,7 @@ private fun Title(
         Text(
             text = item.title,
             style = typography.display,
+            modifier = Modifier.asHeading(),
             color = colors.text,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,

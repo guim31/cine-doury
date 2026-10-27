@@ -34,8 +34,10 @@ import fr.guim.cinedoury.core.model.UserData
 import fr.guim.cinedoury.core.playback.PlaybackReporter
 import fr.guim.cinedoury.core.playback.PlayerEvent
 import fr.guim.cinedoury.core.playback.PlayerSettingsStore
+import fr.guim.cinedoury.core.playback.PlayerSnapshot
 import fr.guim.cinedoury.core.playback.VideoPlayer
 import fr.guim.cinedoury.core.playback.VideoPlayerFactory
+import fr.guim.cinedoury.core.source.GestureLog
 import fr.guim.cinedoury.core.source.LibrarySource
 import fr.guim.cinedoury.core.source.PlaybackLog
 import fr.guim.cinedoury.core.source.SourceException
@@ -267,12 +269,40 @@ class PlayerViewModel(
             }
     }
 
+    /** What the [GestureLog] was told last: playing, paused or buffering. */
+    private var announced: String? = null
+
+    /** A jump asked, not yet playing at its new place ([GestureLog]). */
+    private var jumping = false
+
+    /**
+     * Playing, paused or loading, as it changes, and a jump played at its new place: the ends of
+     * « Lire », a pause, a jump for `ci/couch-gestures.sh` ([GestureLog]).
+     */
+    private fun announce(snapshot: PlayerSnapshot) {
+        val motion =
+            when {
+                snapshot.buffering -> "buffering"
+                snapshot.playing -> "playing"
+                else -> "paused"
+            }
+        if (motion != announced) {
+            announced = motion
+            GestureLog.mark(motion)
+        }
+        if (jumping && motion == "playing") {
+            jumping = false
+            GestureLog.mark("jumped")
+        }
+    }
+
     private fun tick() {
         val player = player ?: return
         val snapshot = player.snapshot()
         val state = local.value
         val duration = snapshot.duration.takeIf { it.isPositive() } ?: state.duration
         val position = snapshot.position
+        announce(snapshot)
         bufferingFor = if (snapshot.buffering && state.stream != null) bufferingFor + TICK else Duration.ZERO
         val skip = segmentButton(player, state, position)
         val shows = showsNext(state, position, duration)
@@ -468,6 +498,7 @@ class PlayerViewModel(
     }
 
     override fun jump(forward: Boolean) {
+        jumping = true
         val state = local.value
         val step = (if (forward) state.settings.seekForwardSeconds else -state.settings.seekBackSeconds).seconds
         seekTo((state.position + step).coerceIn(Duration.ZERO, state.duration))
@@ -554,6 +585,7 @@ class PlayerViewModel(
 
     override fun selectSubtitles(index: Int?) {
         if (index == local.value.subtitleIndex) return
+        GestureLog.mark("subtitles ${index ?: "none"}")
         if (player?.selectSubtitles(index) == true) {
             local.update { it.copy(subtitleIndex = index) }
             reporter?.progress()

@@ -34,6 +34,7 @@ import fr.guim.cinedoury.core.designsystem.component.InitialFocus
 import fr.guim.cinedoury.core.designsystem.component.ListRow
 import fr.guim.cinedoury.core.designsystem.component.ListSectionTitle
 import fr.guim.cinedoury.core.designsystem.component.Wordmark
+import fr.guim.cinedoury.core.designsystem.component.asHeading
 import fr.guim.cinedoury.core.designsystem.component.rememberCineFocus
 import fr.guim.cinedoury.core.designsystem.theme.CineSizes
 import fr.guim.cinedoury.core.designsystem.theme.CineSpacing
@@ -90,6 +91,7 @@ fun HomeSettingsScreen(
                         Text(
                             text = stringResource(R.string.customize_title),
                             style = CineTheme.typography.title1,
+                            modifier = Modifier.asHeading(),
                             color = CineTheme.colors.text,
                         )
                         Text(

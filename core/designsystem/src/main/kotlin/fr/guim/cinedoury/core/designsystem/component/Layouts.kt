@@ -16,6 +16,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.tv.material3.Text
 import fr.guim.cinedoury.core.designsystem.theme.CineSizes
 import fr.guim.cinedoury.core.designsystem.theme.CineSpacing
@@ -33,9 +35,12 @@ fun Wordmark(
         text = text,
         style = if (large) typography.display else typography.title2,
         color = if (large) CineTheme.colors.text else CineTheme.colors.text2,
-        modifier = modifier,
+        modifier = modifier.asHeading(),
     )
 }
+
+/** A title of a screen or of a row: TalkBack reads it as a heading and can jump from one to the next. */
+fun Modifier.asHeading(): Modifier = semantics { heading() }
 
 /**
  * A screen of the sign-in path or of the settings: the `fond` background, the safe area, the name
@@ -87,7 +92,12 @@ fun FormScreen(
                     modifier = Modifier.verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(CineSpacing.s),
                 ) {
-                    Text(text = title, style = CineTheme.typography.title1, color = colors.text)
+                    Text(
+                        text = title,
+                        style = CineTheme.typography.title1,
+                        color = colors.text,
+                        modifier = Modifier.asHeading(),
+                    )
                     if (subtitle != null) {
                         Text(
                             text = subtitle,

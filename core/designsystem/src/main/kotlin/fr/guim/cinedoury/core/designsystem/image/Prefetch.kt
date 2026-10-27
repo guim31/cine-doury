@@ -12,7 +12,8 @@ import fr.guim.cinedoury.core.designsystem.theme.TvLayout
 /**
  * Loads [sources] into Coil's caches at [size] before they are drawn: the first images of the rows
  * next to the screen (`UI.md` § 6). The requests are those [RemoteImage] makes at the same size, so
- * that the card finds them in the cache.
+ * that the card finds them in the cache. At most [ImageBudget.prefetch] of them: none on a device
+ * short of memory, where they would push out of the cache what the screen shows.
  */
 @Composable
 fun PrefetchImages(
@@ -24,9 +25,10 @@ fun PrefetchImages(
     val width = with(density) { size.width.roundToPx() }
     val height = with(density) { size.height.roundToPx() }
     val scale = TvLayout.imageScale(density.density)
-    LaunchedEffect(sources, width, height, scale) {
+    val budget = LocalImageBudget.current.prefetch
+    LaunchedEffect(sources, width, height, scale, budget) {
         val loader = SingletonImageLoader.get(context)
-        sources.forEach { source ->
+        sources.take(budget).forEach { source ->
             loader.enqueue(
                 ImageRequest
                     .Builder(context)

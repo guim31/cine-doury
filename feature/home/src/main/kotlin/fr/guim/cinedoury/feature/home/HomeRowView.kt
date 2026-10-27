@@ -118,7 +118,10 @@ internal fun HomeRowView(
     }
 }
 
-/** Cards loaded ahead in the next row: what the screen shows of it, and one more. */
+/**
+ * Cards loaded ahead in the next row: what the screen shows of it, and one more (fewer on a small
+ * device, `ImageBudget`).
+ */
 private const val PREFETCHED = 6
 
 @Composable
