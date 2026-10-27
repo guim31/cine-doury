@@ -137,7 +137,9 @@ fun CineApp(
         ) { entry ->
             CompositionLocalProvider(
                 LocalViewModelStoreOwner provides entry,
-                LocalSharedElements provides SharedElements(this@SharedTransitionLayout, this@AnimatedContent),
+                // Kept for the screen: it remembers which of its cards had the focus last.
+                LocalSharedElements provides
+                    remember { SharedElements(this@SharedTransitionLayout, this@AnimatedContent) },
             ) {
                 saveable.SaveableStateProvider(entry.id) {
                     Screen(entry.route, navigator, sessions, variant, onToggleVariant, showCatalog, voiceRequests)

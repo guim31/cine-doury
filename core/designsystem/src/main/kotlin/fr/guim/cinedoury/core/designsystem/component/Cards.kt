@@ -1,6 +1,5 @@
 package fr.guim.cinedoury.core.designsystem.component
 
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
@@ -12,7 +11,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,7 +20,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpSize
 import androidx.tv.material3.Text
-import fr.guim.cinedoury.core.designsystem.theme.CineMotion
 import fr.guim.cinedoury.core.designsystem.theme.CineScale
 import fr.guim.cinedoury.core.designsystem.theme.CineSizes
 import fr.guim.cinedoury.core.designsystem.theme.CineSpacing
@@ -51,7 +48,7 @@ internal val CardOutlineShape =
  * @param image the poster image; without it, a [GeneratedArtwork] stands in.
  * @param progress playback progress between 0 and 1, or null when not started.
  * @param unwatchedCount for a series, the number of unwatched episodes, shown instead of the triangle.
- * @param sharedKey the id of the item: its poster flies to the details screen ([sharedPoster]).
+ * @param sharedKey the id of the item: its poster flies to the details screen, once focused ([sharedPosterSource]).
  */
 @Composable
 fun PosterCard(
@@ -70,15 +67,24 @@ fun PosterCard(
     sharedKey: String? = null,
     image: (@Composable () -> Unit)? = null,
 ) {
+    // One animation for the focus treatment and the caption, which appears with it.
+    val focusProgress = focusProgress(focus)
     Column(modifier = modifier.width(size.dp.width)) {
         Box(
             modifier =
                 Modifier
-                    .sharedPoster(sharedKey)
+                    .sharedPosterSource(sharedKey)
                     .size(size.dp)
                     .withFocusRequester(focusRequester)
-                    .cineFocusable(focus, CardShape, CineScale.POSTER, onClick, CardOutlineShape, interactionSource)
-                    .background(CineTheme.colors.surface1),
+                    .cineFocusable(
+                        focus,
+                        CardShape,
+                        CineScale.POSTER,
+                        onClick,
+                        CardOutlineShape,
+                        interactionSource,
+                        progress = focusProgress,
+                    ).background(CineTheme.colors.surface1),
         ) {
             if (image != null) image() else GeneratedArtwork(title, compact = size == PosterSize.Small)
             UnwatchedMark(unwatched, unwatchedCount)
@@ -87,7 +93,7 @@ fun PosterCard(
         CardCaption(
             title = title.takeIf { image != null },
             subtitle = subtitle,
-            visible = alwaysShowTitle || focus.isFocused,
+            alpha = { if (alwaysShowTitle) 1f else focusProgress.value },
             modifier = Modifier.padding(top = CineSpacing.s),
         )
     }
@@ -135,7 +141,7 @@ fun ThumbnailCard(
         CardCaption(
             title = title.takeIf { image != null },
             subtitle = subtitle,
-            visible = true,
+            alpha = { 1f },
             modifier = Modifier.padding(top = CineSpacing.s),
         )
     }
@@ -163,23 +169,19 @@ internal fun BoxScope.UnwatchedMark(
 
 /**
  * Two lines under a card: the title, then the secondary line. Without a [title] (generated card),
- * the secondary line moves up; both lines stay reserved so that a row keeps its height.
+ * the secondary line moves up; both lines stay reserved so that a row keeps its height. [alpha] is
+ * read when drawing: the caption fades with the focus without recomposing.
  */
 @Composable
 private fun CardCaption(
     title: String?,
     subtitle: String?,
-    visible: Boolean,
+    alpha: () -> Float,
     modifier: Modifier = Modifier,
 ) {
-    val alpha by animateFloatAsState(
-        targetValue = if (visible) 1f else 0f,
-        animationSpec = CineMotion.fade(if (visible) CineMotion.FOCUS_IN_MILLIS else CineMotion.FOCUS_OUT_MILLIS),
-        label = "caption",
-    )
     val typography = CineTheme.typography
     val colors = CineTheme.colors
-    Column(modifier = modifier.graphicsLayer { this.alpha = alpha }) {
+    Column(modifier = modifier.graphicsLayer { this.alpha = alpha() }) {
         if (title != null) {
             Text(
                 text = title,
