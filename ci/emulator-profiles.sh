@@ -11,3 +11,6 @@ set -o pipefail
 ./gradlew :app:tv:generateReleaseBaselineProfile \
   -Pandroid.testInstrumentationRunnerArguments.jellyfinUrl="$url" 2>&1 | tee gradle.log
 wc -l app/tv/src/release/generated/baselineProfiles/*.txt
+# The emulator and the measures need the memory of the runner: no Gradle left running (twice, the
+# runner got a shutdown signal while measuring with the daemons still up).
+./gradlew --stop
