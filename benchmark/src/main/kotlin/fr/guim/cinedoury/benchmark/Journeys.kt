@@ -16,12 +16,14 @@ internal object Journeys {
         waitFocusIn(HOME_PLAY)
     }
 
-    /** Home → rail → « Films » → a card of the grid → its details → back to the home. */
+    /**
+     * Home → rail → « Films » → the card the grid opens on → its details → back to the home. No blind
+     * moves in the grid: it opens on the item left last time (a pass of the profile leaves it
+     * anywhere), and its columns follow the size of the interface (essai réel 3: two → went past the
+     * last column, onto the A–Z bar). The grid scrolls in [scrollGrid].
+     */
     fun Remote.libraryRoundTrip() {
         openLibrary(FILMS)
-        repeat(GRID_ROWS) { press(KeyEvent.KEYCODE_DPAD_DOWN) }
-        repeat(GRID_COLUMNS) { press(KeyEvent.KEYCODE_DPAD_RIGHT) }
-        // OK on a card of the grid, not on what the keys reached past it.
         waitFocusIn(LIBRARY_ITEMS)
         press(KeyEvent.KEYCODE_DPAD_CENTER)
         waitFor(DETAILS)
@@ -122,8 +124,6 @@ internal object Journeys {
 
     private const val HOME_ROWS = 4
     private const val ROW_CARDS = 6
-    private const val GRID_ROWS = 3
-    private const val GRID_COLUMNS = 2
     private const val HOLD_MILLIS = 3_000L
     private const val RAIL_ENTRIES = 12
     private const val BACK_TO_HOME = 4
