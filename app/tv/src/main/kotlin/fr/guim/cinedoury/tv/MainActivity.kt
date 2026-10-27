@@ -73,12 +73,7 @@ class MainActivity : ComponentActivity() {
                         variant = variant,
                         onToggleVariant = {
                             scope.launch {
-                                preferences.setAppearance {
-                                    it.copy(
-                                        theme =
-                                            if (it.theme == ThemeChoice.Dark) ThemeChoice.OledBlack else ThemeChoice.Dark,
-                                    )
-                                }
+                                preferences.setAppearance { it.copy(theme = it.theme.toggled()) }
                             }
                         },
                         showCatalog = debuggable,
@@ -87,6 +82,9 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    /** The other of the two themes (the catalogue's switch, debug). */
+    private fun ThemeChoice.toggled() = if (this == ThemeChoice.Dark) ThemeChoice.OledBlack else ThemeChoice.Dark
 
     /** The animator duration scale of the system: 0 when its animations are turned off. */
     private fun systemAnimatorScale(): Float =
