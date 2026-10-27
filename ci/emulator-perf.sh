@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 # The job « Baseline Profile and benchmarks »: on one emulator, the Baseline Profile, then the
 # measures of the optimised APK now, and of the optimised APK before the change, when built
-# (BEFORE_REF). Each step runs even if one before
-# failed. Usage: emulator-perf.sh JELLYFIN_URL
+# (BEFORE_REF). Each step runs even if one before failed. Usage: emulator-perf.sh JELLYFIN_URL
 set -uo pipefail
 
 url="${1:?usage: emulator-perf.sh JELLYFIN_URL}"
