@@ -2,9 +2,13 @@ package fr.guim.cinedoury.benchmark
 
 import androidx.benchmark.macro.junit4.BaselineProfileRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import fr.guim.cinedoury.benchmark.Journeys.backToBanner
 import fr.guim.cinedoury.benchmark.Journeys.browseHome
 import fr.guim.cinedoury.benchmark.Journeys.libraryRoundTrip
+import fr.guim.cinedoury.benchmark.Journeys.openDetails
 import fr.guim.cinedoury.benchmark.Journeys.scrollGrid
+import fr.guim.cinedoury.benchmark.Journeys.settingsAndUpdate
+import fr.guim.cinedoury.benchmark.Journeys.toFirstCard
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -33,7 +37,10 @@ class BaselineProfileGenerator {
             Remote(device).waitHome()
         }
 
-    /** The home, a library, a details screen and a fast scroll of the grid. */
+    /**
+     * The home, a library, a details screen, the settings and the update (J7), and a fast scroll of
+     * the grid.
+     */
     @Test
     fun journeys() =
         rule.collect(packageName = PACKAGE) {
@@ -43,6 +50,10 @@ class BaselineProfileGenerator {
             remote.waitHome()
             remote.browseHome()
             remote.libraryRoundTrip()
+            remote.toFirstCard()
+            remote.openDetails()
+            remote.backToBanner()
+            remote.settingsAndUpdate()
             remote.openLibrary(FILMS)
             remote.scrollGrid()
         }

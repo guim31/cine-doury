@@ -5,6 +5,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -27,6 +29,7 @@ import fr.guim.cinedoury.core.designsystem.component.CineIcons
 import fr.guim.cinedoury.core.designsystem.component.InitialFocus
 import fr.guim.cinedoury.core.designsystem.component.ListRow
 import fr.guim.cinedoury.core.designsystem.component.ListSectionTitle
+import fr.guim.cinedoury.core.designsystem.component.RowState
 import fr.guim.cinedoury.core.designsystem.component.SidePanel
 import fr.guim.cinedoury.core.designsystem.component.StepperRow
 import fr.guim.cinedoury.core.designsystem.component.SubtitleBar
@@ -41,6 +44,7 @@ import fr.guim.cinedoury.core.model.SubtitleBackground
 import fr.guim.cinedoury.core.model.SubtitleEdge
 import fr.guim.cinedoury.core.model.SubtitleScale
 import fr.guim.cinedoury.core.model.SubtitleStyle
+import fr.guim.cinedoury.core.source.GestureLog
 import fr.guim.cinedoury.core.ui.attributes
 import fr.guim.cinedoury.core.ui.label
 
@@ -132,8 +136,12 @@ private fun ChoiceColumn(
     initialFocus: FocusRequester? = null,
 ) {
     val initial = choices.indexOfFirst { it.checked }.coerceAtLeast(0)
+    // What `ci/couch-gestures.sh` needs to choose a line and to put the choice back (`GestureLog`).
+    LaunchedEffect(column) { GestureLog.mark("column $column lines=${choices.size} checked=$initial") }
     LazyColumn(
         modifier = modifier,
+        // A lazy list clips: room for the focus of its first and last lines.
+        contentPadding = PaddingValues(vertical = CineSizes.focusRoom),
         verticalArrangement = Arrangement.spacedBy(CineSpacing.xs),
     ) {
         if (title != null) item(key = "title") { ListSectionTitle(title) }
@@ -148,7 +156,8 @@ private fun ChoiceColumn(
                 trailingIcon = if (choice.checked) CineIcons.Watched else null,
                 focusRequester = if (index == initial) initialFocus else null,
                 focus = rememberCineFocus(playerPanelLine(column, index)),
-                modifier = Modifier.testTag(playerPanelLine(column, index)),
+                modifier = Modifier.testTag(playerPanelLine(column, index)).logFocus(playerPanelLine(column, index)),
+                state = RowState.Option(choice.checked),
             )
         }
     }

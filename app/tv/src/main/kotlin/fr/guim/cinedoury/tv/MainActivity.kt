@@ -5,6 +5,7 @@ import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -20,6 +21,7 @@ import fr.guim.cinedoury.core.data.prefs.AppPreferences
 import fr.guim.cinedoury.core.data.prefs.Appearance
 import fr.guim.cinedoury.core.data.prefs.Browsing
 import fr.guim.cinedoury.core.data.prefs.ThemeChoice
+import fr.guim.cinedoury.core.designsystem.image.LocalImageBudget
 import fr.guim.cinedoury.core.designsystem.theme.CardPreferences
 import fr.guim.cinedoury.core.designsystem.theme.CineMotion
 import fr.guim.cinedoury.core.designsystem.theme.CineTheme
@@ -47,6 +49,7 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             preferences.deviceName.collect { name -> connector.setDeviceName(name ?: identity.deviceName) }
         }
+        val images = imageBudget()
         setContent {
             val appearance by preferences.appearance.collectAsState(initial = Appearance())
             val active by sessions.active.collectAsState()
@@ -69,15 +72,17 @@ class MainActivity : ComponentActivity() {
                             unwatchedMarks = browsing.unwatchedMarks,
                         ),
                 ) {
-                    CineApp(
-                        variant = variant,
-                        onToggleVariant = {
-                            scope.launch {
-                                preferences.setAppearance { it.copy(theme = it.theme.toggled()) }
-                            }
-                        },
-                        showCatalog = debuggable,
-                    )
+                    CompositionLocalProvider(LocalImageBudget provides images) {
+                        CineApp(
+                            variant = variant,
+                            onToggleVariant = {
+                                scope.launch {
+                                    preferences.setAppearance { it.copy(theme = it.theme.toggled()) }
+                                }
+                            },
+                            showCatalog = debuggable,
+                        )
+                    }
                 }
             }
         }

@@ -46,6 +46,7 @@ import fr.guim.cinedoury.core.designsystem.component.PosterCard
 import fr.guim.cinedoury.core.designsystem.component.PrimaryButton
 import fr.guim.cinedoury.core.designsystem.component.SecondaryButton
 import fr.guim.cinedoury.core.designsystem.component.SkeletonCard
+import fr.guim.cinedoury.core.designsystem.component.asHeading
 import fr.guim.cinedoury.core.designsystem.component.previewFirstVisible
 import fr.guim.cinedoury.core.designsystem.component.rememberCineFocus
 import fr.guim.cinedoury.core.designsystem.image.ImageSource
@@ -110,7 +111,12 @@ fun IdentifyScreen(
                 ),
             verticalArrangement = Arrangement.spacedBy(CineSpacing.s),
         ) {
-            Text(stringResource(R.string.identify_title), style = typography.title1, color = colors.text)
+            Text(
+                stringResource(R.string.identify_title),
+                style = typography.title1,
+                color = colors.text,
+                modifier = Modifier.asHeading(),
+            )
             Text(
                 text =
                     stringResource(

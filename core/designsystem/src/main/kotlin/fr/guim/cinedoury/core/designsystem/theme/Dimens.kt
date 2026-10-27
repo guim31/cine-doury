@@ -49,6 +49,13 @@ object CineSizes {
     /** Blur radius of the focus halo, drawn from just outside the outline (`UI.md` § 3). */
     val focusHalo = 14.dp
 
+    /**
+     * Room a container that clips (a scrolling column, a lazy list) leaves around its focusable
+     * elements, so that their outline and halo are never cut (J8: « Utiliser un mot de passe » on
+     * Quick Connect lost the bottom of its outline on the Shield).
+     */
+    val focusRoom = focusOutlineGap + focusOutlineWidth + focusHalo
+
     val buttonHeight = 52.dp
     val roundButton = 52.dp
     val icon = 24.dp

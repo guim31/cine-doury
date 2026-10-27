@@ -73,9 +73,12 @@ fun AppRail(
     NavigationRail(
         destinations =
             listOf(
-                RailDestination(CineIcons.Search, stringResource(R.string.rail_search)),
-                RailDestination(CineIcons.Home, stringResource(R.string.rail_home)),
-            ) + state.libraries.map { RailDestination(it.icon(state.icons).vector, it.name) },
+                RailDestination(CineIcons.Search, stringResource(R.string.rail_search), tag = RailTags.SEARCH),
+                RailDestination(CineIcons.Home, stringResource(R.string.rail_home), tag = RailTags.HOME),
+            ) +
+                state.libraries.map {
+                    RailDestination(it.icon(state.icons).vector, it.name, tag = RailTags.library(it.id.value))
+                },
         bottomDestinations =
             listOf(
                 RailDestination(
@@ -89,8 +92,9 @@ fun AppRail(
                             image = avatar?.let { source -> { RemoteImage(source, null, contentDescription = null) } },
                         )
                     },
+                    tag = RailTags.PROFILES,
                 ),
-                RailDestination(CineIcons.Settings, stringResource(R.string.rail_settings)),
+                RailDestination(CineIcons.Settings, stringResource(R.string.rail_settings), tag = RailTags.SETTINGS),
             ),
         selectedIndex = all.indexOf(selected),
         onSelect = { index -> all.getOrNull(index)?.let(onNavigate) },
@@ -98,6 +102,19 @@ fun AppRail(
         previewFocusedIndex = previewFocused?.let { all.indexOf(it) }?.takeIf { it >= 0 },
         modifier = modifier.testTag("rail"),
     )
+}
+
+/**
+ * The test tags of the entries of the rail, on the focusable entry itself: the tests, the benchmarks
+ * and `ci/couch-gestures.sh` find an entry without reading its label, which follows the language.
+ */
+object RailTags {
+    const val SEARCH = "rail-search"
+    const val HOME = "rail-home"
+    const val PROFILES = "rail-profiles"
+    const val SETTINGS = "rail-settings"
+
+    fun library(id: String) = "rail-library-$id"
 }
 
 /** The picture of a library icon. */

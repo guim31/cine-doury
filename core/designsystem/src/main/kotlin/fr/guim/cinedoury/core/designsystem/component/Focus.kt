@@ -1,6 +1,5 @@
 package fr.guim.cinedoury.core.designsystem.component
 
-import android.graphics.BlurMaskFilter
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -19,22 +18,19 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.addOutline
-import androidx.compose.ui.graphics.asAndroidPath
 import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.Dp
 import fr.guim.cinedoury.core.designsystem.theme.CineMotion
 import fr.guim.cinedoury.core.designsystem.theme.CineSizes
 import fr.guim.cinedoury.core.designsystem.theme.CineTheme
+import fr.guim.cinedoury.core.designsystem.theme.TvLayout
 
 /**
  * Whether an element holds the focus, updated synchronously by the focus system. Components read
@@ -195,19 +191,27 @@ internal fun Modifier.cineFocusDecoration(
                     layoutDirection,
                     this,
                 )
-            // A blur mask filter: a real gaussian glow on every API level the app supports (28+
-            // with hardware acceleration), where RenderEffect needs 31.
-            val haloPath = Path().apply { addOutline(outline) }.asAndroidPath()
-            val haloPaint =
-                android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-                    color = colors.focusHalo.copy(alpha = 1f).toArgb()
-                    maskFilter = BlurMaskFilter(halo.toPx(), BlurMaskFilter.Blur.OUTER)
-                }
+            // A gaussian glow (a blur mask filter, every API level the app supports), blurred once into a
+            // bitmap shared by the elements of the same size: no blur at each frame (`FocusHalo`). Made
+            // at the first focus: most elements of a screen never get it.
+            val focusHalo by lazy(LazyThreadSafetyMode.NONE) {
+                FocusHalo.of(
+                    outline = outline,
+                    blur = halo.toPx(),
+                    color = colors.focusHalo.copy(alpha = 1f).toArgb(),
+                    scale = TvLayout.imageScale(density),
+                )
+            }
+            val outlineSize = Size(size.width + inset * 2f, size.height + inset * 2f)
             onDrawWithContent {
                 if (progress > 0f) {
-                    translate(left = -inset, top = -inset) {
-                        haloPaint.alpha = (colors.focusHalo.alpha * progress * MAX_ALPHA).toInt()
-                        drawIntoCanvas { it.nativeCanvas.drawPath(haloPath, haloPaint) }
+                    with(focusHalo) {
+                        draw(
+                            Offset(-inset, -inset),
+                            outlineSize.width,
+                            outlineSize.height,
+                            colors.focusHalo.alpha * progress,
+                        )
                     }
                 }
                 drawContent()
@@ -219,5 +223,3 @@ internal fun Modifier.cineFocusDecoration(
             }
         }.clip(shape)
 }
-
-private const val MAX_ALPHA = 255

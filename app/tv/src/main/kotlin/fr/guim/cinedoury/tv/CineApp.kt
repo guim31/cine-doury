@@ -23,6 +23,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.KeyEventType
@@ -48,6 +49,7 @@ import fr.guim.cinedoury.core.model.LibraryId
 import fr.guim.cinedoury.core.model.MediaItem
 import fr.guim.cinedoury.core.model.PlaybackRequest
 import fr.guim.cinedoury.core.model.RemoteTrailer
+import fr.guim.cinedoury.core.source.GestureLog
 import fr.guim.cinedoury.core.ui.RailTarget
 import fr.guim.cinedoury.core.ui.avatarSource
 import fr.guim.cinedoury.feature.auth.AddressMode
@@ -89,6 +91,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import org.koin.compose.koinInject
 import org.koin.core.context.GlobalContext
+import android.view.KeyEvent as NativeKeyEvent
 import fr.guim.cinedoury.core.ui.R as UiR
 
 /**
@@ -131,6 +134,10 @@ fun CineApp(
     // The « Recherche » keys of the remote, from any screen (`SPEC.md` § 4.12): no screen uses them.
     SharedTransitionLayout(
         Modifier.onPreviewKeyEvent { event ->
+            // Each key of the remote, for `ci/couch-gestures.sh` (silent in normal use, `GestureLog`).
+            if (event.type == KeyEventType.KeyDown && event.nativeKeyEvent.repeatCount == 0) {
+                GestureLog.mark("key ${NativeKeyEvent.keyCodeToString(event.nativeKeyEvent.keyCode)}")
+            }
             val key = searchKey(event.nativeKeyEvent.keyCode) ?: return@onPreviewKeyEvent false
             if (event.type == KeyEventType.KeyUp) onSearchKey(key)
             true
@@ -157,6 +164,12 @@ fun CineApp(
             ) {
                 saveable.SaveableStateProvider(entry.id) {
                     Screen(entry.route, navigator, sessions, variant, onToggleVariant, showCatalog, voiceRequests)
+                }
+                // Its first frame is drawn: the end of its opening (`OpeningTrace`).
+                LaunchedEffect(entry.id) {
+                    withFrameNanos { }
+                    OpeningTrace.end(entry)
+                    GestureLog.mark("screen ${entry.route.name}")
                 }
             }
         }

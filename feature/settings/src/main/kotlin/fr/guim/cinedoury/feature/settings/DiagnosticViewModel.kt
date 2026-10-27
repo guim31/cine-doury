@@ -1,5 +1,6 @@
 package fr.guim.cinedoury.feature.settings
 
+import android.app.ActivityManager
 import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.os.Build
@@ -36,6 +37,13 @@ fun interface DeviceFacts {
 class AndroidDeviceFacts(
     private val context: Context,
 ) : DeviceFacts {
+    /** What sizes the caches of images (`ImageBudget`): the heap, low RAM or not, the ABIs. */
+    private fun memory(): String {
+        val activities = context.getSystemService(ActivityManager::class.java)
+        val lowRam = if (activities.isLowRamDevice) "yes" else "no"
+        return "heap ${activities.memoryClass} MB, low RAM: $lowRam, ABIs: ${Build.SUPPORTED_ABIS.joinToString()}"
+    }
+
     override fun read(): Pair<DiagnosticInput.App, DiagnosticInput.Device> {
         val info = context.packageManager.getPackageInfo(context.packageName, 0)
         val debug = context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
@@ -67,6 +75,7 @@ class AndroidDeviceFacts(
                 density =
                     "${metrics.density} (${metrics.densityDpi} dpi), " +
                         "$widthDp × $heightDp dp",
+                memory = memory(),
             )
         return app to device
     }

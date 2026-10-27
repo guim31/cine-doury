@@ -59,12 +59,17 @@ val TvCineTypography =
 /** Tabular figures, for durations and times (« 1 h 52 », « 22 h 47 »). */
 fun TextStyle.tabular(): TextStyle = copy(fontFeatureSettings = "tnum")
 
-/** The scale with every size and line height times [factor] (« Taille du texte », J7). */
+/**
+ * The scale with every size and line height times [factor] (« Taille du texte », J7). The titles
+ * (« Affiche », « Titre 1 ») grow by [HEADING_MAX_SCALE] at most (J8): already read from across the
+ * room, larger they broke words in their columns (« Apparenc/e »).
+ */
 fun CineTypography.scaled(factor: Float): CineTypography {
-    fun TextStyle.times() = copy(fontSize = fontSize * factor, lineHeight = lineHeight * factor)
+    fun TextStyle.times(by: Float = factor) = copy(fontSize = fontSize * by, lineHeight = lineHeight * by)
+    val heading = factor.coerceAtMost(HEADING_MAX_SCALE)
     return CineTypography(
-        display = display.times(),
-        title1 = title1.times(),
+        display = display.times(heading),
+        title1 = title1.times(heading),
         title2 = title2.times(),
         body = body.times(),
         label = label.times(),
@@ -72,3 +77,6 @@ fun CineTypography.scaled(factor: Float): CineTypography {
         minimum = minimum.times(),
     )
 }
+
+/** How much « Taille du texte » may grow the titles of the screens. */
+const val HEADING_MAX_SCALE = 1.15f

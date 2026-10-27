@@ -33,6 +33,7 @@ import fr.guim.cinedoury.core.designsystem.component.MediaListRow
 import fr.guim.cinedoury.core.designsystem.component.PrimaryButton
 import fr.guim.cinedoury.core.designsystem.component.SidePanel
 import fr.guim.cinedoury.core.designsystem.component.SkeletonListRow
+import fr.guim.cinedoury.core.designsystem.component.asHeading
 import fr.guim.cinedoury.core.designsystem.component.previewFirstVisible
 import fr.guim.cinedoury.core.designsystem.component.rememberCineFocus
 import fr.guim.cinedoury.core.designsystem.theme.CineSizes
@@ -107,7 +108,12 @@ fun ProblemsScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(CineSpacing.m),
             ) {
-                Text(stringResource(R.string.problems_title), style = CineTheme.typography.title1, color = colors.text)
+                Text(
+                    stringResource(R.string.problems_title),
+                    style = CineTheme.typography.title1,
+                    color = colors.text,
+                    modifier = Modifier.asHeading(),
+                )
                 Text(libraryName, style = CineTheme.typography.title2, color = colors.text2, maxLines = 1)
             }
             Row(horizontalArrangement = Arrangement.spacedBy(CineSpacing.xs)) {

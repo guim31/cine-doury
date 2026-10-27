@@ -16,6 +16,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.tv.material3.Text
 import fr.guim.cinedoury.core.designsystem.component.InitialFocus
 import fr.guim.cinedoury.core.designsystem.component.SecondaryButton
+import fr.guim.cinedoury.core.designsystem.component.asHeading
 import fr.guim.cinedoury.core.designsystem.theme.CineSizes
 import fr.guim.cinedoury.core.designsystem.theme.CineSpacing
 import fr.guim.cinedoury.core.designsystem.theme.CineTheme
@@ -41,7 +42,12 @@ fun ComingSoonScreen(
         contentAlignment = Alignment.CenterStart,
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(CineSpacing.s)) {
-            Text(text = title, style = CineTheme.typography.title1, color = CineTheme.colors.text)
+            Text(
+                text = title,
+                style = CineTheme.typography.title1,
+                color = CineTheme.colors.text,
+                modifier = Modifier.asHeading(),
+            )
             Text(
                 text = message,
                 style = CineTheme.typography.body,

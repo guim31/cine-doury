@@ -35,12 +35,15 @@ data class DiagnosticInput(
     /**
      * @param displayMode the mode of the screen (« 3840 × 2160 @ 59.94 Hz »).
      * @param density the density and the size of the interface (« 4.0 (640 dpi), 960 × 540 dp »).
+     * @param memory the heap, low RAM or not, and the ABIs (« heap 256 MB, low RAM: no, ABIs:
+     * armeabi-v7a, armeabi »): what sizes the caches of images (J8).
      */
     data class Device(
         val model: String,
         val android: String,
         val displayMode: String,
         val density: String,
+        val memory: String = "?",
     )
 
     /** @param remote reached through its remote address; [https] whether that address is secure. */
@@ -77,6 +80,7 @@ object DiagnosticReport {
                 line("Android: ${input.device.android}")
                 line("Display mode: ${input.device.displayMode}")
                 line("Density: ${input.device.density}")
+                line("Memory: ${input.device.memory}")
                 capabilities(input)
                 section("Server")
                 val server = input.server

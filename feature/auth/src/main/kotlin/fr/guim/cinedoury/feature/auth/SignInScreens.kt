@@ -134,7 +134,9 @@ private fun QuickConnectCode(
             color = if (code == null) colors.text3 else colors.text,
             modifier =
                 Modifier
-                    .padding(vertical = CineSpacing.s)
+                    // `xs`, not `s` (J8): the whole column fits a 1080p screen, the focus of
+                    // « Utiliser un mot de passe » included.
+                    .padding(vertical = CineSpacing.xs)
                     .semantics { contentDescription = description }
                     .testTag("quick-connect-code"),
         )

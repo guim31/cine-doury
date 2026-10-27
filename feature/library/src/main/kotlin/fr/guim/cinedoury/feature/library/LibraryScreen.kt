@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -32,6 +33,7 @@ import fr.guim.cinedoury.core.designsystem.component.CineIcons
 import fr.guim.cinedoury.core.designsystem.component.CineTab
 import fr.guim.cinedoury.core.designsystem.component.InitialFocus
 import fr.guim.cinedoury.core.designsystem.component.SecondaryButton
+import fr.guim.cinedoury.core.designsystem.component.asHeading
 import fr.guim.cinedoury.core.designsystem.component.rememberCineFocus
 import fr.guim.cinedoury.core.designsystem.theme.CineSizes
 import fr.guim.cinedoury.core.designsystem.theme.CineSpacing
@@ -145,7 +147,13 @@ fun LibraryScreen(
     if (jumps != null) CollectEvents(jumps) { jump = it }
 
     BackHandler(enabled = panel != null) {
-        if (category != null) category = null else panel = null
+        if (category != null) {
+            category = null
+        } else {
+            // Like « Fermer »: the focus goes back to the button of the panel (J8, it went to the rail).
+            closed = panel
+            panel = null
+        }
     }
     // « Retour » ends a selection, and closes a failure.
     BackHandler(enabled = panel == null && (state.selection != null || state.manageError != null)) {
@@ -171,6 +179,7 @@ fun LibraryScreen(
                 Text(
                     text = library?.name.orEmpty(),
                     style = CineTheme.typography.title1,
+                    modifier = Modifier.asHeading(),
                     color = CineTheme.colors.text,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -274,10 +283,12 @@ private fun Toolbar(
     buttons: Map<LibraryPanel, FocusRequester>,
 ) {
     val browse = state.browse
-    Row(
+    // A flow: with a large text, the buttons go to a second line instead of out of the screen (J8).
+    FlowRow(
         modifier = Modifier.padding(end = CineSpacing.safeHorizontal),
         horizontalArrangement = Arrangement.spacedBy(CineSpacing.xs),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalArrangement = Arrangement.spacedBy(CineSpacing.xs),
+        itemVerticalAlignment = Alignment.CenterVertically,
     ) {
         state.tabs.takeIf { it.size > 1 }?.forEach { tab ->
             CineTab(

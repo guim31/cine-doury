@@ -37,6 +37,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.lerp
 import androidx.tv.material3.Icon
@@ -49,13 +52,14 @@ import fr.guim.cinedoury.core.designsystem.theme.CineTheme
 
 /**
  * An entry of the rail. [avatar] stands in for the icon (the profile picture), drawn at the size of
- * an icon.
+ * an icon. [tag] is the test tag of the focusable entry.
  */
 @Immutable
 data class RailDestination(
     val icon: ImageVector,
     val label: String,
     val avatar: (@Composable () -> Unit)? = null,
+    val tag: String? = null,
 )
 
 private val RailItemShape = RoundedCornerShape(percent = 50)
@@ -203,6 +207,9 @@ private fun RailItem(
                 .height(CineSizes.railItemHeight)
                 .withFocusRequester(focusRequester)
                 .cineFocusable(focus, RailItemShape, CineScale.RAIL, onClick, halo = CineSizes.railFocusHalo)
+                .then(destination.tag?.let { Modifier.testTag(it) } ?: Modifier)
+                // TalkBack: one entry, read once by its label (the icon says nothing more), and which one is open.
+                .semantics { this.selected = selected }
                 .background(if (focused) colors.text else Color.Transparent)
                 .padding(horizontal = RailItemPadding),
         verticalAlignment = Alignment.CenterVertically,
@@ -214,7 +221,8 @@ private fun RailItem(
         } else {
             Icon(
                 imageVector = destination.icon,
-                contentDescription = destination.label,
+                // The label next to it says it, even when the rail is closed (it is only transparent).
+                contentDescription = null,
                 tint = content,
                 modifier = Modifier.size(CineSizes.icon),
             )

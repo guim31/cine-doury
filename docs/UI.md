@@ -57,11 +57,11 @@ Thème sombre seulement, sur la TV comme ailleurs. Variante **noir OLED** en ré
 | `surface-3` | `#2A2E37` | survol, éléments désactivés |
 | `texte` | `#F2F3F5` | texte principal |
 | `texte-2` | `#A9AEB8` | texte secondaire |
-| `texte-3` | `#6E7480` | métadonnées discrètes |
+| `texte-3` | `#858B96` (`#6E7480` jusqu'au J8 : sous 4,5:1) | métadonnées discrètes |
 | `focus` | `#FFFFFF` à 90 % | contour de focus |
 | `halo de focus` | `#FFFFFF` à 40 %, flou de 14 dp | lueur autour de l'élément focalisé (§ 3) |
 | `accent` | `#F2C14E` (« jaune projecteur », § 4.1) | bouton principal, progression, sélection |
-| `danger` | `#E5484D` | suppression |
+| `danger` | `#E5484D` ; fond d'un bouton destructif `#C9373C` (J8 : 4,6:1 sous `texte`) | suppression |
 | `succès` | `#46A758` | confirmations |
 
 - **Voiles de lisibilité** sur les fonds :

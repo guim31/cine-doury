@@ -16,6 +16,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpSize
@@ -85,7 +87,8 @@ fun PosterCard(
                         CardOutlineShape,
                         interactionSource,
                         progress = focusProgress,
-                    ).background(CineTheme.colors.surface1),
+                    ).cardDescription(title, subtitle, image != null)
+                    .background(CineTheme.colors.surface1),
         ) {
             if (image != null) image() else GeneratedArtwork(title, compact = size == PosterSize.Small)
             UnwatchedMark(unwatched, unwatchedCount)
@@ -134,7 +137,8 @@ fun ThumbnailCard(
                         onClick,
                         CardOutlineShape,
                         interactionSource,
-                    ).background(CineTheme.colors.surface1),
+                    ).cardDescription(title, subtitle, image != null)
+                    .background(CineTheme.colors.surface1),
         ) {
             // A thumbnail is small (`UI.md` § 6): the title of a generated card in « Légende ».
             if (image != null) image() else GeneratedArtwork(title, compact = true)
@@ -149,6 +153,20 @@ fun ThumbnailCard(
         )
     }
 }
+
+/**
+ * What TalkBack reads on a card with a picture: its caption is outside the focusable part (and
+ * hidden until the focus comes). A generated card writes its title already.
+ */
+private fun Modifier.cardDescription(
+    title: String,
+    subtitle: String?,
+    hasImage: Boolean,
+): Modifier =
+    semantics {
+        val description = if (hasImage) listOfNotNull(title, subtitle).joinToString(", ") else subtitle
+        if (!description.isNullOrEmpty()) contentDescription = description
+    }
 
 /** The « non vu » mark of a card: the number of unwatched episodes, else the triangle. */
 @Composable

@@ -20,6 +20,7 @@ import fr.guim.cinedoury.core.designsystem.component.ListRow
 import fr.guim.cinedoury.core.designsystem.component.SidePanel
 import fr.guim.cinedoury.core.designsystem.component.previewFirstVisible
 import fr.guim.cinedoury.core.designsystem.component.rememberCineFocus
+import fr.guim.cinedoury.core.designsystem.theme.CineSizes
 import fr.guim.cinedoury.core.designsystem.theme.CineSpacing
 import fr.guim.cinedoury.core.model.AudioFormat
 import fr.guim.cinedoury.core.model.DynamicRange
@@ -129,7 +130,7 @@ internal fun LibraryPanels(
         val first = remember(panel, category) { FocusRequester() }
         LazyColumn(
             state = rememberLazyListState(initialFirstVisibleItemIndex = previewFirstVisible("panel-")),
-            contentPadding = PaddingValues(vertical = CineSpacing.xs, horizontal = CineSpacing.xs),
+            contentPadding = PaddingValues(vertical = CineSizes.focusRoom, horizontal = CineSpacing.xs),
             verticalArrangement = Arrangement.spacedBy(CineSpacing.xs),
         ) {
             itemsIndexed(entries, key = { _, entry -> entry.key }) { index, entry ->

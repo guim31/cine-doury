@@ -96,6 +96,7 @@ internal object J7Samples {
                                 "11 (API 30)",
                                 "3840 × 2160 @ 59.94 Hz",
                                 "4.0 (640 dpi), 960 × 540 dp",
+                                "heap 384 MB, low RAM: no, ABIs: arm64-v8a, armeabi-v7a, armeabi",
                             ),
                         capabilities = SampleDevices.shield,
                         server = DiagnosticInput.Server("Maison", "12.3.0", remote = false, https = false),

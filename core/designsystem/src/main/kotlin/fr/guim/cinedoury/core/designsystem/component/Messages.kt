@@ -76,7 +76,7 @@ fun MessagePanel(
             modifier =
                 Modifier.size(CineSizes.icon * 2),
         )
-        Text(text = title, style = CineTheme.typography.title1, color = colors.text, modifier = reading)
+        Text(text = title, style = CineTheme.typography.title1, color = colors.text, modifier = reading.asHeading())
         Text(text = message, style = CineTheme.typography.body, color = colors.text2, modifier = reading)
         Row(
             // Room for the scale and the halo of the focused button.

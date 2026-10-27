@@ -65,6 +65,7 @@ import fr.guim.cinedoury.core.designsystem.theme.CineSpacing
 import fr.guim.cinedoury.core.designsystem.theme.CineTheme
 import fr.guim.cinedoury.core.designsystem.theme.tabular
 import fr.guim.cinedoury.core.model.PlaybackRequest
+import fr.guim.cinedoury.core.source.GestureLog
 import fr.guim.cinedoury.core.ui.CollectEvents
 import fr.guim.cinedoury.core.ui.ImageSources
 import fr.guim.cinedoury.core.ui.LocalClock
@@ -107,6 +108,7 @@ object PlayerPreview {
     const val QUALITY = "player-quality"
     const val SETTINGS = "player-settings"
     const val INFO = "player-info"
+    const val INFO_BUTTON = "player-info-button"
     const val SKIP = "player-skip"
     const val NEXT = "player-next"
     const val STILL = "player-still"
@@ -180,6 +182,9 @@ fun PlayerScreen(
     val overlay = state.error != null || state.stillWatching
     val pausedForSettings = remember { mutableStateOf(false) }
     var resized by remember { mutableStateOf(false) }
+    // For `ci/couch-gestures.sh` (`GestureLog`): the interface and the panels as they come and go.
+    LaunchedEffect(osd) { GestureLog.mark(if (osd) "osd shown" else "osd hidden") }
+    LaunchedEffect(panel) { GestureLog.mark("panel ${panel?.name ?: "closed"}") }
 
     fun resize(forward: Boolean) {
         resized = true
@@ -539,6 +544,7 @@ private fun Bar(
         modifier =
             Modifier
                 .testTag(PlayerPreview.PROGRESS)
+                .logFocus(PlayerPreview.PROGRESS)
                 .focusRequester(requester)
                 .onFocusChanged { focused = it.isFocused }
                 .onKeyEvent { event ->
@@ -609,6 +615,7 @@ private fun Controls(
             label = stringResource(if (state.playing) R.string.player_pause else R.string.player_play),
             onClick = actions::togglePlay,
             focus = rememberCineFocus(PlayerPreview.PLAY),
+            modifier = Modifier.testTag(PlayerPreview.PLAY).logFocus(PlayerPreview.PLAY),
         )
         if (state.chapters.isNotEmpty()) {
             RoundIconButton(
@@ -616,6 +623,7 @@ private fun Controls(
                 label = stringResource(R.string.player_chapters),
                 onClick = { onPanel(PlayerPanel.Chapters) },
                 focus = rememberCineFocus(PlayerPreview.CHAPTERS),
+                modifier = Modifier.testTag(PlayerPreview.CHAPTERS).logFocus(PlayerPreview.CHAPTERS),
             )
         }
         RoundIconButton(
@@ -623,12 +631,14 @@ private fun Controls(
             label = stringResource(R.string.player_tracks),
             onClick = { onPanel(PlayerPanel.Tracks) },
             focus = rememberCineFocus(PlayerPreview.TRACKS),
+            modifier = Modifier.testTag(PlayerPreview.TRACKS).logFocus(PlayerPreview.TRACKS),
         )
         RoundIconButton(
             icon = CineIcons.TextSize,
             label = stringResource(R.string.player_subtitle_size),
             onClick = { onPanel(PlayerPanel.SubtitleSize) },
             focus = rememberCineFocus(PlayerPreview.SUBTITLES),
+            modifier = Modifier.testTag(PlayerPreview.SUBTITLES).logFocus(PlayerPreview.SUBTITLES),
         )
         if (!state.trailer) {
             RoundIconButton(
@@ -636,6 +646,7 @@ private fun Controls(
                 label = stringResource(R.string.player_quality),
                 onClick = { onPanel(PlayerPanel.Quality) },
                 focus = rememberCineFocus(PlayerPreview.QUALITY),
+                modifier = Modifier.testTag(PlayerPreview.QUALITY).logFocus(PlayerPreview.QUALITY),
             )
         }
         RoundIconButton(
@@ -643,6 +654,7 @@ private fun Controls(
             label = stringResource(R.string.player_settings),
             onClick = { onPanel(PlayerPanel.Settings) },
             focus = rememberCineFocus(PlayerPreview.SETTINGS),
+            modifier = Modifier.testTag(PlayerPreview.SETTINGS).logFocus(PlayerPreview.SETTINGS),
         )
         RoundIconButton(
             icon = CineIcons.Info,
@@ -650,6 +662,7 @@ private fun Controls(
             onClick = actions::toggleInfo,
             selected = state.info != null,
             focus = rememberCineFocus(PlayerPreview.INFO),
+            modifier = Modifier.testTag(PlayerPreview.INFO_BUTTON).logFocus(PlayerPreview.INFO_BUTTON),
         )
     }
 }
@@ -788,3 +801,16 @@ private fun ErrorScreen(
         runCatching { requester.requestFocus() }
     }
 }
+
+/**
+ * Says in the [GestureLog] when the element [tag] takes the focus: `ci/couch-gestures.sh` finds its
+ * way in the player by it, where `uiautomator dump` never sees the screen still.
+ */
+internal fun Modifier.logFocus(tag: String): Modifier =
+    onFocusChanged {
+        if (it.isFocused ||
+            it.hasFocus
+        ) {
+            GestureLog.mark("focus $tag")
+        }
+    }

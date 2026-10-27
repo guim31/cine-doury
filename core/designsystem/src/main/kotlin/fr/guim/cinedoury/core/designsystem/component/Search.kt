@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -85,7 +87,17 @@ fun KeyboardKey(
     ) {
         when {
             text != null -> {
-                Text(text = text, style = CineTheme.typography.label, color = content, maxLines = 1)
+                // The key keeps its size: a large text (« Tout effacer » at 130 %) shrinks to fit.
+                BasicText(
+                    text = text,
+                    style = CineTheme.typography.label.copy(color = content),
+                    maxLines = 1,
+                    autoSize =
+                        TextAutoSize.StepBased(
+                            minFontSize = CineTheme.typography.minimum.fontSize,
+                            maxFontSize = CineTheme.typography.label.fontSize,
+                        ),
+                )
             }
 
             icon != null -> {

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Measures the app on the running emulator with Macrobenchmark (:benchmark, NavigationBenchmarks):
-# a cold start to the home, the rows of the home, a library and back, a fast scroll of a grid.
+# a cold start to the home, the rows of the home, a library and back, a fast scroll of a grid, the
+# opening of a details screen and of the settings.
 # The emulator is no Shield: compare its numbers with those of the same job (SPEC.md § 4.16).
 # Usage: emulator-benchmarks.sh JELLYFIN_URL APK_DIR LABEL COMPILATION
 #   COMPILATION: profile (the Baseline Profile of the APK), none, or ignore (the debug APK).
@@ -32,7 +33,7 @@ set -e
 adb pull "/sdcard/Android/media/$package.benchmark" "$out/" > /dev/null 2>&1 || true
 python3 ci/benchmark-summary.py "$label" "$out" | tee -a "${GITHUB_STEP_SUMMARY:-/dev/null}"
 if grep -q -E "FAILURES!!!|INSTRUMENTATION_FAILED|Process crashed" "$out/instrumentation.txt" \
-  || ! grep -q "OK (4 tests)" "$out/instrumentation.txt"; then
+  || ! grep -q "OK (6 tests)" "$out/instrumentation.txt"; then
   adb logcat -d -b crash || true
   echo "::error::the benchmarks of $label failed"
   exit 1
