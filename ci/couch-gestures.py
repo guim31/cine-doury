@@ -259,7 +259,26 @@ class Couch:
             self.results.append((number, name, d.presses, presses, None, None, target, f"sauté : {skip}", False))
         except (Failed, subprocess.TimeoutExpired) as failure:
             self.results.append((number, name, d.presses, presses, None, None, target, f"échec : {failure}", False))
+            print(self.context(since), flush=True)
             self.recover()
+
+    def context(self, since):
+        """What the app said during a failed gesture and where its focus is: printed under the failure."""
+        d = self.d
+        d.refresh()
+        with d.lock:
+            events = [e for _, e in d.events[since:]][-16:]
+        root = d.dump()
+        chain = []
+        if root is not None:
+            s = Screen(root)
+            node = s.focused()
+            while node is not None:
+                if node.get("resource-id"):
+                    chain.append(node.get("resource-id"))
+                node = s.parents.get(node)
+        focus = " < ".join(chain) if root is not None else "(écran illisible : lecteur ou animation)"
+        return f"      journal : {' · '.join(events) or '(rien)'}\n      focus : {focus or '(aucune étiquette)'}"
 
     def screen_event(self, name):
         return lambda event: event == f"screen {name}"
@@ -320,8 +339,13 @@ class Couch:
         for _ in range(12):
             root = d.dump()
             if root is None:
-                # The player, never still for uiautomator: « Retour » leaves it.
-                d.press("back")
+                # The player, never still for uiautomator: « Retour » leaves it. Elsewhere, an
+                # animation: wait for it rather than leave the screen.
+                d.refresh()
+                if self.last_screen() == "Player":
+                    d.press("back")
+                else:
+                    time.sleep(1)
                 continue
             s = Screen(root)
             if s.has("quit-dialog"):
@@ -467,13 +491,40 @@ class Couch:
         """Presses [key] until the player says the focus is on a tag [accept] takes."""
         d = self.d
         for _ in range(limit):
+            self.show_osd()
             mark = d.mark()
             d.press(key, pause=0)
-            d.wait_event(lambda e: e.startswith("focus "), mark, 5, "le focus")
+            try:
+                d.wait_event(lambda e: e.startswith("focus "), mark, 5, "le focus")
+            except Failed:
+                # The interface hid itself (4 s without a key) as the key left: it only showed it.
+                if self.osd_visible():
+                    raise
+                self.show_osd()
+                mark = d.mark()
+                d.press(key, pause=0)
+                d.wait_event(lambda e: e.startswith("focus "), mark, 5, "le focus")
             tag = self.last_focus()
             if accept(tag):
                 return tag
         raise Failed(f"le focus du lecteur est sur {self.last_focus()}")
+
+    def osd_visible(self):
+        self.d.refresh()
+        with self.d.lock:
+            shown = [e for _, e in self.d.events if e.startswith("osd ")]
+        return bool(shown) and shown[-1] == "osd shown"
+
+    def show_osd(self):
+        """The interface of the player shown (OK when hidden), unless a panel is open."""
+        d = self.d
+        with d.lock:
+            panels = [e for _, e in d.events if e.startswith("panel ")]
+        if (panels and panels[-1] != "panel closed") or self.osd_visible():
+            return
+        mark = d.mark()
+        d.press("ok")
+        d.wait_event(lambda e: e == "osd shown", mark, what="interface du lecteur")
 
     def last_focus(self):
         with self.d.lock:
@@ -489,19 +540,13 @@ class Couch:
     def g08_leave_player(self, since):
         d = self.d
         self.in_player()
-        mark = d.mark()
-        for _ in range(3):
-            d.press("back")
-            with d.lock:
-                if any(e.startswith("screen ") for _, e in d.events[mark:]):
-                    break
-        return d.wait_event(lambda e: e.startswith("screen ") and e != "screen Player", mark, what="sortie du lecteur")
+        return self.leave_player()
 
     def g09_details_to_home(self, since):
         d = self.d
         s = d.screen()
         if not s.has("details"):
-            raise Skip("pas sur une fiche (geste 8 sauté)")
+            raise Skip("pas sur une fiche (un geste précédent n'y a pas mené)")
         mark = d.mark()
         d.press("back", pause=0)
         return self.wait_screen("Home", mark)
@@ -530,8 +575,15 @@ class Couch:
         d.press("ok", pause=0)
         return self.wait_screen("Library", mark)
 
+    def last_screen(self):
+        with self.d.lock:
+            screens = [e for _, e in self.d.events if e.startswith("screen ")]
+        return screens[-1].removeprefix("screen ") if screens else None
+
     def g12_scroll_grid(self, since):
         d = self.d
+        if self.last_screen() != "Library":
+            raise Skip("pas dans une bibliothèque (un geste précédent n'y a pas mené)")
         try:
             first = d.wait_ui(lambda s: s.focus_tag("item-"), timeout=5, what="une carte de la grille")
         except Failed:
@@ -549,13 +601,15 @@ class Couch:
         d = self.d
         self.grid_card = d.screen().focus_tag("item-")
         if self.grid_card is None:
-            raise Skip("pas dans une grille (geste 11 sauté)")
+            raise Skip("pas dans une grille (un geste précédent n'y a pas mené)")
         mark = d.mark()
         d.press("ok", pause=0)
         return self.wait_screen("Details", mark)
 
     def g14_watched(self, since):
         d = self.d
+        if self.last_screen() != "Details":
+            raise Skip("pas sur une fiche (un geste précédent n'y a pas mené)")
         d.wait_ui(lambda s: s.has("details-watched") or s.has("details-play"), what="les boutons de la fiche")
         self.to_button("details-watched")
         before = d.screen().description("details-watched")
@@ -590,7 +644,7 @@ class Couch:
     def g16_back_to_card(self, since):
         d = self.d
         if getattr(self, "grid_card", None) is None:
-            raise Skip("pas venu d'une grille (geste 13 sauté)")
+            raise Skip("pas venu d'une grille (un geste précédent n'y a pas mené)")
         for _ in range(2):
             if d.screen().has("details-panel"):
                 d.press("back")
@@ -622,9 +676,11 @@ class Couch:
         d.press("ok")
         self.wait_screen("Settings", mark)
         for _ in range(14):
-            if d.screen().focus_in("settings-Subtitles"):
+            s = d.screen()
+            if s.focus_in("settings-Subtitles"):
                 break
-            d.press("down")
+            # The rail may keep the focus as the screen opens: → enters the list.
+            d.press("right" if s.focus_tag("rail-") else "down")
         else:
             raise Failed("« Sous-titres » jamais atteint")
         mark = d.mark()
@@ -681,7 +737,7 @@ class Couch:
             moves = [e for _, e in d.events if e in ("playing", "paused", "buffering")]
             shown = [e for _, e in d.events if e.startswith("osd ")]
         if not screens or screens[-1] != "screen Player" or not moves:
-            raise Skip("pas dans le lecteur (geste 3 sauté)")
+            raise Skip("pas dans le lecteur (un geste précédent n'y a pas mené)")
         if moves[-1] == "paused":
             # Paused by the gesture before: OK on the progress bar plays again.
             mark = d.mark()
@@ -702,14 +758,25 @@ class Couch:
             d.wait_event(lambda e: e == "osd hidden", mark, 8, "interface cachée")
 
     def leave_player(self):
+        """« Retour » until the screen under the player is drawn: one key at a time, each given the
+        time to land (a second « Retour » on the screen under would leave it too)."""
         d = self.d
         mark = d.mark()
+        out = lambda e: e.startswith("screen ") and e != "screen Player"
         for _ in range(3):
+            step = d.mark()
             d.press("back")
+            # « Retour » first closes a panel or hides the interface (the player says so), then leaves.
+            closed = lambda e: out(e) or e in ("osd hidden", "panel closed")
+            try:
+                d.wait_event(closed, step, 4, "sortie du lecteur")
+            except Failed:
+                continue
             with d.lock:
-                if any(e.startswith("screen ") and e != "screen Player" for _, e in d.events[mark:]):
-                    return
-        d.wait_event(lambda e: e.startswith("screen ") and e != "screen Player", mark, what="sortie du lecteur")
+                left = [at for at, e in d.events[mark:] if out(e)]
+            if left:
+                return left[0]
+        return d.wait_event(out, mark, what="sortie du lecteur")
 
 
 GESTURES = [
