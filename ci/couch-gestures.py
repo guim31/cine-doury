@@ -56,6 +56,7 @@ class Device:
         self.serial = serial
         self.package = package
         self.events = []  # (device time in s, event)
+        self.seen = set()
         self.lock = threading.Lock()
         self.presses = 0
 
@@ -80,6 +81,8 @@ class Device:
 
     def start_log(self):
         self.shell("setprop log.tag.CineDoury DEBUG")
+        # A larger buffer keeps the lines of the app longer, while the player logs a lot.
+        self.adb("logcat", "-G", "16M", check=False)
         self.adb("logcat", "-c", check=False)
 
     def stop_log(self):
@@ -94,9 +97,12 @@ class Device:
             if match:
                 events.append((float(match.group(1)), match.group(2).strip()))
         with self.lock:
-            # The buffer only grows while the script runs: keep what was read, add what is new.
-            if len(events) >= len(self.events):
-                self.events = events
+            # The buffer of logcat rotates (playback logs a lot): a dump may have lost the first lines
+            # of the session. Keep what was read, add the lines not seen yet, in their order.
+            for event in events:
+                if event not in self.seen:
+                    self.seen.add(event)
+                    self.events.append(event)
 
     def diagnose(self):
         """What the device says when the app is silent: for the message of a failure."""
@@ -645,10 +651,10 @@ class Couch:
         self.to_button("details-more")
         mark = d.mark()
         d.press("ok")
-        s = d.wait_ui(lambda s: s.has("details-panel") and s, what="le menu ⋯")
+        s = d.wait_ui(lambda s: s.has(prefix=MENU_LINE) and s, what="le menu ⋯")
         if not s.has("details-line-images"):
             d.press("back")
-            d.wait_ui(lambda s: not s.has("details-panel"), what="le menu ⋯ fermé")
+            d.wait_ui(lambda s: not s.has(prefix=MENU_LINE), what="le menu ⋯ fermé")
             raise Skip("pas de « Changer les images » (profil non administrateur)")
         for _ in range(12):
             if d.screen().focus_in("details-line-images"):
@@ -660,17 +666,18 @@ class Couch:
         d.wait_ui(lambda s: s.has(prefix="images-image-") or s.has(prefix="images-type-"), what="la galerie")
         d.press("back")
         self.wait_screen("Details", mark)
-        d.wait_ui(lambda s: not s.has("details-panel") or s.focus_tag("details-"), what="la fiche")
+        # Back on the details, its menu open or not: g16 closes it.
+        d.wait_ui(lambda s: s.focus_tag("details-"), what="la fiche")
         return end
 
     def g16_back_to_card(self, since):
         d = self.d
-        if getattr(self, "grid_card", None) is None:
+        if getattr(self, "grid_card", None) is None or self.last_screen() != "Details":
             raise Skip("pas venu d'une grille (un geste précédent n'y a pas mené)")
-        if d.screen().has("details-panel"):
+        if d.screen().has(prefix=MENU_LINE):
             # A menu left open: « Retour » closes it, once it is gone the next one leaves the details.
             d.press("back")
-            d.wait_ui(lambda s: not s.has("details-panel"), what="le menu ⋯ fermé")
+            d.wait_ui(lambda s: not s.has(prefix=MENU_LINE), what="le menu ⋯ fermé")
         mark = d.mark()
         d.press("back", pause=0)
         end = self.wait_screen("Library", mark)
@@ -801,6 +808,10 @@ class Couch:
                 return left[0]
         return d.wait_event(out, mark, what="sortie du lecteur")
 
+
+# The lines of the menu ⋯ of a details screen: there only while it is open (the side panel keeps
+# its own tag, `details-panel`, closed).
+MENU_LINE = "details-line-"
 
 # The buttons of the player, left to right (`PlayerScreen`; chapters and quality only when they apply).
 CONTROLS = [
