@@ -43,7 +43,7 @@ fun DeviceNameRoute(
 }
 
 /**
- * « Nom de l'appareil » (`SPEC.md` § 4.16): the name the server shows for this TV, from the next
+ * « Nom de l'appareil » (`SPEC.md` § 4.17): the name the server shows for this TV, from the next
  * request on. Empty, or « Nom de la télévision », goes back to the name of the TV.
  */
 @Composable

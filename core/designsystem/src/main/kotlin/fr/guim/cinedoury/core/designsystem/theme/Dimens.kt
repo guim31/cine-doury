@@ -57,6 +57,15 @@ object CineSizes {
     val railExpanded = 240.dp
     val railItemHeight = 52.dp
 
+    /**
+     * Between the edges of the rail and its entries, on every side: the outline of the focused entry
+     * (5 dp) and its halo ([railFocusHalo]) stay inside the rail, open or closed (perf/fluidite).
+     */
+    val railInset = 16.dp
+
+    /** The halo of a focused entry of the rail: smaller than [focusHalo], to fit in [railInset]. */
+    val railFocusHalo = 6.dp
+
     // Sign-in, profiles and settings (J1). The TV screen is 960 × 540 dp.
     val avatarLarge = 112.dp
     val avatarMedium = 72.dp
@@ -170,6 +179,12 @@ object CineScale {
 
     /** Wide elements (text fields, list rows): a light growth, so that they stay in their column. */
     const val FIELD = 1.02f
+
+    /**
+     * The entries of the rail: no growth. The focused entry fills in white, and its outline and halo
+     * stay inside the rail ([CineSizes.railInset]).
+     */
+    const val RAIL = 1f
 }
 
 /**

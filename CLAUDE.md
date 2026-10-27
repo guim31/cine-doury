@@ -62,6 +62,9 @@ dès qu'un piège est découvert.**
 ./gradlew spotlessApply                  # formatage (ktlint, style ktlint_official)
 ./gradlew animalsnifferMain              # modules Kotlin purs : aucune API absente d'Android 11 (API 30)
 ./gradlew :app:tv:assembleDebug          # APK de débogage : app/tv/build/outputs/apk/debug/
+./gradlew :app:tv:assembleRelease        # APK optimisé (R8, profils), signé de la clé de débogage : …/apk/release/
+./gradlew :benchmark:assembleBenchmarkRelease   # APK de test qui pilote l'appli de l'extérieur (UiAutomator)
+./gradlew :app:tv:generateReleaseBaselineProfile -Pandroid.testInstrumentationRunnerArguments.jellyfinUrl=http://10.0.2.2:8096  # profils (émulateur)
 ./gradlew :app:tv:verifyRoborazziDebug   # captures comparées à app/tv/src/test/screenshots/
 ./gradlew :app:tv:recordRoborazziDebug   # réenregistre les captures de référence
 ci/jellyfin/run-local.sh up              # Jellyfin 12.3 de test sur http://localhost:8096 (Docker)
@@ -93,8 +96,10 @@ ci/jellyfin/run-local.sh down
 - Journal de l'appli sur un appareil : `adb logcat -s CineDoury` (chaque échec attrapé, avec sa pile ; `FailureLog`).
 - Émulateurs de la CI (essai réel 2) : le job « Emulator » est une matrice, **API 30** (Android 11, `minSdk`, la Shield) et **API 34** (le Chromecast), mêmes scripts (`emulator-smoke.sh`, `emulator-playback.sh`, `emulator-signin.sh`) ; artefacts `emulator-api30` et `emulator-api34`.
 - Connexion réelle à la télécommande sur l'émulateur (essai réel 1) : `ci/emulator-signin.sh http://10.0.2.2:8096`, après `ci/emulator-playback.sh` dans le job « Emulator », lance `KeystoreTokenCipherTest` (vrai Keystore) et `SignInJourneyTest` (du premier lancement à l'accueil, puis « Lire »). Pas d'émulateur en session cloud (pas de KVM).
-- Réglages et mise à jour (J7) : `JELLYFIN_URL=http://localhost:8096 ./gradlew :source:jellyfin:integrationTest --tests '*Settings*'` (préférences sur le serveur, ordre des bibliothèques, nom de l'appareil, rapport par `ClientLog`) ; `./gradlew :core:update:test :feature:update:testDebugUnitTest` (fausse API GitHub). Version de release en local : `CINE_DOURY_VERSION=v1.2.3 ./gradlew :app:tv:assembleRelease` (non signée sans `RELEASE_KEYSTORE_FILE`), puis `VERSION=1.2.3 TAG=v1.2.3 SIGNED=false ci/release/package.sh` (APK nommé, `versionCode` vérifié, SHA-256, journal dans `dist/`). Pour tester la voie signée, une clé jetable dans le *scratchpad* (`keytool -genkeypair -storetype pkcs12 …`), jamais dans le dépôt.
+- Réglages et mise à jour (J7) : `JELLYFIN_URL=http://localhost:8096 ./gradlew :source:jellyfin:integrationTest --tests '*Settings*'` (préférences sur le serveur, ordre des bibliothèques, nom de l'appareil, rapport par `ClientLog`) ; `./gradlew :core:update:test :feature:update:testDebugUnitTest` (fausse API GitHub). Version de release en local : `CINE_DOURY_VERSION=v1.2.3 ./gradlew :app:tv:assembleRelease` (signée avec la clé de débogage sans `RELEASE_KEYSTORE_FILE`), puis `VERSION=1.2.3 TAG=v1.2.3 SIGNED=false ci/release/package.sh` (APK nommé, `versionCode` vérifié, SHA-256, journal dans `dist/`). Pour tester la voie signée, une clé jetable dans le *scratchpad* (`keytool -genkeypair -storetype pkcs12 …`), jamais dans le dépôt.
 - Publication : étiquette `vX.Y.Z` → workflow « Release » (`.github/workflows/release.yml`) ; retour arrière : « Run workflow » avec `version` (nouvelle, plus haute) et `source` (l'étiquette dont on reprend le code). Chaque PR le joue à blanc, sans secret.
+- **APK optimisé et profils (perf/fluidite)** : la CI construit `cine-doury-release-apk` (non débogable, R8 sans renommage, Baseline et Startup Profiles). Les profils se génèrent sur l'émulateur de la CI (job « Baseline Profile and benchmarks ») et s'enregistrent en poussant un commit dont le message contient **`[record-profiles]`** (comme `[record-screenshots]`) ; ils vivent dans `app/tv/src/release/generated/baselineProfiles/`. Sur un appareil, après `adb install` : lancer l'appli une fois (`profileinstaller` écrit le profil), puis `adb shell cmd package compile -m speed-profile -f fr.guim.cinedoury` pour ne pas attendre la maintenance d'Android.
+- **Mesures** : `ci/emulator-benchmarks.sh URL DOSSIER_APK ÉTIQUETTE profile|none|ignore` (émulateur lancé, Jellyfin en service) lance `NavigationBenchmarks` et imprime un tableau (`ci/benchmark-summary.py`, repris dans le résumé du job). `ignore` pour un APK de débogage, qu'Android ne compile pas. Le job mesure aussi l'appli d'avant (`BEFORE_REF` dans `ci.yml`) sur le même émulateur : seules les colonnes d'un même run se comparent.
 - OpenAPI : `curl http://localhost:8096/api-docs/openapi.json | python3 -m json.tool --indent 2 > docs/api/jellyfin-openapi-12.3.json`. La CI vérifie qu'il correspond au serveur (descriptions exclues).
 
 ## Performances (J2)
@@ -110,6 +115,21 @@ Ce qui compte pour garder 60 images/s au défilement (à mesurer sur la Shield a
 - les pages de la grille arrivent dans un `PagedItems` immuable (une `Map` de pages, pas une liste
   recopiée) ; les cases non lues sont des squelettes de même taille : aucune remise en page ;
 - les premières images de la rangée suivante sont préchargées (`PrefetchImages`).
+
+- **Mise en page** : l'appli est mise en page sur 960 × 540 dp quel que soit l'écran (`TvLayoutDensity`, dans `CineTheme`) ; une capture en 4K se prend avec les qualificateurs d'une Shield, `w1920dp-h1080dp-xhdpi` (`TV_4K_SHIELD`).
+
+Ajouts de la passe de fluidité (perf/fluidite) :
+- tester et mesurer la **version optimisée**, jamais l'APK de débogage : débogable, il tourne
+  sans code compilé d'avance (`run-from-apk`), plusieurs fois plus lent sur le fil principal ;
+- un état qui change à chaque pas du focus (index focalisé, élément du bandeau) se lit **au plus
+  bas** : dans le composant qui le dessine, par une lambda ou un `State`, jamais au sommet d'un
+  écran, et ne passe pas par l'état du modèle de vue s'il ne sert qu'à se souvenir
+  (`LibraryActions.focusedIndex`) ;
+- pas de `BoxWithConstraints` (sous-composition) dans un élément répété : une carte, une case ;
+  Coil résout lui-même la taille d'une image (`SizedImage`, `ImageSourceMapper`) ;
+- une seule animation par élément : partager `focusProgress` (`cineFocusable(progress = …)`) ;
+- un calcul fait en composition et répété par carte (BlurHash) se met en cache ;
+- images demandées au plus à la taille du 1080p (`TvLayout.imageScale`).
 
 ## Pièges
 
@@ -208,3 +228,12 @@ Ce qui compte pour garder 60 images/s au défilement (à mesurer sur la Shield a
 - **Pages de réglages longues** : une `LazyColumn` ne compose pas ce qui est sous le pli ; dans un test, `performScrollToNode(hasText(…))` sur `SettingsPagePreview.LIST` avant de cliquer.
 - **`aapt2 dump badging … | head -1`** sous `set -o pipefail` échoue (SIGPIPE) : `sed -n 1p`.
 - Detekt (`MaxLineLength`, 120) vérifie aussi les longues chaînes que ktlint laisse passer : les découper.
+- **Deux Gradle à la fois dans le même dépôt** (une boucle de relance oubliée en arrière-plan) se marchent dessus : sorties de compilation vides, « Unresolved reference » sur des classes d'un autre module qui existent. `./gradlew --stop`, `./gradlew clean`, et un seul Gradle à la fois.
+- **Plugin `androidx.baselineprofile` 1.5.0 et AGP 9.4** : marche tel quel ; il ajoute les types `nonMinifiedRelease` et `benchmarkRelease` à l'appli et au module de test. AGP 9 ne crée les tests unitaires que pour `debug` : `check` ne les lance pas trois fois. `CompilationMode.Ignore()` demande `@OptIn(ExperimentalMacrobenchmarkApi::class)`.
+- **UiAutomator et les champs de Compose** : chercher le champ par `By.pkg(PACKAGE).clazz(EditText).focused(true)` (le nœud focalisé de la fenêtre active peut être celui du clavier) et `UiObject2.setText`, puis Entrée (que `CineTextField` traite comme l'action du clavier). **`input text` perd des caractères** avec le clavier de la TV ouvert (« 10.0.2.2 » arrivé « 100.2.2 ») : en repli, des touches une à une, 80 ms d'écart (`Remote.type`). Les étiquettes de test ne sont visibles d'UiAutomator qu'avec `testTagsAsResourceId` (posé dans `MainActivity`).
+- **UiAutomator et le focus de Compose** : `By.focused(true)` trouve d'abord la vue qui porte Compose (focalisée au sens d'Android) ; chercher l'élément focalisé **dans** son conteneur (`focusedText(RAIL)`). Et l'arbre d'accessibilité suit le focus avec un temps de retard : attendre qu'il annonce l'entrée voulue avant d'appuyer de nouveau, sinon le parcours la dépasse.
+- **Macrobenchmark et `StartupMode.COLD`** : l'appli est tuée **après** le `setupBlock`, pour un démarrage à mesurer ; un parcours de navigation (mesure d'images) passe donc `startupMode = null` et tue lui-même l'appli dans sa préparation (`killProcess()`).
+- **Job « Baseline Profile and benchmarks »** : 40 minutes environ (profils 20 min, trois passes de mesures). Deux incidents du runner vus, sans rapport avec le code : l'étape apt « ffmpeg » bloquée (miroir) et un signal d'arrêt du runner ; les relancer (`rerun_failed_jobs`). Le serveur de test peut aussi ne pas répondre un instant après une longue charge : le pilote appuie sur « Réessayer ».
+- **L'appli s'ouvre sur « Qui regarde ? »** (réglage par défaut « Toujours demander »), même connectée : un test qui la relance passe par OK sur le profil (`Remote.waitHome`).
+- **Coil et `SizedImage` dans les captures** : le gestionnaire d'aperçu (`SampleArt`) reçoit la `SizedImage` et doit en faire l'URL lui-même (`request.sizeResolver.size()`) ; une source sans URL (`J2Samples.noImages`) se dessine comme l'ancien modèle nul (`NullRequestData`), sinon les références changent.
+- **`concurrency` de la CI** : un push annule le run en cours, mesures et enregistrements compris. Attendre la fin d'un commit `[record-…]` (la CI pousse) avant de pousser la suite.

@@ -21,7 +21,8 @@ son domaine :
 | Essai réel 1 (25/10/2026, Chromecast avec Google TV) : connexion, Quick Connect, saisie à la télécommande, « Plus d'infos », journal | terminé, fusionné (§ 4.13 ; captures 35 et 36) | [#6](https://github.com/guim31/cine-doury/pull/6) |
 | J6 — Gestion (P0, plus éléments à problème et actions en série) | terminé, fusionné (§ 4.14 ; captures dans `docs/screenshots/j6/`, numéros 130 à 147) | [#8](https://github.com/guim31/cine-doury/pull/8) |
 | Essai réel 2 (26/10/2026, NVIDIA Shield TV, Android 11) : plantage à la première image (API Java absente de l'API 30), clavier resté ouvert, garde-fou Animal Sniffer, émulateur de la CI en API 30 et 34 | terminé, fusionné (§ 4.15) | [#9](https://github.com/guim31/cine-doury/pull/9) |
-| J7 — Réglages et mise à jour (pages de réglages P0, mise à jour proposée depuis les releases, publication signée, rapport de diagnostic) | en revue (§ 4.16 à 4.18 ; captures dans `docs/screenshots/j7/`, numéros 150 à 174) | voir la PR `feat/j7-reglages` |
+| Fluidité (partie performances du J8) : APK optimisé (R8, Baseline et Startup Profiles), `:benchmark` (Macrobenchmark, profils), mise en page à 960 × 540 dp sur toute TV (Shield en 4K), rail, recompositions | terminé, en revue (§ 4.16 ; captures dans `docs/screenshots/perf/` et `j6/`) | [#10](https://github.com/guim31/cine-doury/pull/10) |
+| J7 — Réglages et mise à jour (pages de réglages P0, mise à jour proposée depuis les releases, publication signée, rapport de diagnostic) | en revue (§ 4.17 à 4.19 ; captures dans `docs/screenshots/j7/`, numéros 150 à 174) | voir la PR `feat/j7-reglages` |
 
 *(Chaque jalon met à jour ce tableau et ajoute ses contrats au § 4.)*
 
@@ -114,7 +115,7 @@ panneaux, les pages « Lecture et son », « Apparence des sous-titres » et le 
 Le profil, la décision et les règles (vu, épisode suivant, « toujours là ») sont du Kotlin pur dans
 `:core:model`, testés sans Android. Ajouté au J6 (§ 4.14) : `:feature:manage` (`.compose`), la
 gestion depuis l'appli ; `ManageSource` dans `:core:source`, `ManageRepository` dans `:core:data`.
-Ajoutés au J7 (§ 4.17) : `:core:update` (`cinedoury.jvm.library`, OkHttp et kotlinx.serialization
+Ajoutés au J7 (§ 4.18) : `:core:update` (`cinedoury.jvm.library`, OkHttp et kotlinx.serialization
 JSON déjà présents) — versions, client des releases GitHub, SHA-256, journal des changements — et
 `:feature:update` (`.compose`) — le dépôt de la mise à jour, `PackageInstaller`, l'écran.
 
@@ -127,7 +128,8 @@ Les plugins de convention vivent dans `build-logic/` (build inclus) ; les versio
 
 **Écart au § 3** : `:core:data`, `:core:playback`, `:feature:*` et `:benchmark` ne sont pas créés
 vides au J0 ; chacun naît avec le jalon qui le remplit (J1 pour `:core:data` et `:feature:auth`, J4
-pour `:core:playback`, J8 pour `:benchmark`). Raison : un module vide ne teste rien et ralentit la
+pour `:core:playback`, la partie performances du J8 pour `:benchmark`, plugin `cinedoury.android.test`,
+§ 4.16). Raison : un module vide ne teste rien et ralentit la
 configuration.
 
 ### 4.2 Pile (versions vérifiées le 25/10/2026)
@@ -150,7 +152,7 @@ configuration.
 | JSON (découverte UDP) | kotlinx.serialization JSON (déjà apportée par le SDK Jellyfin) | 1.12.0 |
 | Lecture (J4) | Media3 : `media3-exoplayer`, `-exoplayer-hls`, `-ui` (`PlayerView`, sous-titres) | 1.11.1 |
 | Tests sur l'émulateur (J4) | `androidx.test:runner`, `androidx.test.ext:junit` | 1.7.0, 1.3.0 |
-| À venir (retenus, non encore ajoutés) | Macrobenchmark (J8) | 1.5.0 |
+| Version optimisée et mesures (perf/fluidite, § 4.16) | R8 (AGP), `androidx.profileinstaller:profileinstaller`, plugin `androidx.baselineprofile`, `androidx.benchmark:benchmark-macro-junit4`, `androidx.test.uiautomator:uiautomator` (Apache 2.0 ; seul `profileinstaller` entre dans l'APK) | —, 1.4.1, 1.5.0, 1.5.0, 2.4.0 |
 
 **Extension FFmpeg de Media3 : écartée au J4.** Google ne la publie pas (il faut la construire
 avec le NDK et un FFmpeg compilé à part) ; la seule publiée, `org.jellyfin.media3:media3-ffmpeg-decoder`
@@ -329,7 +331,7 @@ achevé (connecté, serveur oublié) remplace toute la pile.
 - **Aperçus** (trickplay) : métadonnées dans l'élément, tuiles `/Videos/{id}/Trickplay/{largeur}/{index}.jpg`.
 - **Requêtes de films** : un serveur qui a des collections **regroupe** les films par défaut. Passer `CollapseBoxSetItems=false` pour lister ou compter les films.
 - **Textes** : aucune chaîne en dur ; ressources `fr` (langue par défaut) et `en`.
-- **Versions** : semver, étiquettes `vX.Y.Z`. **Écart (J7)** : l'APK de release est signé **par le workflow « Release »** avec la clé de release lue dans les secrets du dépôt (§ 4.17), plutôt qu'à la main ; la clé n'entre jamais dans le dépôt. La CI produit en plus un APK de débogage.
+- **Versions** : semver, étiquettes `vX.Y.Z`. **Écart (J7)** : l'APK de release est signé **par le workflow « Release »** avec la clé de release lue dans les secrets du dépôt (§ 4.18), plutôt qu'à la main ; la clé n'entre jamais dans le dépôt. La CI produit en plus un APK de débogage.
 
 ### 4.9 Accueil et navigation (J2)
 
@@ -850,7 +852,7 @@ son, puis le profil envoyé, en entier.
 **Réglages de l'appareil** (DataStore `player`, pas par profil) : passthrough par format,
 fréquence d'images, intro, épisode suivant, « toujours là », seuil « vu », sauts, ASS par le
 serveur, format, apparence des sous-titres. Au J7, ceux qui tiennent à la personne passent au profil
-(§ 4.16).
+(§ 4.17).
 
 **Serveur de test** : `bootstrap.sh` installe **Chapter Segments Provider** depuis le dépôt de
 plugins de jellyfin.org (redémarrage du serveur), puis lance la tâche d'analyse des segments : les
@@ -879,7 +881,7 @@ l'appareil (103), barre de taille des sous-titres (104), un même sous-titre à 
 d'un bloc) et les pistes (78, 79 : pastilles). Le lecteur provisoire (86) disparaît.
 
 **Limites connues** (à reprendre plus tard) :
-- Le mode des sous-titres et la langue préférée se règlent dans l'appli depuis le J7 (§ 4.16) ; la
+- Le mode des sous-titres et la langue préférée se règlent dans l'appli depuis le J7 (§ 4.17) ; la
   qualité choisie pendant la lecture vaut pour la séance, la qualité par défaut est un réglage du J7.
 - Le passage d'un Dolby Vision profil 5 sur un appareil qui ne le décode pas passe par le
   transcodage du serveur (tone mapping) ; seul le profil 8 se replie sur HEVC dans l'appareil.
@@ -1295,7 +1297,147 @@ la lecture DataStore des réglages ; l'attente le fait tourner. Les scripts d'é
 doit se fermer), connexion et accueil avec images, lecture directe et
 transcodée (HEVC HDR, Dolby Vision, passthrough audio vers l'ampli), recherche Seerr.
 
-### 4.16 Réglages (J7)
+### 4.16 Fluidité (partie performances du J8, 26/10/2026)
+
+Constat du mainteneur : « l'interface est belle, mais la navigation lague, encore plus sur le
+Chromecast ». Mesuré par l'orchestrateur sur une Shield TV (`dumpsys gfxinfo`, 859 images d'une
+session réelle) : 47 % d'images en retard, percentiles 50/90/95/99 à 15/77/150/600 ms, GPU sain
+(90e percentile à 10 ms) : le goulot est le **fil principal**. Les appareils faisaient tourner
+l'**APK de débogage** de la CI : `DEBUGGABLE`, `run-from-apk` (aucun code compilé d'avance, un JIT
+bridé par le mode débogable), ni R8 ni profil.
+
+**Version optimisée** (`release`, artefact `cine-doury-release-apk` de la CI) :
+- R8 sur le code et les ressources (`proguard-android-optimize.txt`), **sans renommage**
+  (`-dontobfuscate`, `app/tv/proguard-rules.pro`) : les piles du journal (`adb logcat -s CineDoury`)
+  et du futur rapport de diagnostic (J7) restent lisibles sans fichier de correspondance ; le
+  renommage ne fait rien gagner en vitesse. Les bibliothèques apportent leurs règles
+  (kotlinx.serialization, Room, Media3, Coil, OkHttp, Koin, SDK Jellyfin) : aucune règle ajoutée,
+  et le test de bout en bout ci-dessous le vérifie. APK de 59 Mo (débogage) à 10 Mo.
+- **Baseline Profile et Startup Profile** générés sur l'émulateur API 34 de la CI par `:benchmark`
+  (`BaselineProfileGenerator` : démarrage jusqu'à l'accueil ; accueil, bibliothèque, fiche, grille),
+  versionnés dans `app/tv/src/release/generated/baselineProfiles/`, enregistrés par un commit
+  `[record-profiles]` (comme les captures). Le Startup Profile range les classes du démarrage en
+  tête du dex (`dexLayoutOptimization`). `profileinstaller` écrit le profil au premier lancement
+  d'un APK installé par `adb install` ; Android le compile ensuite à la maintenance (`bg-dexopt`),
+  ou tout de suite par `adb shell cmd package compile -m speed-profile -f fr.guim.cinedoury`.
+- **Signature** : depuis le J7, la clé de release quand le workflow « Release » l'a (§ 4.18) ;
+  sinon (CI d'une PR, poste de développement), la clé de débogage versionnée, pour que l'APK
+  optimisé s'installe par-dessus celui de débogage sur les émulateurs de la CI. Un APK signé avec
+  la clé de débogage n'est jamais publié. Passer de l'une à l'autre demande une désinstallation.
+- `:benchmark` (plugin `cinedoury.android.test`, `com.android.test` auto-instrumenté) pilote l'appli
+  **de l'extérieur**, comme une télécommande : UiAutomator, touches injectées, étiquettes de test
+  exposées en identifiants de ressource (`testTagsAsResourceId`, `MainActivity`). Il ne connaît
+  aucune classe de l'appli, donc vaut pour l'APK de débogage comme pour l'optimisé.
+- Job « Emulator » (API 30 et 34) : après les tests du débogage, `ci/emulator-release.sh` installe
+  l'APK optimisé **par-dessus** (`OptimisedApkTest` : la session est gardée), puis, depuis un premier
+  lancement, se connecte, lance un film et vérifie que la position avance.
+
+**Mise en page à 960 × 540 dp sur toute TV.** En 4K, la Shield met les applis en page sur
+1920 × 1080 dp (3840 px en xhdpi) : tout y était dessiné à moitié de la taille prévue, avec deux
+fois plus de cartes à composer. `CineTheme` fixe désormais la densité d'après la largeur de la
+fenêtre (`TvLayoutDensity`, largeur en px ÷ 960). Choix de faire la mise à l'échelle dans Compose
+(`LocalDensity`) plutôt qu'en surchargeant la configuration de l'activité : elle suit la fenêtre
+si l'écran change de mode pendant que l'appli tourne, ce qu'une densité fixée au lancement de
+l'activité ne ferait pas. Effets de bord vérifiés :
+- **images** : demandées au serveur à la taille de leur place **plafonnée à celle du 1080p**
+  (`TvLayout.imageScale`, 0,5 en 4K) : une affiche demandée en 4K pèserait quatre fois plus en
+  mémoire (3 Go sur la Shield) et chasserait les autres du cache de Coil, pour une différence
+  invisible du canapé ; l'image est agrandie par le GPU ;
+- **texte** : en dp et sp, il suit (l'échelle de police du système est gardée) ;
+- **sous-titres** : déjà relatifs à la hauteur de l'image (`SubtitleView`, fractions), inchangés ;
+- **lecteur** : la vidéo est une surface, ses commandes sont en Compose ;
+- **boîtes de dialogue** : dessinées dans la même fenêtre (`ConfirmDialog`), elles suivent ;
+- **clavier** : celui du système, hors de l'appli, garde sa taille.
+Test : `TvLayoutScreenshotTest` prend la grille d'une bibliothèque en `w1920dp-h1080dp-xhdpi`
+(capture 150, 3840 × 2160) et la compare, réduite de moitié, à la capture 50 en 1080p : moins de
+1 % des pixels diffèrent (bords des lettres) ; sans la mise à l'échelle, 57,7 %.
+
+**Rail** : le contour de l'entrée focalisée débordait de la barre et se faisait rogner (par le
+défilement de la liste et son fondu, `Offscreen`). Les entrées sont désormais à 16 dp des bords
+(`CineSizes.railInset`), la liste défilante couvre toute la barre, l'entrée focalisée ne grandit
+pas (`CineScale.RAIL`, elle se remplit déjà de blanc) et son halo est réduit (`railFocusHalo`,
+6 dp) : contour et halo tiennent dans la barre, ouverte comme fermée. Icônes et libellés gardent
+leur place. Avant / après : `docs/screenshots/perf/rail-avant.png`, `rail-apres.png`.
+
+**Corrections guidées par la lecture du code** (le rendu ne change pas) :
+- `RemoteImage` n'utilise plus `BoxWithConstraints` (une sous-composition par carte, la plus
+  coûteuse des mises en page) : l'URL est faite par un *mapper* de Coil (`ImageSourceMapper`) à la
+  taille que Coil résout lui-même ; les aperçus BlurHash décodés sont gardés en cache (256).
+- **Bibliothèque** : l'index de l'élément focalisé (écrit à chaque pas) sortait de l'état de
+  l'écran : chaque pas recomposait l'écran et toutes les cartes visibles de la grille. Il est gardé
+  hors de l'état (`LibraryActions.focusedIndex`) et lu à l'ouverture de la grille.
+- **Accueil** : le titre focalisé n'est plus lu au sommet de l'écran, mais par le bandeau et les
+  fonds seulement ; un pas du focus ne recompose plus l'accueil et ses rangées.
+- **Cartes** : une seule animation de focus par carte (la légende la partage) au lieu de deux.
+- **Éléments partagés** : seule la carte focalisée en dernier porte la transition affiche → fiche
+  (`sharedPosterSource`) ; une grille en portait une par carte, chacune avec son calque et son état
+  dans la scène de transition, même sans transition en cours.
+
+**Effets allégés** : aucun. Le halo flou (`BlurMaskFilter`), le fond d'ambiance (BlurHash 32 × 18),
+le fondu du bandeau et la transition d'éléments partagés sont gardés : la mesure de l'orchestrateur
+montre un GPU sain (90e percentile à 10 ms sur la Shield), et le coût était sur le fil principal. Si
+le Chromecast montre encore des images lentes au GPU (`dumpsys gfxinfo`, « Slow issue draw
+commands »), la première candidate est le halo, dessinable en contour sans flou pour les cartes
+(le rail a déjà le sien réduit).
+
+**Pour le J7 et le J8** :
+- J7 : seule la `signingConfig` de `release` doit changer (clé de release, hors du dépôt) ; garder
+  `isMinifyEnabled`, `isShrinkResources`, `-dontobfuscate` et le bloc `baselineProfile`. Après le
+  changement de clé, l'APK de release ne s'installe plus par-dessus celui de débogage : le dire
+  dans les notes de version. Le rapport de diagnostic peut citer les piles telles quelles (pas de
+  renommage).
+- J8 : régénérer les profils (`[record-profiles]`) après tout changement notable des écrans ;
+  retirer `BEFORE_REF` de `ci.yml` (la comparaison avec l'avant ne vaut que pour cette PR) ;
+  les mesures sur appareil remplacent celles de l'émulateur pour décider d'alléger un effet.
+
+**Mesures** (Macrobenchmark, `NavigationBenchmarks`, émulateur Android TV API 34 de la CI, rendu
+logiciel : comparer les colonnes entre elles, jamais avec un vrai appareil) :
+
+Médianes de `NavigationBenchmarks` (5 démarrages, 3 passages par parcours). Run
+[40424966656](https://github.com/guim31/cine-doury/actions/runs/40424966656) (`526966f`), un seul
+émulateur pour les trois colonnes :
+- **avant, débogage** : l'APK de débogage installé jusqu'ici (code de `main`) ;
+- **avant, optimisé** : le même code en version optimisée (R8, profils des bibliothèques seuls) ;
+- **après** : la version optimisée de cette PR, avec le profil propre à l'appli (`c5a1f70`).
+
+| Mesure | Avant, débogage | Avant, optimisé | Après |
+|---|---|---|---|
+| Démarrage à froid, première image (`timeToInitialDisplay`) | 1 311 ms | 648 ms | **588 ms** |
+| Démarrage à froid jusqu'à l'accueil chargé, profil choisi (`timeToFullDisplay`) | 5 445 ms | 4 081 ms | **3 870 ms** |
+| Accueil à la croix : temps CPU par image, P50 / P90 / P99 | 264 / 438 / 586 ms | 259 / 390 / 498 ms | **242 / 374 / 472 ms** |
+| … images dessinées pour le même geste | 64 | 88 | **102** |
+| Accueil → bibliothèque → fiche → retour : P50 / P90 / P99 | 160 / 303 / 581 ms | 166 / 251 / 495 ms | 160 / 265 / 562 ms |
+| … images dessinées | 82 | 91 | **96** |
+| Grille, touche maintenue : P50 / P90 / P99 | 160 / 225 / 329 ms | 159 / 226 / 340 ms | 161 / 205 / 273 ms |
+| … images dessinées | 39 | 73 | **78** |
+
+Un run plus ancien, sans le profil de l'appli (40403784211, tentative 3), donnait le même ordre :
+première image 1 012 / 505 / 496 ms, accueil P99 382 / 302 / 335 ms. Les absolus varient d'un
+runner à l'autre (de 20 à 30 %) : seules les colonnes d'un même run se comparent.
+
+Lecture :
+- **La version optimisée divise par plus de deux le premier affichage** (1 311 → 588 ms) et retire
+  1,6 s au démarrage jusqu'à l'accueil. Pour le même geste, l'appli dessine bien plus d'images
+  (accueil : 64 → 102 ; grille à touche maintenue : 39 → 78) : l'APK de débogage en sautait la
+  moitié, ce sont les saccades signalées.
+- **Le profil de l'appli et les corrections du code** ajoutent sur « avant, optimisé » : −9 % sur la
+  première image, −5 % jusqu'à l'accueil, −5 à −7 % sur les images de l'accueil, P90 et P99 de la
+  grille en baisse (226 → 205, 340 → 273 ms). L'aller-retour vers la fiche reste dans le bruit
+  (P99 495 contre 562 ms, P90 en baisse). L'émulateur dessine en logiciel (SwiftShader), ce qui
+  domine le temps de chaque image : l'effet du code sur le fil principal se lira mieux sur les
+  appareils.
+- Les temps absolus ne disent rien d'un vrai appareil ; seul l'ordre entre colonnes compte.
+
+**À mesurer sur les appareils** (après la fusion, mêmes gestes que l'orchestrateur le 26/10) :
+installer `cine-doury-release-apk` par-dessus l'APK de débogage (`adb install -r`), lancer l'appli
+une fois, puis `adb shell cmd package compile -m speed-profile -f fr.guim.cinedoury` ; vérifier
+`dumpsys package fr.guim.cinedoury` (plus de `DEBUGGABLE`, `status=speed-profile`). Puis
+`adb shell dumpsys gfxinfo fr.guim.cinedoury reset`, la même session de navigation, et
+`dumpsys gfxinfo fr.guim.cinedoury` : images en retard, percentiles 50/90/95/99, « Slow UI
+thread », « High input latency ». Sur la Shield en 4K, vérifier en plus que l'accueil montre
+exactement les captures du 1080p (`am get-config` inchangé : `w1920dp-h1080dp`).
+
+### 4.17 Réglages (J7)
 
 **Pages** (`:feature:settings`, `SettingsPageScreen`) : une première page qui liste les thèmes, chacun
 avec une ligne qui dit ce qu'il contient, puis une page par thème : Lecture, Image, Son, Sous-titres,
@@ -1326,8 +1468,8 @@ focalisée ; OK choisit, « Retour » referme et rend le focus à la ligne. ← 
 | Apparence | thème (Sombre), animations réduites (non), taille du texte (Normale ; Grande 115 %, Très grande 130 %) | appareil | `CineTheme(variant, reducedMotion, textScale)` ; animations réduites aussi quand le système coupe les siennes (`CineMotion.isReduced`) |
 | Profil | code PIN, changer de profil, se déconnecter ; au démarrage (Choix du profil, appareil) | § 4.7 | § 4.7 |
 | Réseau | adresses locale et distante, basculement (Locale puis distante ; Locale seulement ; Distante seulement), oublier le serveur | appareil | `AddressResolver.resolve(server, mode)`, au démarrage |
-| Appareil | nom dans Jellyfin (celui de la télévision), mise à jour (§ 4.17), à propos (licences) | appareil | le nom part dans `Authorization` (`Device="…"`) dès la requête suivante, flux du lecteur compris : la liste des appareils du serveur le prend aussitôt ; une session déjà ouverte garde le nom de son ouverture |
-| Avancé | journaux de l'appli, rapport de diagnostic (§ 4.18), vider le cache | — | vider : mémoire et disque de Coil, puis l'index local relu |
+| Appareil | nom dans Jellyfin (celui de la télévision), mise à jour (§ 4.18), à propos (licences) | appareil | le nom part dans `Authorization` (`Device="…"`) dès la requête suivante, flux du lecteur compris : la liste des appareils du serveur le prend aussitôt ; une session déjà ouverte garde le nom de son ouverture |
+| Avancé | journaux de l'appli, rapport de diagnostic (§ 4.19), vider le cache | — | vider : mémoire et disque de Coil, puis l'index local relu |
 
 **Source** (`LibrarySource`, Jellyfin) : `setPlaybackPreferences` et `setLibraryOrder` lisent
 `GET /Users/Me` et réécrivent toute la configuration par `POST /Users/Configuration?userId=…` (le
@@ -1345,7 +1487,7 @@ reste inchangé) ; `SourceConnector.setDeviceName` change le `DeviceInfo` de tou
   veille, démarrage avec la TV, limite sur données mobiles, taille des affiches par défaut : aucune
   fonction P0 ne les applique encore, et un réglage sans effet ne s'affiche pas.
 
-### 4.17 Mise à jour, versions et publication (J7)
+### 4.18 Mise à jour, versions et publication (J7)
 
 **Versions** : `versionName` = `X.Y.Z` de l'étiquette `vX.Y.Z`, `versionCode` = X × 10 000 + Y × 100 + Z
 (Y et Z sous 100 : 1.10.0 > 1.9.99), écrits par Gradle depuis `CINE_DOURY_VERSION` (workflow
@@ -1410,7 +1552,7 @@ réglages). Pistes étudiées :
   journal dit « Retour à la version 1.1.0 ». L'appli la propose comme toute mise à jour : rien n'est
   perdu, aucune désinstallation. Un `version` déjà publié est refusé.
 
-### 4.18 Journaux et rapport de diagnostic (J7)
+### 4.19 Journaux et rapport de diagnostic (J7)
 
 - **Journaux** : `FailureLog` (§ 4.13) garde aussi en mémoire les **50 derniers** échecs (heure,
   niveau, message, classe et message de l'erreur) ; « Avancé » → « Journaux de l'appli » les montre,
@@ -1473,7 +1615,10 @@ Sous-titres.
   - **vérification des captures Roborazzi** ;
   - **tests d'intégration contre un vrai Jellyfin** ;
   - **deux émulateurs Android TV**, API 30 (`minSdk`, la Shield) et API 34 (le Chromecast) :
-    installation et démarrage, lecture directe et transcodée, connexion à la télécommande (§ 4.15).
+    installation et démarrage, lecture directe et transcodée, connexion à la télécommande (§ 4.15) ;
+    puis l'APK optimisé, installé par-dessus, connexion et lecture (§ 4.16) ;
+  - **profils et mesures** (émulateur API 34) : Baseline et Startup Profiles (`[record-profiles]`),
+    Macrobenchmark de l'appli avant et après (§ 4.16) ; artefact `cine-doury-release-apk`.
   - `concurrency` avec `cancel-in-progress`, `timeout-minutes`, cache Gradle.
 - **Jellyfin de test** : conteneur de service `jellyfin/jellyfin:12.3.20261023-013714`.
   - Un script d'amorçage versionné fait l'assistant de démarrage, crée les utilisateurs (un administrateur, un profil enfant), les bibliothèques et des collections.
@@ -1548,4 +1693,4 @@ rangées intelligentes ; puis le web et la TV en direct (P2).
 
 Musique ; iOS et Apple TV ; toute modification du serveur Jellyfin ; tout service en ligne autre
 que le serveur de l'utilisateur, à l'exception des fournisseurs que Jellyfin interroge lui-même et
-des releases de ce dépôt sur GitHub, lues pour proposer les mises à jour (§ 4.17).
+des releases de ce dépôt sur GitHub, lues pour proposer les mises à jour (§ 4.18).

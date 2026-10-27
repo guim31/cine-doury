@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# The version of a release (SPEC.md § 4.17): the tag `vX.Y.Z` pushed, the version asked for by hand,
+# The version of a release (SPEC.md § 4.18): the tag `vX.Y.Z` pushed, the version asked for by hand,
 # or a dry run's own (pull request). Writes `tag` and `version` to $GITHUB_OUTPUT.
 set -euo pipefail
 

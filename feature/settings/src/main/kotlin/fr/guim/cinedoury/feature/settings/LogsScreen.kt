@@ -13,7 +13,7 @@ import fr.guim.cinedoury.feature.settings.page.SettingsPageScreen
 import java.time.ZoneId
 
 /**
- * « Journaux de l'appli » (`SPEC.md` § 4.18): the failures caught since the app started, the newest
+ * « Journaux de l'appli » (`SPEC.md` § 4.19): the failures caught since the app started, the newest
  * first, each with its time and the class of the error. What `adb logcat -s CineDoury` gives, on
  * the TV.
  */

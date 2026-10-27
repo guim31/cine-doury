@@ -19,7 +19,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
- * The client of the releases against a fake GitHub API (`SPEC.md` § 4.17): the answers of
+ * The client of the releases against a fake GitHub API (`SPEC.md` § 4.18): the answers of
  * `/repos/{repo}/releases` as GitHub gives them, trimmed to what the app reads.
  */
 class ReleaseClientTest {

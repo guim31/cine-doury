@@ -33,6 +33,8 @@ data class CardPreferences(
  * @param reducedMotion fades only (`UI.md` § 7): set from the settings or from the system.
  * @param textScale the size of the text against the scale of `UI.md` § 5 (« Taille du texte », J7).
  * @param cards what every card shows (« Accueil et navigation », J7).
+ * @param tvLayout lays the content out on the 960 × 540 dp of the design, whatever the screen
+ * ([TvLayoutDensity]).
  */
 @Composable
 fun CineTheme(
@@ -40,6 +42,22 @@ fun CineTheme(
     reducedMotion: Boolean = false,
     textScale: Float = 1f,
     cards: CardPreferences = CardPreferences(),
+    tvLayout: Boolean = true,
+    content: @Composable () -> Unit,
+) {
+    if (tvLayout) {
+        TvLayoutDensity { CineThemeContent(variant, reducedMotion, textScale, cards, content) }
+    } else {
+        CineThemeContent(variant, reducedMotion, textScale, cards, content)
+    }
+}
+
+@Composable
+private fun CineThemeContent(
+    variant: ThemeVariant,
+    reducedMotion: Boolean,
+    textScale: Float,
+    cards: CardPreferences,
     content: @Composable () -> Unit,
 ) {
     val colors = variant.colors()

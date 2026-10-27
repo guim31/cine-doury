@@ -81,7 +81,7 @@ object UpdatePreview {
 }
 
 /**
- * The update (`SPEC.md` § 4.17): « Retour » or « Plus tard » close it, nothing is installed without
+ * The update (`SPEC.md` § 4.18): « Retour » or « Plus tard » close it, nothing is installed without
  * « Installer » and Android's own confirmation.
  */
 @Composable

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Names the release APK, checks it (version, signature), writes its SHA-256 and the changelog into
-# dist/ (SPEC.md § 4.17). Env: VERSION (X.Y.Z), TAG (vX.Y.Z), SIGNED, ROLLBACK_OF (optional).
+# dist/ (SPEC.md § 4.18). Env: VERSION (X.Y.Z), TAG (vX.Y.Z), SIGNED, ROLLBACK_OF (optional).
 set -euo pipefail
 
 : "${VERSION:?}" "${TAG:?}"

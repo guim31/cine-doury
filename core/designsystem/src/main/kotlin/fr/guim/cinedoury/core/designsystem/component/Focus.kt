@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.unit.Dp
 import fr.guim.cinedoury.core.designsystem.theme.CineMotion
 import fr.guim.cinedoury.core.designsystem.theme.CineSizes
 import fr.guim.cinedoury.core.designsystem.theme.CineTheme
@@ -140,6 +141,9 @@ fun focusProgress(focus: CineFocus): State<Float> =
  * @param focus receives the focus state, for the parts of the component that change with it.
  * @param outlineShape shape of the outline, drawn [CineSizes.focusOutlineGap] outside [shape]:
  * pass a shape with a larger corner radius for concentric corners.
+ * @param halo blur radius of the halo, [CineSizes.focusHalo] but where the room is counted (the rail).
+ * @param progress the [focusProgress] of [focus], when the component reads it too (the caption of a
+ * card): one animation per element, not two.
  */
 @Composable
 fun Modifier.cineFocusable(
@@ -149,8 +153,10 @@ fun Modifier.cineFocusable(
     onClick: () -> Unit,
     outlineShape: Shape = shape,
     interactionSource: MutableInteractionSource? = null,
+    halo: Dp = CineSizes.focusHalo,
+    progress: State<Float>? = null,
 ): Modifier =
-    cineFocusDecoration(focus, shape, focusedScale, outlineShape)
+    cineFocusDecoration(focus, shape, focusedScale, outlineShape, halo, progress)
         .onFocusChanged { focus.update(it.isFocused) }
         .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
 
@@ -164,9 +170,11 @@ internal fun Modifier.cineFocusDecoration(
     shape: Shape,
     focusedScale: Float,
     outlineShape: Shape = shape,
+    halo: Dp = CineSizes.focusHalo,
+    progressState: State<Float>? = null,
 ): Modifier {
     // Read only in the layer and draw phases: the animation never recomposes the element.
-    val progress by focusProgress(focus)
+    val progress by progressState ?: focusProgress(focus)
     val colors = CineTheme.colors
     return this
         .graphicsLayer {
@@ -190,16 +198,16 @@ internal fun Modifier.cineFocusDecoration(
             // A blur mask filter: a real gaussian glow on every API level the app supports (28+
             // with hardware acceleration), where RenderEffect needs 31.
             val haloPath = Path().apply { addOutline(outline) }.asAndroidPath()
-            val halo =
+            val haloPaint =
                 android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
                     color = colors.focusHalo.copy(alpha = 1f).toArgb()
-                    maskFilter = BlurMaskFilter(CineSizes.focusHalo.toPx(), BlurMaskFilter.Blur.OUTER)
+                    maskFilter = BlurMaskFilter(halo.toPx(), BlurMaskFilter.Blur.OUTER)
                 }
             onDrawWithContent {
                 if (progress > 0f) {
                     translate(left = -inset, top = -inset) {
-                        halo.alpha = (colors.focusHalo.alpha * progress * MAX_ALPHA).toInt()
-                        drawIntoCanvas { it.nativeCanvas.drawPath(haloPath, halo) }
+                        haloPaint.alpha = (colors.focusHalo.alpha * progress * MAX_ALPHA).toInt()
+                        drawIntoCanvas { it.nativeCanvas.drawPath(haloPath, haloPaint) }
                     }
                 }
                 drawContent()

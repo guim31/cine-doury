@@ -19,7 +19,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 /**
- * The settings of the player, in the DataStore `player` (`SPEC.md` § 4.16). Those of the device (the
+ * The settings of the player, in the DataStore `player` (`SPEC.md` § 4.17). Those of the device (the
  * TV, its amplifier, its network: passthrough, stereo, audio offset, picture, quality, direct play,
  * ASS, format) are the same for every profile. Those of the profile (intro, next episode, countdown,
  * « toujours là », « vu », jumps, look of the subtitles) are kept per profile of this device

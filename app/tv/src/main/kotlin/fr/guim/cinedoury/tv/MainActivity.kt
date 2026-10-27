@@ -4,10 +4,14 @@ import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.lifecycle.lifecycleScope
 import fr.guim.cinedoury.core.data.DeviceIdentity
 import fr.guim.cinedoury.core.data.SessionManager
@@ -28,7 +32,7 @@ import org.koin.android.ext.android.inject
 /**
  * The app opens on its start screen; the design system catalogue is in the settings (debug). The
  * theme follows « Apparence » (this device) and the cards « Accueil et navigation » (the open
- * profile), `SPEC.md` § 4.16.
+ * profile), `SPEC.md` § 4.17.
  */
 class MainActivity : ComponentActivity() {
     private val preferences: AppPreferences by inject()
@@ -39,7 +43,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val debuggable = application.isDebuggable
-        // The name of the device on the server follows « Nom de l'appareil » (SPEC.md § 4.16).
+        // The name of the device on the server follows « Nom de l'appareil » (SPEC.md § 4.17).
         lifecycleScope.launch {
             preferences.deviceName.collect { name -> connector.setDeviceName(name ?: identity.deviceName) }
         }
@@ -52,36 +56,34 @@ class MainActivity : ComponentActivity() {
             }.collectAsState(initial = Browsing())
             val scope = rememberCoroutineScope()
             val variant = if (appearance.theme == ThemeChoice.OledBlack) ThemeVariant.OledBlack else ThemeVariant.Dark
-            CineTheme(
-                variant = variant,
-                reducedMotion = CineMotion.isReduced(appearance.reducedMotion, systemAnimatorScale()),
-                textScale = appearance.textSize.scale,
-                cards =
-                    CardPreferences(
-                        alwaysShowTitles = browsing.posterTitles,
-                        unwatchedMarks = browsing.unwatchedMarks,
-                    ),
-            ) {
-                CineApp(
+            // The test tags are resource ids for UiAutomator: :benchmark drives the optimised APK from
+            // outside, where it cannot reach Compose's semantics otherwise.
+            Box(Modifier.semantics { testTagsAsResourceId = true }) {
+                CineTheme(
                     variant = variant,
-                    onToggleVariant = {
-                        scope.launch {
-                            preferences.setAppearance {
-                                it.copy(
-                                    theme =
-                                        if (it.theme ==
-                                            ThemeChoice.Dark
-                                        ) {
-                                            ThemeChoice.OledBlack
-                                        } else {
-                                            ThemeChoice.Dark
-                                        },
-                                )
+                    reducedMotion = CineMotion.isReduced(appearance.reducedMotion, systemAnimatorScale()),
+                    textScale = appearance.textSize.scale,
+                    cards =
+                        CardPreferences(
+                            alwaysShowTitles = browsing.posterTitles,
+                            unwatchedMarks = browsing.unwatchedMarks,
+                        ),
+                ) {
+                    CineApp(
+                        variant = variant,
+                        onToggleVariant = {
+                            scope.launch {
+                                preferences.setAppearance {
+                                    it.copy(
+                                        theme =
+                                            if (it.theme == ThemeChoice.Dark) ThemeChoice.OledBlack else ThemeChoice.Dark,
+                                    )
+                                }
                             }
-                        }
-                    },
-                    showCatalog = debuggable,
-                )
+                        },
+                        showCatalog = debuggable,
+                    )
+                }
             }
         }
     }

@@ -40,7 +40,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-/** What the profile keeps on the server (`SPEC.md` § 4.16): read when the settings open. */
+/** What the profile keeps on the server (`SPEC.md` § 4.17): read when the settings open. */
 sealed interface ServerPreferences {
     data object Loading : ServerPreferences
 
@@ -134,7 +134,7 @@ interface SettingsActions {
 }
 
 /**
- * The settings of the profile and of the device (`FONCTIONNALITES.md` § 12, `SPEC.md` § 4.16): each
+ * The settings of the profile and of the device (`FONCTIONNALITES.md` § 12, `SPEC.md` § 4.17): each
  * change is kept at once where it belongs — the device (DataStore), the profile on this device
  * (DataStore, per profile), the profile on the server (`/Users/Configuration`).
  */

@@ -30,7 +30,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 /**
- * The update from the check to Android (`SPEC.md` § 4.17), against a fake GitHub and a fake Android:
+ * The update from the check to Android (`SPEC.md` § 4.18), against a fake GitHub and a fake Android:
  * the permission, the SHA-256, the signature, an ignored version, a development build.
  */
 @OptIn(ExperimentalCoroutinesApi::class)

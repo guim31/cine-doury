@@ -475,7 +475,7 @@ class ExoVideoPlayer(
     ) : DefaultRenderersFactory(context) {
         init {
             setEnableDecoderFallback(true)
-            // « Dolby Vision autorisé » off (`SPEC.md` § 4.16): never the Dolby Vision decoder either.
+            // « Dolby Vision autorisé » off (`SPEC.md` § 4.17): never the Dolby Vision decoder either.
             val dolbyVision = allowDolbyVision && DynamicRange.DolbyVision in capabilities.display.hdr
             setMediaCodecSelector { mimeType, secure, tunneling ->
                 if (mimeType == MimeTypes.VIDEO_DOLBY_VISION && !dolbyVision) {

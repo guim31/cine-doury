@@ -23,7 +23,7 @@ object DiagnosticPreview {
 }
 
 /**
- * « Rapport de diagnostic » (`SPEC.md` § 4.18): « Envoyer au serveur » first, then the report, a line
+ * « Rapport de diagnostic » (`SPEC.md` § 4.19): « Envoyer au serveur » first, then the report, a line
  * per fact, which ↓ goes through. Once sent, the name of the file the server made.
  */
 @Composable

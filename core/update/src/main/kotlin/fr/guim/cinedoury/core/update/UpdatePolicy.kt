@@ -3,7 +3,7 @@ package fr.guim.cinedoury.core.update
 import java.time.Duration
 import java.time.Instant
 
-/** What the app tells about updates (`SPEC.md` § 4.17). */
+/** What the app tells about updates (`SPEC.md` § 4.18). */
 sealed interface UpdateStatus {
     /** A build without a version (debug, local): it says so and offers nothing. */
     data object Development : UpdateStatus

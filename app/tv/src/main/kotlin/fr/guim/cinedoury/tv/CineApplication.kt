@@ -10,6 +10,7 @@ import coil3.request.crossfade
 import fr.guim.cinedoury.core.data.DeviceIdentity
 import fr.guim.cinedoury.core.data.di.dataModule
 import fr.guim.cinedoury.core.data.index.IndexScheduler
+import fr.guim.cinedoury.core.designsystem.image.addCineImages
 import fr.guim.cinedoury.core.designsystem.theme.CineMotion
 import fr.guim.cinedoury.core.playback.playbackModule
 import fr.guim.cinedoury.core.source.FailureLog
@@ -78,6 +79,7 @@ class CineApplication :
         ImageLoader
             .Builder(context)
             .crossfade(CineMotion.IMAGE_FADE_MILLIS)
+            .components { addCineImages() }
             .build()
 }
 

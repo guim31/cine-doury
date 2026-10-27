@@ -16,7 +16,7 @@ import kotlin.time.Duration.Companion.seconds
  * Chooses the address of a saved server at start (`SPEC.md` § 4.7): the local address first, with
  * a short timeout, then the remote one. An address counts only if the server that answers there is
  * the saved one (same id): on another network, the same local address may lead elsewhere. The
- * setting « Basculement automatique » (`SPEC.md` § 4.16) may keep to one of them.
+ * setting « Basculement automatique » (`SPEC.md` § 4.17) may keep to one of them.
  */
 class AddressResolver(
     private val connector: SourceConnector,

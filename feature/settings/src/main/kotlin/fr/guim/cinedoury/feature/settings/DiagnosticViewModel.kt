@@ -83,7 +83,7 @@ data class DiagnosticState(
 )
 
 /**
- * « Rapport de diagnostic » (`SPEC.md` § 4.18): built when the screen opens, shown, sent to the logs
+ * « Rapport de diagnostic » (`SPEC.md` § 4.19): built when the screen opens, shown, sent to the logs
  * of the server on demand. The token of the profile and the key of Seerr are masked even if a
  * message carried one.
  */

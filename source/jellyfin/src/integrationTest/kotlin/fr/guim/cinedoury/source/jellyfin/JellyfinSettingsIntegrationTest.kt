@@ -18,7 +18,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
- * The settings of J7 that live on the server (`SPEC.md` § 4.16) and the diagnostic report, against
+ * The settings of J7 that live on the server (`SPEC.md` § 4.17) and the diagnostic report, against
  * the test Jellyfin: the preferences of the child profile (put back at the end), the name of the
  * device, `POST /ClientLog/Document`. Each test signs out (the hidden user `parent` is not used:
  * it may have 4 sessions at most). Skipped when JELLYFIN_URL is not set.

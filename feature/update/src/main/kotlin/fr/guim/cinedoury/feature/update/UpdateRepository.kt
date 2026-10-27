@@ -22,7 +22,7 @@ import java.time.Clock
 import java.time.Instant
 import kotlin.coroutines.cancellation.CancellationException
 
-/** Where an update stands (`SPEC.md` § 4.17): one screen shows each phase. */
+/** Where an update stands (`SPEC.md` § 4.18): one screen shows each phase. */
 sealed interface UpdatePhase {
     data object Idle : UpdatePhase
 
@@ -99,7 +99,7 @@ data class UpdateState(
 }
 
 /**
- * The updates of the app, proposed and never imposed (`FONCTIONNALITES.md` § 13, `SPEC.md` § 4.17):
+ * The updates of the app, proposed and never imposed (`FONCTIONNALITES.md` § 13, `SPEC.md` § 4.18):
  * the releases of GitHub read at start (once a day at most) or on demand; the APK downloaded, its
  * SHA-256 checked against the one published, its signature against the installed app's, then given
  * to Android, which asks the user. Lives as long as the app ([scope]).

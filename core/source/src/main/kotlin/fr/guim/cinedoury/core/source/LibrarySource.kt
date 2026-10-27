@@ -100,7 +100,7 @@ interface LibrarySource {
     /** How the profile chooses its audio and subtitle tracks. */
     suspend fun playbackPreferences(): PlaybackPreferences
 
-    // Settings (J7, `SPEC.md` § 4.16): what follows the person, on the server.
+    // Settings (J7, `SPEC.md` § 4.17): what follows the person, on the server.
 
     /**
      * Keeps [preferences] on the server (Jellyfin: `POST /Users/Configuration`, the rest of the

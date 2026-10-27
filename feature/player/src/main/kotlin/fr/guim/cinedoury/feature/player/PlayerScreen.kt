@@ -111,6 +111,10 @@ object PlayerPreview {
     const val NEXT = "player-next"
     const val STILL = "player-still"
     const val RETRY = "player-retry"
+
+    /** The position over the progress bar, read from outside by `:benchmark` (the optimised APK plays). */
+    const val POSITION = "player-position"
+    const val ERROR = "player-error"
 }
 
 @Composable
@@ -572,7 +576,12 @@ private fun Bar(
 private fun Times(state: PlayerState) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         val style = CineTheme.typography.caption.tabular()
-        Text(text = (state.scrub ?: state.position).toClockText(), style = style, color = CineTheme.colors.text)
+        Text(
+            text = (state.scrub ?: state.position).toClockText(),
+            style = style,
+            color = CineTheme.colors.text,
+            modifier = Modifier.testTag(PlayerPreview.POSITION),
+        )
         Text(
             text =
                 stringResource(
@@ -739,10 +748,11 @@ private fun ErrorScreen(
 ) {
     val requester = remember { FocusRequester() }
     Box(
-        Modifier.fillMaxSize().background(CineTheme.colors.dialogScrim).padding(
-            start =
-                CineSizes.railCollapsed + CineSpacing.xl,
-        ),
+        Modifier
+            .fillMaxSize()
+            .background(CineTheme.colors.dialogScrim)
+            .padding(start = CineSizes.railCollapsed + CineSpacing.xl)
+            .testTag(PlayerPreview.ERROR),
         contentAlignment = Alignment.CenterStart,
     ) {
         when (error) {

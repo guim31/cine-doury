@@ -42,7 +42,7 @@ data class LibraryState(
 
 /**
  * The [LibraryState] of each library of each profile, in Room. A library the profile never opened
- * starts in the view of « Vue par défaut » ([defaultView], `SPEC.md` § 4.16).
+ * starts in the view of « Vue par défaut » ([defaultView], `SPEC.md` § 4.17).
  */
 class LibraryStateRepository(
     private val preferences: PreferencesDao,

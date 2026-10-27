@@ -25,7 +25,7 @@ object DisplayModes {
      * The mode to ask for, or null to keep [current].
      *
      * @param frameRate the cadence of the film; 0 (or less) leaves the refresh rate alone.
-     * @param videoHeight with « Résolution adaptée » (`SPEC.md` § 4.16), the height of the film: the
+     * @param videoHeight with « Résolution adaptée » (`SPEC.md` § 4.17), the height of the film: the
      * smallest size of the screen that holds it (1080p for a 1080p film on a 4K TV), the TV then
      * scales it up itself; null keeps the size of [current].
      */

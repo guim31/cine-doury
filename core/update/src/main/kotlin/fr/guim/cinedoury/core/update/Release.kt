@@ -3,7 +3,7 @@ package fr.guim.cinedoury.core.update
 import java.time.Instant
 
 /**
- * A published version of the app (a GitHub release, `SPEC.md` § 4.17).
+ * A published version of the app (a GitHub release, `SPEC.md` § 4.18).
  *
  * @param notes the changelog, in simple Markdown (the body of the release).
  * @param apk the APK to install; [checksum] the file of its SHA-256, published with it.

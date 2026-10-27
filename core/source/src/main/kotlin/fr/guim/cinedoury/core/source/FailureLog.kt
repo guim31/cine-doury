@@ -6,7 +6,7 @@ import java.time.Instant
  * Where every caught failure is written, with its stack: logcat on Android (tag `CineDoury`), so
  * that a failure on a real device can be read with `adb logcat` (`SPEC.md` § 4.13). The last
  * [CAPACITY] stay in memory, for « Journaux de l'appli » and the diagnostic report (J7, `SPEC.md`
- * § 4.18). Nothing here may carry a secret: messages name a request by its method and path only.
+ * § 4.19). Nothing here may carry a secret: messages name a request by its method and path only.
  */
 object FailureLog {
     enum class Level { Warning, Error }

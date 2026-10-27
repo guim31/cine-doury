@@ -1,6 +1,7 @@
 package fr.guim.cinedoury.feature.home
 
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.ReportDrawnWhen
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -95,6 +96,8 @@ fun HomeRoute(
     CollectEvents(viewModel.sessionEnded) { navigation.sessionEnded() }
     // Back from another screen: the rows may have changed (a film watched).
     LaunchedEffect(Unit) { viewModel.refresh() }
+    // The start is over once the rows show: the « fully drawn » time of a cold start (SPEC.md § 4.16).
+    ReportDrawnWhen { state.rows != null }
     HomeScreen(
         state = state,
         sources = sessions::imageSource,
@@ -137,19 +140,21 @@ fun HomeScreen(
     previewQuit: Boolean = false,
 ) {
     val rows = state.rows
-    var focusedItem by remember { mutableStateOf<MediaItem?>(null) }
+    // Read only where it is drawn (banner, backdrops): a step of the focus recomposes them, not the
+    // whole home and its rows (perf/fluidite).
+    val focusedItem = remember { mutableStateOf<MediaItem?>(null) }
     var focusedRow by rememberSaveable { mutableStateOf<String?>(null) }
     var railFocused by remember { mutableStateOf(false) }
     var quitAsked by rememberSaveable { mutableStateOf(previewQuit) }
     // « Annuler » gives the focus back to the rail, where « Retour » asked to quit.
     var quitCancelled by remember { mutableIntStateOf(0) }
-    val featuredItem = focusedItem ?: previewFeatured ?: rows?.firstOrNull()?.items?.firstOrNull()
+    val featuredItem = { focusedItem.value ?: previewFeatured ?: rows?.firstOrNull()?.items?.firstOrNull() }
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     val play = remember { FocusRequester() }
     val rail = remember { FocusRequester() }
     val rowRequesters = remember { mutableMapOf<String, FocusRequester>() }
-    // « Bandeau à la une » off (`SPEC.md` § 4.16): the rows from the top, the first one focused. The
+    // « Bandeau à la une » off (`SPEC.md` § 4.17): the rows from the top, the first one focused. The
     // skeletons, an error or an empty home still use the space of the banner.
     val banner = state.featuredBanner || rows.isNullOrEmpty()
     val top = if (banner) play else rowRequesters.requester(rows.orEmpty().first().key)
@@ -179,13 +184,12 @@ fun HomeScreen(
         }
     }
 
-    val featured = featuredItem?.toFeatured(sources)
     val shared = remember(rows) { rows.orEmpty().firstAppearances() }
     Box(modifier = modifier.fillMaxSize()) {
-        AmbientBackdrop(ambience = featuredItem?.ambience)
+        HomeAmbience(featuredItem)
         BoxWithConstraints(Modifier.fillMaxSize()) {
             val heroHeight = maxHeight * CineSizes.HERO_HEIGHT_FRACTION
-            if (banner) FeaturedBackdrop(featured, Modifier.fillMaxWidth().height(heroHeight))
+            if (banner) HomeBackdrop(featuredItem, sources, Modifier.fillMaxWidth().height(heroHeight))
             FocusPivot(fraction = ROW_PIVOT) {
                 LazyColumn(
                     state = listState,
@@ -202,8 +206,8 @@ fun HomeScreen(
                         item(key = "hero", contentType = "hero") {
                             Hero(
                                 state = state,
-                                featured = featured,
-                                item = featuredItem,
+                                focused = featuredItem,
+                                sources = sources,
                                 navigation = navigation,
                                 onRetry = onRetry,
                                 play = play,
@@ -228,7 +232,7 @@ fun HomeScreen(
                                 sources = sources,
                                 restore = rowRequesters.requester(row.key),
                                 onFocused = { item ->
-                                    focusedItem = item
+                                    focusedItem.value = item
                                     focusedRow = row.key
                                 },
                                 onOpen = navigation::open,
@@ -306,11 +310,27 @@ internal val ContentStart = CineSizes.railCollapsed + CineSpacing.m
 private const val ROW_PIVOT = 0.48f
 private const val SKELETON_ROWS = 2
 
+/** The ambient backdrop of the focused title. */
+@Composable
+private fun HomeAmbience(item: () -> MediaItem?) {
+    AmbientBackdrop(ambience = item()?.ambience)
+}
+
+/** The picture of the focused title, at the top of the home. */
+@Composable
+private fun HomeBackdrop(
+    item: () -> MediaItem?,
+    sources: ImageSources,
+    modifier: Modifier = Modifier,
+) {
+    FeaturedBackdrop(item()?.toFeatured(sources), modifier)
+}
+
 @Composable
 private fun Hero(
     state: HomeState,
-    featured: Featured?,
-    item: MediaItem?,
+    focused: () -> MediaItem?,
+    sources: ImageSources,
     navigation: HomeNavigation,
     onRetry: () -> Unit,
     play: FocusRequester,
@@ -346,7 +366,8 @@ private fun Hero(
             }
 
             else -> {
-                FeaturedBanner(featured = featured, modifier = Modifier.align(Alignment.BottomStart)) {
+                val item = focused()
+                FeaturedBanner(featured = item?.toFeatured(sources), modifier = Modifier.align(Alignment.BottomStart)) {
                     if (item != null) {
                         PrimaryButton(
                             text =

@@ -48,7 +48,7 @@ interface SourceConnector {
 
     /**
      * The name this device shows on the server, from the next request on, for every session (« Nom de
-     * l'appareil », `SPEC.md` § 4.16).
+     * l'appareil », `SPEC.md` § 4.17).
      */
     fun setDeviceName(name: String)
 }

@@ -5,7 +5,7 @@ import fr.guim.cinedoury.core.model.TranscodeReason
 import java.time.Instant
 
 /**
- * The last decisions of playback (J7, `SPEC.md` § 4.18): what was played, how (direct, remux,
+ * The last decisions of playback (J7, `SPEC.md` § 4.19): what was played, how (direct, remux,
  * transcoding) and why, for the diagnostic report. Kept in memory, the last [CAPACITY]; never an
  * address nor a token.
  */

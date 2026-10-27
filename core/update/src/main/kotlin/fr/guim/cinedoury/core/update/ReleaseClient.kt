@@ -19,7 +19,7 @@ import java.time.format.DateTimeParseException
 import java.util.concurrent.TimeUnit
 
 /**
- * The releases of the app on GitHub (`SPEC.md` § 4.17): `GET /repos/{repo}/releases`, without a
+ * The releases of the app on GitHub (`SPEC.md` § 4.18): `GET /repos/{repo}/releases`, without a
  * token (60 requests an hour per address, plenty for a check a day). Drafts, prereleases, tags that
  * are not `vX.Y.Z` and releases without an APK are left out. Only the TV talks to GitHub for this,
  * and only to read: nothing about the household is sent.

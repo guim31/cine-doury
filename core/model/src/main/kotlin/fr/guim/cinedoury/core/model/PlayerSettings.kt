@@ -3,7 +3,7 @@ package fr.guim.cinedoury.core.model
 /**
  * The settings of the player (`FONCTIONNALITES.md` § 12: « Lecture », « Image », « Son »,
  * « Sous-titres », « Intro et générique »), with their defaults. Some belong to the device (the TV,
- * its amplifier, its network), the others to the profile that watches (`SPEC.md` § 4.16).
+ * its amplifier, its network), the others to the profile that watches (`SPEC.md` § 4.17).
  *
  * Device:
  * @param passthrough the formats sent to the amplifier as they are (all that the output takes).

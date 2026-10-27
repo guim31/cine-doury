@@ -1,11 +1,11 @@
 name: Release
 
 # Builds the release APK, signs it with the release key and publishes the GitHub release the app
-# offers as an update (SPEC.md § 4.17).
+# offers as an update (SPEC.md § 4.18).
 # - A tag `vX.Y.Z`, set by the maintainer: the release of that version.
 # - By hand (Run workflow), a version built from another ref: a rollback is a new version of older code
 #   (`version: v1.2.1`, `source: v1.1.0`), since Android never installs a lower versionCode.
-# - Every pull request: the same steps, dry run: never signed, never published.
+# - Every pull request: the same steps, dry run: never signed with the release key, never published.
 on:
   push:
     tags: ['v*']
@@ -60,7 +60,7 @@ jobs:
           RELEASE_KEYSTORE_BASE64: ${{ github.event_name != 'pull_request' && secrets.RELEASE_KEYSTORE_BASE64 || '' }}
         run: |
           if [ -z "$RELEASE_KEYSTORE_BASE64" ]; then
-            echo "::warning::No release key (pull request, fork, or secrets not set): the APK is not signed and nothing is published."
+            echo "::warning::No release key (pull request, fork, or secrets not set): the APK is signed with the debug key of the repository and nothing is published."
             echo "SIGNED=false" >> "$GITHUB_ENV"
           else
             echo "$RELEASE_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.p12"

@@ -16,7 +16,7 @@ sealed interface ChangelogBlock {
 }
 
 /**
- * The body of a release in simple Markdown (`SPEC.md` § 4.17): headings (`#`), bullets (`-`, `*`,
+ * The body of a release in simple Markdown (`SPEC.md` § 4.18): headings (`#`), bullets (`-`, `*`,
  * `+`), paragraphs. Emphasis, code and links keep their text only; a TV has nothing to click.
  */
 object Changelog {

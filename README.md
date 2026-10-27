@@ -46,7 +46,7 @@ SHA-256 et sa signature, puis Android demande de confirmer.
 - **Revenir en arrière** : Android n'installe jamais une version plus ancienne par-dessus une plus
   récente. Un retour arrière est donc publié comme une **nouvelle version** qui reprend le code
   d'avant (par exemple la 1.2.1 avec le code de la 1.1.0) : l'appli la propose comme n'importe quelle
-  mise à jour, sans rien perdre. Voir `docs/SPEC.md` § 4.17.
+  mise à jour, sans rien perdre. Voir `docs/SPEC.md` § 4.18.
 
 ## Publier une version (mainteneur)
 

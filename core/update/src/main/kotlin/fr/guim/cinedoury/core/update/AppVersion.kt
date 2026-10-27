@@ -1,7 +1,7 @@
 package fr.guim.cinedoury.core.update
 
 /**
- * A version of the app (`SPEC.md` § 4.17): `X.Y.Z`, from the tag `vX.Y.Z` of its release. Its
+ * A version of the app (`SPEC.md` § 4.18): `X.Y.Z`, from the tag `vX.Y.Z` of its release. Its
  * [versionCode], what Android compares, grows with it: X × 10 000 + Y × 100 + Z (Y and Z below 100).
  * A build without a tag is a development version: [parse] gives null, and nothing is offered to it.
  */

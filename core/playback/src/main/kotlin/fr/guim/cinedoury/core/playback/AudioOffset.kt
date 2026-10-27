@@ -1,7 +1,7 @@
 package fr.guim.cinedoury.core.playback
 
 /**
- * « Décalage audio » (`SPEC.md` § 4.16): the sound later (positive) or earlier than the picture, for
+ * « Décalage audio » (`SPEC.md` § 4.17): the sound later (positive) or earlier than the picture, for
  * an amplifier or a TV that delays one of them. The video renderer of Media3 shows each picture when
  * the clock of the sound reaches it: the clock moved by the offset moves the pictures the other way.
  */

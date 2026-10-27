@@ -10,7 +10,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 /**
- * What the diagnostic report says (`SPEC.md` § 4.18). Every field is a fact about the app, the device
+ * What the diagnostic report says (`SPEC.md` § 4.19). Every field is a fact about the app, the device
  * or the server, never an address, a token, a password or a key.
  */
 data class DiagnosticInput(
@@ -53,7 +53,7 @@ data class DiagnosticInput(
 }
 
 /**
- * The diagnostic report (`SPEC.md` § 4.18): plain text a person reads, shown on the TV and sent to the
+ * The diagnostic report (`SPEC.md` § 4.19): plain text a person reads, shown on the TV and sent to the
  * logs of the server. A technical document in English, like the logs of the server it joins. Any of
  * [secrets] that a message would carry by mistake (the token of the profile, the key of Seerr) is
  * masked all the same.

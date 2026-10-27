@@ -15,7 +15,7 @@ sealed interface InstallResult {
 }
 
 /**
- * What the update needs of Android (`SPEC.md` § 4.17), behind an interface so that the rules are
+ * What the update needs of Android (`SPEC.md` § 4.18), behind an interface so that the rules are
  * tested without it ([AndroidPackageGate] on the device).
  */
 interface PackageGate {

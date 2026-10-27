@@ -25,7 +25,7 @@ import kotlin.coroutines.resume
 
 /**
  * [PackageGate] on Android: `PackageManager` for the permission and the certificates,
- * `PackageInstaller` for the install (`SPEC.md` § 4.17).
+ * `PackageInstaller` for the install (`SPEC.md` § 4.18).
  */
 class AndroidPackageGate(
     private val context: Context,

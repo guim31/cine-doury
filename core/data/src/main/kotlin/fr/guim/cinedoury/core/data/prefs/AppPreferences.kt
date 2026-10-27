@@ -27,14 +27,14 @@ enum class TextSize(
     Larger(1.3f),
 }
 
-/** « Apparence » of this device (`SPEC.md` § 4.16). */
+/** « Apparence » of this device (`SPEC.md` § 4.17). */
 data class Appearance(
     val theme: ThemeChoice = ThemeChoice.Dark,
     val reducedMotion: Boolean = false,
     val textSize: TextSize = TextSize.Normal,
 )
 
-/** Which address of the server the app tries at start (`SPEC.md` § 4.7 and § 4.16). */
+/** Which address of the server the app tries at start (`SPEC.md` § 4.7 and § 4.17). */
 enum class NetworkMode {
     /** The local address, then the remote one: the automatic switch. */
     Automatic,
@@ -47,7 +47,7 @@ enum class NetworkMode {
 }
 
 /**
- * « Accueil et navigation » of a profile on this device (`SPEC.md` § 4.16).
+ * « Accueil et navigation » of a profile on this device (`SPEC.md` § 4.17).
  *
  * @param featuredBanner the banner at the top of the home.
  * @param posterTitles the title and year under every poster, not only the focused one.
@@ -61,7 +61,7 @@ data class Browsing(
     val defaultView: LibraryView = LibraryView.Posters,
 )
 
-/** What the app remembers of the updates (`SPEC.md` § 4.17). */
+/** What the app remembers of the updates (`SPEC.md` § 4.18). */
 data class UpdateMemory(
     val lastCheck: Instant? = null,
     val ignoredVersion: String? = null,

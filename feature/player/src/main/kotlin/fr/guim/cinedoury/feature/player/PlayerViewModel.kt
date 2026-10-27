@@ -132,7 +132,7 @@ class PlayerViewModel(
                     audioIndex = selection?.audioIndex,
                     subtitleIndex = selection?.subtitleIndex,
                     duration = item.runtime ?: it.duration,
-                    // The default quality of the settings (`SPEC.md` § 4.16), unless one was chosen.
+                    // The default quality of the settings (`SPEC.md` § 4.17), unless one was chosen.
                     maxBitrate = it.maxBitrate ?: settings.defaultQuality(remote),
                 )
             }
@@ -422,7 +422,7 @@ class PlayerViewModel(
 
     private fun PlayerSettings.defaultQuality(remote: Boolean): Int? = if (remote) remoteQuality else localQuality
 
-    /** What was played and how, for the diagnostic report (`SPEC.md` § 4.18). */
+    /** What was played and how, for the diagnostic report (`SPEC.md` § 4.19). */
     private fun logDecision(
         item: MediaItem,
         stream: PlaybackStream,
