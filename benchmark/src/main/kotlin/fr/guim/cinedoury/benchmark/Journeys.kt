@@ -74,21 +74,33 @@ internal object Journeys {
         waitFor(HOME)
     }
 
-    /** Réglages → Appareil → « Mise à jour de l'appli », then back to the home (the Baseline Profile). */
+    /**
+     * Réglages → Appareil → « Mise à jour de l'appli », then back to the home (the Baseline Profile).
+     * By keys, as a hand would: the lines below the fold of a lazy list are not there to be found.
+     */
     fun Remote.settingsAndUpdate() {
         toSettingsEntry()
         press(KeyEvent.KEYCODE_DPAD_CENTER)
         waitFocusIn(SETTINGS)
-        val device = waitFor(SETTINGS_DEVICE)
-        device.click()
+        downTo(SETTINGS_DEVICE)
+        press(KeyEvent.KEYCODE_DPAD_CENTER)
         waitFor(SETTINGS_PAGE)
-        waitFor(SETTINGS_UPDATE).click()
+        downTo(SETTINGS_UPDATE)
+        press(KeyEvent.KEYCODE_DPAD_CENTER)
         waitFor(UPDATE)
         repeat(BACK_TO_HOME) {
             if (has(HOME)) return
             press(KeyEvent.KEYCODE_BACK)
         }
         waitFor(HOME)
+    }
+
+    private fun Remote.downTo(tag: String) {
+        repeat(SETTINGS_LINES) {
+            if (focusedIn(tag)) return
+            press(KeyEvent.KEYCODE_DPAD_DOWN)
+        }
+        waitFocusIn(tag)
     }
 
     /** In the grid of « Films »: down with the key held, then back up the same way. */
@@ -104,4 +116,5 @@ internal object Journeys {
     private const val HOLD_MILLIS = 3_000L
     private const val RAIL_ENTRIES = 12
     private const val BACK_TO_HOME = 4
+    private const val SETTINGS_LINES = 20
 }

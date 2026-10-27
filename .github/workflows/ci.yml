@@ -315,9 +315,8 @@ jobs:
     env:
       # A commit to measure as "before" on the same emulator as the app now, for a PR that compares
       # (perf/fluidite used 6010840b06f331a9f8e7882173904968d6dcb326, SPEC.md § 4.16). Empty: only
-      # the app now. J8 compares with main after J7 (the cost of the effects, SPEC.md § 4.20); to
-      # empty again once J8 is merged.
-      BEFORE_REF: 962c5f48dc96142cb38c268dd7832d9a89d10c29
+      # the app now.
+      BEFORE_REF: ''
     permissions:
       # Only used to commit the profiles when the head commit asks for it with [record-profiles].
       contents: write

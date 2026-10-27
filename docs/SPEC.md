@@ -1391,7 +1391,7 @@ commands »), la première candidate est le halo, dessinable en contour sans flo
   `BEFORE_REF` est vidé dans `ci.yml` depuis le 27/10 (la comparaison avec l'avant ne valait que
   pour cette PR, et sa mesure de l'ancien APK échouait par intermittence sur `main`) ;
   les mesures sur appareil remplacent celles de l'émulateur pour décider d'alléger un effet. Le
-  J8 le renseigne le temps de sa PR (`main` d'avant le J8, § 4.20) et le vide à la fin.
+  J8 l'a renseigné le temps de sa PR, puis revidé : la passe « avant » s'est figée (§ 4.20).
 
 **Mesures** (Macrobenchmark, `NavigationBenchmarks`, émulateur Android TV API 34 de la CI, rendu
 logiciel : comparer les colonnes entre elles, jamais avec un vrai appareil) :
@@ -1637,11 +1637,31 @@ principal n'est plus le goulot depuis § 4.16 : c'est le **GPU**, qui remplit un
 - **Mesure sur l'émulateur** : l'émulateur de la CI dessine en logiciel (SwiftShader, hors de
   l'invité) ; `dumpsys gfxinfo` n'y donne pas de temps GPU utilisable, et `FrameTimingMetric` ne voit
   que le temps CPU des images (`frameDurationCpuMs`) et leur dépassement (`frameOverrunMs`, API 31+).
-  Le job « Baseline Profile and benchmarks » mesure la version optimisée de `main` (avant) et celle
-  de cette PR (après) sur le même émulateur (`BEFORE_REF`) ; le gain sur le GPU réel ne se lit que sur
-  la Shield (`docs/MESURES.md`).
+  Le job « Baseline Profile and benchmarks » devait mesurer aussi la version optimisée de `main`
+  (avant, `BEFORE_REF`) sur le même émulateur ; cette passe s'est figée jusqu'à la limite du job
+  (run du 27/10), elle est retirée et `BEFORE_REF` revidé : **pas de colonne « avant »**. Le gain
+  sur le GPU, seul visé par l'allègement, ne se lit de toute façon que sur la Shield
+  (`docs/MESURES.md`, « À vérifier sur appareil »).
 
-MESURES_J8
+Version optimisée de cette PR, émulateur Android TV API 34 de la CI, rendu logiciel (médianes, entre
+parenthèses P90 / P99 ; indicatif, à ne comparer qu'à lui-même) :
+
+| Mesure | Médiane |
+|---|---|
+| `startToHome` : première image (`timeToInitialDisplay`) | 719 ms (min 663, max 831) |
+| `startToHome` : accueil complet (`timeToFullDisplay`) | 4 097 ms |
+| `browseHome` : temps CPU d'une image | 229 ms (350 / 446) |
+| `browseHome` : dépassement | 323 ms (473 / 605) |
+| `libraryRoundTrip` : temps CPU d'une image | 139 ms (206 / 456) |
+| `scrollGrid` : temps CPU d'une image | 131,5 ms (167 / 268) |
+| `openDetails` : de la touche à la première image de la fiche | 113 ms (108 à 136) |
+| `openDetails` : temps CPU d'une image | 163 ms |
+| `openSettings` : de la touche à la première image des réglages | 75 ms (63 à 103) |
+| `openSettings` : temps CPU d'une image | 62 ms |
+
+Les temps par image de l'émulateur (logiciel, sans GPU) sont dix fois ceux d'un appareil : seuls
+comptent les écarts d'un run à l'autre et les sections `openDetails` / `openSettings`, qui tiennent
+sous les 300 ms de `FONCTIONNALITES.md` § 13 même ainsi.
 
 **Appareils faibles** (Chromecast avec Google TV : armeabi-v7a, 2 Go, Android 14) :
 - `ImageBudget` (`:core:designsystem`) fixe les caches de Coil d'après `ActivityManager` : mémoire
@@ -1655,7 +1675,9 @@ MESURES_J8
   x86_64) ; Media3 et Room (SQLite du système) n'en apportent pas. `ci/check-apk.sh` (job « Build »)
   échoue si une bibliothèque arm64 n'a pas sa version 32 bits, et publie la taille de l'APK. Rien
   dans le code ne suppose 64 bits (tailles de fichiers et positions en `Long`).
-- **Taille de l'APK optimisé** : TAILLE_APK
+- **Taille de l'APK optimisé** : 10 960 098 octets avant (`main` du J7, `ci/check-apk.sh`), environ
+  10 988 538 après (+28 Ko : `ImageBudget`, `FocusHalo`, journal des gestes, sémantique) ; les profils
+  régénérés la font varier de quelques Ko.
 
 **Profils et mesures** :
 - `BaselineProfileGenerator` parcourt en plus une fiche ouverte depuis l'accueil, les réglages, la
