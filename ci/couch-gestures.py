@@ -449,8 +449,8 @@ class Couch:
     def g07_subtitles(self, since):
         d = self.d
         self.in_player(osd=True)
-        self.focus_player("down", lambda tag: tag != "player-progress")
-        self.focus_player("right", lambda tag: tag == "player-tracks", limit=4)
+        at = self.focus_player("down", lambda tag: tag != "player-progress")
+        self.to_control(at, "player-tracks")
         mark = d.mark()
         d.press("ok")
         d.wait_event(lambda e: e == "panel Tracks", mark, what="panneau Audio et sous-titres")
@@ -476,6 +476,17 @@ class Couch:
         self.close_panel()
         return end
 
+    def to_control(self, at, target):
+        """Along the row of buttons of the player (← or →, by their order) until [target]."""
+        for _ in range(len(CONTROLS)):
+            if at == target:
+                return
+            if at not in CONTROLS:
+                raise Failed(f"le focus du lecteur est sur {at}")
+            key = "left" if CONTROLS.index(target) < CONTROLS.index(at) else "right"
+            at = self.focus_player(key, lambda tag: True)
+        raise Failed(f"{target} jamais focalisé")
+
     def column(self, since, number):
         with self.d.lock:
             line = next(e for _, e in self.d.events[since:] if e.startswith(f"column {number} "))
@@ -497,8 +508,10 @@ class Couch:
             try:
                 d.wait_event(lambda e: e.startswith("focus "), mark, 5, "le focus")
             except Failed:
-                # The interface hid itself (4 s without a key) as the key left: it only showed it.
-                if self.osd_visible():
+                # The interface hid itself (4 s without a key) as ↓ left: that key only showed it,
+                # and the focus is on the bar again. Any other key would mean something else there
+                # (→ jumps): no second try.
+                if self.osd_visible() or key != "down":
                     raise
                 self.show_osd()
                 mark = d.mark()
@@ -592,7 +605,15 @@ class Couch:
             first = d.wait_ui(lambda s: s.focus_tag("item-"), what="une carte de la grille")
         start = int(first.removeprefix("item-"))
         d.press(*["down"] * 5)
-        moved = d.wait_ui(lambda s: s.focus_tag("item-"), what="une carte de la grille")
+        # Accessibility tells the new focus late: until it differs from the first card.
+        try:
+            moved = d.wait_ui(
+                lambda s: (tag := s.focus_tag("item-")) is not None and tag != first and tag,
+                timeout=10,
+                what="une autre carte de la grille",
+            )
+        except Failed:
+            raise Skip("la bibliothèque n'a pas cinq rangées") from None
         if int(moved.removeprefix("item-")) <= start:
             raise Skip("la bibliothèque n'a pas cinq rangées")
         return None
@@ -627,6 +648,7 @@ class Couch:
         s = d.wait_ui(lambda s: s.has("details-panel") and s, what="le menu ⋯")
         if not s.has("details-line-images"):
             d.press("back")
+            d.wait_ui(lambda s: not s.has("details-panel"), what="le menu ⋯ fermé")
             raise Skip("pas de « Changer les images » (profil non administrateur)")
         for _ in range(12):
             if d.screen().focus_in("details-line-images"):
@@ -645,9 +667,10 @@ class Couch:
         d = self.d
         if getattr(self, "grid_card", None) is None:
             raise Skip("pas venu d'une grille (un geste précédent n'y a pas mené)")
-        for _ in range(2):
-            if d.screen().has("details-panel"):
-                d.press("back")
+        if d.screen().has("details-panel"):
+            # A menu left open: « Retour » closes it, once it is gone the next one leaves the details.
+            d.press("back")
+            d.wait_ui(lambda s: not s.has("details-panel"), what="le menu ⋯ fermé")
         mark = d.mark()
         d.press("back", pause=0)
         end = self.wait_screen("Library", mark)
@@ -778,6 +801,17 @@ class Couch:
                 return left[0]
         return d.wait_event(out, mark, what="sortie du lecteur")
 
+
+# The buttons of the player, left to right (`PlayerScreen`; chapters and quality only when they apply).
+CONTROLS = [
+    "player-play",
+    "player-chapters",
+    "player-tracks",
+    "player-subtitles",
+    "player-quality",
+    "player-settings",
+    "player-info-button",
+]
 
 GESTURES = [
     # number, name, keys expected, target (s, response), method

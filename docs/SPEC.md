@@ -1643,21 +1643,20 @@ principal n'est plus le goulot depuis § 4.16 : c'est le **GPU**, qui remplit un
   sur le GPU, seul visé par l'allègement, ne se lit de toute façon que sur la Shield
   (`docs/MESURES.md`, « À vérifier sur appareil »).
 
-Version optimisée de cette PR, émulateur Android TV API 34 de la CI, rendu logiciel (médianes, entre
-parenthèses P90 / P99 ; indicatif, à ne comparer qu'à lui-même) :
+Version optimisée de cette PR, émulateur Android TV API 34 de la CI, rendu logiciel : médianes de
+trois runs du 27/10 (de la plus basse à la plus haute ; indicatif, à ne comparer qu'à lui-même) :
 
 | Mesure | Médiane |
 |---|---|
-| `startToHome` : première image (`timeToInitialDisplay`) | 719 ms (min 663, max 831) |
-| `startToHome` : accueil complet (`timeToFullDisplay`) | 4 097 ms |
-| `browseHome` : temps CPU d'une image | 229 ms (350 / 446) |
-| `browseHome` : dépassement | 323 ms (473 / 605) |
-| `libraryRoundTrip` : temps CPU d'une image | 139 ms (206 / 456) |
-| `scrollGrid` : temps CPU d'une image | 131,5 ms (167 / 268) |
-| `openDetails` : de la touche à la première image de la fiche | 113 ms (108 à 136) |
-| `openDetails` : temps CPU d'une image | 163 ms |
-| `openSettings` : de la touche à la première image des réglages | 75 ms (63 à 103) |
-| `openSettings` : temps CPU d'une image | 62 ms |
+| `startToHome` : première image (`timeToInitialDisplay`) | 663 à 724 ms |
+| `startToHome` : accueil complet (`timeToFullDisplay`) | 3 704 à 4 097 ms |
+| `browseHome` : temps CPU d'une image (P90) | 229 à 240 ms (345 à 354) |
+| `libraryRoundTrip` : temps CPU d'une image | 139 à 155 ms |
+| `scrollGrid` : temps CPU d'une image | 131 à 146 ms |
+| `openDetails` : de la touche à la première image de la fiche | 108 à 113 ms (max 157) |
+| `openDetails` : temps CPU d'une image | 163 à 175 ms |
+| `openSettings` : de la touche à la première image des réglages | 66 à 79 ms (max 103) |
+| `openSettings` : temps CPU d'une image | 62 à 68 ms |
 
 Les temps par image de l'émulateur (logiciel, sans GPU) sont dix fois ceux d'un appareil : seuls
 comptent les écarts d'un run à l'autre et les sections `openDetails` / `openSettings`, qui tiennent
