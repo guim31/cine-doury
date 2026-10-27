@@ -1,6 +1,7 @@
 package fr.guim.cinedoury.feature.search
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,6 +29,7 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.key.Key
@@ -181,6 +183,7 @@ fun SearchScreen(
     var focusedRow by rememberSaveable { mutableStateOf<String?>(null) }
     var systemKeyboard by rememberSaveable { mutableStateOf(previewSystemKeyboard) }
     val first = remember { FocusRequester() }
+    val keyboard = remember { FocusRequester() }
     val rowRequesters = remember { mutableMapOf<String, FocusRequester>() }
     val open: (MediaItem) -> Unit = { item ->
         actions.opened()
@@ -230,7 +233,13 @@ fun SearchScreen(
                     onSystemKeyboard = { systemKeyboard = true },
                     first = first,
                     page = previewPage,
-                    modifier = Modifier.onFocusChanged { if (it.hasFocus) focusedRow = null },
+                    // The key left, for → from the open rail (essai réel 3).
+                    modifier =
+                        Modifier
+                            .onFocusChanged { if (it.hasFocus) focusedRow = null }
+                            .focusRequester(keyboard)
+                            .focusRestorer(first)
+                            .focusGroup(),
                 )
                 voice.problem?.let { problem ->
                     Text(
@@ -262,6 +271,8 @@ fun SearchScreen(
             state = state.rail,
             selected = RailTarget.Search,
             onNavigate = navigation::navigate,
+            // → from the open rail: the row of results left (it gives back its card), else the key left.
+            onContentFocus = { (focusedRow?.let { rowRequesters.requester(it) } ?: keyboard).requestFocus() },
             previewFocused = previewRail,
         )
         RequestDialogs(state.dialog, actions)

@@ -190,7 +190,12 @@ fun HomeScreen(
         BoxWithConstraints(Modifier.fillMaxSize()) {
             val heroHeight = maxHeight * CineSizes.HERO_HEIGHT_FRACTION
             if (banner) HomeBackdrop(featuredItem, sources, Modifier.fillMaxWidth().height(heroHeight))
-            FocusPivot(fraction = ROW_PIVOT) {
+            // The focused row stands on the line of the buttons of the banner (« Lire »), a little under
+            // it: with the banner focused, the home stays at its top whatever the size of the
+            // interface (essai réel 3: in Compacte, « Lire » under a fixed 48 % scrolled the home, and
+            // « Retour » then took one more press to reach the rail).
+            val pivot = heroHeight - CineSpacing.s - CineSizes.buttonHeight + CineSpacing.xs
+            FocusPivot(offset = if (banner) pivot else null, fraction = ROW_PIVOT) {
                 LazyColumn(
                     state = listState,
                     modifier = Modifier.fillMaxSize().testTag("home"),
@@ -265,6 +270,8 @@ fun HomeScreen(
             selected = RailTarget.Home,
             onNavigate = navigation::navigate,
             focusRequester = rail,
+            // → from the open rail: the row left (it gives back its card), else the banner.
+            onContentFocus = { (focusedRow?.let { rowRequesters.requester(it) } ?: top).requestFocus() },
             previewFocused = previewRail,
             modifier = Modifier.onFocusChanged { railFocused = it.hasFocus },
         )
@@ -306,7 +313,7 @@ private val LazyListState.isScrolled: Boolean get() = firstVisibleItemIndex > 0 
 /** The rows start right of the closed rail. */
 internal val ContentStart = CineSizes.railCollapsed + CineSpacing.m
 
-/** Where the focused card of a row stands, from the top of the screen. */
+/** Where the focused card of a row stands, from the top of the screen, without the banner. */
 private const val ROW_PIVOT = 0.48f
 private const val SKELETON_ROWS = 2
 
