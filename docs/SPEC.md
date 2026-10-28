@@ -25,7 +25,7 @@ son domaine :
 | J7 — Réglages et mise à jour (pages de réglages P0, mise à jour proposée depuis les releases, publication signée, rapport de diagnostic) | terminé, fusionné (§ 4.17 à 4.19 ; captures dans `docs/screenshots/j7/`, numéros 150 à 174) | [#11](https://github.com/guim31/cine-doury/pull/11) |
 | J8 — Finitions 1.0 (coût GPU, petits appareils, profils et mesures, accessibilité, captures 4K et grand texte, 20 gestes au canapé, 1.0.0 prête à étiqueter) | prêt, en revue (§ 4.20 ; captures dans `docs/screenshots/j8/`, numéros 180 à 198 ; CI complète verte sur `24243cb`) | [#13](https://github.com/guim31/cine-doury/pull/13) |
 | Essai réel 3 (27/10/2026, Shield en 4K, v0.7.0) : → depuis le rail ouvert, « Taille de l'interface » (Compacte par défaut), commandes du lecteur plus petites, barre des sous-titres à trois réglages, barre de la bibliothèque, bandeau de l'accueil fixe ; deuxième passage (28/10) : bandeau au-dessus des rangées, tailles Très compacte / Compacte / Normale, 27 icônes de bibliothèque | en cours (§ 4.21 ; captures dans `docs/screenshots/r3/`, numéros 200 à 208, et « avant ») | [#14](https://github.com/guim31/cine-doury/pull/14) |
-| Essai réel 4 (28/10/2026, Shield en 4K, v0.9.0) : « Très compacte » par défaut, bandeau de l'accueil plus bas (une deuxième rangée se voit), titre de rangée immobile, « Retour » qui quitte sans confirmation | en cours (§ 4.22 ; captures dans `docs/screenshots/r4/`) | [#15](https://github.com/guim31/cine-doury/pull/15) |
+| Essai réel 4 (28/10/2026, Shield en 4K, v0.9.0) : « Très compacte » par défaut, bandeau de l'accueil plus bas (une deuxième rangée se voit), titre de rangée immobile, « Retour » qui quitte sans confirmation, versions d'essai signées installables par-dessus une release | prêt, en revue (§ 4.22 et § 4.18 ; captures dans `docs/screenshots/r4/` : `avant-*` / `apres-*` pour A, B et D) | [#15](https://github.com/guim31/cine-doury/pull/15) |
 
 *(Chaque jalon met à jour ce tableau et ajoute ses contrats au § 4.)*
 
@@ -1946,14 +1946,17 @@ Quatre retours du mainteneur sur la v0.9.0 (Shield, écran 4K, taille « Très c
   hauteur fixe d'un titre à l'autre (seul le contenu change, en fondu). Avec deux rangées d'affiches
   (le cas le plus haut), la deuxième montre son titre et le haut de ses affiches en « Normale »
   (608 dp de haut) et presque toutes ses affiches en « Très compacte ». Test : `R4Home1080pTest` et
-  `R4Home4kTest` (les trois tailles, bandeau puis première rangée focalisés). Captures 210 (les trois
-  tailles), `avant-b-*` et `apres-b-*`.
+  `R4Home4kTest` (les trois tailles, bandeau puis première rangée focalisés). Captures 200 (les trois
+  tailles, réenregistrées), `avant-b-*` et `apres-b-*` dans `docs/screenshots/r4/`.
 - **C. Le titre de la rangée sautillait** en passant d'une jaquette à l'autre. La liste des rangées
   suivait le rectangle de la carte focalisée (`BringIntoViewSpec`) ; ce rectangle compte
   l'agrandissement au focus (`graphicsLayer`), animé : la liste défilait de quelques points pendant
   l'animation, titre compris. Elle ne suit plus le focus d'elle-même (`ScrolledByIndex`) : l'accueil
   la fait défiler **par l'index** de la rangée qui reçoit le focus (`animateScrollToItem`), la rangée
-  focalisée en haut de la zone. Se déplacer dans une rangée ne déplace rien verticalement. Test :
+  focalisée en haut de la zone. Se déplacer dans une rangée ne déplace rien verticalement. Les rangées
+  arrivant en plusieurs temps (cache, puis serveur), la liste est remise sur la rangée focalisée, ou
+  en haut, quand elles changent : une `LazyColumn` garde sinon sa première rangée par clé, et restait
+  sur une rangée lue avant les autres. Test :
   `R4Home*Test` (position du titre identique le long d'une rangée, d'une rangée à l'autre et au
   retour).
 - **E. Versions d'essai installables par-dessus une release** (demandé par l'orchestrateur pour
