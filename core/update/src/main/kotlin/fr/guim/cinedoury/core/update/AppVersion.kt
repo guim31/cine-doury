@@ -31,12 +31,14 @@ data class AppVersion(
         private const val PATCH = 100
         private const val TRIAL = "-essai."
         private const val MAX_TRIAL = 99
+        private const val TRIAL_GROUP = 4
         private val FORMAT = Regex("""v?(\d{1,4})\.(\d{1,2})\.(\d{1,2})(?:-essai\.(\d{1,2}))?""")
 
         /** « v1.2.3 », « 1.2.3 » or « 1.2.3-essai.4 »; null for anything else (« dev », « 1.2.3-rc1 »). */
         fun parse(text: String?): AppVersion? {
             val match = text?.trim()?.let { FORMAT.matchEntire(it) } ?: return null
-            val (major, minor, patch, trial) = match.destructured
+            val (major, minor, patch) = match.destructured
+            val trial = match.groupValues[TRIAL_GROUP]
             val number = trial.toIntOrNull() ?: 0
             if (trial.isNotEmpty() && number !in 1..MAX_TRIAL) return null
             return AppVersion(major.toInt(), minor.toInt(), patch.toInt(), number)
