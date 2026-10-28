@@ -1937,17 +1937,26 @@ Quatre retours du mainteneur sur la v0.9.0 (Shield, écran 4K, taille « Très c
   déjà enregistrée, « Compacte » comprise, ne change pas ; seul un appareil qui n'en a jamais choisi
   passe à 1 440 dp. Les captures de référence suivent la nouvelle valeur par défaut. Test :
   `AppPreferencesTest`.
-- **B. Les rangées suivantes se voient sous le bandeau.** Le bandeau prenait ce que laissait une
-  zone d'une rangée de haut : on ne devinait pas qu'il y en avait d'autres. Il est désormais à sa
-  hauteur, en haut de l'écran (sous la marge de sécurité), et **les rangées prennent tout le reste**.
-  Pour le réduire : la zone du logo ou du titre fait deux lignes de « Titre 2 » (64 dp au lieu de
-  96, à la taille du texte réglée : `featuredTitleHeight()`), le titre sans logo passe en « Titre 2 »,
-  l'accroche disparaît, et la ligne d'infos se met à droite des boutons. Le bandeau garde une
-  hauteur fixe d'un titre à l'autre (seul le contenu change, en fondu). Avec deux rangées d'affiches
-  (le cas le plus haut), la deuxième montre son titre et le haut de ses affiches en « Normale »
-  (608 dp de haut) et presque toutes ses affiches en « Très compacte ». Test : `R4Home1080pTest` et
-  `R4Home4kTest` (les trois tailles, bandeau puis première rangée focalisés). Captures 200 (les trois
-  tailles, réenregistrées), `avant-b-*` et `apres-b-*` dans `docs/screenshots/r4/`.
+- **B. Une rangée et demie sous le bandeau.** Le bandeau prenait ce que laissait une zone d'une
+  rangée de haut : on ne devinait pas qu'il y en avait d'autres. Premier passage : bandeau réduit à une
+  bande (titre, boutons et infos sur une ligne), les rangées sur tout le reste ; essayé sur la Shield
+  (`0.9.0-essai.1`), c'était trop : deux rangées entières en « Très compacte », un bandeau qui
+  « passe à peine ». **Règle retenue** (deuxième passage, 28/10) : la hauteur du bandeau est celle de
+  l'écran moins **une rangée entière (titre compris) et la moitié de la suivante**, chacune à la
+  hauteur de ses cartes (affiches ou vignettes, d'après les deux premières rangées ; deux rangées de
+  vignettes tant qu'elles ne sont pas lues ; `homeRowsArea`). Le bandeau se met en page dans cette
+  hauteur, en bas (`FeaturedBanner`) : en colonne comme en 0.9.0 (logo ou titre dans 96 dp, infos,
+  une ligne de résumé, boutons dessous) ; ce qui ne tient pas disparaît dans l'ordre, le résumé
+  d'abord, puis la colonne elle-même pour une seule bande (titre sur deux lignes de « Titre 2 », infos
+  à droite des boutons), qui est aussi sa hauteur minimale. Le choix dépend de la hauteur seule, jamais
+  du titre : rien ne bouge d'un titre à l'autre. Les hauteurs additionnent des lignes de texte
+  mesurées comme `Text` les pose (`textLineHeight`), pas le `lineHeight` des styles. Avec deux rangées
+  de vignettes, une rangée et demie dans les trois tailles ; avec deux rangées d'affiches, une et
+  demie en « Très compacte » ; en « Compacte » et « Normale », une rangée et demie d'affiches ne
+  laisserait pas la place des boutons : le bandeau garde sa bande et la deuxième rangée montre son
+  titre et le haut de ses affiches. Test : `R4Home1080pTest` et `R4Home4kTest` (part visible de la
+  deuxième rangée entre 40 et 60 %, dans chaque taille). Captures 200 (les trois tailles,
+  réenregistrées), `avant-b-*` et `apres-b-*` dans `docs/screenshots/r4/`.
 - **C. Le titre de la rangée sautillait** en passant d'une jaquette à l'autre. La liste des rangées
   suivait le rectangle de la carte focalisée (`BringIntoViewSpec`) ; ce rectangle compte
   l'agrandissement au focus (`graphicsLayer`), animé : la liste défilait de quelques points pendant

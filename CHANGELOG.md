@@ -9,8 +9,8 @@ technique est dans [`docs/SPEC.md`](docs/SPEC.md) ; les notes de chaque version 
 Essai réel 4 (28/10/2026, NVIDIA Shield TV en 4K, v0.9.0) :
 
 - **Taille de l'interface** : « Très compacte » par défaut ; une taille déjà choisie est gardée.
-- **Accueil** : le bandeau est plus bas (titre ou logo, puis les boutons avec les infos à côté) et la
-  rangée suivante se voit sous la première ; le titre d'une rangée ne bouge plus quand on passe
+- **Accueil** : sous le bandeau, une rangée entière et la moitié de la suivante ; le bandeau garde
+  titre ou logo, infos, résumé et boutons quand ils tiennent, le résumé partant d'abord ; le titre d'une rangée ne bouge plus quand on passe
   d'une jaquette à l'autre.
 - **Quitter** : « Retour » depuis le menu de l'accueil ferme l'appli sans demander de confirmation.
 - **Versions d'essai** : elles s'installent par-dessus la version publiée, sans désinstaller ni se

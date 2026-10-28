@@ -3,6 +3,7 @@ package fr.guim.cinedoury.tv
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.getBoundsInRoot
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasTestTag
@@ -10,7 +11,6 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.pressKey
-import androidx.compose.ui.unit.dp
 import fr.guim.cinedoury.core.designsystem.theme.CineTheme
 import fr.guim.cinedoury.core.designsystem.theme.LayoutSize
 import fr.guim.cinedoury.core.designsystem.theme.ThemeVariant
@@ -19,6 +19,7 @@ import fr.guim.cinedoury.core.ui.RailTarget
 import fr.guim.cinedoury.feature.home.HomeNavigation
 import fr.guim.cinedoury.feature.home.HomePreview
 import fr.guim.cinedoury.feature.home.HomeScreen
+import fr.guim.cinedoury.feature.home.HomeState
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -86,10 +87,10 @@ abstract class R4HomeChecks(
                 },
         )
 
-    private fun home() {
+    private fun home(state: HomeState = posters) {
         compose.setTvContent {
             CineTheme(ThemeVariant.Dark, layoutSize = size) {
-                HomeScreen(state = posters, sources = J2Samples.noImages, navigation = Navigation, onRetry = {})
+                HomeScreen(state = state, sources = J2Samples.noImages, navigation = Navigation, onRetry = {})
             }
         }
         focusable(HomePreview.PLAY).assertIsFocused()
@@ -110,25 +111,47 @@ abstract class R4HomeChecks(
 
     private fun top(tag: String) = compose.onNodeWithTag(tag).getBoundsInRoot().top
 
-    /** The top of the cards of the second row is on the screen, a little more than a strip of them. */
-    private fun assertSecondRowShows(what: String) {
+    /**
+     * The share of the second row that shows under the first, from its title to the bottom of the
+     * screen, against the height of a whole row (the first, of the same kind of cards).
+     */
+    private fun secondRowShown(
+        first: String,
+        second: String,
+    ): Float {
         // The bottom of the list of rows is the bottom of the screen, in the dp of the layout (those of
         // the root are the device's).
         val screen = compose.onNodeWithTag("home").getBoundsInRoot().bottom
-        val second = top(HomePreview.card("latest:series", 0))
-        assertTrue(
-            screen - second >= PEEK,
-            "$what, $size: the second row starts at $second, the screen ends at $screen",
-        )
+        val row = compose.onNodeWithTag("row-$first").getUnclippedBoundsInRoot()
+        return (screen - top(HomePreview.rowTitle(second))) / (row.bottom - row.top)
     }
 
+    /**
+     * Essai réel 4, second pass: the banner, a whole row, and the top half of the next one. The home of
+     * the samples starts with two rows of thumbnails: in every size, a row and a half of them.
+     */
     @Test
-    fun aSecondRowShowsUnderTheFirst() {
+    fun aRowAndAHalfUnderTheBanner() {
+        home(J2Samples.home)
+        val shown = secondRowShown("resume", "next-up")
+        assertTrue(shown in HALF_ROW, "$size: ${shown * 100} % of the second row shows")
+    }
+
+    /**
+     * Two rows of posters, the tallest: a row and a half of them in « Très compacte ». In the smaller
+     * screens a row and a half of posters would leave the banner no room for its buttons: it keeps its
+     * single band, and the second row shows its title and the top of its posters.
+     */
+    @Test
+    fun aRowAndAHalfOfPostersOrMore() {
         home()
-        assertSecondRowShows("the banner focused")
+        val shown = secondRowShown("latest:films", "latest:series")
+        val expected = if (size == LayoutSize.VeryCompact) HALF_ROW else PEEK..HALF_ROW.endInclusive
+        assertTrue(shown in expected, "$size: ${shown * 100} % of the second row shows")
+        // And with the first row focused, at the top of the area.
         press(Key.DirectionDown)
         focusable(HomePreview.card("latest:films", 0)).assertIsFocused()
-        assertSecondRowShows("the first row focused")
+        assertEquals(shown, secondRowShown("latest:films", "latest:series"), "$size, the first row focused")
     }
 
     @Test
@@ -153,7 +176,11 @@ abstract class R4HomeChecks(
     }
 
     private companion object {
-        val PEEK = 16.dp
+        /** « Coupée vers sa moitié »: from 40 to 60 % of the second row. */
+        val HALF_ROW = 0.4f..0.6f
+
+        /** At least the title of the second row and the top of its cards. */
+        const val PEEK = 0.2f
         const val SETTLE_MILLIS = 1_000L
     }
 }

@@ -1,10 +1,15 @@
 package fr.guim.cinedoury.core.designsystem.theme
 
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
 import fr.guim.cinedoury.core.designsystem.R
 
@@ -80,3 +85,25 @@ fun CineTypography.scaled(factor: Float): CineTypography {
 
 /** How much « Taille du texte » may grow the titles of the screens. */
 const val HEADING_MAX_SCALE = 1.15f
+
+/**
+ * The height a single line of [style] takes on the screen, measured as a `Text` lays it out: a layout
+ * that adds up lines of text (the banner and the rows of the home, essai réel 4) uses it rather than
+ * [TextStyle.lineHeight], which the font and its padding do not always match.
+ */
+@Composable
+fun textLineHeight(style: TextStyle): Dp {
+    val measurer = rememberTextMeasurer(cacheSize = 0)
+    val density = LocalDensity.current
+    return remember(style, density) {
+        with(density) {
+            measurer
+                .measure(LINE_SAMPLE, style, maxLines = 1)
+                .size.height
+                .toDp()
+        }
+    }
+}
+
+/** Capitals, accents and descenders: the tallest a line of the interface gets. */
+private const val LINE_SAMPLE = "ÉÀgjpq"

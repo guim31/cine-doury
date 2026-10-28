@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
@@ -35,6 +36,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import fr.guim.cinedoury.core.data.SessionManager
+import fr.guim.cinedoury.core.data.home.CardStyle
 import fr.guim.cinedoury.core.designsystem.component.AmbientBackdrop
 import fr.guim.cinedoury.core.designsystem.component.CineIcons
 import fr.guim.cinedoury.core.designsystem.component.Featured
@@ -47,11 +49,12 @@ import fr.guim.cinedoury.core.designsystem.component.PrimaryButton
 import fr.guim.cinedoury.core.designsystem.component.ScrolledByIndex
 import fr.guim.cinedoury.core.designsystem.component.SecondaryButton
 import fr.guim.cinedoury.core.designsystem.component.SkeletonLine
-import fr.guim.cinedoury.core.designsystem.component.featuredTitleHeight
+import fr.guim.cinedoury.core.designsystem.component.featuredBannerMinHeight
 import fr.guim.cinedoury.core.designsystem.component.rememberCineFocus
 import fr.guim.cinedoury.core.designsystem.theme.CineSizes
 import fr.guim.cinedoury.core.designsystem.theme.CineSpacing
 import fr.guim.cinedoury.core.designsystem.theme.CineTheme
+import fr.guim.cinedoury.core.designsystem.theme.textLineHeight
 import fr.guim.cinedoury.core.model.MediaItem
 import fr.guim.cinedoury.core.ui.AppRail
 import fr.guim.cinedoury.core.ui.CollectEvents
@@ -61,6 +64,7 @@ import fr.guim.cinedoury.core.ui.RemoteIndicator
 import fr.guim.cinedoury.core.ui.SourceErrorPanel
 import fr.guim.cinedoury.core.ui.ambience
 import fr.guim.cinedoury.core.ui.cardTitle
+import fr.guim.cinedoury.core.ui.catchLine
 import fr.guim.cinedoury.core.ui.imageSource
 import fr.guim.cinedoury.core.ui.metadataLine
 import fr.guim.cinedoury.core.ui.rememberArt
@@ -196,10 +200,15 @@ fun HomeScreen(
         }
         BoxWithConstraints(Modifier.fillMaxSize()) {
             if (banner) {
-                // The banner stands still (essai réel 3), at its own height at the top: the rows take
-                // the rest of the screen, so that the next ones show under the focused one (essai réel
-                // 4). The focused row goes to the top of their area, scrolled by its index: following
-                // the bounds of the focused card, which grows with the focus, moved its title.
+                // The banner stands still (essai réel 3), on what a row and a half leave (essai réel 4):
+                // the first row whole and the top half of the next under it, whatever the size, at
+                // least its single band. The focused row goes to the top of their area, scrolled by its
+                // index: following the bounds of the focused card, which grows with the focus, moved
+                // its title.
+                val heroHeight =
+                    (maxHeight - homeRowsArea(rows)).coerceAtLeast(
+                        featuredBannerMinHeight() + CineSpacing.safeVertical + CineSpacing.s,
+                    )
                 HomeBackdrop(
                     featuredItem,
                     sources,
@@ -215,6 +224,7 @@ fun HomeScreen(
                         play = play,
                         modifier =
                             Modifier
+                                .height(heroHeight)
                                 .testTag(HomePreview.BANNER)
                                 .onFocusChanged {
                                     if (it.hasFocus) focusedRow = null
@@ -342,6 +352,27 @@ private fun HomeRows(
     }
 }
 
+/**
+ * Under the banner, a row and a half (essai réel 4): the first row whole, its title, cards and captions
+ * included, the gap between rows, then the top half of the second one, each at the height of its kind
+ * of cards. Without rows yet, two rows of thumbnails, the shape of the skeletons.
+ */
+@Composable
+private fun homeRowsArea(rows: List<HomeRow>?): Dp {
+    val first = rows?.firstOrNull()?.style ?: CardStyle.Thumbnail
+    val second = rows?.getOrNull(1)?.style ?: first
+    return homeRowHeight(first) + CineSpacing.l + homeRowHeight(second) / 2
+}
+
+/** A row of the home: its title, the gap under it, a card and its caption of two lines (`HomeRowView`). */
+@Composable
+private fun homeRowHeight(style: CardStyle): Dp {
+    val typography = CineTheme.typography
+    val card = if (style == CardStyle.Poster) CineSizes.posterNormal else CineSizes.thumbnail
+    return textLineHeight(typography.title2) + CineSpacing.rowTitleGap + card.height + CineSpacing.s +
+        textLineHeight(typography.caption) * 2
+}
+
 /** Tells [onRowFocused] when the focus comes into the element at [index] of the list. */
 private fun Modifier.onRowFocused(
     onRowFocused: ((Int) -> Unit)?,
@@ -379,7 +410,8 @@ private fun Hero(
     play: FocusRequester,
     modifier: Modifier = Modifier,
 ) {
-    // At its own height, under the top of the screen: the same for every title (FeaturedBanner).
+    // Its content at the bottom of the height it is given, under the top of the screen: the banner
+    // chooses what fits (FeaturedBanner). An error, larger, goes up under the top, never squeezed.
     Box(
         modifier =
             modifier
@@ -399,7 +431,11 @@ private fun Hero(
                     error = error,
                     onRetry = onRetry,
                     retryFocusRequester = play,
-                    modifier = Modifier.align(Alignment.BottomStart),
+                    modifier =
+                        Modifier
+                            .align(
+                                Alignment.BottomStart,
+                            ).wrapContentHeight(Alignment.Bottom, unbounded = true),
                 )
             }
 
@@ -415,7 +451,11 @@ private fun Hero(
                     onAction = navigation::customize,
                     icon = CineIcons.Movies,
                     actionFocusRequester = play,
-                    modifier = Modifier.align(Alignment.BottomStart),
+                    modifier =
+                        Modifier
+                            .align(
+                                Alignment.BottomStart,
+                            ).wrapContentHeight(Alignment.Bottom, unbounded = true),
                 )
             }
 
@@ -459,11 +499,9 @@ private fun Hero(
 
 @Composable
 private fun HeroSkeleton(modifier: Modifier = Modifier) {
-    // The room of the banner (FeaturedBanner): the zone of the title, then the buttons and the metadata.
+    // The single band of the banner (FeaturedBanner): the title, then the buttons and the metadata.
     Column(modifier, verticalArrangement = Arrangement.spacedBy(CineSpacing.xs)) {
-        Box(Modifier.height(featuredTitleHeight()), contentAlignment = Alignment.BottomStart) {
-            SkeletonLine(CineSizes.heroTextWidth * HERO_SKELETON_TITLE, Modifier.height(CineSizes.buttonHeight))
-        }
+        SkeletonLine(CineSizes.heroTextWidth * HERO_SKELETON_TITLE, Modifier.height(CineSizes.buttonHeight))
         Row(
             horizontalArrangement = Arrangement.spacedBy(CineSpacing.m),
             verticalAlignment = Alignment.CenterVertically,
@@ -486,6 +524,7 @@ private fun MediaItem.toFeatured(sources: ImageSources): Featured {
         key = id.value,
         title = cardTitle,
         metadata = metadataLine(),
+        tagline = catchLine,
         backdrop = backdrop,
         logo = logo,
     )
