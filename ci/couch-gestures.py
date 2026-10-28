@@ -807,11 +807,13 @@ class Couch:
 
     def leave_player(self):
         """« Retour » until the screen under the player is drawn: one key at a time, each given the
-        time to land (a second « Retour » on the screen under would leave it too)."""
+        time to land (a second « Retour » on the screen under would leave it too). A keyboard left
+        attached to the window (seen on the emulator, after the sign-in tests) took three « Retour »
+        in a row for itself once (essai réel 3, gesture 20): up to six, as a hand would."""
         d = self.d
         mark = d.mark()
         out = lambda e: e.startswith("screen ") and e != "screen Player"
-        for _ in range(3):
+        for _ in range(6):
             step = d.mark()
             d.press("back")
             # « Retour » first closes a panel or hides the interface (the player says so), then leaves.
