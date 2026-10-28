@@ -11,10 +11,6 @@
     <string name="action_customize">Customise the home</string>
     <string name="home_empty_title">Your home is empty for now.</string>
     <string name="home_empty_message">Add films or series to the server, or choose other rows.</string>
-    <string name="quit_title">Quit Ciné Doury?</string>
-    <string name="quit_message">You will find the home as you left it.</string>
-    <string name="quit_confirm">Quit</string>
-    <string name="quit_cancel">Cancel</string>
     <string name="customize_title">Customise the home</string>
     <string name="customize_subtitle">Choose the rows, their order and their libraries. These choices apply to this profile, on this device.</string>
     <string name="customize_rows">Rows</string>

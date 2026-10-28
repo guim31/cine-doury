@@ -131,24 +131,20 @@ class J2NavigationTest {
     }
 
     @Test
-    fun `Back goes to the top, then into the rail, then asks to quit`() {
+    fun `Back goes to the top, then into the rail, then quits without asking`() {
         home()
         press(Key.DirectionDown, times = 2)
         focusable(HomePreview.card("next-up", 0)).assertIsFocused()
         compose.pressBack()
         focusable(HomePreview.PLAY).assertIsFocused()
-        compose.pressBack()
-        compose.onNode(isFocused() and hasAnyAncestor(hasTestTag("rail"))).assertExists()
-        compose.pressBack()
-        compose.onNode(isFocused() and hasText("Annuler") and hasAnyAncestor(hasTestTag("quit-dialog"))).assertExists()
-        press(Key.DirectionCenter)
-        compose.onNode(hasTestTag("quit-dialog")).assertDoesNotExist()
         assertEquals(false, recorder.quit)
-        compose.onNode(isFocused() and hasAnyAncestor(hasTestTag("rail"))).assertExists()
         compose.pressBack()
-        press(Key.DirectionRight)
-        press(Key.DirectionCenter)
+        compose.onNode(isFocused() and hasAnyAncestor(hasTestTag("rail"))).assertExists()
+        assertEquals(false, recorder.quit)
+        // Essai réel 4: no « Quitter Ciné Doury ? » any more.
+        compose.pressBack()
         assertEquals(true, recorder.quit)
+        compose.onNode(hasTestTag("quit-dialog")).assertDoesNotExist()
     }
 
     private class LibraryRecorder : LibraryActions {

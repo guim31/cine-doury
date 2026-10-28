@@ -181,13 +181,9 @@ class J8FocusTest {
         // The banner takes the focus back on « Lire », its first button.
         assertFocusOn("the home, back from the details", HomePreview.PLAY)
 
-        // « Quitter Ciné Doury ? »: « Retour » up to the dialog, then « Retour » closes it.
+        // « Retour » from « Lire »: the rail (one more would close the app, essai réel 4).
         back()
-        back()
-        waitForTag("quit-dialog")
-        assertSomethingFocused("the quit dialog")
-        back()
-        assertSomethingFocused("the home, the quit dialog closed")
+        assertSomethingFocused("the rail")
 
         // A panel of a library (« Trier »): closed by « Retour », the focus is back on its button.
         open(RailTags.library(J2Samples.films.id.value))

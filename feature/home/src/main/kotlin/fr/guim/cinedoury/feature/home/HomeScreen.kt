@@ -20,13 +20,11 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -39,7 +37,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import fr.guim.cinedoury.core.data.SessionManager
 import fr.guim.cinedoury.core.designsystem.component.AmbientBackdrop
 import fr.guim.cinedoury.core.designsystem.component.CineIcons
-import fr.guim.cinedoury.core.designsystem.component.ConfirmDialog
 import fr.guim.cinedoury.core.designsystem.component.Featured
 import fr.guim.cinedoury.core.designsystem.component.FeaturedBackdrop
 import fr.guim.cinedoury.core.designsystem.component.FeaturedBanner
@@ -83,7 +80,7 @@ interface HomeNavigation {
 
     fun customize()
 
-    /** « Quitter Ciné Doury ? » was confirmed. */
+    /** « Retour » from the rail: the app closes, without asking (essai réel 4). */
     fun quit()
 
     fun sessionEnded()
@@ -116,7 +113,6 @@ object HomePreview {
     /** The banner at the top of the home (title, line of metadata, buttons). */
     const val BANNER = "home-banner"
     const val DETAILS = "home-details"
-    const val QUIT_CANCEL = "home-quit-cancel"
 
     fun card(
         row: String,
@@ -132,7 +128,8 @@ object HomePreview {
  * focused title behind everything, the featured banner at the top, then the rows on the rest of the
  * screen. The banner follows the focus, never a carousel.
  *
- * « Retour »: first back to the top of the page, then into the rail, then « Quitter Ciné Doury ? ».
+ * « Retour »: first back to the top of the page, then into the rail, then out of the app, without a
+ * dialog (essai réel 4: confirming was a chore).
  *
  * @param previewFeatured the title of the banner when nothing has the focus (screenshots).
  * @param previewRail draws the rail open on that entry (screenshots).
@@ -146,7 +143,6 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     previewFeatured: MediaItem? = null,
     previewRail: RailTarget? = null,
-    previewQuit: Boolean = false,
 ) {
     val rows = state.rows
     // Read only where it is drawn (banner, backdrops): a step of the focus recomposes them, not the
@@ -154,9 +150,6 @@ fun HomeScreen(
     val focusedItem = remember { mutableStateOf<MediaItem?>(null) }
     var focusedRow by rememberSaveable { mutableStateOf<String?>(null) }
     var railFocused by remember { mutableStateOf(false) }
-    var quitAsked by rememberSaveable { mutableStateOf(previewQuit) }
-    // « Annuler » gives the focus back to the rail, where « Retour » asked to quit.
-    var quitCancelled by remember { mutableIntStateOf(0) }
     val featuredItem = { focusedItem.value ?: previewFeatured ?: rows?.firstOrNull()?.items?.firstOrNull() }
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
@@ -170,13 +163,8 @@ fun HomeScreen(
 
     BackHandler {
         when {
-            quitAsked -> {
-                quitAsked = false
-                quitCancelled++
-            }
-
             railFocused -> {
-                quitAsked = true
+                navigation.quit()
             }
 
             focusedRow != null || listState.isScrolled -> {
@@ -277,36 +265,10 @@ fun HomeScreen(
             previewFocused = previewRail,
             modifier = Modifier.onFocusChanged { railFocused = it.hasFocus },
         )
-        if (quitAsked) {
-            val cancel = remember { FocusRequester() }
-            InitialFocus(cancel)
-            ConfirmDialog(
-                title = stringResource(R.string.quit_title),
-                message = stringResource(R.string.quit_message),
-                confirmLabel = stringResource(R.string.quit_confirm),
-                cancelLabel = stringResource(R.string.quit_cancel),
-                onConfirm = navigation::quit,
-                onCancel = {
-                    quitAsked = false
-                    quitCancelled++
-                },
-                destructive = false,
-                cancelFocusRequester = cancel,
-                cancelFocus = rememberCineFocus(HomePreview.QUIT_CANCEL),
-                modifier = Modifier.testTag("quit-dialog"),
-            )
-        }
-    }
-    LaunchedEffect(quitCancelled) {
-        if (quitCancelled > 0) {
-            withFrameNanos { }
-            runCatching { rail.requestFocus() }
-        }
     }
     // The first focus, and the focus found again when coming back: the row left, else « Lire ».
     // Made here, not when the lazy row composes (later): the requester is the same for both.
     val initial = focusedRow?.let { rowRequesters.requester(it) }
-    // Not keyed on the quit dialog: closing it gives the focus back to the rail, not to « Lire ».
     InitialFocus(initial ?: top, key = rows?.isEmpty())
 }
 
