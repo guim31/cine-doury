@@ -5,19 +5,24 @@ plugins {
     alias(libs.plugins.baselineprofile)
 }
 
-// The version comes from the tag of the release (`vX.Y.Z`, SPEC.md § 4.18): the release workflow sets
-// CINE_DOURY_VERSION. Without it, a development version, which is offered no update.
+// The version comes from the tag of the release (`vX.Y.Z`, SPEC.md § 4.18), or of a trial build
+// (`vX.Y.Z-essai.N`, essai réel 4): the release workflow sets CINE_DOURY_VERSION. Without it, a
+// development version, which is offered no update.
 val releaseVersion: String? =
     providers
         .environmentVariable("CINE_DOURY_VERSION")
         .orNull
         ?.removePrefix("v")
-        ?.takeIf { Regex("""\d{1,4}\.\d{1,2}\.\d{1,2}""").matches(it) }
+        ?.takeIf { Regex("""\d{1,4}\.\d{1,2}\.\d{1,2}(-essai\.\d{1,2})?""").matches(it) }
 
-/** X × 10 000 + Y × 100 + Z: grows with the version (AppVersion.versionCode in :core:update). */
+/**
+ * X × 1 000 000 + Y × 10 000 + Z × 100 + N, N the number of a trial build (0 for a release): grows with
+ * the version (AppVersion.versionCode in :core:update).
+ */
 fun versionCodeOf(version: String): Int {
-    val (major, minor, patch) = version.split('.').map(String::toInt)
-    return major * 10_000 + minor * 100 + patch
+    val (release, trial) = version.split("-essai.").let { it[0] to (it.getOrNull(1)?.toInt() ?: 0) }
+    val (major, minor, patch) = release.split('.').map(String::toInt)
+    return major * 1_000_000 + minor * 10_000 + patch * 100 + trial
 }
 
 android {

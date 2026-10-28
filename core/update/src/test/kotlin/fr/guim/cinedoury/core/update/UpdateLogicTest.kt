@@ -15,8 +15,8 @@ class UpdateLogicTest {
     fun `versions from tags, their code grows with them`() {
         assertEquals(AppVersion(1, 2, 3), AppVersion.parse("v1.2.3"))
         assertEquals(AppVersion(1, 2, 3), AppVersion.parse("1.2.3"))
-        assertEquals(10_203, AppVersion(1, 2, 3).versionCode)
-        assertEquals(10_000, AppVersion(1, 0, 0).versionCode)
+        assertEquals(1_020_300, AppVersion(1, 2, 3).versionCode)
+        assertEquals(1_000_000, AppVersion(1, 0, 0).versionCode)
         assertNull(AppVersion.parse("dev"))
         assertNull(AppVersion.parse("1.2.3-rc1"))
         assertNull(AppVersion.parse("v1.2"))
@@ -31,6 +31,47 @@ class UpdateLogicTest {
             ).map { checkNotNull(AppVersion.parse(it)) }.sorted()
         assertEquals(listOf("1.2.0", "1.2.10", "1.9.9", "1.10.0", "2.0.0"), sorted.map { it.name })
         assertTrue(AppVersion(1, 10, 0).versionCode > AppVersion(1, 9, 99).versionCode)
+    }
+
+    @Test
+    fun `trial builds install over their release, and the next release over them`() {
+        val trial = checkNotNull(AppVersion.parse("v0.9.0-essai.7"))
+        assertEquals(AppVersion(0, 9, 0, trial = 7), trial)
+        assertEquals("0.9.0-essai.7", trial.name)
+        assertEquals(90_007, trial.versionCode)
+        assertTrue(trial.isTrial)
+        // Above the 0.9.0 of the old scheme (900) and of the new one, under the 0.9.1.
+        assertEquals(90_000, AppVersion(0, 9, 0).versionCode)
+        assertEquals(90_100, AppVersion(0, 9, 1).versionCode)
+        assertTrue(AppVersion(0, 9, 0).versionCode > 900)
+        assertTrue(trial > AppVersion(0, 9, 0))
+        assertTrue(trial < AppVersion(0, 9, 1))
+        assertNull(AppVersion.parse("0.9.0-essai.0"))
+        assertNull(AppVersion.parse("0.9.0-essai.100"))
+        assertNull(AppVersion.parse("0.9.0-essai"))
+    }
+
+    @Test
+    fun `a trial build is offered the next release, never another trial`() {
+        val trial = AppVersion(0, 9, 0, trial = 7)
+
+        fun release(version: AppVersion) =
+            Release(
+                version = version,
+                tag = "v${version.name}",
+                title = version.name,
+                publishedAt = null,
+                notes = "",
+                apk = ReleaseAsset("cine-doury-${version.name}.apk", "https://example.com/a.apk", 1),
+                checksum = null,
+                page = null,
+            )
+        assertEquals(
+            UpdateStatus.UpToDate(trial),
+            UpdatePolicy.status(trial, listOf(release(AppVersion(0, 9, 0)), release(AppVersion(0, 9, 0, 9))), null),
+        )
+        val next = release(AppVersion(0, 9, 1))
+        assertEquals(UpdateStatus.Available(next), UpdatePolicy.status(trial, listOf(next), null))
     }
 
     @Test
