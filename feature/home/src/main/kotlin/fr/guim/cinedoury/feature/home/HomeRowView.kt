@@ -70,7 +70,7 @@ internal fun HomeRowView(
         modifier = modifier.testTag("row-${row.key}"),
         verticalArrangement = Arrangement.spacedBy(CineSpacing.rowTitleGap),
     ) {
-        RowTitle(row.title(), Modifier.padding(start = ContentStart))
+        RowTitle(row.title(), Modifier.padding(start = ContentStart).testTag(HomePreview.rowTitle(row.key)))
         FocusPivot(offset = pivot) {
             LazyRow(
                 state = rememberLazyListState(),

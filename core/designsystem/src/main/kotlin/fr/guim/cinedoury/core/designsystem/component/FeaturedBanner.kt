@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
@@ -28,7 +27,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.tv.material3.Text
 import fr.guim.cinedoury.core.designsystem.theme.CineMotion
 import fr.guim.cinedoury.core.designsystem.theme.CineSizes
@@ -49,7 +50,6 @@ data class Featured(
     val key: String,
     val title: String,
     val metadata: String? = null,
-    val tagline: String? = null,
     val backdrop: (@Composable () -> Unit)? = null,
     val logo: (@Composable () -> Unit)? = null,
 )
@@ -99,9 +99,13 @@ fun FeaturedBackdrop(
 
 /**
  * The featured banner of the home (`FONCTIONNALITES.md` § 2): the logo of the focused title (its
- * title in type otherwise), a line of metadata, one line that sells it, and the [actions] (« Lire »,
- * « Fiche »), each always at the same place ([FeaturedText]). It follows the focus like
- * [FeaturedBackdrop]; the [actions] stay out of the fade, so that a button keeps the focus.
+ * title in type otherwise), then the [actions] (« Lire », « Fiche ») with the line of metadata beside
+ * them, each always at the same place. It follows the focus like [FeaturedBackdrop]; the [actions]
+ * stay out of the fade, so that a button keeps the focus.
+ *
+ * Two lines high, so that the rows under it show (essai réel 4): the zone of the logo or of the title
+ * is two lines of « Titre 2 », the line that sold the title is gone and the metadata stand beside the
+ * buttons. Moving from one title to the next changes the content only, in a fade: nothing moves.
  */
 @Composable
 fun FeaturedBanner(
@@ -111,71 +115,73 @@ fun FeaturedBanner(
 ) {
     val (shown, recent) = settledFeatured(featured)
     Column(
-        modifier = modifier.width(CineSizes.heroTextWidth),
-        verticalArrangement = Arrangement.spacedBy(CineSpacing.s),
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(CineSpacing.xs),
     ) {
         Crossfade(
             targetState = shown,
             animationSpec = CineMotion.fade<Float>(CineMotion.BACKDROP_FADE_MILLIS),
-            label = "featured-text",
+            modifier = Modifier.width(CineSizes.heroTextWidth),
+            label = "featured-title",
         ) { key ->
-            recent[key]?.let { FeaturedText(it) }
+            recent[key]?.let { FeaturedTitle(it) }
         }
         Row(
-            modifier = Modifier.padding(top = CineSpacing.xs),
             horizontalArrangement = Arrangement.spacedBy(CineSpacing.m),
             verticalAlignment = Alignment.CenterVertically,
-            content = actions,
-        )
-    }
-}
-
-/**
- * The text of the banner on a fixed layout (essai réel 3): the logo or the title in a zone of constant
- * height, aligned at its bottom; the line of metadata and [TAGLINE_LINES] lines of text always take
- * their room, even empty or short. Moving from one title to the next changes the content only, in a
- * fade: nothing above the buttons moves, and neither do the buttons.
- */
-@Composable
-private fun FeaturedText(featured: Featured) {
-    val colors = CineTheme.colors
-    val typography = CineTheme.typography
-    Column(verticalArrangement = Arrangement.spacedBy(CineSpacing.xs)) {
-        Box(
-            modifier = Modifier.fillMaxWidth().height(CineSizes.heroTitleHeight),
-            contentAlignment = Alignment.BottomStart,
         ) {
-            val logo = featured.logo
-            if (logo != null) {
-                Box(
-                    Modifier.sizeIn(maxWidth = CineSizes.logoMax.width, maxHeight = CineSizes.logoMax.height),
-                ) { logo() }
-            } else {
+            actions()
+            Crossfade(
+                targetState = shown,
+                animationSpec = CineMotion.fade<Float>(CineMotion.BACKDROP_FADE_MILLIS),
+                modifier = Modifier.weight(1f),
+                label = "featured-metadata",
+            ) { key ->
                 Text(
-                    text = featured.title,
-                    style = typography.title1,
-                    color = colors.text,
-                    maxLines = 2,
+                    text = recent[key]?.metadata.orEmpty(),
+                    style = CineTheme.typography.caption.tabular(),
+                    color = CineTheme.colors.text2,
+                    minLines = 1,
+                    maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
         }
-        Text(
-            text = featured.metadata.orEmpty(),
-            style = typography.caption.tabular(),
-            color = colors.text2,
-            minLines = 1,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Text(
-            text = featured.tagline.orEmpty(),
-            style = typography.body,
-            color = colors.text,
-            minLines = TAGLINE_LINES,
-            maxLines = TAGLINE_LINES,
-            overflow = TextOverflow.Ellipsis,
-        )
+    }
+}
+
+/**
+ * The height of the zone of the logo or of the title in the banner: [TITLE_LINES] lines of « Titre 2 »
+ * at the text size of the settings, whatever the title (essai réel 3), so that the buttons under it
+ * never move.
+ */
+@Composable
+fun featuredTitleHeight(): Dp =
+    with(LocalDensity.current) {
+        CineTheme.typography.title2.lineHeight
+            .toDp()
+    } * TITLE_LINES
+
+/** The logo, scaled into the zone, or the title on two lines at most, at the bottom of the zone. */
+@Composable
+private fun FeaturedTitle(featured: Featured) {
+    val zone = featuredTitleHeight()
+    Box(
+        modifier = Modifier.fillMaxWidth().height(zone),
+        contentAlignment = Alignment.BottomStart,
+    ) {
+        val logo = featured.logo
+        if (logo != null) {
+            Box(Modifier.sizeIn(maxWidth = CineSizes.logoMax.width, maxHeight = zone)) { logo() }
+        } else {
+            Text(
+                text = featured.title,
+                style = CineTheme.typography.title2,
+                color = CineTheme.colors.text,
+                maxLines = TITLE_LINES,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
 
@@ -210,8 +216,8 @@ private fun Modifier.bannerFade(): Modifier =
 
 private const val RECENT_TITLES = 4
 
-/** The lines of text under the metadata: their room is kept, even for a short one. */
-private const val TAGLINE_LINES = 1
+/** The lines of the title, when there is no logo. */
+private const val TITLE_LINES = 2
 private const val BANNER_SIDE_ALPHA = 0.92f
 private const val BANNER_SIDE_EXTENT = 0.6f
 

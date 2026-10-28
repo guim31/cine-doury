@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
@@ -50,6 +49,7 @@ import fr.guim.cinedoury.core.designsystem.component.MessagePanel
 import fr.guim.cinedoury.core.designsystem.component.PrimaryButton
 import fr.guim.cinedoury.core.designsystem.component.SecondaryButton
 import fr.guim.cinedoury.core.designsystem.component.SkeletonLine
+import fr.guim.cinedoury.core.designsystem.component.featuredTitleHeight
 import fr.guim.cinedoury.core.designsystem.component.rememberCineFocus
 import fr.guim.cinedoury.core.designsystem.theme.CineSizes
 import fr.guim.cinedoury.core.designsystem.theme.CineSpacing
@@ -63,7 +63,6 @@ import fr.guim.cinedoury.core.ui.RemoteIndicator
 import fr.guim.cinedoury.core.ui.SourceErrorPanel
 import fr.guim.cinedoury.core.ui.ambience
 import fr.guim.cinedoury.core.ui.cardTitle
-import fr.guim.cinedoury.core.ui.catchLine
 import fr.guim.cinedoury.core.ui.imageSource
 import fr.guim.cinedoury.core.ui.metadataLine
 import fr.guim.cinedoury.core.ui.rememberArt
@@ -122,12 +121,15 @@ object HomePreview {
         row: String,
         index: Int,
     ) = "card-$row-$index"
+
+    /** The title of a row (essai réel 4: it must not move with the focus). */
+    fun rowTitle(row: String) = "row-title-$row"
 }
 
 /**
  * The home (`UI.md` § 8, `FONCTIONNALITES.md` § 2): the ambient backdrop and the picture of the
- * focused title behind everything, the featured banner on 60 % of the screen, then the rows. The
- * banner follows the focus, never a carousel.
+ * focused title behind everything, the featured banner at the top, then the rows on the rest of the
+ * screen. The banner follows the focus, never a carousel.
  *
  * « Retour »: first back to the top of the page, then into the rail, then « Quitter Ciné Doury ? ».
  *
@@ -194,12 +196,10 @@ fun HomeScreen(
     Box(modifier = modifier.fillMaxSize()) {
         HomeAmbience(featuredItem)
         BoxWithConstraints(Modifier.fillMaxSize()) {
-            val rowsArea = homeRowsHeight()
             if (banner) {
-                // The banner stands still (essai réel 3): fixed at the top, the rows scroll in the area
-                // under it, one row of posters high, the focused row at its top. In the list, the
-                // banner moved up and down with every row the focus went to.
-                val heroHeight = (maxHeight - rowsArea).coerceAtLeast(CineSpacing.none)
+                // The banner stands still (essai réel 3), at its own height at the top: the rows take
+                // the rest of the screen, so that the next ones show under the focused one (essai réel
+                // 4). The focused row goes to the top of their area, its cards under its title.
                 HomeBackdrop(
                     featuredItem,
                     sources,
@@ -215,13 +215,11 @@ fun HomeScreen(
                         play = play,
                         modifier =
                             Modifier
-                                .height(heroHeight)
                                 .testTag(HomePreview.BANNER)
                                 .onFocusChanged {
                                     if (it.hasFocus) focusedRow = null
                                 },
                     )
-                    // The cards of the focused row just under its title, at the top of the area.
                     FocusPivot(offset = rowCardsTop()) {
                         HomeRows(
                             state = state,
@@ -374,20 +372,6 @@ private fun rowCardsTop(): Dp =
             .toDp()
     } + CineSpacing.rowTitleGap
 
-/**
- * The area of the rows under the banner: one row of posters, its title over it and two lines of
- * caption under it, with the room of the focus treatment below. At the text size of the settings.
- */
-@Composable
-private fun homeRowsHeight(): Dp {
-    val caption =
-        with(LocalDensity.current) {
-            CineTheme.typography.caption.lineHeight
-                .toDp()
-        }
-    return rowCardsTop() + CineSizes.posterNormal.height + CineSpacing.s + caption * 2 + CineSizes.focusRoom
-}
-
 /** The ambient backdrop of the focused title. */
 @Composable
 private fun HomeAmbience(item: () -> MediaItem?) {
@@ -414,14 +398,17 @@ private fun Hero(
     play: FocusRequester,
     modifier: Modifier = Modifier,
 ) {
-    // Its content at the bottom, at its own height: taller than the room left above the rows (a large
-    // text), it goes up under the top of the screen, never squeezed (essai réel 3).
+    // At its own height, under the top of the screen: the same for every title (FeaturedBanner).
     Box(
         modifier =
             modifier
                 .fillMaxWidth()
-                .padding(start = ContentStart, bottom = CineSpacing.s)
-                .wrapContentHeight(align = Alignment.Bottom, unbounded = true),
+                .padding(
+                    start = ContentStart,
+                    top = CineSpacing.safeVertical,
+                    end = CineSpacing.safeHorizontal,
+                    bottom = CineSpacing.s,
+                ),
     ) {
         val error = state.error
         val rows = state.rows
@@ -453,7 +440,10 @@ private fun Hero(
 
             else -> {
                 val item = focused()
-                FeaturedBanner(featured = item?.toFeatured(sources), modifier = Modifier.align(Alignment.BottomStart)) {
+                FeaturedBanner(
+                    featured = item?.toFeatured(sources),
+                    modifier = Modifier.fillMaxWidth().align(Alignment.BottomStart),
+                ) {
                     if (item != null) {
                         PrimaryButton(
                             text =
@@ -488,19 +478,23 @@ private fun Hero(
 
 @Composable
 private fun HeroSkeleton(modifier: Modifier = Modifier) {
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(CineSpacing.s)) {
-        SkeletonLine(CineSizes.heroTextWidth * HERO_SKELETON_TITLE, Modifier.height(CineSizes.buttonHeight))
-        SkeletonLine(CineSizes.heroTextWidth / 2)
-        SkeletonLine(CineSizes.heroTextWidth * HERO_SKELETON_TAGLINE)
-        Row(Modifier.padding(top = CineSpacing.xs), horizontalArrangement = Arrangement.spacedBy(CineSpacing.m)) {
+    // The room of the banner (FeaturedBanner): the zone of the title, then the buttons and the metadata.
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(CineSpacing.xs)) {
+        Box(Modifier.height(featuredTitleHeight()), contentAlignment = Alignment.BottomStart) {
+            SkeletonLine(CineSizes.heroTextWidth * HERO_SKELETON_TITLE, Modifier.height(CineSizes.buttonHeight))
+        }
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(CineSpacing.m),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             SkeletonLine(CineSizes.avatarLarge, Modifier.height(CineSizes.buttonHeight))
             SkeletonLine(CineSizes.avatarLarge, Modifier.height(CineSizes.buttonHeight))
+            SkeletonLine(CineSizes.heroTextWidth / 2)
         }
     }
 }
 
 private const val HERO_SKELETON_TITLE = 0.7f
-private const val HERO_SKELETON_TAGLINE = 0.9f
 
 /** The banner of [this]: its backdrop (or its series'), its logo, its line of metadata. */
 @Composable
@@ -511,7 +505,6 @@ private fun MediaItem.toFeatured(sources: ImageSources): Featured {
         key = id.value,
         title = cardTitle,
         metadata = metadataLine(),
-        tagline = catchLine,
         backdrop = backdrop,
         logo = logo,
     )
