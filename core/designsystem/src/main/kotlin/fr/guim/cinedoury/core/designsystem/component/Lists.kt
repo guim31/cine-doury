@@ -183,6 +183,9 @@ private fun SemanticsPropertyReceiver.describe(state: RowState?) {
  * A row whose value goes down with ← and up with → (− and + at its sides, dimmed at the ends), at
  * one step per press and a few per second while the key is held; OK does nothing more. The size of
  * the subtitles (`UI.md` § 8). An optional [description] under the title (a page of settings, J7).
+ *
+ * @param vertical ↓ and ↑ step instead (▲ over ▼ at the right, the title over the value), and ← →
+ * move to the next element: steppers side by side, in the bar of the subtitles (essai réel 3).
  */
 @Composable
 fun StepperRow(
@@ -196,12 +199,18 @@ fun StepperRow(
     focusRequester: FocusRequester? = null,
     focus: CineFocus = rememberCineFocus(),
     description: String? = null,
+    vertical: Boolean = false,
 ) {
     val colors = CineTheme.colors
     val focused = focus.isFocused
     val primary = if (focused) colors.background else colors.text
     val secondary = if (focused) colors.background else colors.text2
     val dimmed = if (focused) colors.text2 else colors.text3
+    val down = if (vertical) Key.DirectionDown else Key.DirectionLeft
+    val up = if (vertical) Key.DirectionUp else Key.DirectionRight
+    // The key pressed here: one held since before the row had the focus (the player resizes its
+    // subtitles with ↑ held, then the bar takes the focus) goes on to whoever took its press.
+    val pressed = remember { arrayOfNulls<Key>(1) }
     Row(
         modifier =
             modifier
@@ -210,15 +219,17 @@ fun StepperRow(
                 .onPreviewKeyEvent { event ->
                     val forward =
                         when (event.key) {
-                            Key.DirectionLeft -> false
-                            Key.DirectionRight -> true
+                            down -> false
+                            up -> true
                             else -> return@onPreviewKeyEvent false
                         }
-                    if (event.type == KeyEventType.KeyDown &&
-                        event.nativeKeyEvent.repeatCount % STEP_EVERY_REPEAT == 0
-                    ) {
-                        onStep(forward)
+                    val repeat = event.nativeKeyEvent.repeatCount
+                    when {
+                        event.type == KeyEventType.KeyDown && repeat == 0 -> pressed[0] = event.key
+                        pressed[0] != event.key -> return@onPreviewKeyEvent false
+                        event.type == KeyEventType.KeyUp -> pressed[0] = null
                     }
+                    if (event.type == KeyEventType.KeyDown && repeat % STEP_EVERY_REPEAT == 0) onStep(forward)
                     true
                 }.cineFocusable(focus, RowShape, CineScale.FIELD, {}, RowOutlineShape)
                 .background(if (focused) colors.text else colors.surface1)
@@ -229,40 +240,63 @@ fun StepperRow(
         if (icon != null) {
             Icon(icon, contentDescription = null, tint = secondary, modifier = Modifier.size(CineSizes.icon))
         }
-        if (description == null) {
-            Text(text = title, style = CineTheme.typography.label, color = primary, maxLines = 1)
-        } else {
+        if (vertical) {
+            // The title over the value, ▲ over ▼ at the right: three side by side in a bar, each keeps
+            // its whole value (« En bas »), where − value + on one line did not fit.
             Column(Modifier.weight(1f)) {
-                Text(text = title, style = CineTheme.typography.label, color = primary, maxLines = 1)
-                Text(
-                    text = description,
-                    style = CineTheme.typography.caption,
-                    color = secondary,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
+                Text(text = title, style = CineTheme.typography.caption, color = secondary, maxLines = 1)
+                Text(text = value, style = CineTheme.typography.label.tabular(), color = primary, maxLines = 1)
+            }
+            Column {
+                Icon(
+                    CineIcons.Up,
+                    contentDescription = null,
+                    tint = if (canIncrease) secondary else dimmed,
+                    modifier = Modifier.size(CineSizes.icon),
+                )
+                Icon(
+                    CineIcons.Down,
+                    contentDescription = null,
+                    tint = if (canDecrease) secondary else dimmed,
+                    modifier = Modifier.size(CineSizes.icon),
                 )
             }
+        } else {
+            if (description == null) {
+                Text(text = title, style = CineTheme.typography.label, color = primary, maxLines = 1)
+            } else {
+                Column(Modifier.weight(1f)) {
+                    Text(text = title, style = CineTheme.typography.label, color = primary, maxLines = 1)
+                    Text(
+                        text = description,
+                        style = CineTheme.typography.caption,
+                        color = secondary,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+            Icon(
+                CineIcons.Remove,
+                contentDescription = null,
+                tint = if (canDecrease) secondary else dimmed,
+                modifier = Modifier.size(CineSizes.icon),
+            )
+            Text(
+                text = value,
+                style = CineTheme.typography.body.tabular(),
+                color = primary,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                modifier = Modifier.widthIn(min = CineSizes.stepperValueWidth),
+            )
+            Icon(
+                CineIcons.Add,
+                contentDescription = null,
+                tint = if (canIncrease) secondary else dimmed,
+                modifier = Modifier.size(CineSizes.icon),
+            )
         }
-        Icon(
-            CineIcons.Remove,
-            contentDescription = null,
-            tint = if (canDecrease) secondary else dimmed,
-            modifier = Modifier.size(CineSizes.icon),
-        )
-        Text(
-            text = value,
-            style = CineTheme.typography.body.tabular(),
-            color = primary,
-            textAlign = TextAlign.Center,
-            maxLines = 1,
-            modifier = Modifier.widthIn(min = CineSizes.stepperValueWidth),
-        )
-        Icon(
-            CineIcons.Add,
-            contentDescription = null,
-            tint = if (canIncrease) secondary else dimmed,
-            modifier = Modifier.size(CineSizes.icon),
-        )
     }
 }
 

@@ -52,6 +52,7 @@ data class RailState(
  * (with its picture) and Réglages at the bottom. It opens over the screen when it takes the focus.
  *
  * @param focusRequester attached to the [selected] entry, for the screen to open the rail.
+ * @param onContentFocus gives the focus back to the content, where it was left, on → from the open rail.
  * @param previewFocused draws that entry focused and the rail open, for screenshots.
  */
 @Composable
@@ -61,6 +62,7 @@ fun AppRail(
     onNavigate: (RailTarget) -> Unit,
     modifier: Modifier = Modifier,
     focusRequester: FocusRequester? = null,
+    onContentFocus: (() -> Boolean)? = null,
     previewFocused: RailTarget? = null,
 ) {
     val targets =
@@ -99,6 +101,7 @@ fun AppRail(
         selectedIndex = all.indexOf(selected),
         onSelect = { index -> all.getOrNull(index)?.let(onNavigate) },
         focusRequester = focusRequester,
+        onContentFocus = onContentFocus,
         previewFocusedIndex = previewFocused?.let { all.indexOf(it) }?.takeIf { it >= 0 },
         modifier = modifier.testTag("rail"),
     )
@@ -131,5 +134,21 @@ val LibraryIcon.vector: ImageVector
             LibraryIcon.OnlineVideo -> CineIcons.OnlineVideo
             LibraryIcon.Kids -> CineIcons.Kids
             LibraryIcon.Collections -> CineIcons.Collections
+            LibraryIcon.HomeVideos -> CineIcons.HomeVideos
+            LibraryIcon.Nature -> CineIcons.Nature
+            LibraryIcon.MusicVideos -> CineIcons.MusicVideos
+            LibraryIcon.Comedy -> CineIcons.Comedy
+            LibraryIcon.TvPrograms -> CineIcons.TvPrograms
+            LibraryIcon.Learning -> CineIcons.Learning
+            LibraryIcon.Cooking -> CineIcons.Cooking
+            LibraryIcon.Holidays -> CineIcons.Holidays
+            LibraryIcon.Horror -> CineIcons.Horror
+            LibraryIcon.SciFi -> CineIcons.SciFi
+            LibraryIcon.Action -> CineIcons.Action
+            LibraryIcon.Romance -> CineIcons.Favorite
+            LibraryIcon.Classics -> CineIcons.Classics
+            LibraryIcon.World -> CineIcons.World
+            LibraryIcon.Uhd -> CineIcons.Uhd
+            LibraryIcon.Favorites -> CineIcons.Star
             LibraryIcon.Folder -> CineIcons.Folder
         }

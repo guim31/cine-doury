@@ -178,6 +178,7 @@ private fun SettingLine(
                 title = item.title,
                 description = item.description,
                 value = item.options.getOrNull(item.selected),
+                icon = item.icon,
                 onClick = { if (item.enabled) onOpen() },
                 focusRequester = requester,
                 focus = rememberCineFocus(tag),
@@ -237,6 +238,7 @@ private fun ChoicePanel(
                 val tag = SettingsPagePreview.option(index)
                 ListRow(
                     title = option,
+                    icon = choice.optionIcons.getOrNull(index),
                     trailingIcon = if (index == choice.selected) CineIcons.Watched else null,
                     onClick = { onChoose(index) },
                     focusRequester = if (index == choice.selected) current else null,

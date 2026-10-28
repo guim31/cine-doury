@@ -27,7 +27,7 @@
     <string name="theme_libraries">Bibliothèques</string>
     <string name="theme_libraries_description">Ordre et visibilité dans le menu, icônes, index local.</string>
     <string name="theme_appearance">Apparence</string>
-    <string name="theme_appearance_description">Sombre ou noir OLED, animations réduites, taille du texte.</string>
+    <string name="theme_appearance_description">Sombre ou noir OLED, animations réduites, taille du texte et de l\'interface.</string>
     <string name="theme_profile">Profil</string>
     <string name="theme_profile_description">Code PIN, profil au démarrage, changer de profil.</string>
     <string name="theme_network">Réseau</string>
@@ -171,6 +171,22 @@
     <string name="icon_online">Vidéos en ligne</string>
     <string name="icon_kids">Famille et enfants</string>
     <string name="icon_collections">Collections</string>
+    <string name="icon_home_videos">Vidéos de famille</string>
+    <string name="icon_nature">Nature</string>
+    <string name="icon_music_videos">Clips musicaux</string>
+    <string name="icon_comedy">Humour</string>
+    <string name="icon_tv_programs">Émissions</string>
+    <string name="icon_learning">Cours et conférences</string>
+    <string name="icon_cooking">Cuisine</string>
+    <string name="icon_holidays">Fêtes</string>
+    <string name="icon_horror">Horreur</string>
+    <string name="icon_scifi">Science-fiction</string>
+    <string name="icon_action">Action et aventure</string>
+    <string name="icon_romance">Romance</string>
+    <string name="icon_classics">Classiques</string>
+    <string name="icon_world">Cinéma du monde</string>
+    <string name="icon_uhd">4K</string>
+    <string name="icon_favorites">Coups de cœur</string>
     <string name="icon_folder">Dossier</string>
     <plurals name="films_count">
         <item quantity="one">%1$d film</item>
@@ -196,6 +212,11 @@
     <string name="text_normal">Normale</string>
     <string name="text_large">Grande</string>
     <string name="text_larger">Très grande</string>
+    <string name="appearance_interface">Taille de l\'interface</string>
+    <string name="appearance_interface_description">Plus compacte, chaque écran montre davantage d\'affiches et de lignes ; plus grande, tout se lit de plus loin.</string>
+    <string name="interface_very_compact">Très compacte</string>
+    <string name="interface_compact">Compacte</string>
+    <string name="interface_normal">Normale</string>
 
     <!-- Profil -->
     <string name="pin_set">Définir un code PIN</string>

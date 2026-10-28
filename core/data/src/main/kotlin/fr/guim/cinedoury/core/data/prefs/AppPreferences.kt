@@ -27,11 +27,19 @@ enum class TextSize(
     Larger(1.3f),
 }
 
+/**
+ * « Taille de l'interface » (essai réel 3): how much a screen shows, by the width it is laid out on
+ * (`LayoutSize` of the design system, `SPEC.md` § 4.21). Compact by default. « Grande » (`Large`)
+ * was dropped on 28/10: kept on a device, it reads as [Normal].
+ */
+enum class InterfaceSize { VeryCompact, Compact, Normal }
+
 /** « Apparence » of this device (`SPEC.md` § 4.17). */
 data class Appearance(
     val theme: ThemeChoice = ThemeChoice.Dark,
     val reducedMotion: Boolean = false,
     val textSize: TextSize = TextSize.Normal,
+    val interfaceSize: InterfaceSize = InterfaceSize.Compact,
 )
 
 /** Which address of the server the app tries at start (`SPEC.md` § 4.7 and § 4.17). */
@@ -107,6 +115,7 @@ class AppPreferences(
                     theme = enumOf(prefs[THEME], ThemeChoice.Dark),
                     reducedMotion = prefs[REDUCED_MOTION] ?: false,
                     textSize = enumOf(prefs[TEXT_SIZE], TextSize.Normal),
+                    interfaceSize = interfaceSizeOf(prefs[INTERFACE_SIZE]),
                 )
             }.distinctUntilChanged()
 
@@ -118,11 +127,13 @@ class AppPreferences(
                         enumOf(prefs[THEME], ThemeChoice.Dark),
                         prefs[REDUCED_MOTION] ?: false,
                         enumOf(prefs[TEXT_SIZE], TextSize.Normal),
+                        interfaceSizeOf(prefs[INTERFACE_SIZE]),
                     ),
                 )
             prefs[THEME] = next.theme.name
             prefs[REDUCED_MOTION] = next.reducedMotion
             prefs[TEXT_SIZE] = next.textSize.name
+            prefs[INTERFACE_SIZE] = next.interfaceSize.name
         }
     }
 
@@ -192,6 +203,10 @@ class AppPreferences(
         )
     }
 
+    /** The size kept on this device; « Grande », dropped, becomes « Normale ». */
+    private fun interfaceSizeOf(name: String?): InterfaceSize =
+        if (name == DROPPED_LARGE) InterfaceSize.Normal else enumOf(name, InterfaceSize.Compact)
+
     private inline fun <reified T : Enum<T>> enumOf(
         name: String?,
         default: T,
@@ -208,6 +223,8 @@ class AppPreferences(
         private val THEME = stringPreferencesKey("theme")
         private val REDUCED_MOTION = booleanPreferencesKey("reduced_motion")
         private val TEXT_SIZE = stringPreferencesKey("text_size")
+        private val INTERFACE_SIZE = stringPreferencesKey("interface_size")
+        private const val DROPPED_LARGE = "Large"
         private val NETWORK = stringPreferencesKey("network_mode")
         private val DEVICE_NAME = stringPreferencesKey("device_name")
         private val LAST_UPDATE_CHECK = longPreferencesKey("last_update_check")

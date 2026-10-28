@@ -7,6 +7,7 @@ import fr.guim.cinedoury.core.data.StartupMode
 import fr.guim.cinedoury.core.data.index.IndexStatus
 import fr.guim.cinedoury.core.data.library.LibraryView
 import fr.guim.cinedoury.core.data.library.icon
+import fr.guim.cinedoury.core.data.prefs.InterfaceSize
 import fr.guim.cinedoury.core.data.prefs.NetworkMode
 import fr.guim.cinedoury.core.data.prefs.TextSize
 import fr.guim.cinedoury.core.data.prefs.ThemeChoice
@@ -28,6 +29,7 @@ import fr.guim.cinedoury.core.model.SubtitlePosition
 import fr.guim.cinedoury.core.model.SubtitleScale
 import fr.guim.cinedoury.core.ui.toDateText
 import fr.guim.cinedoury.core.ui.toTimeText
+import fr.guim.cinedoury.core.ui.vector
 import fr.guim.cinedoury.core.update.AppVersion
 import fr.guim.cinedoury.feature.player.label
 import fr.guim.cinedoury.feature.player.scaleLabel
@@ -747,6 +749,9 @@ private fun libraryItems(
                         },
                     selected = options.indexOf(chosen),
                     onSelect = { actions.setIcon(library.id, options[it]) },
+                    // Each icon with its name; « Automatique » with the one the name gives.
+                    optionIcons = options.map { (it ?: automatic).vector },
+                    icon = (chosen ?: automatic).vector,
                 ),
             )
         }
@@ -820,6 +825,22 @@ internal fun LibraryIcon.label(): String =
             LibraryIcon.OnlineVideo -> R.string.icon_online
             LibraryIcon.Kids -> R.string.icon_kids
             LibraryIcon.Collections -> R.string.icon_collections
+            LibraryIcon.HomeVideos -> R.string.icon_home_videos
+            LibraryIcon.Nature -> R.string.icon_nature
+            LibraryIcon.MusicVideos -> R.string.icon_music_videos
+            LibraryIcon.Comedy -> R.string.icon_comedy
+            LibraryIcon.TvPrograms -> R.string.icon_tv_programs
+            LibraryIcon.Learning -> R.string.icon_learning
+            LibraryIcon.Cooking -> R.string.icon_cooking
+            LibraryIcon.Holidays -> R.string.icon_holidays
+            LibraryIcon.Horror -> R.string.icon_horror
+            LibraryIcon.SciFi -> R.string.icon_scifi
+            LibraryIcon.Action -> R.string.icon_action
+            LibraryIcon.Romance -> R.string.icon_romance
+            LibraryIcon.Classics -> R.string.icon_classics
+            LibraryIcon.World -> R.string.icon_world
+            LibraryIcon.Uhd -> R.string.icon_uhd
+            LibraryIcon.Favorites -> R.string.icon_favorites
             LibraryIcon.Folder -> R.string.icon_folder
         },
     )
@@ -872,6 +893,23 @@ private fun appearanceItems(
                 )
             },
         ) { value -> actions.updateAppearance { it.copy(textSize = value) } },
+        choice(
+            "interface-size",
+            stringResource(R.string.appearance_interface),
+            stringResource(R.string.appearance_interface_description),
+            InterfaceSize.entries,
+            appearance.interfaceSize,
+            InterfaceSize.Compact,
+            {
+                stringResource(
+                    when (it) {
+                        InterfaceSize.VeryCompact -> R.string.interface_very_compact
+                        InterfaceSize.Compact -> R.string.interface_compact
+                        InterfaceSize.Normal -> R.string.interface_normal
+                    },
+                )
+            },
+        ) { value -> actions.updateAppearance { it.copy(interfaceSize = value) } },
     )
 }
 

@@ -13,6 +13,7 @@ import fr.guim.cinedoury.core.data.SessionManager
 import fr.guim.cinedoury.core.data.di.dataModule
 import fr.guim.cinedoury.core.data.security.TokenCipher
 import fr.guim.cinedoury.core.designsystem.theme.CineTheme
+import fr.guim.cinedoury.core.designsystem.theme.LayoutSize
 import fr.guim.cinedoury.core.designsystem.theme.ThemeVariant
 import fr.guim.cinedoury.core.model.ServerInfo
 import fr.guim.cinedoury.core.playback.playbackModule
@@ -127,7 +128,8 @@ class J2FlowTest {
     @Test
     fun `back from a details screen lands on the card left, on the home and in a library`() {
         compose.setTvContent {
-            CineTheme(ThemeVariant.Dark) {
+            // Five columns in the grid of the library, in « Normale ».
+            CineTheme(ThemeVariant.Dark, layoutSize = LayoutSize.Normal) {
                 CineApp(ThemeVariant.Dark, onToggleVariant = {}, showCatalog = false, navigator = Navigator(Route.Home))
             }
         }
@@ -153,13 +155,13 @@ class J2FlowTest {
         focusable(LibraryPreview.item(0)).assertIsFocused()
         press(Key.DirectionRight, times = 2)
         press(Key.DirectionDown)
-        val item = focusable(LibraryPreview.item(6))
+        val item = focusable(LibraryPreview.item(7))
         item.assertIsFocused()
         press(Key.DirectionCenter)
         waitForDetails()
         compose.pressBack()
-        waitForTag(LibraryPreview.item(6))
-        focusable(LibraryPreview.item(6)).assertIsFocused()
+        waitForTag(LibraryPreview.item(7))
+        focusable(LibraryPreview.item(7)).assertIsFocused()
     }
 
     /** The details screen (J3). */

@@ -24,6 +24,7 @@ son domaine :
 | Fluidité (partie performances du J8) : APK optimisé (R8, Baseline et Startup Profiles), `:benchmark` (Macrobenchmark, profils), mise en page à 960 × 540 dp sur toute TV (Shield en 4K), rail, recompositions | terminé, fusionné (§ 4.16 ; captures dans `docs/screenshots/perf/` et `j6/`) | [#10](https://github.com/guim31/cine-doury/pull/10) |
 | J7 — Réglages et mise à jour (pages de réglages P0, mise à jour proposée depuis les releases, publication signée, rapport de diagnostic) | terminé, fusionné (§ 4.17 à 4.19 ; captures dans `docs/screenshots/j7/`, numéros 150 à 174) | [#11](https://github.com/guim31/cine-doury/pull/11) |
 | J8 — Finitions 1.0 (coût GPU, petits appareils, profils et mesures, accessibilité, captures 4K et grand texte, 20 gestes au canapé, 1.0.0 prête à étiqueter) | prêt, en revue (§ 4.20 ; captures dans `docs/screenshots/j8/`, numéros 180 à 198 ; CI complète verte sur `24243cb`) | [#13](https://github.com/guim31/cine-doury/pull/13) |
+| Essai réel 3 (27/10/2026, Shield en 4K, v0.7.0) : → depuis le rail ouvert, « Taille de l'interface » (Compacte par défaut), commandes du lecteur plus petites, barre des sous-titres à trois réglages, barre de la bibliothèque, bandeau de l'accueil fixe ; deuxième passage (28/10) : bandeau au-dessus des rangées, tailles Très compacte / Compacte / Normale, 27 icônes de bibliothèque | en cours (§ 4.21 ; captures dans `docs/screenshots/r3/`, numéros 200 à 208, et « avant ») | [#14](https://github.com/guim31/cine-doury/pull/14) |
 
 *(Chaque jalon met à jour ce tableau et ajoute ses contrats au § 4.)*
 
@@ -1468,7 +1469,7 @@ focalisée ; OK choisit, « Retour » referme et rend le focus à la ligne. ← 
 | Intro et générique | intro et récapitulatif (Bouton), épisode suivant automatique (oui), compte à rebours (10 s), « toujours là ? » (après 3 épisodes) | profil, sur l'appareil | lecteur |
 | Accueil et navigation | « Personnaliser l'accueil » (rangées, ordre, bibliothèques, fenêtre, § 4.9), bandeau à la une (oui), vue par défaut (Affiches), titres sous les affiches (non), indicateur « non vu » (oui) | profil, sur l'appareil (DataStore `settings`) | bandeau : sans lui, les rangées partent du haut, focus sur la première ; vue : une bibliothèque jamais ouverte s'ouvre dans cette vue ; titres et « non vu » : `CardPreferences` du thème, sur toutes les cartes |
 | Bibliothèques | place dans le menu (1re, 2e… ou masquée), icône, index local | ordre : **profil, sur le serveur** (`OrderedViews`) ; masquée : profil, sur l'appareil (`rail_hidden`) ; icône et index : serveur, sur l'appareil | le rail et les rangées de l'accueil suivent l'ordre du serveur (§ 4.9) |
-| Apparence | thème (Sombre), animations réduites (non), taille du texte (Normale ; Grande 115 %, Très grande 130 %) | appareil | `CineTheme(variant, reducedMotion, textScale)` ; animations réduites aussi quand le système coupe les siennes (`CineMotion.isReduced`) |
+| Apparence | thème (Sombre), animations réduites (non), taille du texte (Normale ; Grande 115 %, Très grande 130 %), taille de l'interface (Compacte ; Très compacte, Normale, § 4.21) | appareil | `CineTheme(variant, reducedMotion, textScale, layoutSize = …)` ; animations réduites aussi quand le système coupe les siennes (`CineMotion.isReduced`) |
 | Profil | code PIN, changer de profil, se déconnecter ; au démarrage (Choix du profil, appareil) | § 4.7 | § 4.7 |
 | Réseau | adresses locale et distante, basculement (Locale puis distante ; Locale seulement ; Distante seulement), oublier le serveur | appareil | `AddressResolver.resolve(server, mode)`, au démarrage |
 | Appareil | nom dans Jellyfin (celui de la télévision), mise à jour (§ 4.18), à propos (licences) | appareil | le nom part dans `Authorization` (`Device="…"`) dès la requête suivante, flux du lecteur compris : la liste des appareils du serveur le prend aussitôt ; une session déjà ouverte garde le nom de son ouverture |
@@ -1799,6 +1800,117 @@ mise à jour, passage depuis un APK de débogage). L'étiquette `v1.0.0` est pos
 - Les temps de `ci/couch-gestures.sh` comptent l'envoi des touches par `adb` (0,1 à 0,3 s chacune) dans
   le total ; la réponse (dernier appui → écran) est la mesure à comparer.
 - Le retour d'une fiche ouverte par « Fiche » du bandeau rend le focus à « Lire », pas à « Fiche ».
+
+### 4.21 Essai réel 3 : la Shield au canapé (27/10/2026)
+
+Six retours du mainteneur sur la v0.7.0 (Shield, Android 11, écran 4K, mise en page de § 4.16).
+
+1. **→ depuis le rail ouvert ne faisait rien** sur l'accueil. Ouvert, le rail (240 dp) recouvre le
+   début du contenu : la recherche 2D vers la droite ne trouvait rien, ou un élément caché sous lui.
+   `NavigationRail` (et `AppRail`) prend désormais `onContentFocus` : → y rend le focus au contenu
+   et referme le rail. Chaque écran le rend **où il l'avait laissé**, par la mémoire qu'il avait
+   déjà : l'accueil à la rangée quittée (qui rend sa carte), à défaut à « Lire » ; la bibliothèque à
+   sa grille (qui rend sa case) ; la recherche à la rangée de résultats quittée, à défaut à la touche
+   quittée du clavier (un `focusRestorer` sur le clavier). Pas de `focusRestorer` sur tout l'écran :
+   il interceptait aussi les demandes de focus de l'écran (retour d'une fiche : « Lire » au lieu de
+   la carte), et un `focusGroup` sur la barre et la grille faisait arrêter ← sur « Tout » au lieu du
+   rail. Test : `R3NavigationTest` (accueil, bibliothèque, recherche).
+2. **« Taille de l'interface »** (Apparence ; Très compacte, Compacte, Normale ; appareil, DataStore
+   `settings`, clé `interface_size`). **Écart à `UI.md` § 2 et § 5, demandé par le mainteneur le
+   27/10** : « tout est trop gros », il veut voir plus d'éléments. La largeur de l'écran de référence
+   devient un paramètre (`LayoutSize`, `TvLayoutDensity(size)`), et **toute** la mise en page suit
+   (texte, cartes, marges, rail), pas seulement le texte ; les jetons du design system restent pensés
+   en dp sur l'écran de `UI.md`. Valeurs :
+   | Taille | Écran de référence | Échelle par rapport à `UI.md` | Corps / minimum sur un 1080p |
+   |---|---|---|---|
+   | Très compacte (28/10) | 1 440 × 810 dp, texte × 1,1 | 67 % (texte 73 %) | 29 px / 21 px |
+   | **Compacte** (défaut) | 1 200 × 675 dp | 80 % | 32 px / 22 px |
+   | Normale | 1 080 × 608 dp | 89 % | 36 px / 25 px |
+   Pourquoi 1 200 dp par défaut : c'est la plus compacte qui reste lisible à 3 m sans retouche. Le
+   plus petit texte (« Minimum absolu », 14 sp) y fait 22 px sur un 1080p, un peu sous les 24 px que
+   Google donne pour une TV (12 sp à 2 px par dp), et seuls badges et pastilles l'emploient ; le
+   corps (20 sp) fait 32 px. Une affiche normale passe de 300 à 240 px de large sur un 1080p : la
+   grille d'une bibliothèque montre 6 colonnes (5 en Normale, 7 en Très compacte, 4 en 0.7), et
+   l'écran gagne 25 % de hauteur (675 dp).
+   **Deuxième passage (28/10, après l'essai de `d3a2d45`)** : « Grande » (960 dp, celle de `UI.md`
+   et de la 0.7) n'avait aucun intérêt pour le mainteneur, qui voulait plus compact encore. Elle est
+   retirée ; une valeur « Grande » gardée sur l'appareil se lit « Normale » (`AppPreferencesTest`).
+   « Très compacte » met la page sur 1 440 dp ; à cette échelle seule, le plus petit texte
+   tomberait à 19 px, en dessous de ce qui se lit à 3 m : son texte est donc agrandi de 10 %
+   (`LayoutSize.textScale`, multiplié à « Taille du texte »), 21 px au minimum et 29 px pour le
+   corps, quand cartes, marges et images restent à 67 %.
+   « Taille du texte » (§ 4.17) reste à part : elle multiplie le texte dans la taille choisie. La
+   hauteur de l'écran suit la largeur (16:9). Images : demandées à la taille du 1080p au plus quelle
+   que soit la taille (`LocalImageScale`, 1 920 px ÷ largeur de la fenêtre en px), plus d'après la
+   densité. Les captures de référence suivent la valeur par défaut (Compacte) ; les trois tailles :
+   captures 200 à 203 (accueil, bibliothèque, fiche, lecteur), et `avant-*` / `apres-*` dans
+   `docs/screenshots/r3/` (les mêmes écrans en 0.7 et dans la taille par défaut).
+   `TvLayoutScreenshotTest` (4K contre 1080p) tolère 2,5 % de pixels différents au lieu de 1 % : à
+   1,6 px par dp, les bords tombent entre deux pixels en 1080p et pas en 4K (2 % mesurés) ; une carte
+   déplacée en couvre 4 %. Les tests de navigation qui comptent des colonnes passent
+   `LayoutSize.Normal` (5 colonnes). L'accueil met désormais son bandeau au-dessus d'une zone de
+   rangées de hauteur fixe (point 6) : il reste en haut dans toutes les tailles. Test :
+   `R3NavigationTest` (largeur mise en page dans chaque taille).
+3. **Lecteur** : boutons ronds de 40 dp (au lieu de 52) et icônes de 20 dp (au lieu de 24)
+   (`CineSizes.playerRoundButton`, `playerIcon`, paramètre `small` de `RoundIconButton`) ; « Passer
+   l'intro » en pastille de 40 dp, texte en Légende (`playerButtonHeight`, `PrimaryButton(small)`) ;
+   barre de progression de 4 dp (8 au focus) et curseur de 16 dp (6, 10 et 20 auparavant). Captures
+   203 et 205.
+4. **Barre des sous-titres** : ← → ne réglaient que la taille, position et fond étaient
+   inatteignables. Trois réglages côte à côte (Taille, Position, Fond), chacun un `StepperRow` en
+   mode `vertical` : **← → passent d'un réglage à l'autre, ↑ ↓ changent la valeur du réglage
+   focalisé**, aussitôt (↑ : plus grand, plus haut, fond plus marqué ; ▲ ▼ estompés aux bouts). Choix : sur une TV, ← → déplacent le focus partout ailleurs dans
+   l'appli ; ↑ ↓ sont libres dans une barre d'une seule ligne, et ce sont déjà les touches du
+   raccourci de la taille. Les raccourcis ↑ ↓ maintenus, interface cachée, restent : un appui
+   commencé avant que la barre ait le focus (la touche maintenue qui l'ouvre) n'est pas pris par le
+   réglage et va jusqu'au lecteur (`StepperRow` ne traite que les appuis qu'il a vus commencer).
+   Chaque réglage montre son titre au-dessus de sa valeur, ▲ et ▼ l'un sur l'autre à droite : sur
+   une ligne, « Position − En bas + » ne tenait pas dans un tiers de la barre. Test :
+   `R3NavigationTest` (atteindre et modifier chacun) ; capture 206.
+5. **Barre de la bibliothèque** : « Gestion » s'affichait sans texte, collée à « Affichage ». La
+   barre était un `FlowRow` avec un espaceur à poids entre les onglets et les boutons : le dernier
+   bouton pouvait n'y recevoir aucune largeur. Elle est désormais faite de deux groupes (onglets,
+   boutons) répartis par `SpaceBetween`, chaque bouton à sa largeur entière ; si les deux groupes ne
+   tiennent plus sur une ligne (grand texte), les boutons passent dessous et se
+   replient entre eux. Captures 204 (les trois tailles en 4K) et 201.
+6. **Bandeau de l'accueil qui sautille** : la hauteur du texte changeait d'un titre à l'autre (logo
+   ou titre sur une ou deux lignes, ligne d'infos absente, accroche courte). Mise en page fixe
+   (`FeaturedText`) : zone du logo ou du titre de 96 dp (`CineSizes.heroTitleHeight`, le logo mis à
+   l'échelle dedans, le titre en « Titre 1 » sur deux lignes au plus, aligné en bas), ligne d'infos
+   et une ligne d'accroche toujours réservées ; seul le contenu change, en fondu. Test :
+   `R3NavigationTest` (position de « Lire » identique pour deux titres de longueurs différentes).
+   **Deuxième passage (28/10, après l'essai de `d3a2d45`)** : le bandeau bougeait encore. Il était le
+   premier élément de la liste de l'accueil, et chaque passage du focus à une rangée faisait défiler
+   la liste jusqu'au pivot : titre, infos et boutons défilaient avec elle. Il est désormais **fixe**,
+   au-dessus d'une zone de rangées de hauteur constante (une rangée d'affiches avec son titre, deux
+   lignes de légende et la place du focus, aux tailles de texte réglées, `homeRowsHeight`) ; les
+   rangées défilent dans cette zone, la rangée focalisée en haut (ses cartes sous son titre). La
+   jaquette focalisée grandissait déjà au dessin seulement (`graphicsLayer`), et sa légende garde sa
+   place, focalisée ou non : la hauteur d'une rangée ne change pas, et le bandeau ne dépend plus
+   d'elle. Pour tenir au-dessus en « Normale » (608 dp de haut), le titre sans logo passe en
+   « Titre 1 » dans 96 dp, et l'accroche revient à une ligne ; plus haut que la place (grand texte),
+   le bandeau monte sous le haut de l'écran sans être écrasé. Sans bandeau (réglage), l'accueil reste
+   une seule liste. Test : `R3NavigationTest` (position verticale du bandeau et de « Lire » identique
+   le long d'une rangée, d'une rangée à l'autre, et focus revenu au bandeau).
+
+7. **Icônes des bibliothèques** (deuxième passage, 28/10) : sur la Shield, trois bibliothèques
+   avaient la même icône (les étoiles d'« Animes ») et une la montagne des documentaires. Une cause
+   probable : les accents étaient retirés avant de chercher les mots-clés, si bien qu'un nom comme
+   « Films animés » se lisait « animes ». Désormais « animé(e)s », avec l'accent, désigne les dessins
+   animés ; « anime(s) », sans accent, l'animation japonaise. Le jeu passe de 11 à 27 icônes Material
+   (Apache 2.0, chemins de `@material-design-icons/svg` 0.14.15, comme les autres) :
+   - genres : action et aventure, horreur, science-fiction, romance, humour ;
+   - usages : vidéos de famille, 4K, classiques, cinéma du monde, coups de cœur, émissions, cours et
+     conférences, cuisine, fêtes, nature, clips musicaux.
+   Les mots-clés sont en français et en anglais ; la première règle qui correspond l'emporte, genres
+   et usages avant « Films » et « Séries ». Ces deux-là ne servent qu'à une bibliothèque de dossiers :
+   une bibliothèque « Films » de type Mixte prend l'icône des films. Le type « Vidéos personnelles »
+   de Jellyfin prend l'icône des vidéos de famille (un dossier auparavant). La ligature « œ » se lit
+   « oe » (« Coups de cœur »). Le choix manuel (Réglages → Bibliothèques) propose les 27 icônes, chacune
+   dessinée à côté de son nom, l'option « Automatique » avec celle que donne le nom ; la ligne de
+   chaque bibliothèque montre son icône (`SettingItem.Choice.optionIcons` et `icon`). Une icône
+   choisie à la main est gardée par son nom : les anciens choix restent valables. Test :
+   `LibraryIconTest` ; captures 207 (rail) et 208 (sélecteur).
 
 ## 5. Tests et CI
 

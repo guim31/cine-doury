@@ -7,7 +7,7 @@ import androidx.compose.ui.unit.DpSize
 import coil3.SingletonImageLoader
 import coil3.compose.LocalPlatformContext
 import coil3.request.ImageRequest
-import fr.guim.cinedoury.core.designsystem.theme.TvLayout
+import fr.guim.cinedoury.core.designsystem.theme.LocalImageScale
 
 /**
  * Loads [sources] into Coil's caches at [size] before they are drawn: the first images of the rows
@@ -24,7 +24,7 @@ fun PrefetchImages(
     val density = LocalDensity.current
     val width = with(density) { size.width.roundToPx() }
     val height = with(density) { size.height.roundToPx() }
-    val scale = TvLayout.imageScale(density.density)
+    val scale = LocalImageScale.current
     val budget = LocalImageBudget.current.prefetch
     LaunchedEffect(sources, width, height, scale, budget) {
         val loader = SingletonImageLoader.get(context)

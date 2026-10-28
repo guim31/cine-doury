@@ -1,6 +1,8 @@
 package fr.guim.cinedoury.core.data.prefs
 
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
 import fr.guim.cinedoury.core.data.home.ProfileKey
 import fr.guim.cinedoury.core.data.library.LibraryView
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -21,12 +23,11 @@ class AppPreferencesTest {
     val folder = TemporaryFolder()
 
     private val scope = TestScope(UnconfinedTestDispatcher())
-    private val prefs =
-        AppPreferences(
-            PreferenceDataStoreFactory.create(scope = scope.backgroundScope) {
-                folder.root.resolve("settings.preferences_pb")
-            },
-        )
+    private val store =
+        PreferenceDataStoreFactory.create(scope = scope.backgroundScope) {
+            folder.root.resolve("settings.preferences_pb")
+        }
+    private val prefs = AppPreferences(store)
     private val alice = ProfileKey("server", "alice")
     private val bob = ProfileKey("server", "bob")
 
@@ -40,6 +41,17 @@ class AppPreferencesTest {
                 Appearance(ThemeChoice.OledBlack, reducedMotion = true, TextSize.Larger),
                 prefs.appearance.first(),
             )
+        }
+
+    @Test
+    fun theSizeOfTheInterfaceIsCompactByDefaultAndTheDroppedLargeReadsAsNormal() =
+        scope.runTest {
+            assertEquals(InterfaceSize.Compact, prefs.appearance.first().interfaceSize)
+            prefs.setAppearance { it.copy(interfaceSize = InterfaceSize.VeryCompact) }
+            assertEquals(InterfaceSize.VeryCompact, prefs.appearance.first().interfaceSize)
+            // « Grande », chosen before 28/10.
+            store.edit { it[stringPreferencesKey("interface_size")] = "Large" }
+            assertEquals(InterfaceSize.Normal, prefs.appearance.first().interfaceSize)
         }
 
     @Test

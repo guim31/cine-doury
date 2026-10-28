@@ -28,7 +28,10 @@ sealed interface SettingItem {
         val enabled: Boolean = true,
     ) : SettingItem
 
-    /** One value among [options]: OK opens them in a panel, the chosen one checked. */
+    /**
+     * One value among [options]: OK opens them in a panel, the chosen one checked. [optionIcons],
+     * when given, go with the options (the icons of a library), and [icon] on the line.
+     */
     data class Choice(
         override val key: String,
         val title: String,
@@ -37,6 +40,8 @@ sealed interface SettingItem {
         val selected: Int,
         val onSelect: (Int) -> Unit,
         val enabled: Boolean = true,
+        val optionIcons: List<ImageVector?> = emptyList(),
+        val icon: ImageVector? = null,
     ) : SettingItem
 
     /** A value ← and → move by steps (the size of the subtitles, the audio offset). */

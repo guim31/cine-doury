@@ -143,7 +143,7 @@ class DiagnosticViewModel(
                         "Network" to preferences.networkMode.first().name,
                         "Appearance" to
                             "${appearance.theme}, reduced motion ${appearance.reducedMotion}, " +
-                            "text ${appearance.textSize}",
+                            "text ${appearance.textSize}, interface ${appearance.interfaceSize}",
                     ),
             )
         val seerr =

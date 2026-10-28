@@ -15,6 +15,52 @@ class LibraryIconTest {
         assertEquals(LibraryIcon.Shows, icon("Séries TV", LibraryKind.Shows))
         assertEquals(LibraryIcon.Collections, icon("Collections", LibraryKind.Collections))
         assertEquals(LibraryIcon.Folder, icon("Divers", LibraryKind.Mixed))
+        assertEquals(LibraryIcon.HomeVideos, icon("Caméscope 2009", LibraryKind.HomeVideos))
+        // A collection named after its saga stays a collection.
+        assertEquals(LibraryIcon.Collections, icon("Le Phare : la saga", LibraryKind.Collections))
+    }
+
+    @Test
+    fun `films and series name the kind of a library of folders`() {
+        assertEquals(LibraryIcon.Movies, icon("Films", LibraryKind.Mixed))
+        assertEquals(LibraryIcon.Shows, icon("Séries", LibraryKind.Mixed))
+        assertEquals(LibraryIcon.Shows, icon("TV shows", LibraryKind.Mixed))
+    }
+
+    @Test
+    fun `cartoons with an accent, Japanese animation without`() {
+        // « animés »: the adjective (cartoons); « Animes »: the Japanese word, as written in French.
+        assertEquals(LibraryIcon.Animation, icon("Films animés"))
+        assertEquals(LibraryIcon.Animation, icon("Séries animées", LibraryKind.Shows))
+        assertEquals(LibraryIcon.Anime, icon("Animes", LibraryKind.Shows))
+    }
+
+    @Test
+    fun `genres and uses before films and series`() {
+        assertEquals(LibraryIcon.Uhd, icon("Films 4K"))
+        assertEquals(LibraryIcon.Uhd, icon("UHD"))
+        assertEquals(LibraryIcon.Classics, icon("Classiques"))
+        assertEquals(LibraryIcon.Classics, icon("Films noir et blanc"))
+        assertEquals(LibraryIcon.Comedy, icon("Humour"))
+        assertEquals(LibraryIcon.Comedy, icon("Comédies"))
+        assertEquals(LibraryIcon.Stage, icon("Concerts", LibraryKind.Mixed))
+        assertEquals(LibraryIcon.MusicVideos, icon("Clips musicaux", LibraryKind.Mixed))
+        assertEquals(LibraryIcon.HomeVideos, icon("Vidéos de famille", LibraryKind.Mixed))
+        assertEquals(LibraryIcon.Kids, icon("Films en famille"))
+        assertEquals(LibraryIcon.Horror, icon("Horreur"))
+        assertEquals(LibraryIcon.Horror, icon("Films d'épouvante"))
+        assertEquals(LibraryIcon.SciFi, icon("Science-fiction"))
+        assertEquals(LibraryIcon.Action, icon("Action et aventure"))
+        assertEquals(LibraryIcon.Romance, icon("Romance"))
+        assertEquals(LibraryIcon.Holidays, icon("Films de Noël"))
+        assertEquals(LibraryIcon.Learning, icon("Tutos", LibraryKind.Mixed))
+        assertEquals(LibraryIcon.Learning, icon("Conférences TED", LibraryKind.Mixed))
+        assertEquals(LibraryIcon.Cooking, icon("Cuisine", LibraryKind.Shows))
+        assertEquals(LibraryIcon.Nature, icon("Animaux"))
+        assertEquals(LibraryIcon.World, icon("Cinéma du monde"))
+        assertEquals(LibraryIcon.World, icon("VOSTFR", LibraryKind.Shows))
+        assertEquals(LibraryIcon.TvPrograms, icon("Émissions", LibraryKind.Shows))
+        assertEquals(LibraryIcon.Favorites, icon("Coups de cœur"))
     }
 
     @Test
@@ -36,8 +82,12 @@ class LibraryIconTest {
         assertEquals(LibraryIcon.Anime, icon("Anime", LibraryKind.Shows))
         assertEquals(LibraryIcon.Animation, icon("Animation"))
         assertEquals(LibraryIcon.Documentaries, icon("Documentaries"))
-        assertEquals(LibraryIcon.Stage, icon("Stand-up comedy"))
+        assertEquals(LibraryIcon.Comedy, icon("Stand-up comedy"))
         assertEquals(LibraryIcon.Kids, icon("Kids"))
+        assertEquals(LibraryIcon.HomeVideos, icon("Home videos", LibraryKind.Mixed))
+        assertEquals(LibraryIcon.Classics, icon("Classic movies"))
+        assertEquals(LibraryIcon.Horror, icon("Horror"))
+        assertEquals(LibraryIcon.MusicVideos, icon("Music videos", LibraryKind.Mixed))
     }
 
     @Test

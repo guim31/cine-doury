@@ -37,6 +37,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -79,6 +84,9 @@ private const val RAIL_SCRIM_ALPHA = 0.72f
  * and screenshots ([CineFocus.preview]).
  * @param focusRequester attached to the selected destination: the screen gives the rail the focus
  * through it (« Retour » on the home).
+ * @param onContentFocus gives the focus back to the content of the screen, where it was left, on →
+ * from the open rail (essai réel 3): the rail covers the left of the content, where a search to the
+ * right finds nothing or an element under the rail. Returns whether the focus moved.
  */
 @Composable
 fun NavigationRail(
@@ -90,6 +98,7 @@ fun NavigationRail(
     expanded: Boolean? = null,
     previewFocusedIndex: Int? = null,
     focusRequester: FocusRequester? = null,
+    onContentFocus: (() -> Boolean)? = null,
 ) {
     var hasFocus by remember { mutableStateOf(false) }
     // Entering the rail lands on the entry focused last, else on the selected one.
@@ -128,7 +137,12 @@ fun NavigationRail(
                         )
                     }
                 }.onFocusChanged { hasFocus = it.hasFocus }
-                .focusRestorer(selected)
+                .onPreviewKeyEvent { event ->
+                    onContentFocus != null &&
+                        event.key == Key.DirectionRight &&
+                        event.type == KeyEventType.KeyDown &&
+                        onContentFocus()
+                }.focusRestorer(selected)
                 .focusGroup()
                 .padding(vertical = CineSpacing.safeVertical + CineSpacing.m - CineSizes.railInset),
         verticalArrangement = Arrangement.spacedBy(CineSpacing.xs),

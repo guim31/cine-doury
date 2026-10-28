@@ -11,7 +11,6 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalDensity
 import coil3.ComponentRegistry
 import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
@@ -23,6 +22,7 @@ import coil3.size.Size
 import coil3.size.pxOrElse
 import fr.guim.cinedoury.core.designsystem.theme.CineAmbient
 import fr.guim.cinedoury.core.designsystem.theme.CineMotion
+import fr.guim.cinedoury.core.designsystem.theme.LocalImageScale
 import fr.guim.cinedoury.core.designsystem.theme.TvLayout
 import kotlin.math.roundToInt
 
@@ -110,7 +110,7 @@ fun RemoteImage(
                 ?.let(::BitmapPainter)
         }
     val context = LocalPlatformContext.current
-    val scale = TvLayout.imageScale(LocalDensity.current.density)
+    val scale = LocalImageScale.current
     val request =
         remember(source, scale) {
             ImageRequest

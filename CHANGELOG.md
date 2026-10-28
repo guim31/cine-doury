@@ -9,6 +9,25 @@ technique est dans [`docs/SPEC.md`](docs/SPEC.md) ; les notes de chaque version 
 La première version complète pour la télévision (Android TV et Google TV), qui remplace Plex au-dessus
 d'un serveur Jellyfin 12.3. Elle réunit tout ce qui suit, de J0 à J8.
 
+## 0.9.0 — à paraître
+
+Une version d'étape avant la 1.0.0, qui attend que le Chromecast avec Google TV soit aussi fluide que
+la Shield. Elle réunit le J8 (ci-dessous) et l'essai réel 3. Notes de version :
+[`docs/releases/v0.9.0.md`](docs/releases/v0.9.0.md).
+
+## Essai réel 3 (27 et 28/10/2026, NVIDIA Shield TV en 4K)
+
+- **Taille de l'interface** (Apparence) : Très compacte, Compacte (par défaut) ou Normale ; toute la
+  mise en page change d'échelle. Une bibliothèque montre 7, 6 ou 5 affiches par ligne.
+- **Bandeau de l'accueil fixe** : il ne défile plus avec les rangées, et son titre, ses infos et ses
+  boutons ne bougent plus d'un film à l'autre.
+- **Menu de gauche** : → depuis le menu ouvert ramène le focus là où il était, et referme le menu.
+- **Lecteur** : boutons, icônes, « Passer l'intro » et barre de progression plus petits.
+- **Barre des sous-titres** : ← → passent de la taille à la position et au fond, ↑ ↓ changent la valeur.
+- **Barre d'une bibliothèque** : « Gestion » n'est plus une pastille vide.
+- **Icônes des bibliothèques** : 27 au lieu de 11, choisies d'après le nom (français et anglais),
+  chacune dessinée dans le choix manuel des réglages ; « Films animés » n'a plus l'icône des animes.
+
 ## J8 — Finitions 1.0 (27/10/2026)
 
 - **Plus fluide en 4K** : le halo du focus n'est plus recalculé à chaque image (il est préparé une
