@@ -37,6 +37,28 @@ fun FocusPivot(
 }
 
 /**
+ * The lists in [content] never scroll by themselves to show the focused element: the screen scrolls
+ * them, by the index of the element (the rows of the home, essai réel 4). A list that follows the
+ * bounds of the focused element moves as the element grows with the focus: those bounds include its
+ * scale, which is animated.
+ */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun ScrolledByIndex(content: @Composable () -> Unit) {
+    CompositionLocalProvider(LocalBringIntoViewSpec provides NoFocusScroll, content = content)
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+private val NoFocusScroll =
+    object : BringIntoViewSpec {
+        override fun calculateScrollDistance(
+            offset: Float,
+            size: Float,
+            containerSize: Float,
+        ): Float = 0f
+    }
+
+/**
  * Scrolls the lists and columns in [content] so that a focused element shows **with its outline and
  * halo** ([CineSizes.focusRoom] around it), not only its own bounds: at the edge of a scrolling form,
  * the focus treatment was cut (J8). An element already in view, room included, does not move.

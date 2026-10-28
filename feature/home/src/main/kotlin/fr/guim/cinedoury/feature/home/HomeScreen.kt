@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -31,7 +32,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
@@ -47,6 +47,7 @@ import fr.guim.cinedoury.core.designsystem.component.FocusPivot
 import fr.guim.cinedoury.core.designsystem.component.InitialFocus
 import fr.guim.cinedoury.core.designsystem.component.MessagePanel
 import fr.guim.cinedoury.core.designsystem.component.PrimaryButton
+import fr.guim.cinedoury.core.designsystem.component.ScrolledByIndex
 import fr.guim.cinedoury.core.designsystem.component.SecondaryButton
 import fr.guim.cinedoury.core.designsystem.component.SkeletonLine
 import fr.guim.cinedoury.core.designsystem.component.featuredTitleHeight
@@ -195,11 +196,14 @@ fun HomeScreen(
     val shared = remember(rows) { rows.orEmpty().firstAppearances() }
     Box(modifier = modifier.fillMaxSize()) {
         HomeAmbience(featuredItem)
+        val scrollToRow: (Int) -> Unit =
+            remember(listState, scope) { { index -> scope.launch { listState.animateScrollToItem(index) } } }
         BoxWithConstraints(Modifier.fillMaxSize()) {
             if (banner) {
                 // The banner stands still (essai réel 3), at its own height at the top: the rows take
                 // the rest of the screen, so that the next ones show under the focused one (essai réel
-                // 4). The focused row goes to the top of their area, its cards under its title.
+                // 4). The focused row goes to the top of their area, scrolled by its index: following
+                // the bounds of the focused card, which grows with the focus, moved its title.
                 HomeBackdrop(
                     featuredItem,
                     sources,
@@ -220,7 +224,7 @@ fun HomeScreen(
                                     if (it.hasFocus) focusedRow = null
                                 },
                     )
-                    FocusPivot(offset = rowCardsTop()) {
+                    ScrolledByIndex {
                         HomeRows(
                             state = state,
                             listState = listState,
@@ -232,6 +236,7 @@ fun HomeScreen(
                                 focusedItem.value = item
                                 focusedRow = row
                             },
+                            onRowFocused = scrollToRow,
                             modifier = Modifier.weight(1f).fillMaxWidth(),
                         )
                     }
@@ -325,6 +330,7 @@ private fun HomeRows(
     rowRequesters: MutableMap<String, FocusRequester>,
     onFocused: (row: String, item: MediaItem) -> Unit,
     modifier: Modifier = Modifier,
+    onRowFocused: ((index: Int) -> Unit)? = null,
     top: Dp = CineSpacing.none,
 ) {
     val rows = state.rows
@@ -337,8 +343,8 @@ private fun HomeRows(
         if (rows == null) {
             items(SKELETON_ROWS) { SkeletonRow() }
         } else {
-            items(rows, key = { it.key }, contentType = { it.style }) { row ->
-                val next = rows.getOrNull(rows.indexOf(row) + 1)
+            itemsIndexed(rows, key = { _, row -> row.key }, contentType = { _, row -> row.style }) { index, row ->
+                val next = rows.getOrNull(index + 1)
                 HomeRowView(
                     row = row,
                     next = next,
@@ -347,6 +353,7 @@ private fun HomeRows(
                     restore = rowRequesters.requester(row.key),
                     onFocused = { item -> onFocused(row.key, item) },
                     onOpen = navigation::open,
+                    modifier = Modifier.onRowFocused(onRowFocused, index),
                 )
             }
             item(key = "customize", contentType = "customize") {
@@ -357,6 +364,7 @@ private fun HomeRows(
                     modifier =
                         Modifier
                             .padding(start = ContentStart)
+                            .onRowFocused(onRowFocused, rows.size)
                             .testTag("customize"),
                 )
             }
@@ -364,13 +372,16 @@ private fun HomeRows(
     }
 }
 
-/** From the top of a row to the top of its cards: its title and the gap under it. */
-@Composable
-private fun rowCardsTop(): Dp =
-    with(LocalDensity.current) {
-        CineTheme.typography.title2.lineHeight
-            .toDp()
-    } + CineSpacing.rowTitleGap
+/** Tells [onRowFocused] when the focus comes into the element at [index] of the list. */
+private fun Modifier.onRowFocused(
+    onRowFocused: ((Int) -> Unit)?,
+    index: Int,
+): Modifier =
+    if (onRowFocused == null) {
+        this
+    } else {
+        onFocusChanged { if (it.hasFocus) onRowFocused(index) }
+    }
 
 /** The ambient backdrop of the focused title. */
 @Composable

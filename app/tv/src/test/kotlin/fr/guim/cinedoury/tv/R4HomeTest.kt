@@ -24,11 +24,12 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.ParameterizedRobolectricTestRunner
 import org.robolectric.annotation.Config
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
  * The home of the essai réel 4 (`SPEC.md` § 4.22), in each size of the interface: the banner leaves
- * room for a second row under the first (B).
+ * room for a second row under the first (B), and the title of a row never moves with the focus (C).
  * In 1080p here, in 4K below.
  */
 @RunWith(ParameterizedRobolectricTestRunner::class)
@@ -126,6 +127,27 @@ abstract class R4HomeChecks(
         press(Key.DirectionDown)
         focusable(HomePreview.card("latest:films", 0)).assertIsFocused()
         assertSecondRowShows("the first row focused")
+    }
+
+    @Test
+    fun theTitleOfARowStaysInPlaceWhileTheFocusMoves() {
+        home()
+        press(Key.DirectionDown)
+        val title = top(HomePreview.rowTitle("latest:films"))
+        // Along the row: the focused card grows, the title stays.
+        press(Key.DirectionRight)
+        assertEquals(title, top(HomePreview.rowTitle("latest:films")), "along the row, $size")
+        press(Key.DirectionRight, times = 2)
+        assertEquals(title, top(HomePreview.rowTitle("latest:films")), "further along the row, $size")
+        // To the next row: its title comes where the first one stood, and stays there along it.
+        press(Key.DirectionDown)
+        focusable(HomePreview.card("latest:series", 0)).assertIsFocused()
+        assertEquals(title, top(HomePreview.rowTitle("latest:series")), "the next row, $size")
+        press(Key.DirectionRight)
+        assertEquals(title, top(HomePreview.rowTitle("latest:series")), "along the next row, $size")
+        // And back up.
+        press(Key.DirectionUp)
+        assertEquals(title, top(HomePreview.rowTitle("latest:films")), "back up, $size")
     }
 
     private companion object {
