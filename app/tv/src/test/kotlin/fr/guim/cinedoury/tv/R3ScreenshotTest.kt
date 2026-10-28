@@ -1,14 +1,25 @@
 package fr.guim.cinedoury.tv
 
 import androidx.compose.runtime.Composable
+import fr.guim.cinedoury.core.data.ConnectionMode
 import fr.guim.cinedoury.core.designsystem.theme.LayoutSize
 import fr.guim.cinedoury.core.designsystem.theme.ThemeVariant
+import fr.guim.cinedoury.core.model.Library
+import fr.guim.cinedoury.core.model.LibraryId
+import fr.guim.cinedoury.core.model.LibraryKind
+import fr.guim.cinedoury.core.ui.RailState
+import fr.guim.cinedoury.core.ui.RailTarget
 import fr.guim.cinedoury.feature.details.DetailsPreview
 import fr.guim.cinedoury.feature.home.HomePreview
+import fr.guim.cinedoury.feature.home.HomeScreen
 import fr.guim.cinedoury.feature.library.LibraryPreview
 import fr.guim.cinedoury.feature.player.PlayerPanel
 import fr.guim.cinedoury.feature.player.PlayerPreview
 import fr.guim.cinedoury.feature.player.playerPanelLine
+import fr.guim.cinedoury.feature.settings.SettingsPageScreen
+import fr.guim.cinedoury.feature.settings.SettingsSection
+import fr.guim.cinedoury.feature.settings.SettingsState
+import fr.guim.cinedoury.feature.settings.page.SettingsPagePreview
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -109,6 +120,70 @@ class R3PlayerScreenshotTest {
             LayoutSize.Default,
         ) {
             J4Player(J4Samples.resizing, panel = PlayerPanel.SubtitleSize, cue = J4Samples.SUBTITLE_LINE)
+        }
+}
+
+/**
+ * The icons of the libraries (essai réel 3, second pass): a rail of libraries of every sort, each
+ * with its own icon from its name, and the picker of « Bibliothèques » with every icon.
+ */
+@RunWith(RobolectricTestRunner::class)
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+@Config(sdk = [35], qualifiers = TV_1080P)
+class R3IconsScreenshotTest {
+    @get:Rule
+    val compose = createTvComposeRule()
+
+    private val libraries =
+        listOf(
+            Library(LibraryId("films"), "Films", LibraryKind.Movies),
+            Library(LibraryId("4k"), "Films 4K", LibraryKind.Movies),
+            Library(LibraryId("series"), "Séries", LibraryKind.Shows),
+            Library(LibraryId("animes"), "Animes", LibraryKind.Shows),
+            Library(LibraryId("dessins"), "Films animés", LibraryKind.Movies),
+            Library(LibraryId("classiques"), "Classiques", LibraryKind.Movies),
+            Library(LibraryId("docs"), "Documentaires", LibraryKind.Movies),
+            Library(LibraryId("concerts"), "Concerts", LibraryKind.Mixed),
+            Library(LibraryId("humour"), "Humour", LibraryKind.Movies),
+            Library(LibraryId("famille"), "Vidéos de famille", LibraryKind.HomeVideos),
+            Library(LibraryId("youtube"), "YouTube", LibraryKind.Mixed),
+        )
+
+    @Test
+    fun rail() =
+        compose.shootJ8("207-rail-icones-des-bibliotheques", ThemeVariant.Dark, 1f, null, LayoutSize.Default) {
+            HomeScreen(
+                state = J3Samples.home.copy(rail = RailState(libraries = libraries, profileName = "Camille")),
+                sources = SampleArt.sources,
+                navigation = NoHomeNavigation,
+                onRetry = {},
+                previewFeatured = J3Samples.phare,
+                previewRail = RailTarget.Library(libraries[1].id),
+            )
+        }
+
+    @Test
+    fun picker() =
+        compose.shootJ8(
+            "208-choix-de-l-icone",
+            ThemeVariant.Dark,
+            1f,
+            SettingsPagePreview.option(0),
+            LayoutSize.Default,
+        ) {
+            SettingsPageScreen(
+                section = SettingsSection.Libraries,
+                state =
+                    SettingsState(
+                        session = J1Samples.session(ConnectionMode.Local),
+                        libraries = libraries,
+                        chosen = emptyMap(),
+                        index = J3Samples.indexReady,
+                    ),
+                actions = NoSettingsActions,
+                navigation = NoNavigation,
+                previewChoice = "icon-${libraries[1].id.value}",
+            )
         }
 }
 

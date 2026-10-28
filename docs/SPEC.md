@@ -24,7 +24,7 @@ son domaine :
 | Fluidité (partie performances du J8) : APK optimisé (R8, Baseline et Startup Profiles), `:benchmark` (Macrobenchmark, profils), mise en page à 960 × 540 dp sur toute TV (Shield en 4K), rail, recompositions | terminé, fusionné (§ 4.16 ; captures dans `docs/screenshots/perf/` et `j6/`) | [#10](https://github.com/guim31/cine-doury/pull/10) |
 | J7 — Réglages et mise à jour (pages de réglages P0, mise à jour proposée depuis les releases, publication signée, rapport de diagnostic) | terminé, fusionné (§ 4.17 à 4.19 ; captures dans `docs/screenshots/j7/`, numéros 150 à 174) | [#11](https://github.com/guim31/cine-doury/pull/11) |
 | J8 — Finitions 1.0 (coût GPU, petits appareils, profils et mesures, accessibilité, captures 4K et grand texte, 20 gestes au canapé, 1.0.0 prête à étiqueter) | prêt, en revue (§ 4.20 ; captures dans `docs/screenshots/j8/`, numéros 180 à 198 ; CI complète verte sur `24243cb`) | [#13](https://github.com/guim31/cine-doury/pull/13) |
-| Essai réel 3 (27/10/2026, Shield en 4K, v0.7.0) : → depuis le rail ouvert, « Taille de l'interface » (Compacte par défaut), commandes du lecteur plus petites, barre des sous-titres à trois réglages, barre de la bibliothèque, bandeau de l'accueil fixe | en cours (§ 4.21 ; captures dans `docs/screenshots/r3/`, numéros 200 à 206, et « avant ») | [#14](https://github.com/guim31/cine-doury/pull/14) |
+| Essai réel 3 (27/10/2026, Shield en 4K, v0.7.0) : → depuis le rail ouvert, « Taille de l'interface » (Compacte par défaut), commandes du lecteur plus petites, barre des sous-titres à trois réglages, barre de la bibliothèque, bandeau de l'accueil fixe ; deuxième passage (28/10) : bandeau au-dessus des rangées, tailles Très compacte / Compacte / Normale, 27 icônes de bibliothèque | en cours (§ 4.21 ; captures dans `docs/screenshots/r3/`, numéros 200 à 208, et « avant ») | [#14](https://github.com/guim31/cine-doury/pull/14) |
 
 *(Chaque jalon met à jour ce tableau et ajoute ses contrats au § 4.)*
 
@@ -1892,6 +1892,25 @@ Six retours du mainteneur sur la v0.7.0 (Shield, Android 11, écran 4K, mise en 
    le bandeau monte sous le haut de l'écran sans être écrasé. Sans bandeau (réglage), l'accueil reste
    une seule liste. Test : `R3NavigationTest` (position verticale du bandeau et de « Lire » identique
    le long d'une rangée, d'une rangée à l'autre, et focus revenu au bandeau).
+
+7. **Icônes des bibliothèques** (deuxième passage, 28/10) : sur la Shield, trois bibliothèques
+   avaient la même icône (les étoiles d'« Animes ») et une la montagne des documentaires. Une cause
+   probable : les accents étaient retirés avant de chercher les mots-clés, si bien qu'un nom comme
+   « Films animés » se lisait « animes ». Désormais « animé(e)s », avec l'accent, désigne les dessins
+   animés ; « anime(s) », sans accent, l'animation japonaise. Le jeu passe de 11 à 27 icônes Material
+   (Apache 2.0, chemins de `@material-design-icons/svg` 0.14.15, comme les autres) :
+   - genres : action et aventure, horreur, science-fiction, romance, humour ;
+   - usages : vidéos de famille, 4K, classiques, cinéma du monde, coups de cœur, émissions, cours et
+     conférences, cuisine, fêtes, nature, clips musicaux.
+   Les mots-clés sont en français et en anglais ; la première règle qui correspond l'emporte, genres
+   et usages avant « Films » et « Séries ». Ces deux-là ne servent qu'à une bibliothèque de dossiers :
+   une bibliothèque « Films » de type Mixte prend l'icône des films. Le type « Vidéos personnelles »
+   de Jellyfin prend l'icône des vidéos de famille (un dossier auparavant). La ligature « œ » se lit
+   « oe » (« Coups de cœur »). Le choix manuel (Réglages → Bibliothèques) propose les 27 icônes, chacune
+   dessinée à côté de son nom, l'option « Automatique » avec celle que donne le nom ; la ligne de
+   chaque bibliothèque montre son icône (`SettingItem.Choice.optionIcons` et `icon`). Une icône
+   choisie à la main est gardée par son nom : les anciens choix restent valables. Test :
+   `LibraryIconTest` ; captures 207 (rail) et 208 (sélecteur).
 
 ## 5. Tests et CI
 

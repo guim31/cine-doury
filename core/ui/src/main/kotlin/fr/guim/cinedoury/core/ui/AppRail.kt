@@ -134,5 +134,21 @@ val LibraryIcon.vector: ImageVector
             LibraryIcon.OnlineVideo -> CineIcons.OnlineVideo
             LibraryIcon.Kids -> CineIcons.Kids
             LibraryIcon.Collections -> CineIcons.Collections
+            LibraryIcon.HomeVideos -> CineIcons.HomeVideos
+            LibraryIcon.Nature -> CineIcons.Nature
+            LibraryIcon.MusicVideos -> CineIcons.MusicVideos
+            LibraryIcon.Comedy -> CineIcons.Comedy
+            LibraryIcon.TvPrograms -> CineIcons.TvPrograms
+            LibraryIcon.Learning -> CineIcons.Learning
+            LibraryIcon.Cooking -> CineIcons.Cooking
+            LibraryIcon.Holidays -> CineIcons.Holidays
+            LibraryIcon.Horror -> CineIcons.Horror
+            LibraryIcon.SciFi -> CineIcons.SciFi
+            LibraryIcon.Action -> CineIcons.Action
+            LibraryIcon.Romance -> CineIcons.Favorite
+            LibraryIcon.Classics -> CineIcons.Classics
+            LibraryIcon.World -> CineIcons.World
+            LibraryIcon.Uhd -> CineIcons.Uhd
+            LibraryIcon.Favorites -> CineIcons.Star
             LibraryIcon.Folder -> CineIcons.Folder
         }
