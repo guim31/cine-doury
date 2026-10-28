@@ -186,6 +186,14 @@ fun HomeScreen(
         HomeAmbience(featuredItem)
         val scrollToRow: (Int) -> Unit =
             remember(listState, scope) { { index -> scope.launch { listState.animateScrollToItem(index) } } }
+        // The rows arrive in steps (the cache, then the server): a lazy list keeps its first row by key,
+        // and would stay on a row read first while others came above it. Scrolled by index, the list is
+        // put back on the focused row, or at its top.
+        val rowKeys = remember(rows) { rows?.map { it.key } }
+        LaunchedEffect(rowKeys, banner) {
+            if (!banner || rowKeys == null) return@LaunchedEffect
+            listState.scrollToItem(rowKeys.indexOf(focusedRow).coerceAtLeast(0))
+        }
         BoxWithConstraints(Modifier.fillMaxSize()) {
             if (banner) {
                 // The banner stands still (essai réel 3), at its own height at the top: the rows take
