@@ -105,10 +105,11 @@ object CineSizes {
 
     /**
      * The zone of the logo or of the title in the featured banner: always this high, the logo scaled
-     * into it and the title (two lines at most) at its bottom, so that nothing under it moves from
-     * one title to the next (essai réel 3).
+     * into it and the title (« Titre 1 », two lines at most) at its bottom, so that nothing under it
+     * moves from one title to the next (essai réel 3). Small enough for the banner to fit above the
+     * rows of the home in « Normale ».
      */
-    val heroTitleHeight = 120.dp
+    val heroTitleHeight = 96.dp
     val tabHeight = 40.dp
     val alphabetKey = 18.dp
     val alphabetWidth = 32.dp

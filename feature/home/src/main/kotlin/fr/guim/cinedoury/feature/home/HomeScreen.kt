@@ -8,11 +8,11 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
@@ -32,8 +32,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import fr.guim.cinedoury.core.data.SessionManager
 import fr.guim.cinedoury.core.designsystem.component.AmbientBackdrop
@@ -51,6 +53,7 @@ import fr.guim.cinedoury.core.designsystem.component.SkeletonLine
 import fr.guim.cinedoury.core.designsystem.component.rememberCineFocus
 import fr.guim.cinedoury.core.designsystem.theme.CineSizes
 import fr.guim.cinedoury.core.designsystem.theme.CineSpacing
+import fr.guim.cinedoury.core.designsystem.theme.CineTheme
 import fr.guim.cinedoury.core.model.MediaItem
 import fr.guim.cinedoury.core.ui.AppRail
 import fr.guim.cinedoury.core.ui.CollectEvents
@@ -109,6 +112,9 @@ fun HomeRoute(
 /** Preview tags of the home, for tests and screenshots. */
 object HomePreview {
     const val PLAY = "home-play"
+
+    /** The banner at the top of the home (title, line of metadata, buttons). */
+    const val BANNER = "home-banner"
     const val DETAILS = "home-details"
     const val QUIT_CANCEL = "home-quit-cancel"
 
@@ -188,73 +194,66 @@ fun HomeScreen(
     Box(modifier = modifier.fillMaxSize()) {
         HomeAmbience(featuredItem)
         BoxWithConstraints(Modifier.fillMaxSize()) {
-            val heroHeight = maxHeight * CineSizes.HERO_HEIGHT_FRACTION
-            if (banner) HomeBackdrop(featuredItem, sources, Modifier.fillMaxWidth().height(heroHeight))
-            // The focused row stands on the line of the buttons of the banner (« Lire »), a little under
-            // it: with the banner focused, the home stays at its top whatever the size of the
-            // interface (essai réel 3: in Compacte, « Lire » under a fixed 48 % scrolled the home, and
-            // « Retour » then took one more press to reach the rail).
-            val pivot = heroHeight - CineSpacing.s - CineSizes.buttonHeight + CineSpacing.xs
-            FocusPivot(offset = if (banner) pivot else null, fraction = ROW_PIVOT) {
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier.fillMaxSize().testTag("home"),
-                    contentPadding = PaddingValues(bottom = CineSpacing.xxl),
-                    verticalArrangement = Arrangement.spacedBy(CineSpacing.l),
-                ) {
-                    if (!banner) {
-                        item(key = "top", contentType = "top") {
-                            Spacer(Modifier.height(CineSpacing.safeVertical))
-                        }
-                    }
-                    if (banner) {
-                        item(key = "hero", contentType = "hero") {
-                            Hero(
-                                state = state,
-                                focused = featuredItem,
-                                sources = sources,
-                                navigation = navigation,
-                                onRetry = onRetry,
-                                play = play,
-                                modifier =
-                                    Modifier
-                                        .height(heroHeight)
-                                        .onFocusChanged {
-                                            if (it.hasFocus) focusedRow = null
-                                        },
-                            )
-                        }
-                    }
-                    if (rows == null) {
-                        items(SKELETON_ROWS) { SkeletonRow() }
-                    } else {
-                        items(rows, key = { it.key }, contentType = { it.style }) { row ->
-                            val next = rows.getOrNull(rows.indexOf(row) + 1)
-                            HomeRowView(
-                                row = row,
-                                next = next,
-                                shared = shared[row.key].orEmpty(),
-                                sources = sources,
-                                restore = rowRequesters.requester(row.key),
-                                onFocused = { item ->
-                                    focusedItem.value = item
-                                    focusedRow = row.key
+            val rowsArea = homeRowsHeight()
+            if (banner) {
+                // The banner stands still (essai réel 3): fixed at the top, the rows scroll in the area
+                // under it, one row of posters high, the focused row at its top. In the list, the
+                // banner moved up and down with every row the focus went to.
+                val heroHeight = (maxHeight - rowsArea).coerceAtLeast(CineSpacing.none)
+                HomeBackdrop(
+                    featuredItem,
+                    sources,
+                    Modifier.fillMaxWidth().height(maxHeight * CineSizes.HERO_HEIGHT_FRACTION),
+                )
+                Column(Modifier.fillMaxSize()) {
+                    Hero(
+                        state = state,
+                        focused = featuredItem,
+                        sources = sources,
+                        navigation = navigation,
+                        onRetry = onRetry,
+                        play = play,
+                        modifier =
+                            Modifier
+                                .height(heroHeight)
+                                .testTag(HomePreview.BANNER)
+                                .onFocusChanged {
+                                    if (it.hasFocus) focusedRow = null
                                 },
-                                onOpen = navigation::open,
-                            )
-                        }
-                        item(key = "customize", contentType = "customize") {
-                            SecondaryButton(
-                                text = stringResource(R.string.action_customize),
-                                icon = CineIcons.Edit,
-                                onClick = navigation::customize,
-                                modifier =
-                                    Modifier
-                                        .padding(start = ContentStart)
-                                        .testTag("customize"),
-                            )
-                        }
+                    )
+                    // The cards of the focused row just under its title, at the top of the area.
+                    FocusPivot(offset = rowCardsTop()) {
+                        HomeRows(
+                            state = state,
+                            listState = listState,
+                            shared = shared,
+                            sources = sources,
+                            navigation = navigation,
+                            rowRequesters = rowRequesters,
+                            onFocused = { row, item ->
+                                focusedItem.value = item
+                                focusedRow = row
+                            },
+                            modifier = Modifier.weight(1f).fillMaxWidth(),
+                        )
                     }
+                }
+            } else {
+                FocusPivot(fraction = ROW_PIVOT) {
+                    HomeRows(
+                        state = state,
+                        listState = listState,
+                        shared = shared,
+                        sources = sources,
+                        navigation = navigation,
+                        rowRequesters = rowRequesters,
+                        onFocused = { row, item ->
+                            focusedItem.value = item
+                            focusedRow = row
+                        },
+                        top = CineSpacing.safeVertical,
+                        modifier = Modifier.fillMaxSize(),
+                    )
                 }
             }
         }
@@ -317,6 +316,78 @@ internal val ContentStart = CineSizes.railCollapsed + CineSpacing.m
 private const val ROW_PIVOT = 0.48f
 private const val SKELETON_ROWS = 2
 
+/** The rows of the home in a list, and « Personnaliser l'accueil » at its end. */
+@Composable
+private fun HomeRows(
+    state: HomeState,
+    listState: LazyListState,
+    shared: Map<String, Set<String>>,
+    sources: ImageSources,
+    navigation: HomeNavigation,
+    rowRequesters: MutableMap<String, FocusRequester>,
+    onFocused: (row: String, item: MediaItem) -> Unit,
+    modifier: Modifier = Modifier,
+    top: Dp = CineSpacing.none,
+) {
+    val rows = state.rows
+    LazyColumn(
+        state = listState,
+        modifier = modifier.testTag("home"),
+        contentPadding = PaddingValues(top = top, bottom = CineSpacing.xxl),
+        verticalArrangement = Arrangement.spacedBy(CineSpacing.l),
+    ) {
+        if (rows == null) {
+            items(SKELETON_ROWS) { SkeletonRow() }
+        } else {
+            items(rows, key = { it.key }, contentType = { it.style }) { row ->
+                val next = rows.getOrNull(rows.indexOf(row) + 1)
+                HomeRowView(
+                    row = row,
+                    next = next,
+                    shared = shared[row.key].orEmpty(),
+                    sources = sources,
+                    restore = rowRequesters.requester(row.key),
+                    onFocused = { item -> onFocused(row.key, item) },
+                    onOpen = navigation::open,
+                )
+            }
+            item(key = "customize", contentType = "customize") {
+                SecondaryButton(
+                    text = stringResource(R.string.action_customize),
+                    icon = CineIcons.Edit,
+                    onClick = navigation::customize,
+                    modifier =
+                        Modifier
+                            .padding(start = ContentStart)
+                            .testTag("customize"),
+                )
+            }
+        }
+    }
+}
+
+/** From the top of a row to the top of its cards: its title and the gap under it. */
+@Composable
+private fun rowCardsTop(): Dp =
+    with(LocalDensity.current) {
+        CineTheme.typography.title2.lineHeight
+            .toDp()
+    } + CineSpacing.rowTitleGap
+
+/**
+ * The area of the rows under the banner: one row of posters, its title over it and two lines of
+ * caption under it, with the room of the focus treatment below. At the text size of the settings.
+ */
+@Composable
+private fun homeRowsHeight(): Dp {
+    val caption =
+        with(LocalDensity.current) {
+            CineTheme.typography.caption.lineHeight
+                .toDp()
+        }
+    return rowCardsTop() + CineSizes.posterNormal.height + CineSpacing.s + caption * 2 + CineSizes.focusRoom
+}
+
 /** The ambient backdrop of the focused title. */
 @Composable
 private fun HomeAmbience(item: () -> MediaItem?) {
@@ -343,7 +414,15 @@ private fun Hero(
     play: FocusRequester,
     modifier: Modifier = Modifier,
 ) {
-    Box(modifier = modifier.fillMaxWidth().padding(start = ContentStart, bottom = CineSpacing.s)) {
+    // Its content at the bottom, at its own height: taller than the room left above the rows (a large
+    // text), it goes up under the top of the screen, never squeezed (essai réel 3).
+    Box(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(start = ContentStart, bottom = CineSpacing.s)
+                .wrapContentHeight(align = Alignment.Bottom, unbounded = true),
+    ) {
         val error = state.error
         val rows = state.rows
         when {

@@ -99,7 +99,7 @@ fun FeaturedBackdrop(
 
 /**
  * The featured banner of the home (`FONCTIONNALITES.md` § 2): the logo of the focused title (its
- * title in type otherwise), a line of metadata, two lines that sell it, and the [actions] (« Lire »,
+ * title in type otherwise), a line of metadata, one line that sells it, and the [actions] (« Lire »,
  * « Fiche »), each always at the same place ([FeaturedText]). It follows the focus like
  * [FeaturedBackdrop]; the [actions] stay out of the fade, so that a button keeps the focus.
  */
@@ -153,7 +153,7 @@ private fun FeaturedText(featured: Featured) {
             } else {
                 Text(
                     text = featured.title,
-                    style = typography.display,
+                    style = typography.title1,
                     color = colors.text,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
@@ -211,7 +211,7 @@ private fun Modifier.bannerFade(): Modifier =
 private const val RECENT_TITLES = 4
 
 /** The lines of text under the metadata: their room is kept, even for a short one. */
-private const val TAGLINE_LINES = 2
+private const val TAGLINE_LINES = 1
 private const val BANNER_SIDE_ALPHA = 0.92f
 private const val BANNER_SIDE_EXTENT = 0.6f
 

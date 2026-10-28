@@ -1872,10 +1872,23 @@ Six retours du mainteneur sur la v0.7.0 (Shield, Android 11, écran 4K, mise en 
    replient entre eux. Captures 204 (les trois tailles en 4K) et 201.
 6. **Bandeau de l'accueil qui sautille** : la hauteur du texte changeait d'un titre à l'autre (logo
    ou titre sur une ou deux lignes, ligne d'infos absente, accroche courte). Mise en page fixe
-   (`FeaturedText`) : zone du logo ou du titre de 120 dp (`CineSizes.heroTitleHeight`, le logo mis à
-   l'échelle dedans, le titre sur deux lignes au plus, aligné en bas), ligne d'infos toujours
-   réservée, accroche sur deux lignes réservées ; seul le contenu change, en fondu. Test :
+   (`FeaturedText`) : zone du logo ou du titre de 96 dp (`CineSizes.heroTitleHeight`, le logo mis à
+   l'échelle dedans, le titre en « Titre 1 » sur deux lignes au plus, aligné en bas), ligne d'infos
+   et une ligne d'accroche toujours réservées ; seul le contenu change, en fondu. Test :
    `R3NavigationTest` (position de « Lire » identique pour deux titres de longueurs différentes).
+   **Deuxième passage (28/10, après l'essai de `d3a2d45`)** : le bandeau bougeait encore. Il était le
+   premier élément de la liste de l'accueil, et chaque passage du focus à une rangée faisait défiler
+   la liste jusqu'au pivot : titre, infos et boutons défilaient avec elle. Il est désormais **fixe**,
+   au-dessus d'une zone de rangées de hauteur constante (une rangée d'affiches avec son titre, deux
+   lignes de légende et la place du focus, aux tailles de texte réglées, `homeRowsHeight`) ; les
+   rangées défilent dans cette zone, la rangée focalisée en haut (ses cartes sous son titre). La
+   jaquette focalisée grandissait déjà au dessin seulement (`graphicsLayer`), et sa légende garde sa
+   place, focalisée ou non : la hauteur d'une rangée ne change pas, et le bandeau ne dépend plus
+   d'elle. Pour tenir au-dessus en « Normale » (608 dp de haut), le titre sans logo passe en
+   « Titre 1 » dans 96 dp, et l'accroche revient à une ligne ; plus haut que la place (grand texte),
+   le bandeau monte sous le haut de l'écran sans être écrasé. Sans bandeau (réglage), l'accueil reste
+   une seule liste. Test : `R3NavigationTest` (position verticale du bandeau et de « Lire » identique
+   le long d'une rangée, d'une rangée à l'autre, et focus revenu au bandeau).
 
 ## 5. Tests et CI
 

@@ -282,6 +282,47 @@ class R3NavigationTest {
     }
 
     @Test
+    fun `the banner of the home stays in place while the focus moves along and between rows`() {
+        compose.setTvContent {
+            CineTheme(ThemeVariant.Dark) {
+                HomeScreen(state = J2Samples.home, sources = J2Samples.noImages, navigation = Navigation, onRetry = {})
+            }
+        }
+        focusable(HomePreview.PLAY).assertIsFocused()
+
+        // Vertical positions: « Lire » becomes « Reprendre » on a title started, a little wider.
+        fun banner(): List<Float> =
+            listOf(HomePreview.BANNER, HomePreview.PLAY).flatMap { tag ->
+                compose
+                    .onNodeWithTag(tag)
+                    .getBoundsInRoot()
+                    .toRect()
+                    .let { listOf(it.top, it.bottom) }
+            }
+        press(Key.DirectionDown)
+        compose.mainClock.advanceTimeBy(SETTLE_MILLIS)
+        compose.waitForIdle()
+        val first = banner()
+        // Along the first row, then down two rows and back up: the banner never moves.
+        press(Key.DirectionRight, times = 2)
+        compose.mainClock.advanceTimeBy(SETTLE_MILLIS)
+        compose.waitForIdle()
+        assertEquals(first, banner())
+        press(Key.DirectionDown, times = 2)
+        compose.mainClock.advanceTimeBy(SETTLE_MILLIS)
+        compose.waitForIdle()
+        assertEquals(first, banner())
+        press(Key.DirectionUp)
+        compose.mainClock.advanceTimeBy(SETTLE_MILLIS)
+        compose.waitForIdle()
+        assertEquals(first, banner())
+        // And where it stood with its buttons focused.
+        press(Key.DirectionUp, times = 2)
+        compose.onNode(isFocused() and hasAnyAncestor(hasTestTag(HomePreview.BANNER))).assertExists()
+        assertEquals(first, banner())
+    }
+
+    @Test
     fun `the buttons of the banner stay in place from one title to the next`() {
         val long =
             Featured(
