@@ -44,14 +44,23 @@ class AppPreferencesTest {
         }
 
     @Test
-    fun theSizeOfTheInterfaceIsCompactByDefaultAndTheDroppedLargeReadsAsNormal() =
+    fun theSizeOfTheInterfaceIsVeryCompactByDefaultAndTheDroppedLargeReadsAsNormal() =
         scope.runTest {
-            assertEquals(InterfaceSize.Compact, prefs.appearance.first().interfaceSize)
-            prefs.setAppearance { it.copy(interfaceSize = InterfaceSize.VeryCompact) }
+            // Essai réel 4: « Très compacte » by default.
             assertEquals(InterfaceSize.VeryCompact, prefs.appearance.first().interfaceSize)
+            prefs.setAppearance { it.copy(interfaceSize = InterfaceSize.Normal) }
+            assertEquals(InterfaceSize.Normal, prefs.appearance.first().interfaceSize)
             // « Grande », chosen before 28/10.
             store.edit { it[stringPreferencesKey("interface_size")] = "Large" }
             assertEquals(InterfaceSize.Normal, prefs.appearance.first().interfaceSize)
+        }
+
+    @Test
+    fun aSizeChosenBeforeTheNewDefaultIsKept() =
+        scope.runTest {
+            // « Compacte », the default up to essai réel 4, saved on the device: it stays.
+            store.edit { it[stringPreferencesKey("interface_size")] = "Compact" }
+            assertEquals(InterfaceSize.Compact, prefs.appearance.first().interfaceSize)
         }
 
     @Test

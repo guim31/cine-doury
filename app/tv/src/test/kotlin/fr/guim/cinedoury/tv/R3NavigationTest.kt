@@ -371,8 +371,9 @@ class R3NavigationTest {
             compose.runOnIdle { size = each }
             compose.waitForIdle()
         }
-        // 1920 px wide: 1 440 dp in Très compacte, 1 200 in Compacte (the default), 1 080 in Normale.
-        assertEquals(LayoutSize.Compact, LayoutSize.Default)
+        // 1920 px wide: 1 440 dp in Très compacte (the default since essai réel 4), 1 200 in Compacte,
+        // 1 080 in Normale.
+        assertEquals(LayoutSize.VeryCompact, LayoutSize.Default)
         assertEquals(1440f, widths.getValue(LayoutSize.VeryCompact), 1f)
         assertEquals(1200f, widths.getValue(LayoutSize.Compact), 1f)
         assertEquals(1080f, widths.getValue(LayoutSize.Normal), 1f)
