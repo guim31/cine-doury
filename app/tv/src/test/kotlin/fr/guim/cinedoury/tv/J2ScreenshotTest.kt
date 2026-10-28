@@ -67,7 +67,6 @@ class J2ScreenshotTest(
     fun homeSkeletons() = shoot("43-accueil-squelettes", null) { Home(J2Samples.home.copy(rows = null)) }
 
     @Test
-    @Test
     fun customization() =
         shoot("45-personnaliser-l-accueil", PREVIEW_CUSTOMIZE_ROW) {
             HomeSettingsScreen(J2Samples.customization, actions = null, selectedRow = "latest")
