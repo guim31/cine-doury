@@ -205,7 +205,8 @@ class J2NavigationTest {
     fun `the A to Z bar jumps to a letter`() {
         val actions = LibraryRecorder()
         val jumps = Events<Jump>()
-        show {
+        // Six columns, in « Compacte » (seven in « Très compacte », the default since essai réel 4).
+        show(LayoutSize.Compact) {
             LibraryScreen(
                 state = J2Samples.library(),
                 sources = J2Samples.noImages,
