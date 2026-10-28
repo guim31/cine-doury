@@ -371,11 +371,11 @@ class R3NavigationTest {
             compose.runOnIdle { size = each }
             compose.waitForIdle()
         }
-        // 1920 px wide: 1 200 dp in Compacte (the default), 1 080 in Normale, the 960 of `UI.md` in Grande.
+        // 1920 px wide: 1 440 dp in Très compacte, 1 200 in Compacte (the default), 1 080 in Normale.
         assertEquals(LayoutSize.Compact, LayoutSize.Default)
+        assertEquals(1440f, widths.getValue(LayoutSize.VeryCompact), 1f)
         assertEquals(1200f, widths.getValue(LayoutSize.Compact), 1f)
         assertEquals(1080f, widths.getValue(LayoutSize.Normal), 1f)
-        assertEquals(960f, widths.getValue(LayoutSize.Large), 1f)
     }
 }
 

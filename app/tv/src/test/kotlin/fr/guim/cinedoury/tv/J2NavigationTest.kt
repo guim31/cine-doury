@@ -185,8 +185,8 @@ class J2NavigationTest {
     @Test
     fun `a library opens on the item left last time, and its grid goes item by item`() {
         val actions = LibraryRecorder()
-        // Four columns in the size of `UI.md`.
-        show(LayoutSize.Large) {
+        // Five columns in « Normale ».
+        show(LayoutSize.Normal) {
             LibraryScreen(
                 state = J2Samples.library(LibraryState(position = 5)),
                 sources = J2Samples.noImages,
@@ -194,15 +194,15 @@ class J2NavigationTest {
                 navigation = recorder,
             )
         }
-        // Four columns: 5 is the second of the second row.
+        // Five columns: 5 is the first of the second row.
         focusable(LibraryPreview.item(5)).assertIsFocused()
         press(Key.DirectionRight)
         focusable(LibraryPreview.item(6)).assertIsFocused()
         assertEquals(6, actions.focused.last())
         press(Key.DirectionUp)
-        focusable(LibraryPreview.item(2)).assertIsFocused()
+        focusable(LibraryPreview.item(1)).assertIsFocused()
         press(Key.DirectionCenter)
-        assertEquals(J2Samples.movies[2], recorder.opened.single())
+        assertEquals(J2Samples.movies[1], recorder.opened.single())
     }
 
     @Test

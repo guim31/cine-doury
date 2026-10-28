@@ -13,18 +13,21 @@ import androidx.compose.ui.unit.Density
  * whole interface is laid out on, whatever the screen. The wider, the smaller everything is drawn
  * (text, cards, margins), and the more a screen shows.
  *
- * - [Compact], 1 200 × 675 dp, the default: everything at 80 % of `UI.md`. The smallest text of the
- *   scale (« Minimum absolu », 14 sp) is 22 px high on a 1080p screen, the « Corps » 32 px: the most
- *   compact still read from 3 m;
- * - [Normal], 1 080 × 608 dp, at 89 %;
- * - [Large], 960 × 540 dp, the size of `UI.md` (and of every version up to 0.7).
+ * - [VeryCompact], 1 440 × 810 dp: everything at 67 % of `UI.md`, the text at 73 % ([textScale]
+ *   1.1), so that the smallest (« Minimum absolu », 14 sp) stays at 21 px on a 1080p screen;
+ * - [Compact], 1 200 × 675 dp, the default: everything at 80 %; the smallest text at 22 px, the
+ *   « Corps » at 32 px;
+ * - [Normal], 1 080 × 608 dp, at 89 %.
+ *
+ * The 960 × 540 dp of `UI.md` (« Grande », every version up to 0.7) was dropped on 28/10: too large.
  */
 enum class LayoutSize(
     val widthDp: Float,
+    val textScale: Float = 1f,
 ) {
+    VeryCompact(1440f, textScale = 1.1f),
     Compact(1200f),
     Normal(1080f),
-    Large(960f),
     ;
 
     companion object {

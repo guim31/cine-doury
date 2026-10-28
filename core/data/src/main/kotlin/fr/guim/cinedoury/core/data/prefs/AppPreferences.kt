@@ -29,9 +29,10 @@ enum class TextSize(
 
 /**
  * « Taille de l'interface » (essai réel 3): how much a screen shows, by the width it is laid out on
- * (`LayoutSize` of the design system, `SPEC.md` § 4.21). Compact by default.
+ * (`LayoutSize` of the design system, `SPEC.md` § 4.21). Compact by default. « Grande » (`Large`)
+ * was dropped on 28/10: kept on a device, it reads as [Normal].
  */
-enum class InterfaceSize { Compact, Normal, Large }
+enum class InterfaceSize { VeryCompact, Compact, Normal }
 
 /** « Apparence » of this device (`SPEC.md` § 4.17). */
 data class Appearance(
@@ -114,7 +115,7 @@ class AppPreferences(
                     theme = enumOf(prefs[THEME], ThemeChoice.Dark),
                     reducedMotion = prefs[REDUCED_MOTION] ?: false,
                     textSize = enumOf(prefs[TEXT_SIZE], TextSize.Normal),
-                    interfaceSize = enumOf(prefs[INTERFACE_SIZE], InterfaceSize.Compact),
+                    interfaceSize = interfaceSizeOf(prefs[INTERFACE_SIZE]),
                 )
             }.distinctUntilChanged()
 
@@ -126,7 +127,7 @@ class AppPreferences(
                         enumOf(prefs[THEME], ThemeChoice.Dark),
                         prefs[REDUCED_MOTION] ?: false,
                         enumOf(prefs[TEXT_SIZE], TextSize.Normal),
-                        enumOf(prefs[INTERFACE_SIZE], InterfaceSize.Compact),
+                        interfaceSizeOf(prefs[INTERFACE_SIZE]),
                     ),
                 )
             prefs[THEME] = next.theme.name
@@ -202,6 +203,10 @@ class AppPreferences(
         )
     }
 
+    /** The size kept on this device; « Grande », dropped, becomes « Normale ». */
+    private fun interfaceSizeOf(name: String?): InterfaceSize =
+        if (name == DROPPED_LARGE) InterfaceSize.Normal else enumOf(name, InterfaceSize.Compact)
+
     private inline fun <reified T : Enum<T>> enumOf(
         name: String?,
         default: T,
@@ -219,6 +224,7 @@ class AppPreferences(
         private val REDUCED_MOTION = booleanPreferencesKey("reduced_motion")
         private val TEXT_SIZE = stringPreferencesKey("text_size")
         private val INTERFACE_SIZE = stringPreferencesKey("interface_size")
+        private const val DROPPED_LARGE = "Large"
         private val NETWORK = stringPreferencesKey("network_mode")
         private val DEVICE_NAME = stringPreferencesKey("device_name")
         private val LAST_UPDATE_CHECK = longPreferencesKey("last_update_check")

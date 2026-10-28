@@ -883,9 +883,9 @@ private fun appearanceItems(
             {
                 stringResource(
                     when (it) {
+                        InterfaceSize.VeryCompact -> R.string.interface_very_compact
                         InterfaceSize.Compact -> R.string.interface_compact
                         InterfaceSize.Normal -> R.string.interface_normal
-                        InterfaceSize.Large -> R.string.interface_large
                     },
                 )
             },

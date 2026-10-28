@@ -48,7 +48,10 @@ fun CineTheme(
     content: @Composable () -> Unit,
 ) {
     if (tvLayout) {
-        TvLayoutDensity(layoutSize) { CineThemeContent(variant, reducedMotion, textScale, cards, content) }
+        // A very compact interface keeps its text a little larger than the rest (LayoutSize.textScale).
+        TvLayoutDensity(layoutSize) {
+            CineThemeContent(variant, reducedMotion, textScale * layoutSize.textScale, cards, content)
+        }
     } else {
         CineThemeContent(variant, reducedMotion, textScale, cards, content)
     }

@@ -198,9 +198,9 @@
     <string name="text_larger">Très grande</string>
     <string name="appearance_interface">Taille de l\'interface</string>
     <string name="appearance_interface_description">Plus compacte, chaque écran montre davantage d\'affiches et de lignes ; plus grande, tout se lit de plus loin.</string>
+    <string name="interface_very_compact">Très compacte</string>
     <string name="interface_compact">Compacte</string>
     <string name="interface_normal">Normale</string>
-    <string name="interface_large">Grande</string>
 
     <!-- Profil -->
     <string name="pin_set">Définir un code PIN</string>

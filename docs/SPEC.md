@@ -1469,7 +1469,7 @@ focalisée ; OK choisit, « Retour » referme et rend le focus à la ligne. ← 
 | Intro et générique | intro et récapitulatif (Bouton), épisode suivant automatique (oui), compte à rebours (10 s), « toujours là ? » (après 3 épisodes) | profil, sur l'appareil | lecteur |
 | Accueil et navigation | « Personnaliser l'accueil » (rangées, ordre, bibliothèques, fenêtre, § 4.9), bandeau à la une (oui), vue par défaut (Affiches), titres sous les affiches (non), indicateur « non vu » (oui) | profil, sur l'appareil (DataStore `settings`) | bandeau : sans lui, les rangées partent du haut, focus sur la première ; vue : une bibliothèque jamais ouverte s'ouvre dans cette vue ; titres et « non vu » : `CardPreferences` du thème, sur toutes les cartes |
 | Bibliothèques | place dans le menu (1re, 2e… ou masquée), icône, index local | ordre : **profil, sur le serveur** (`OrderedViews`) ; masquée : profil, sur l'appareil (`rail_hidden`) ; icône et index : serveur, sur l'appareil | le rail et les rangées de l'accueil suivent l'ordre du serveur (§ 4.9) |
-| Apparence | thème (Sombre), animations réduites (non), taille du texte (Normale ; Grande 115 %, Très grande 130 %), taille de l'interface (Compacte ; Normale, Grande, § 4.21) | appareil | `CineTheme(variant, reducedMotion, textScale, layoutSize = …)` ; animations réduites aussi quand le système coupe les siennes (`CineMotion.isReduced`) |
+| Apparence | thème (Sombre), animations réduites (non), taille du texte (Normale ; Grande 115 %, Très grande 130 %), taille de l'interface (Compacte ; Très compacte, Normale, § 4.21) | appareil | `CineTheme(variant, reducedMotion, textScale, layoutSize = …)` ; animations réduites aussi quand le système coupe les siennes (`CineMotion.isReduced`) |
 | Profil | code PIN, changer de profil, se déconnecter ; au démarrage (Choix du profil, appareil) | § 4.7 | § 4.7 |
 | Réseau | adresses locale et distante, basculement (Locale puis distante ; Locale seulement ; Distante seulement), oublier le serveur | appareil | `AddressResolver.resolve(server, mode)`, au démarrage |
 | Appareil | nom dans Jellyfin (celui de la télévision), mise à jour (§ 4.18), à propos (licences) | appareil | le nom part dans `Authorization` (`Device="…"`) dès la requête suivante, flux du lecteur compris : la liste des appareils du serveur le prend aussitôt ; une session déjà ouverte garde le nom de son ouverture |
@@ -1815,7 +1815,7 @@ Six retours du mainteneur sur la v0.7.0 (Shield, Android 11, écran 4K, mise en 
    il interceptait aussi les demandes de focus de l'écran (retour d'une fiche : « Lire » au lieu de
    la carte), et un `focusGroup` sur la barre et la grille faisait arrêter ← sur « Tout » au lieu du
    rail. Test : `R3NavigationTest` (accueil, bibliothèque, recherche).
-2. **« Taille de l'interface »** (Apparence ; Compacte, Normale, Grande ; appareil, DataStore
+2. **« Taille de l'interface »** (Apparence ; Très compacte, Compacte, Normale ; appareil, DataStore
    `settings`, clé `interface_size`). **Écart à `UI.md` § 2 et § 5, demandé par le mainteneur le
    27/10** : « tout est trop gros », il veut voir plus d'éléments. La largeur de l'écran de référence
    devient un paramètre (`LayoutSize`, `TvLayoutDensity(size)`), et **toute** la mise en page suit
@@ -1823,31 +1823,34 @@ Six retours du mainteneur sur la v0.7.0 (Shield, Android 11, écran 4K, mise en 
    en dp sur l'écran de `UI.md`. Valeurs :
    | Taille | Écran de référence | Échelle par rapport à `UI.md` | Corps / minimum sur un 1080p |
    |---|---|---|---|
+   | Très compacte (28/10) | 1 440 × 810 dp, texte × 1,1 | 67 % (texte 73 %) | 29 px / 21 px |
    | **Compacte** (défaut) | 1 200 × 675 dp | 80 % | 32 px / 22 px |
    | Normale | 1 080 × 608 dp | 89 % | 36 px / 25 px |
-   | Grande | 960 × 540 dp (celle de `UI.md`, jusqu'à la 0.7) | 100 % | 40 px / 28 px |
-   Pourquoi 1 200 dp par défaut : c'est la plus compacte qui reste lisible à 3 m. Le plus petit texte
-   (« Minimum absolu », 14 sp) y fait 22 px sur un 1080p (11 px de hauteur d'x), un peu sous les 24 px
-   que Google donne pour une TV (12 sp à 2 px par dp), et seuls badges et pastilles l'emploient ; le
-   corps (20 sp) fait 32 px. Au-delà (1 280 dp, 75 %), le minimum tomberait à 21 px et les légendes à
-   24 px : les métadonnées des cartes se liraient mal du canapé. Une affiche normale passe de 300 à
-   240 px de large sur un 1080p : la grille d'une bibliothèque montre 6 colonnes au lieu de 4, une
-   rangée de l'accueil un quart de cartes de plus, et l'écran 25 % de hauteur en plus (675 dp). « Taille du
-   texte » (§ 4.17) reste à part : elle multiplie le texte dans la taille choisie. La hauteur de
-   l'écran suit la largeur (16:9) ; les proportions (bandeau à 60 % de la hauteur) ne changent pas.
-   Images : demandées à la taille du 1080p au plus quelle que soit la taille (`LocalImageScale`,
-   1 920 px ÷ largeur de la fenêtre en px), plus d'après la densité. Les captures de référence
-   suivent la valeur par défaut (Compacte) ; les trois tailles : captures 200 à 203 (accueil,
-   bibliothèque, fiche, lecteur), et `avant-*` / `apres-*` dans `docs/screenshots/r3/` (les mêmes
-   écrans en 0.7 et dans la nouvelle taille par défaut). `TvLayoutScreenshotTest` (4K contre 1080p)
-   tolère 2,5 % de pixels différents au lieu de 1 % : à 1,6 px par dp, les bords tombent entre deux
-   pixels en 1080p et pas en 4K (2 % mesurés) ; une carte déplacée en couvre 4 %. Les tests de
-   navigation qui comptent des colonnes passent `LayoutSize.Large` (celle qu'ils décrivent).
-   **Pivot de l'accueil** : la rangée focalisée se plaçait à 48 % de la hauteur ; en Compacte,
-   « Lire » tombait juste dessous, l'accueil défilait de quelques dp au focus du bandeau, et
-   « Retour » demandait un appui de plus pour atteindre le rail. Le pivot est désormais la ligne des
-   boutons du bandeau (8 dp dessous) : même place qu'avant en Grande, accueil en haut dans toutes. Test : `R3NavigationTest` (largeur mise en page dans chaque
-   taille).
+   Pourquoi 1 200 dp par défaut : c'est la plus compacte qui reste lisible à 3 m sans retouche. Le
+   plus petit texte (« Minimum absolu », 14 sp) y fait 22 px sur un 1080p, un peu sous les 24 px que
+   Google donne pour une TV (12 sp à 2 px par dp), et seuls badges et pastilles l'emploient ; le
+   corps (20 sp) fait 32 px. Une affiche normale passe de 300 à 240 px de large sur un 1080p : la
+   grille d'une bibliothèque montre 6 colonnes (5 en Normale, 7 en Très compacte, 4 en 0.7), et
+   l'écran gagne 25 % de hauteur (675 dp).
+   **Deuxième passage (28/10, après l'essai de `d3a2d45`)** : « Grande » (960 dp, celle de `UI.md`
+   et de la 0.7) n'avait aucun intérêt pour le mainteneur, qui voulait plus compact encore. Elle est
+   retirée ; une valeur « Grande » gardée sur l'appareil se lit « Normale » (`AppPreferencesTest`).
+   « Très compacte » met la page sur 1 440 dp ; à cette échelle seule, le plus petit texte
+   tomberait à 19 px, en dessous de ce qui se lit à 3 m : son texte est donc agrandi de 10 %
+   (`LayoutSize.textScale`, multiplié à « Taille du texte »), 21 px au minimum et 29 px pour le
+   corps, quand cartes, marges et images restent à 67 %.
+   « Taille du texte » (§ 4.17) reste à part : elle multiplie le texte dans la taille choisie. La
+   hauteur de l'écran suit la largeur (16:9). Images : demandées à la taille du 1080p au plus quelle
+   que soit la taille (`LocalImageScale`, 1 920 px ÷ largeur de la fenêtre en px), plus d'après la
+   densité. Les captures de référence suivent la valeur par défaut (Compacte) ; les trois tailles :
+   captures 200 à 203 (accueil, bibliothèque, fiche, lecteur), et `avant-*` / `apres-*` dans
+   `docs/screenshots/r3/` (les mêmes écrans en 0.7 et dans la taille par défaut).
+   `TvLayoutScreenshotTest` (4K contre 1080p) tolère 2,5 % de pixels différents au lieu de 1 % : à
+   1,6 px par dp, les bords tombent entre deux pixels en 1080p et pas en 4K (2 % mesurés) ; une carte
+   déplacée en couvre 4 %. Les tests de navigation qui comptent des colonnes passent
+   `LayoutSize.Normal` (5 colonnes). L'accueil met désormais son bandeau au-dessus d'une zone de
+   rangées de hauteur fixe (point 6) : il reste en haut dans toutes les tailles. Test :
+   `R3NavigationTest` (largeur mise en page dans chaque taille).
 3. **Lecteur** : boutons ronds de 40 dp (au lieu de 52) et icônes de 20 dp (au lieu de 24)
    (`CineSizes.playerRoundButton`, `playerIcon`, paramètre `small` de `RoundIconButton`) ; « Passer
    l'intro » en pastille de 40 dp, texte en Légende (`playerButtonHeight`, `PrimaryButton(small)`) ;
@@ -1868,7 +1871,7 @@ Six retours du mainteneur sur la v0.7.0 (Shield, Android 11, écran 4K, mise en 
    barre était un `FlowRow` avec un espaceur à poids entre les onglets et les boutons : le dernier
    bouton pouvait n'y recevoir aucune largeur. Elle est désormais faite de deux groupes (onglets,
    boutons) répartis par `SpaceBetween`, chaque bouton à sa largeur entière ; si les deux groupes ne
-   tiennent plus sur une ligne (grand texte, taille Grande), les boutons passent dessous et se
+   tiennent plus sur une ligne (grand texte), les boutons passent dessous et se
    replient entre eux. Captures 204 (les trois tailles en 4K) et 201.
 6. **Bandeau de l'accueil qui sautille** : la hauteur du texte changeait d'un titre à l'autre (logo
    ou titre sur une ou deux lignes, ligne d'infos absente, accroche courte). Mise en page fixe

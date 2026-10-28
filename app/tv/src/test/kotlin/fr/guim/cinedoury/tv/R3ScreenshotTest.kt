@@ -116,7 +116,7 @@ class R3PlayerScreenshotTest {
 private val LayoutSize.slug: String
     get() =
         when (this) {
+            LayoutSize.VeryCompact -> "tres-compacte"
             LayoutSize.Compact -> "compacte"
             LayoutSize.Normal -> "normale"
-            LayoutSize.Large -> "grande"
         }
