@@ -112,7 +112,9 @@ abstract class R4HomeChecks(
 
     /** The top of the cards of the second row is on the screen, a little more than a strip of them. */
     private fun assertSecondRowShows(what: String) {
-        val screen = compose.onRoot().getBoundsInRoot().bottom
+        // The bottom of the list of rows is the bottom of the screen, in the dp of the layout (those of
+        // the root are the device's).
+        val screen = compose.onNodeWithTag("home").getBoundsInRoot().bottom
         val second = top(HomePreview.card("latest:series", 0))
         assertTrue(
             screen - second >= PEEK,
