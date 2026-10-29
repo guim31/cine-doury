@@ -201,8 +201,8 @@ abstract class R5HomeChecks(
     @Test
     fun aFocusedTileIsNeverCut() {
         home()
+        // The list spans the screen; onRoot() would give the dp of the device, not those of the layout.
         val list = compose.onNodeWithTag("home").getBoundsInRoot()
-        val screen = compose.onRoot().getBoundsInRoot()
 
         fun bounds(tile: Int) = compose.onNodeWithTag(HomePreview.tonight(tile)).getBoundsInRoot()
         // The bounds of each tile at rest (a focused one reports its growth): the large one once the
@@ -222,8 +222,8 @@ abstract class R5HomeChecks(
             val dy = (rest.bottom - rest.top) * ((scale - 1f) / 2f) + CineSizes.focusRoom
             val where = "$size, tile $tile"
             assertTrue(rest.top - dy >= list.top - EDGE, "$where: its top is cut (${rest.top - dy} < ${list.top})")
-            assertTrue(rest.left - dx >= screen.left - EDGE, "$where: its left is cut")
-            assertTrue(rest.right + dx <= screen.right + EDGE, "$where: its right is cut")
+            assertTrue(rest.left - dx >= list.left - EDGE, "$where: its left is cut")
+            assertTrue(rest.right + dx <= list.right + EDGE, "$where: its right is cut")
             // The focus moves no other tile.
             for ((other, before) in still) {
                 if (other != tile) assertEquals(before, bounds(other), "$where moved $other")
