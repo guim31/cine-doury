@@ -25,7 +25,8 @@ son domaine :
 | J7 — Réglages et mise à jour (pages de réglages P0, mise à jour proposée depuis les releases, publication signée, rapport de diagnostic) | terminé, fusionné (§ 4.17 à 4.19 ; captures dans `docs/screenshots/j7/`, numéros 150 à 174) | [#11](https://github.com/guim31/cine-doury/pull/11) |
 | J8 — Finitions 1.0 (coût GPU, petits appareils, profils et mesures, accessibilité, captures 4K et grand texte, 20 gestes au canapé, 1.0.0 prête à étiqueter) | prêt, en revue (§ 4.20 ; captures dans `docs/screenshots/j8/`, numéros 180 à 198 ; CI complète verte sur `24243cb`) | [#13](https://github.com/guim31/cine-doury/pull/13) |
 | Essai réel 3 (27/10/2026, Shield en 4K, v0.7.0) : → depuis le rail ouvert, « Taille de l'interface » (Compacte par défaut), commandes du lecteur plus petites, barre des sous-titres à trois réglages, barre de la bibliothèque, bandeau de l'accueil fixe ; deuxième passage (28/10) : bandeau au-dessus des rangées, tailles Très compacte / Compacte / Normale, 27 icônes de bibliothèque | en cours (§ 4.21 ; captures dans `docs/screenshots/r3/`, numéros 200 à 208, et « avant ») | [#14](https://github.com/guim31/cine-doury/pull/14) |
-| Essai réel 4 (28/10/2026, Shield en 4K, v0.9.0) : « Très compacte » par défaut, bandeau de l'accueil plus bas (une deuxième rangée se voit), titre de rangée immobile, « Retour » qui quitte sans confirmation, versions d'essai signées installables par-dessus une release | prêt, en revue (§ 4.22 et § 4.18 ; captures dans `docs/screenshots/r4/` : `avant-*` / `apres-*` pour A, B et D) | [#15](https://github.com/guim31/cine-doury/pull/15) |
+| Essai réel 4 (28/10/2026, Shield en 4K, v0.9.0) : « Très compacte » par défaut, bandeau de l'accueil plus bas (une deuxième rangée se voit), titre de rangée immobile, « Retour » qui quitte sans confirmation, versions d'essai signées installables par-dessus une release | terminé, fusionné (§ 4.22 et § 4.18 ; captures dans `docs/screenshots/r4/` : `avant-*` / `apres-*` pour A, B et D) | [#15](https://github.com/guim31/cine-doury/pull/15) |
+| Essai réel 5 (29/10/2026, Shield en 4K et Chromecast, v0.9.1) : banc de mesures réparé (libellés du rail lus par l'accessibilité), compte à rebours qui ne coupe plus la fin des épisodes, épisode précédent / suivant dans le lecteur, menu d'options rapides à l'appui long sur une jaquette, mosaïque « Ce soir » en haut de l'accueil | en cours (§ 4.23 ; captures dans `docs/screenshots/r5/`) | — |
 
 *(Chaque jalon met à jour ce tableau et ajoute ses contrats au § 4.)*
 
@@ -1991,6 +1992,21 @@ Quatre retours du mainteneur sur la v0.9.0 (Shield, écran 4K, taille « Très c
   change : « Retour » remonte d'un niveau, et un écran de premier niveau ramène à l'accueil. La
   capture 44 est retirée. Test : `J2NavigationTest`, `J2FlowTest` (bibliothèque → accueil → rail →
   appli fermée), `J8FocusTest`.
+
+### 4.23 Essai réel 5 : la v0.9.1 au canapé (29/10/2026)
+
+Quatre retours du mainteneur sur la v0.9.1 (Shield en 4K et Chromecast, taille « Très compacte »)
+et une réparation du banc de mesures, faits dans l'ordre E, A, B, C, D.
+
+- **E. Banc de mesures rouge depuis la v0.9.0** (« No entry Films in the rail ») : le banc cherche
+  une bibliothèque en lisant le nom de l'entrée focalisée du rail par l'accessibilité. Depuis le J8,
+  l'icône d'une entrée n'a plus de description (pour que TalkBack ne lise pas le nom deux fois) et le
+  nom n'est plus qu'un texte, transparent rail fermé (`graphicsLayer { alpha }`). Compose retire un
+  nœud transparent de l'arbre d'accessibilité et ne l'y remet pas quand l'alpha, lu au dessin, remonte :
+  le texte n'était exposé ni au banc ni à TalkBack (un défaut d'accessibilité, corrigé dans l'appli).
+  Le nom est désormais la description de l'entrée elle-même (`NavigationRail`), texte et avatar
+  n'exposant rien de plus. Le banc s'arrête aussi au bas du rail (« Réglages ») et dit le dernier nom
+  lu. Test : `R5RailTest` (chaque entrée dit son nom, rail fermé et ouvert, une seule fois).
 
 ## 5. Tests et CI
 

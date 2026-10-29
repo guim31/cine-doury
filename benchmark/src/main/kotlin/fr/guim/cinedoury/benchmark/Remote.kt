@@ -96,7 +96,7 @@ internal class Remote(
 
     /**
      * The label of the focused element inside the element tagged [tag] (a rail entry): its text, its
-     * first text inside, or its description. Searched inside [tag], as the view that holds Compose is
+     * first text inside, or its description (a rail entry says its name there, essai réel 5). Searched inside [tag], as the view that holds Compose is
      * the first focused node of the window.
      */
     fun focusedText(tag: String): String? {
@@ -292,9 +292,11 @@ internal fun Remote.openLibrary(name: String) {
             waitFocusIn(LIBRARY_ITEMS, SIGN_IN_TIMEOUT, nudge = KeyEvent.KEYCODE_DPAD_DOWN)
             return
         }
+        // The bottom of the rail: the library is not below.
+        if (focusedIn(RAIL_SETTINGS)) break
         press(KeyEvent.KEYCODE_DPAD_DOWN)
     }
-    throw AssertionError("No entry $name in the rail\n${screen()}")
+    throw AssertionError("No entry $name in the rail (last read: ${focusedText(RAIL)})\n${screen()}")
 }
 
 internal const val START = "start"
@@ -323,5 +325,5 @@ internal const val FILMS = "Films"
 
 private const val SIGN_IN_TIMEOUT = 30_000L
 private const val DISCOVERY_TIMEOUT = 20_000L
-private const val RAIL_ENTRIES = 8
+private const val RAIL_ENTRIES = 12
 private const val FOCUS_SETTLE = 1_500L
