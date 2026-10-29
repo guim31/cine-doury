@@ -94,6 +94,15 @@ internal class Remote(
         return element.isFocused || element.hasObject(By.focused(true))
     }
 
+    /** The index of the focused card of a row of the home (tagged `card-<row>-<index>`), if one has it. */
+    fun focusedCardIndex(): Int? =
+        device
+            .findObjects(By.res(CARD))
+            .firstOrNull { it.isFocused || it.hasObject(By.focused(true)) }
+            ?.resourceName
+            ?.substringAfterLast('-')
+            ?.toIntOrNull()
+
     /**
      * The label of the focused element inside the element tagged [tag] (a rail entry): its text, its
      * first text inside, or its description (where a rail entry says its name, essai réel 5). Searched
@@ -305,6 +314,22 @@ internal fun Remote.backToStart() {
     waitFocusIn(homeStart())
 }
 
+/**
+ * Along a row of the home, ← back to its first card, one card at a time: a row can hold fewer cards
+ * than the journey went right (the rows left once « Ce soir » took « Reprendre » and « À suivre »,
+ * essai réel 5), and a blind ← too many opens the rail.
+ */
+internal fun Remote.backToFirstCard() {
+    var index = focusedCardIndex() ?: return
+    while (index > 0) {
+        press(KeyEvent.KEYCODE_DPAD_LEFT)
+        val target = index - 1
+        // What accessibility says lags the focus a little.
+        waitUntil("card $target focused", FOCUS_SETTLE) { focusedCardIndex() == target }
+        index = target
+    }
+}
+
 /** From the home, into the rail and onto the library named [name] (a name given by the server). */
 internal fun Remote.openLibrary(name: String) {
     press(KeyEvent.KEYCODE_DPAD_LEFT)
@@ -358,6 +383,9 @@ private const val SIGN_IN_TIMEOUT = 30_000L
 private const val DISCOVERY_TIMEOUT = 20_000L
 private const val RAIL_ENTRIES = 12
 private const val FOCUS_SETTLE = 1_500L
+
+/** A card of a row of the home: `card-<row>-<index>`. */
+private val CARD = Pattern.compile("card-.+-\\d+")
 
 /** The small tiles of a line of the mosaic, left of which the large one stands. */
 private const val TONIGHT_COLUMNS = 2

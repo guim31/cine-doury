@@ -11,7 +11,7 @@ internal object Journeys {
     fun Remote.browseHome() {
         repeat(HOME_ROWS) { press(KeyEvent.KEYCODE_DPAD_DOWN) }
         repeat(ROW_CARDS) { press(KeyEvent.KEYCODE_DPAD_RIGHT) }
-        repeat(ROW_CARDS) { press(KeyEvent.KEYCODE_DPAD_LEFT) }
+        backToFirstCard()
         repeat(HOME_ROWS - 1) { press(KeyEvent.KEYCODE_DPAD_UP) }
         backToStart()
     }
