@@ -4,6 +4,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import fr.guim.cinedoury.core.data.home.HomeRowType
+import fr.guim.cinedoury.core.data.home.TonightKind
+import fr.guim.cinedoury.core.data.home.TonightTile
 import fr.guim.cinedoury.core.designsystem.theme.LayoutSize
 import fr.guim.cinedoury.core.designsystem.theme.ThemeVariant
 import fr.guim.cinedoury.core.model.MediaItem
@@ -11,6 +14,8 @@ import fr.guim.cinedoury.core.ui.QuickMenuHost
 import fr.guim.cinedoury.core.ui.rememberQuickMenu
 import fr.guim.cinedoury.feature.home.HomePreview
 import fr.guim.cinedoury.feature.home.HomeScreen
+import fr.guim.cinedoury.feature.home.HomeState
+import fr.guim.cinedoury.feature.home.TonightState
 import fr.guim.cinedoury.feature.library.LibraryPreview
 import fr.guim.cinedoury.feature.library.LibraryScreen
 import fr.guim.cinedoury.feature.player.PlayerPreview
@@ -66,6 +71,30 @@ class R5ScreenshotTest {
     fun episodeControlsBefore() =
         shoot("221-avant-lecteur-episode-precedent-suivant", PlayerPreview.PLAY) {
             J4Player(R5Samples.episodePlaying.copy(previous = null, next = null), osd = true)
+        }
+
+    /** D: the mosaic « Ce soir » at the top of the home, its large tile focused. */
+    @Test
+    fun tonight() =
+        shoot("224-accueil-mosaique-ce-soir", HomePreview.tonight(0)) {
+            HomeScreen(
+                state = R5Samples.tonight,
+                sources = J2Samples.noImages,
+                navigation = NoHomeNavigation,
+                onRetry = {},
+            )
+        }
+
+    /** D, before: the banner of 0.9.1, which repeated the first playback in progress. */
+    @Test
+    fun tonightBefore() =
+        shoot("224-avant-accueil-mosaique-ce-soir", HomePreview.PLAY) {
+            HomeScreen(
+                state = J2Samples.home,
+                sources = J2Samples.noImages,
+                navigation = NoHomeNavigation,
+                onRetry = {},
+            )
         }
 
     /** C: OK held on an episode of « Reprendre », on the home. */
@@ -128,6 +157,38 @@ private fun MenuOver(
 
 /** The samples of the essai réel 5. */
 object R5Samples {
+    /**
+     * The home with its mosaic « Ce soir »: an episode in progress on the large tile, a film in progress,
+     * an episode to watch next, a film added yesterday, a film never watched. « Reprendre » keeps what
+     * the mosaic has no room for.
+     */
+    val tonight: HomeState
+        get() {
+            val rows = J2Samples.homeRows
+            val resume = rows.first { it.key == "resume" }.items
+            val next = rows.first { it.key == "next-up" }.items.first()
+            val added = J2Samples.movies[10].copy(dateAdded = J3Samples.clock.instant().minusSeconds(DAY))
+            val tiles =
+                listOf(
+                    TonightTile(resume[0], TonightKind.Resume),
+                    TonightTile(resume[1], TonightKind.Resume),
+                    TonightTile(next, TonightKind.NextUp),
+                    TonightTile(added, TonightKind.Added),
+                    TonightTile(J2Samples.movies[3], TonightKind.Rediscover),
+                )
+            val shown = tiles.map { it.item.id }.toSet()
+            return J2Samples.home.copy(
+                tonight = TonightState(tiles),
+                rows =
+                    rows.mapNotNull { row ->
+                        val keep = row.type != HomeRowType.Resume && row.type != HomeRowType.NextUp
+                        row.copy(items = row.items.filter { keep || it.id !in shown }).takeIf { it.items.isNotEmpty() }
+                    },
+            )
+        }
+
+    private const val DAY = 86_400L
+
     /** An episode of « Les Marées » in its middle, with an episode before and after it. */
     val episodePlaying =
         J4Samples.credits.copy(

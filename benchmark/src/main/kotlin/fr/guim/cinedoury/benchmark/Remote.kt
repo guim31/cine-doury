@@ -204,7 +204,7 @@ internal class Remote(
     }
 }
 
-/** Starts the app from the launcher and signs in if it has to: the home, « Lire » focused. */
+/** Starts the app from the launcher and signs in if it has to: the home, where it starts focused. */
 internal fun Remote.launchSignedIn() {
     launch()
     val known = runCatching { waitUntil("a known screen", SIGN_IN_TIMEOUT) { knownScreen() } }.isSuccess
@@ -221,7 +221,7 @@ private fun Remote.launch() {
     device.executeShellCommand("am start -W -n $PACKAGE/$PACKAGE.tv.MainActivity")
 }
 
-private fun Remote.knownScreen() = has(HOME_PLAY) || has(START) || has(PROFILE_0)
+private fun Remote.knownScreen() = onHome() || has(START) || has(PROFILE_0)
 
 /**
  * Signs in to the test Jellyfin from wherever the app stands: the first launch (address, profile,
@@ -241,11 +241,11 @@ internal fun Remote.signInIfNeeded() {
         press(KeyEvent.KEYCODE_DPAD_CENTER)
         type(server)
     }
-    if (!has(HOME_PLAY)) {
+    if (!onHome()) {
         // « Qui regarde ? »: « admin » first.
         waitFocusIn(PROFILE_0, SIGN_IN_TIMEOUT, nudge = KeyEvent.KEYCODE_DPAD_LEFT)
         press(KeyEvent.KEYCODE_DPAD_CENTER)
-        waitUntil("Quick Connect or the home", SIGN_IN_TIMEOUT) { has(USE_PASSWORD) || has(HOME_PLAY) }
+        waitUntil("Quick Connect or the home", SIGN_IN_TIMEOUT) { has(USE_PASSWORD) || onHome() }
         if (has(USE_PASSWORD)) {
             waitFocusIn(USE_PASSWORD)
             press(KeyEvent.KEYCODE_DPAD_CENTER)
@@ -258,8 +258,8 @@ internal fun Remote.signInIfNeeded() {
 }
 
 /**
- * The home is there with its rows, « Lire » focused. The app opens on « Qui regarde ? » (its default,
- * « Toujours demander »): OK on the first profile, signed in, opens its home.
+ * The home is there with its rows, its large tile (or « Lire ») focused. The app opens on « Qui
+ * regarde ? » (its default, « Toujours demander »): OK on the first profile, signed in, opens its home.
  */
 internal fun Remote.waitHome() {
     val shown = runCatching { waitUntil("the home or the profiles", SIGN_IN_TIMEOUT) { homeOrProfiles() } }.isSuccess
@@ -269,15 +269,35 @@ internal fun Remote.waitHome() {
         press(KeyEvent.KEYCODE_DPAD_CENTER)
         waitUntil("the home or the profiles, after « Réessayer »", SIGN_IN_TIMEOUT) { homeOrProfiles() }
     }
-    if (!has(HOME_PLAY)) {
+    if (!onHome()) {
         waitFocusIn(PROFILE_0, nudge = KeyEvent.KEYCODE_DPAD_LEFT)
         press(KeyEvent.KEYCODE_DPAD_CENTER, pause = 0)
     }
-    waitFor(HOME_PLAY, SIGN_IN_TIMEOUT)
-    waitFocusIn(HOME_PLAY, SIGN_IN_TIMEOUT)
+    waitUntil("the home", SIGN_IN_TIMEOUT) { onHome() }
+    waitFocusIn(homeStart(), SIGN_IN_TIMEOUT)
 }
 
-private fun Remote.homeOrProfiles() = has(HOME_PLAY) || has(PROFILE_0)
+private fun Remote.homeOrProfiles() = onHome() || has(PROFILE_0)
+
+/** The home is there: its mosaic « Ce soir » (essai réel 5), or its banner when the mosaic is off. */
+internal fun Remote.onHome(): Boolean = has(TONIGHT_MAIN) || has(HOME_PLAY)
+
+/** Where the home starts: the large tile of the mosaic, else « Lire » of the banner. */
+internal fun Remote.homeStart(): String = if (has(TONIGHT_MAIN)) TONIGHT_MAIN else HOME_PLAY
+
+/**
+ * From the first row of the home, back up to where it starts: the mosaic comes back with a tile
+ * focused, then ← along its line to the large one (← from the large one would open the rail).
+ */
+internal fun Remote.backToStart() {
+    press(KeyEvent.KEYCODE_DPAD_UP)
+    waitUntil("the top of the home") { focusedIn(TONIGHT) || focusedIn(HOME_PLAY) }
+    repeat(TONIGHT_COLUMNS) {
+        if (focusedIn(homeStart())) return
+        press(KeyEvent.KEYCODE_DPAD_LEFT)
+    }
+    waitFocusIn(homeStart())
+}
 
 /** From the home, into the rail and onto the library named [name] (a name given by the server). */
 internal fun Remote.openLibrary(name: String) {
@@ -308,6 +328,10 @@ internal const val USE_PASSWORD = "use-password"
 internal const val PASSWORD_FIELD = "password-field"
 internal const val HOME = "home"
 internal const val HOME_PLAY = "home-play"
+
+/** The mosaic « Ce soir » and its large tile, the first focus of the home (essai réel 5). */
+internal const val TONIGHT = "home-tonight"
+internal const val TONIGHT_MAIN = "tonight-0"
 internal const val RAIL = "rail"
 internal const val LIBRARY_ITEMS = "library-items"
 internal const val DETAILS = "details"
@@ -328,3 +352,6 @@ private const val SIGN_IN_TIMEOUT = 30_000L
 private const val DISCOVERY_TIMEOUT = 20_000L
 private const val RAIL_ENTRIES = 12
 private const val FOCUS_SETTLE = 1_500L
+
+/** The small tiles of a line of the mosaic, left of which the large one stands. */
+private const val TONIGHT_COLUMNS = 2

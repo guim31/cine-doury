@@ -11,6 +11,7 @@ import fr.guim.cinedoury.core.model.MediaItem
 import fr.guim.cinedoury.core.model.PageRequest
 import fr.guim.cinedoury.core.model.SortField
 import fr.guim.cinedoury.core.source.LibrarySource
+import fr.guim.cinedoury.core.source.SourceException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -147,5 +148,91 @@ object HomeRows {
                     .awaitAll()
                     .flatten()
             }
+        }
+
+    /** The keys under which the sources of the mosaic « Ce soir » are cached, apart from the rows. */
+    object TonightKeys {
+        const val RESUME = "tonight:resume"
+        const val NEXT_UP = "tonight:next-up"
+        const val LATEST = "tonight:latest"
+        const val REDISCOVER = "tonight:rediscover"
+        val ALL = listOf(RESUME, NEXT_UP, LATEST, REDISCOVER)
+    }
+
+    /** What a source of the mosaic reads: enough to fill it without doubles. */
+    private const val TONIGHT_LIMIT = 12
+
+    /**
+     * The sources of the mosaic « Ce soir » (essai réel 5), whatever rows the home shows: the
+     * libraries excluded from the home on the server never count, nor those excluded from the latest
+     * additions for these. A source that fails leaves the others.
+     */
+    suspend fun fetchTonight(
+        libraries: List<Library>,
+        exclusions: HomeExclusions,
+        source: LibrarySource,
+    ): Map<String, List<MediaItem>> =
+        coroutineScope {
+            val resume = eligible(HomeRowType.Resume, libraries, exclusions)
+            val shows = eligible(HomeRowType.NextUp, libraries, exclusions)
+            val latest = eligible(HomeRowType.Latest, libraries, exclusions).filter { it.id !in exclusions.fromLatest }
+            val films = eligible(HomeRowType.RecentlyReleased, libraries, exclusions)
+            val whole = exclusions.fromHome.isEmpty()
+            val reads =
+                mapOf(
+                    TonightKeys.RESUME to
+                        async {
+                            each(resume, whole) { source.resume(it, TONIGHT_LIMIT) }
+                                .sortedByDescending { it.userData?.lastPlayed ?: Instant.EPOCH }
+                        },
+                    TonightKeys.NEXT_UP to async { each(shows, whole) { source.nextUp(it, null, TONIGHT_LIMIT) } },
+                    TonightKeys.LATEST to
+                        async {
+                            latest
+                                .map { library -> async { quietly { source.latest(library.id, TONIGHT_LIMIT) } } }
+                                .awaitAll()
+                                .flatten()
+                                .sortedByDescending { it.dateAdded ?: Instant.EPOCH }
+                        },
+                    TonightKeys.REDISCOVER to
+                        async {
+                            // The oldest additions first: what was forgotten (`Tonight` keeps the unwatched).
+                            val query = { library: Library ->
+                                ItemQuery(library.id, RELEASED_KINDS, ItemSort(SortField.DateAdded, ascending = true))
+                            }
+                            films
+                                .map { library ->
+                                    async {
+                                        quietly {
+                                            source
+                                                .items(
+                                                    query(library),
+                                                    PageRequest(limit = TONIGHT_LIMIT),
+                                                ).items
+                                        }
+                                    }
+                                }.awaitAll()
+                                .flatten()
+                        },
+                )
+            reads.mapValues { (_, read) -> read.await().take(TONIGHT_LIMIT) }
+        }
+
+    private suspend fun each(
+        libraries: List<Library>,
+        whole: Boolean,
+        read: suspend (LibraryId?) -> List<MediaItem>,
+    ): List<MediaItem> =
+        when {
+            libraries.isEmpty() -> emptyList()
+            whole -> quietly { read(null) }
+            else -> coroutineScope { libraries.map { async { quietly { read(it.id) } } }.awaitAll().flatten() }
+        }
+
+    private suspend fun quietly(read: suspend () -> List<MediaItem>): List<MediaItem> =
+        try {
+            read()
+        } catch (_: SourceException) {
+            emptyList()
         }
 }

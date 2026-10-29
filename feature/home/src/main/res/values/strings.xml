@@ -34,4 +34,23 @@
     <string name="customize_window_none">Sans limite</string>
     <string name="customize_remove">Retirer la rangée</string>
     <string name="customize_excluded">Exclue de l\'accueil sur le serveur</string>
+    <string name="tonight_resume">Reprendre · reste %1$s</string>
+    <string name="tonight_next_up">À suivre</string>
+    <string name="tonight_new_episode">Nouvel épisode</string>
+    <string name="tonight_added_today">Ajouté aujourd\'hui</string>
+    <string name="tonight_added_yesterday">Ajouté hier</string>
+    <string name="tonight_added_this_week">Ajouté cette semaine</string>
+    <string name="tonight_added_this_month">Ajouté ce mois-ci</string>
+    <string name="tonight_added">Ajouté récemment</string>
+    <string name="tonight_never_watched">Jamais vu</string>
+    <plurals name="tonight_not_watched_years">
+        <item quantity="one">Pas vu depuis %d an</item>
+        <item quantity="many">Pas vu depuis %d ans</item>
+        <item quantity="other">Pas vu depuis %d ans</item>
+    </plurals>
+    <plurals name="tonight_not_watched_months">
+        <item quantity="one">Pas vu depuis %d mois</item>
+        <item quantity="many">Pas vu depuis %d mois</item>
+        <item quantity="other">Pas vu depuis %d mois</item>
+    </plurals>
 </resources>

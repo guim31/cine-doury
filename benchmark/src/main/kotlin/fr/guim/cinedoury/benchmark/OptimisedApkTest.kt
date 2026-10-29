@@ -25,13 +25,13 @@ class OptimisedApkTest {
     fun keepsTheSessionOfTheDebugApk() {
         remote.device.pressHome()
         remote.device.executeShellCommand("am start -W -n $PACKAGE/$PACKAGE.tv.MainActivity")
-        remote.waitUntil("the profiles or the home", PLAYER_TIMEOUT) { remote.has(PROFILE_0) || remote.has(HOME_PLAY) }
+        remote.waitUntil("the profiles or the home", PLAYER_TIMEOUT) { remote.has(PROFILE_0) || remote.onHome() }
         if (remote.has(START)) throw AssertionError("The server is forgotten\n${remote.screen()}")
         if (remote.has(PROFILE_0)) {
             remote.waitFocusIn(PROFILE_0)
             remote.press(KeyEvent.KEYCODE_DPAD_CENTER)
             // Still signed in: no password, no Quick Connect.
-            remote.waitUntil("the home", PLAYER_TIMEOUT) { remote.has(HOME_PLAY) || remote.has(USE_PASSWORD) }
+            remote.waitUntil("the home", PLAYER_TIMEOUT) { remote.onHome() || remote.has(USE_PASSWORD) }
             if (remote.has(USE_PASSWORD)) throw AssertionError("The session is lost\n${remote.screen()}")
         }
         remote.waitHome()

@@ -59,12 +59,14 @@ enum class NetworkMode {
  * « Accueil et navigation » of a profile on this device (`SPEC.md` § 4.17).
  *
  * @param featuredBanner the banner at the top of the home.
+ * @param tonightMosaic the mosaic « Ce soir » at the top of the home, instead of the banner (essai réel 5).
  * @param posterTitles the title and year under every poster, not only the focused one.
  * @param unwatchedMarks the « non vu » triangle and the count of unwatched episodes.
  * @param defaultView the view of a library where the profile chose none.
  */
 data class Browsing(
     val featuredBanner: Boolean = true,
+    val tonightMosaic: Boolean = true,
     val posterTitles: Boolean = false,
     val unwatchedMarks: Boolean = true,
     val defaultView: LibraryView = LibraryView.Posters,
@@ -165,6 +167,7 @@ class AppPreferences(
         store.edit { prefs ->
             val next = change(prefs.browsing(keys))
             prefs[keys.banner] = next.featuredBanner
+            prefs[keys.tonight] = next.tonightMosaic
             prefs[keys.titles] = next.posterTitles
             prefs[keys.unwatched] = next.unwatchedMarks
             prefs[keys.view] = next.defaultView.name
@@ -189,6 +192,7 @@ class AppPreferences(
     ) {
         private val suffix = "@${profile.serverId}/${profile.userId}"
         val banner = booleanPreferencesKey("featured_banner$suffix")
+        val tonight = booleanPreferencesKey("tonight_mosaic$suffix")
         val titles = booleanPreferencesKey("poster_titles$suffix")
         val unwatched = booleanPreferencesKey("unwatched_marks$suffix")
         val view = stringPreferencesKey("default_view$suffix")
@@ -198,6 +202,7 @@ class AppPreferences(
         val defaults = Browsing()
         return Browsing(
             featuredBanner = this[keys.banner] ?: defaults.featuredBanner,
+            tonightMosaic = this[keys.tonight] ?: defaults.tonightMosaic,
             posterTitles = this[keys.titles] ?: defaults.posterTitles,
             unwatchedMarks = this[keys.unwatched] ?: defaults.unwatchedMarks,
             defaultView = enumOf(this[keys.view], defaults.defaultView),

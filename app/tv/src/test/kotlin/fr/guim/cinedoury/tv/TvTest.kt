@@ -71,3 +71,22 @@ internal fun TvComposeRule.pressBack() {
     runOnUiThread { activity.onBackPressedDispatcher.onBackPressed() }
     waitForIdle()
 }
+
+/**
+ * The home of the signed-in profile with the banner of 0.9.1 instead of the mosaic « Ce soir »
+ * (essai réel 5): for the tests of the paths of the banner, still there when the mosaic is off.
+ */
+internal fun withoutTonightMosaic() {
+    val koin =
+        org.koin.java.KoinJavaComponent
+            .getKoin()
+    val active = koin.get<fr.guim.cinedoury.core.data.SessionManager>().active.value ?: return
+    val profile =
+        fr.guim.cinedoury.core.data.home
+            .ProfileKey(active.profile.serverId, active.profile.user.id.value)
+    kotlinx.coroutines.runBlocking {
+        koin.get<fr.guim.cinedoury.core.data.prefs.AppPreferences>().setBrowsing(
+            profile,
+        ) { it.copy(tonightMosaic = false) }
+    }
+}

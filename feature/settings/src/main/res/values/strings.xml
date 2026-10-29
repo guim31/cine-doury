@@ -301,4 +301,6 @@
     <string name="report_sent">Dans les journaux du serveur : « %1$s ».</string>
     <string name="report_failed">Le serveur n\'a pas reçu le rapport. Vérifiez la connexion, puis réessayez.</string>
     <string name="report_no_server">Aucun serveur ouvert : le rapport ne peut pas être envoyé.</string>
+    <string name="browsing_tonight">Mosaïque « Ce soir »</string>
+    <string name="browsing_tonight_description">À la place du bandeau : lectures en cours, épisodes à suivre, derniers ajouts.</string>
 </resources>

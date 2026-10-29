@@ -92,6 +92,7 @@ class HomeRepository(
     suspend fun refresh(
         profile: ProfileKey,
         source: LibrarySource,
+        tonight: Boolean = false,
     ): Map<String, List<MediaItem>> {
         val libraries =
             coroutineScope {
@@ -102,10 +103,23 @@ class HomeRepository(
         val specs = HomeRows.plan(layout(profile).first(), libraries.libraries, libraries.exclusions)
         val rows =
             coroutineScope {
+                // The mosaic « Ce soir » reads its own sources, whatever rows the home shows (essai réel 5).
+                val mosaic =
+                    async {
+                        if (tonight) {
+                            HomeRows.fetchTonight(
+                                libraries.libraries,
+                                libraries.exclusions,
+                                source,
+                            )
+                        } else {
+                            emptyMap()
+                        }
+                    }
                 specs
                     .map { spec -> async { spec.key to HomeRows.fetch(spec, source, clock) } }
                     .awaitAll()
-                    .toMap()
+                    .toMap() + mosaic.await()
             }
         cache.replaceLibraries(profile.serverId, profile.userId, libraries.toEntities(profile))
         cache.replaceRows(

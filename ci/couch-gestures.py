@@ -150,6 +150,13 @@ class Device:
             if pause:
                 time.sleep(pause)
 
+    def hold(self, name, pause=PAUSE):
+        """A key held down (about half a second): OK held opens the menu of a card (essai réel 5)."""
+        self.shell(f"input keyevent --longpress {KEY[name]}")
+        self.presses += 1
+        if pause:
+            time.sleep(pause)
+
     def dump(self):
         """The screen as accessibility sees it; None when it is busy (an animation running)."""
         for _ in range(3):
@@ -350,11 +357,11 @@ class Couch:
         return event.removeprefix("screen "), at
 
     def wait_home_focus(self):
-        """« Lire » focused: the home has its rows (from the cache, then the server)."""
-        self.d.wait_ui(lambda s: s.focus_in("home-play"), what="« Lire » focalisé")
+        """The large tile of the mosaic « Ce soir » focused (« Lire » of the banner when it is off)."""
+        self.d.wait_ui(lambda s: any(s.focus_in(tag) for tag in HOME_START), what="la grande tuile focalisée")
 
     def home(self):
-        """From anywhere in the app: « Retour » until the home, then « Lire »."""
+        """From anywhere in the app: « Retour » until the home, then its large tile (or « Lire »)."""
         d = self.d
         for _ in range(12):
             root = d.dump()
@@ -371,9 +378,13 @@ class Couch:
             if s.has("quit-dialog"):
                 d.press("back")
             elif s.has("home"):
-                if s.focus_in("home-play"):
+                if any(s.focus_in(tag) for tag in HOME_START):
                     return
-                d.press("right" if s.focus_tag("rail") else "back")
+                if s.focus_tag(TONIGHT):
+                    # Another tile of the mosaic: ← along its line to the large one.
+                    d.press("left")
+                else:
+                    d.press("right" if s.focus_tag("rail") else "back")
             else:
                 d.press("back")
         raise Failed("impossible de revenir à l'accueil")
@@ -416,6 +427,18 @@ class Couch:
         d = self.d
         self.home()
         s = d.screen()
+        if s.has(TONIGHT):
+            # The mosaic « Ce soir » (essai réel 5): the title to resume is its large tile, which OK
+            # plays; its details through the menu of the tile (« Reprendre », « Lire depuis le début »,
+            # then « Ouvrir la fiche »).
+            since = d.mark()
+            d.hold("ok")
+            d.wait_ui(lambda s: s.focus_in("quick-Resume"), what="le menu de la tuile")
+            d.press("down", "down")
+            d.wait_ui(lambda s: s.focus_in("quick-OpenDetails"), what="« Ouvrir la fiche »")
+            since_ok = d.mark()
+            d.press("ok", pause=0)
+            return self.wait_screen("Details", since_ok)
         rows = [n.get("resource-id") for n in s.nodes(prefix="row-")]
         resume = next((r for r in rows if "resume" in r.lower()), None)
         if resume is None:
@@ -755,6 +778,8 @@ class Couch:
         d = self.d
         self.home()
         s = d.screen()
+        if s.has(TONIGHT) and not s.has(prefix="row-next"):
+            raise Skip("les épisodes « À suivre » sont dans la mosaïque « Ce soir »")
         rows = [n.get("resource-id") for n in s.nodes(prefix="row-")]
         next_up = next((r for r in rows if "next" in r.lower()), None)
         if next_up is None:
@@ -832,6 +857,11 @@ class Couch:
 # The lines of the menu ⋯ of a details screen: there only while it is open (the side panel keeps
 # its own tag, `details-panel`, closed).
 MENU_LINE = "details-line-"
+
+# Where the home starts: the large tile of the mosaic « Ce soir » (essai réel 5), else « Lire » of the
+# banner; and the mosaic itself.
+HOME_START = ("tonight-0", "home-play")
+TONIGHT = "home-tonight"
 
 # The buttons of the player, left to right (`PlayerScreen`; the episodes around « Lecture », chapters and
 # quality only when they apply).

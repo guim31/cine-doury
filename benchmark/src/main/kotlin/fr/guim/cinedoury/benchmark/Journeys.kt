@@ -4,7 +4,7 @@ import android.view.KeyEvent
 
 /**
  * The journeys of the profiles and the benchmarks (`SPEC.md` § 4.16), on the test Jellyfin, from the
- * home with « Lire » focused. Each ends where it started.
+ * home with its large tile (or « Lire ») focused. Each ends where it started.
  */
 internal object Journeys {
     /** Down the rows of the home, along a row and back, then up to the banner. */
@@ -12,8 +12,8 @@ internal object Journeys {
         repeat(HOME_ROWS) { press(KeyEvent.KEYCODE_DPAD_DOWN) }
         repeat(ROW_CARDS) { press(KeyEvent.KEYCODE_DPAD_RIGHT) }
         repeat(ROW_CARDS) { press(KeyEvent.KEYCODE_DPAD_LEFT) }
-        repeat(HOME_ROWS) { press(KeyEvent.KEYCODE_DPAD_UP) }
-        waitFocusIn(HOME_PLAY)
+        repeat(HOME_ROWS - 1) { press(KeyEvent.KEYCODE_DPAD_UP) }
+        backToStart()
     }
 
     /**
@@ -59,11 +59,8 @@ internal object Journeys {
         }
     }
 
-    /** From a card of the first row of the home, back up to « Lire ». */
-    fun Remote.backToBanner() {
-        press(KeyEvent.KEYCODE_DPAD_UP)
-        waitFocusIn(HOME_PLAY)
-    }
+    /** From a card of the first row of the home, back up to where the home starts. */
+    fun Remote.backToBanner() = backToStart()
 
     /** OK on « Réglages »: the settings, a page, back to the settings and to the home. */
     fun Remote.openSettings() {

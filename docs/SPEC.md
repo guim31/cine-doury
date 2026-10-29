@@ -2077,6 +2077,44 @@ et une réparation du banc de mesures, faits dans l'ordre E, A, B, C, D.
   sans relire la bibliothèque, le menu propose ensuite « Marquer comme non vu »), `J6NavigationTest`
   (« Sélectionner » commence la sélection) ; captures 222 et 223 (`avant-c-*`, `apres-c-*`).
 
+- **D. Nouvel accueil : la mosaïque « Ce soir »** (`UI.md` § 8, « Accueil » ; choisie par le
+  mainteneur parmi trois maquettes). **Écart à `UI.md` (bandeau à la une)** : dès qu'il y avait des
+  lectures en cours, le bandeau répétait la première et la rangée « À suivre » n'avait qu'une carte ;
+  la mosaïque montre cinq titres dans la même hauteur. Décisions :
+  - **sources** (`HomeRows.fetchTonight`, une lecture de plus au rafraîchissement de l'accueil, quand
+    la mosaïque est active) : lectures en cours, épisodes à suivre, derniers ajouts et titres anciens
+    (les plus vieux ajouts, films et séries) des bibliothèques admises sur l'accueil, au plus 12 par
+    source, quelles que soient les rangées choisies. Elles vont au cache de l'accueil sous des clés à
+    part (`tonight:*`) : la mosaïque s'affiche aussitôt au lancement suivant, comme les rangées ;
+  - **choix** (`Tonight.pick`, `:core:data`) : grande tuile = la lecture en cours la plus récente,
+    sinon le premier « À suivre » (le serveur les donne par série regardée en dernier), sinon le
+    dernier ajout ; puis les autres lectures, « À suivre », nouveaux épisodes (un « À suivre » ajouté
+    depuis moins de 14 jours), ajouts, un titre à redécouvrir (jamais vu, ou vu il y a plus d'un an ;
+    un autre chaque jour, le même toute la journée : la mosaïque ne change pas à chaque retour), sans
+    doublon de titre ni de série. Les rangées « Reprendre » et « À suivre » perdent ce que la mosaïque
+    montre (`HomeViewModel`) ;
+  - **mise en page** : la mosaïque est le premier élément de la liste de l'accueil, de la hauteur que
+    laissent une rangée entière et la moitié de la suivante (`homeRowsArea`, la règle de l'essai réel
+    4), au moins ce qu'il faut à deux petites tuiles ; sa largeur est celle du contenu, les images
+    sont recadrées à la tuile (Coil demande la taille de la tuile). La liste défile **par index** :
+    la rangée focalisée en haut, la mosaïque hors de l'écran ; la marge du haut coupe la liste, pour
+    qu'il ne reste aucune bande de mosaïque au-dessus de la rangée. → depuis la grande tuile va à la
+    petite tuile du haut (`focusProperties`), les deux étant à égale distance ;
+  - **fluidité** : chaque tuile lit son propre focus (`MosaicTile`, `rememberCineFocus`) ; le fond
+    d'ambiance lit le titre focalisé au dessin ; rien d'autre ne recompose au passage d'une tuile à
+    l'autre ;
+  - **réglage** : « Mosaïque « Ce soir » » (Accueil et navigation, profil, `tonight_mosaic`, activée par
+    défaut) ; désactivée, l'accueil reprend le bandeau de la 0.9.1 et « Bandeau à la une » s'applique ;
+  - **parcours automatiques** : le banc (`Remote.waitHome`, `backToStart`), les profils,
+    `SignInJourneyTest` et `ci/couch-gestures.py` partent de la grande tuile (`tonight-0`), ou de
+    « Lire » quand la mosaïque est coupée ; le geste 2 ouvre la fiche par le menu de la tuile.
+  Tests : `TonightTest` (ordre, grande tuile, sans doublon, toujours pleine, à redécouvrir),
+  `R5Home1080pTest` et `R5Home4kTest` (cinq tuiles, grande tuile focalisée, une rangée et demie dans
+  les trois tailles, mosaïque défilée par index et revenue, titre immobile, OK qui lit ou ouvre),
+  `R5TonightFlowTest` (appli réelle : mosaïque pleine par défaut, « Reprendre » parti des rangées,
+  « Retour » vers le rail puis hors de l'appli), `AppPreferencesTest` ; les parcours du bandeau
+  (`J2FlowTest`, `J8FocusTest`) tournent mosaïque coupée. Capture 224 (`avant-d-*`, `apres-d-*`).
+
 ## 5. Tests et CI
 
 - GitHub Actions sur `ubuntu-latest` :

@@ -17,6 +17,10 @@ Essai réel 5 (29/10/2026, NVIDIA Shield TV en 4K et Chromecast avec Google TV, 
   rapides : reprendre ou lire, lire depuis le début, ouvrir la fiche, aller à la série ou à la saison,
   marquer comme vu ou non vu, retirer de « Reprendre », ajouter aux favoris ou les retirer ; dans une
   bibliothèque, « Sélectionner » pour les comptes qui gèrent.
+- **Accueil** : en haut, la mosaïque « Ce soir » remplace le bandeau : une grande tuile (la lecture
+  en cours la plus récente) et quatre petites (autres lectures, épisodes à suivre, nouveaux épisodes,
+  derniers ajouts, un titre à redécouvrir) ; « Reprendre » et « À suivre » ne gardent que le reste.
+  Réglages → Accueil et navigation → « Mosaïque « Ce soir » » pour revenir au bandeau.
 - **TalkBack** : chaque entrée du menu de gauche dit de nouveau son nom, menu ouvert ou fermé.
 
 ## 0.9.1 — 29/10/2026

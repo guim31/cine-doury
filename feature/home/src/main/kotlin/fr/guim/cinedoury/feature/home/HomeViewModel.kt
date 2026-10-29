@@ -11,6 +11,8 @@ import fr.guim.cinedoury.core.data.home.HomeRepository
 import fr.guim.cinedoury.core.data.home.HomeRowType
 import fr.guim.cinedoury.core.data.home.HomeRows
 import fr.guim.cinedoury.core.data.home.ProfileKey
+import fr.guim.cinedoury.core.data.home.Tonight
+import fr.guim.cinedoury.core.data.home.TonightSources
 import fr.guim.cinedoury.core.data.library.LibraryIconRepository
 import fr.guim.cinedoury.core.data.prefs.AppPreferences
 import fr.guim.cinedoury.core.model.Library
@@ -27,6 +29,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.time.Clock
 
 /** A row as the home draws it. */
 @Immutable
@@ -52,6 +55,8 @@ data class HomeState(
     val error: SourceException? = null,
     /** « Bandeau à la une » (J7). */
     val featuredBanner: Boolean = true,
+    /** The mosaic « Ce soir » in place of the banner (essai réel 5); null when off, or nothing to show. */
+    val tonight: TonightState? = null,
 )
 
 /**
@@ -62,7 +67,8 @@ class HomeViewModel(
     private val sessions: SessionManager,
     private val home: HomeRepository,
     icons: LibraryIconRepository,
-    preferences: AppPreferences,
+    private val preferences: AppPreferences,
+    private val clock: Clock = Clock.systemDefaultZone(),
 ) : ViewModel() {
     private val active: ActiveSession? = sessions.active.value
     private val profile = active?.let { ProfileKey(it.profile.serverId, it.profile.user.id.value) }
@@ -88,13 +94,26 @@ class HomeViewModel(
                 home.railHidden(profile),
                 icons.chosen(profile.serverId),
                 combine(refreshed, error, preferences.browsing(profile)) { done, failure, browsing ->
-                    Triple(done, failure, browsing.featuredBanner)
+                    Triple(done, failure, browsing)
                 },
-            ) { (libraries, rows, specs), hidden, chosen, (done, failure, banner) ->
+            ) { (libraries, rows, specs), hidden, chosen, (done, failure, browsing) ->
+                val tonight = if (browsing.tonightMosaic) tonight(rows) else null
+                // What the mosaic shows leaves « Reprendre » and « À suivre », which go when empty.
+                val inMosaic =
+                    tonight
+                        ?.tiles
+                        ?.map { it.item.id }
+                        ?.toSet()
+                        .orEmpty()
                 val shown =
                     specs.mapNotNull { spec ->
-                        rows[spec.key]?.takeIf { it.isNotEmpty() }?.let { items ->
-                            HomeRow(spec.key, spec.config.type, spec.library, spec.config.style, items)
+                        val type = spec.config.type
+                        val items =
+                            rows[spec.key].orEmpty().filter {
+                                (type != HomeRowType.Resume && type != HomeRowType.NextUp) || it.id !in inMosaic
+                            }
+                        items.takeIf { it.isNotEmpty() }?.let {
+                            HomeRow(spec.key, type, spec.library, spec.config.style, it)
                         }
                     }
                 HomeState(
@@ -108,13 +127,27 @@ class HomeViewModel(
                     remote = active.connection.mode == ConnectionMode.Remote,
                     rows = if (rows.isEmpty() && !done) null else shown,
                     error = failure,
-                    featuredBanner = banner,
+                    featuredBanner = browsing.featuredBanner,
+                    tonight = tonight,
                 )
             }.stateIn(viewModelScope, SharingStarted.Eagerly, HomeState())
         }
 
     init {
         refresh()
+    }
+
+    /** The mosaic « Ce soir » from its sources in the cache, null when they hold nothing yet. */
+    private fun tonight(rows: Map<String, List<MediaItem>>): TonightState? {
+        val keys = HomeRows.TonightKeys
+        val sources =
+            TonightSources(
+                resume = rows[keys.RESUME].orEmpty(),
+                nextUp = rows[keys.NEXT_UP].orEmpty(),
+                latest = rows[keys.LATEST].orEmpty(),
+                rediscover = rows[keys.REDISCOVER].orEmpty(),
+            )
+        return Tonight.pick(sources, clock.instant()).takeIf { it.isNotEmpty() }?.let(::TonightState)
     }
 
     /** Asks the server for the rows again (when the home opens, or comes back into view). */
@@ -125,7 +158,8 @@ class HomeViewModel(
         refreshing =
             viewModelScope.launch {
                 try {
-                    val written = home.refresh(profile, source)
+                    val tonight = preferences.browsing(profile).first().tonightMosaic
+                    val written = home.refresh(profile, source, tonight)
                     // Room gives the new rows a moment later: until then the home is not « empty ».
                     if (written.values.any { it.isNotEmpty() }) home.rows(profile).first { it.isNotEmpty() }
                     error.value = null

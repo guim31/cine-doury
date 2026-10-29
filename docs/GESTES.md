@@ -14,7 +14,7 @@ appui** et l'écran prêt, ce que ressent la main ; « Total » compte en plus l
 | # | Geste | Départ | Appuis | Cible (réponse) | Fin |
 |---|---|---|---|---|---|
 | 1 | Démarrage à froid jusqu'à l'accueil | appli fermée | 0 (1 sur « Qui regarde ? ») | 2 s en tout (`FONCTIONNALITES` § 13) | l'accueil dessiné |
-| 2 | Accueil → fiche du premier titre à reprendre | « Lire » focalisé | 2 (↓, OK) | 0,3 s | la fiche dessinée |
+| 2 | Accueil → fiche du premier titre à reprendre | la grande tuile de la mosaïque focalisée (« Lire » sans mosaïque) | 4 (OK maintenu, ↓ ↓, OK : « Ouvrir la fiche » du menu ; sans mosaïque 2 : ↓, OK) | 0,3 s | la fiche dessinée |
 | 3 | Fiche → lecture (« Reprendre ») | la fiche, « Reprendre » focalisé | 1 | 2 s (`UI.md` § 11) | l'image bouge |
 | 4 | Afficher l'interface du lecteur | lecture, interface cachée | 1 (OK) | 0,2 s | l'interface |
 | 5 | Pause, puis reprise | interface affichée | 2 (OK, OK) | 0,5 s | l'image bouge de nouveau |

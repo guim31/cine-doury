@@ -126,6 +126,12 @@ object HomePreview {
     const val BANNER = "home-banner"
     const val DETAILS = "home-details"
 
+    /** The mosaic « Ce soir » (essai réel 5). */
+    const val TONIGHT = "home-tonight"
+
+    /** A tile of the mosaic: 0 is the large one, the first focus of the home. */
+    fun tonight(index: Int) = "tonight-$index"
+
     fun card(
         row: String,
         index: Int,
@@ -164,7 +170,11 @@ fun HomeScreen(
     val focusedItem = remember { mutableStateOf<MediaItem?>(null) }
     var focusedRow by rememberSaveable { mutableStateOf<String?>(null) }
     var railFocused by remember { mutableStateOf(false) }
-    val featuredItem = { focusedItem.value ?: previewFeatured ?: rows?.firstOrNull()?.items?.firstOrNull() }
+    val tonight = state.tonight
+    val featuredItem = {
+        focusedItem.value ?: previewFeatured ?: tonight?.tiles?.firstOrNull()?.item
+            ?: rows?.firstOrNull()?.items?.firstOrNull()
+    }
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     val play = remember { FocusRequester() }
@@ -173,7 +183,13 @@ fun HomeScreen(
     // « Bandeau à la une » off (`SPEC.md` § 4.17): the rows from the top, the first one focused. The
     // skeletons, an error or an empty home still use the space of the banner.
     val banner = state.featuredBanner || rows.isNullOrEmpty()
-    val top = if (banner) play else rowRequesters.requester(rows.orEmpty().first().key)
+    val mainTile = remember { FocusRequester() }
+    val top =
+        when {
+            tonight != null -> mainTile
+            banner -> play
+            else -> rowRequesters.requester(rows.orEmpty().first().key)
+        }
 
     BackHandler {
         when {
@@ -205,12 +221,60 @@ fun HomeScreen(
         // and would stay on a row read first while others came above it. Scrolled by index, the list is
         // put back on the focused row, or at its top.
         val rowKeys = remember(rows) { rows?.map { it.key } }
-        LaunchedEffect(rowKeys, banner) {
-            if (!banner || rowKeys == null) return@LaunchedEffect
-            listState.scrollToItem(rowKeys.indexOf(focusedRow).coerceAtLeast(0))
+        LaunchedEffect(rowKeys, banner, tonight != null) {
+            if (rowKeys == null) return@LaunchedEffect
+            if (tonight != null) {
+                // The mosaic is the first item of the list: a row stands one further.
+                listState.scrollToItem(focusedRow?.let { rowKeys.indexOf(it) + 1 }?.coerceAtLeast(0) ?: 0)
+            } else if (banner) {
+                listState.scrollToItem(rowKeys.indexOf(focusedRow).coerceAtLeast(0))
+            }
         }
         BoxWithConstraints(Modifier.fillMaxSize()) {
-            if (banner) {
+            if (tonight != null) {
+                // The mosaic « Ce soir » (essai réel 5): above a row and a half, as the banner was; it
+                // scrolls away by index when the focus goes down into the rows, and comes back with it.
+                val mosaic =
+                    (maxHeight - homeRowsArea(rows) - CineSpacing.safeVertical - RowGap).coerceAtLeast(
+                        tonightMinHeight(),
+                    )
+                ScrolledByIndex {
+                    HomeRows(
+                        state = state,
+                        listState = listState,
+                        shared = shared,
+                        sources = sources,
+                        navigation = navigation,
+                        rowRequesters = rowRequesters,
+                        menu = menu,
+                        onFocused = { row, item ->
+                            focusedItem.value = item
+                            focusedRow = row
+                        },
+                        onRowFocused = scrollToRow,
+                        top = CineSpacing.safeVertical,
+                        leading = {
+                            TonightMosaic(
+                                state = tonight,
+                                height = mosaic,
+                                sources = sources,
+                                menu = menu,
+                                navigation = navigation,
+                                main = mainTile,
+                                onFocused = { focusedItem.value = it },
+                                modifier =
+                                    Modifier.onFocusChanged {
+                                        if (it.hasFocus) {
+                                            focusedRow = null
+                                            scrollToRow(0)
+                                        }
+                                    },
+                            )
+                        },
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+            } else if (banner) {
                 // The banner stands still (essai réel 3), on what a row and a half leave (essai réel 4):
                 // the first row whole and the top half of the next under it, whatever the size, at
                 // least its single band. The focused row goes to the top of their area, scrolled by its
@@ -339,14 +403,19 @@ private fun HomeRows(
     onRowFocused: ((index: Int) -> Unit)? = null,
     top: Dp = CineSpacing.none,
     previewScrolledRow: String? = null,
+    leading: (@Composable () -> Unit)? = null,
 ) {
     val rows = state.rows
+    // The mosaic before the rows: every row stands one further in the list.
+    val first = if (leading != null) 1 else 0
     LazyColumn(
         state = listState,
-        modifier = modifier.testTag("home"),
-        contentPadding = PaddingValues(top = top, bottom = CineSpacing.xxl),
+        // Under the mosaic, the margin at the top clips the list: what scrolled away leaves no sliver.
+        modifier = modifier.padding(top = if (leading != null) top else CineSpacing.none).testTag("home"),
+        contentPadding = PaddingValues(top = if (leading != null) CineSpacing.none else top, bottom = CineSpacing.xxl),
         verticalArrangement = Arrangement.spacedBy(RowGap),
     ) {
+        if (leading != null) item(key = "tonight", contentType = "tonight") { leading() }
         if (rows == null) {
             items(SKELETON_ROWS) { SkeletonRow() }
         } else {
@@ -361,7 +430,7 @@ private fun HomeRows(
                     menu = menu,
                     onFocused = { item -> onFocused(row.key, item) },
                     onOpen = navigation::open,
-                    modifier = Modifier.onRowFocused(onRowFocused, index),
+                    modifier = Modifier.onRowFocused(onRowFocused, first + index),
                     previewScroll = if (row.key == previewScrolledRow) PREVIEW_ROW_SCROLL else CineSpacing.none,
                 )
             }
@@ -373,7 +442,7 @@ private fun HomeRows(
                     modifier =
                         Modifier
                             .padding(start = ContentStart)
-                            .onRowFocused(onRowFocused, rows.size)
+                            .onRowFocused(onRowFocused, first + rows.size)
                             .testTag("customize"),
                 )
             }
@@ -391,6 +460,19 @@ private fun homeRowsArea(rows: List<HomeRow>?): Dp {
     val first = rows?.firstOrNull()?.style ?: CardStyle.Thumbnail
     val second = rows?.getOrNull(1)?.style ?: first
     return homeRowHeight(first) + RowGap + homeRowHeight(second) / 2
+}
+
+/**
+ * The lowest the mosaic goes, larger text included: a small tile shows its pill, its title and its
+ * line, twice, with the gap between them.
+ */
+@Composable
+private fun tonightMinHeight(): Dp {
+    val typography = CineTheme.typography
+    val small =
+        CineSpacing.s * 2 + CineSizes.progressHeight + textLineHeight(typography.minimum) +
+            textLineHeight(typography.label) + textLineHeight(typography.caption) + CineSpacing.xs
+    return small * 2 + CineSpacing.m
 }
 
 /** A row of the home: its title, the gap under it, a card and its caption of two lines (`HomeRowView`). */

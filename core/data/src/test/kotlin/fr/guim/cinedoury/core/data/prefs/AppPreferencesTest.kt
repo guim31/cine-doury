@@ -16,6 +16,7 @@ import java.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AppPreferencesTest {
@@ -68,10 +69,18 @@ class AppPreferencesTest {
         scope.runTest {
             prefs.setBrowsing(
                 alice,
-            ) { it.copy(featuredBanner = false, posterTitles = true, defaultView = LibraryView.List) }
+            ) {
+                it.copy(
+                    featuredBanner = false,
+                    tonightMosaic = false,
+                    posterTitles = true,
+                    defaultView = LibraryView.List,
+                )
+            }
             assertEquals(
                 Browsing(
                     featuredBanner = false,
+                    tonightMosaic = false,
                     posterTitles = true,
                     unwatchedMarks = true,
                     defaultView = LibraryView.List,
@@ -79,6 +88,8 @@ class AppPreferencesTest {
                 prefs.browsing(alice).first(),
             )
             assertEquals(Browsing(), prefs.browsing(bob).first())
+            // The mosaic « Ce soir » is on until a profile turns it off (essai réel 5).
+            assertTrue(prefs.browsing(bob).first().tonightMosaic)
         }
 
     @Test
