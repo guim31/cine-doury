@@ -10,6 +10,7 @@ import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performKeyInput
@@ -17,6 +18,10 @@ import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.pressKey
 import fr.guim.cinedoury.core.data.SessionManager
 import fr.guim.cinedoury.core.data.di.dataModule
+import fr.guim.cinedoury.core.data.home.CardStyle
+import fr.guim.cinedoury.core.data.home.HomeRepository
+import fr.guim.cinedoury.core.data.home.ProfileKey
+import fr.guim.cinedoury.core.data.home.continues
 import fr.guim.cinedoury.core.data.security.TokenCipher
 import fr.guim.cinedoury.core.designsystem.theme.CineTheme
 import fr.guim.cinedoury.core.designsystem.theme.ThemeVariant
@@ -37,6 +42,7 @@ import fr.guim.cinedoury.feature.manage.manageModule
 import fr.guim.cinedoury.feature.settings.settingsModule
 import fr.guim.cinedoury.feature.update.updateModule
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Before
@@ -53,13 +59,15 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import java.time.Instant
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
  * Essai réel 5, D, through the real app (view model, cache, source in memory): the mosaic « Ce soir »
  * is on by default, full, its large tile the film in progress and focused; « Reprendre » leaves the
- * rows once the mosaic holds all of it; « Retour » goes to the rail, then out of the app.
+ * rows once the mosaic holds all of it; « Retour » goes to the rail, then out of the app. F: its
+ * customisation, « Continuer ».
  */
 @OptIn(ExperimentalTestApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -156,14 +164,66 @@ class R5TonightFlowTest {
         // « Fréquences », started at 40 min: the large tile, which resumes it.
         val large = description(HomePreview.tonight(0))
         assertTrue("Fréquences" in large && "REPRENDRE" in large, large)
-        // The only playback in progress is in the mosaic: « Reprendre » is not a row any more.
+        // The only playback in progress is in the mosaic: no « Continuer », and never its two rows.
+        assertFalse(shown("row-continue"), "« Continuer » with nothing left")
         assertFalse(shown("row-resume"), "« Reprendre » left the rows")
+        assertFalse(shown("row-next-up"), "« À suivre » left the rows")
         // « Retour »: the rail, then out of the app.
         compose.pressBack()
         compose.onNode(isFocused() and hasAnyAncestor(hasTestTag("rail"))).assertExists()
         compose.pressBack()
         assertTrue(compose.activity.isFinishing)
     }
+
+    /**
+     * F: « Personnaliser l'accueil » under the mosaic shows « Continuer » in place of « Reprendre » and
+     * « À suivre »; what is chosen for it goes to the two rows stored, which the home without the
+     * mosaic shows; removing it removes both.
+     */
+    @Test
+    fun customizingContinueChangesItsTwoRows() {
+        compose.setTvContent {
+            CineTheme(ThemeVariant.Dark) {
+                CineApp(
+                    ThemeVariant.Dark,
+                    onToggleVariant = {},
+                    showCatalog = false,
+                    navigator = Navigator(Route.HomeSettings),
+                )
+            }
+        }
+        val first = hasTestTag("customize-row-0") or hasAnyAncestor(hasTestTag("customize-row-0"))
+        waitFor("« Continuer » first") {
+            compose.onAllNodes(hasText("Continuer") and first).fetchSemanticsNodes().isNotEmpty()
+        }
+        assertFalse(
+            compose
+                .onAllNodes(
+                    hasText("À suivre") and hasAnyAncestor(hasTestTag("customize-rows")),
+                ).fetchSemanticsNodes()
+                .isNotEmpty(),
+            "« À suivre » in the rows",
+        )
+        val home = getKoin().get<HomeRepository>()
+        val active = checkNotNull(getKoin().get<SessionManager>().active.value)
+        val profile = ProfileKey(active.profile.serverId, active.profile.user.id.value)
+
+        fun stored() = runBlocking { home.layout(profile).first() }
+
+        click("customize-style")
+        waitFor("posters for both rows") {
+            stored().filter { it.type.continues }.map { it.style } == listOf(CardStyle.Poster, CardStyle.Poster)
+        }
+        assertEquals(listOf("resume", "next-up", "latest", "released"), stored().map { it.id }, "in place")
+        click("customize-remove")
+        waitFor("both rows removed") { stored().none { it.type.continues } }
+        assertEquals(listOf("latest", "released"), stored().map { it.id })
+    }
+
+    private fun click(tag: String) =
+        compose
+            .onNode(hasClickAction() and (hasTestTag(tag) or hasAnyAncestor(hasTestTag(tag))))
+            .performSemanticsAction(SemanticsActions.OnClick)
 
     private companion object {
         const val TILES = 5

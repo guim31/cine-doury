@@ -2,6 +2,7 @@
 <resources>
     <string name="row_resume">Reprendre</string>
     <string name="row_next_up">À suivre</string>
+    <string name="row_continue">Continuer</string>
     <string name="row_latest">Ajouts récents</string>
     <string name="row_latest_in">Ajouts récents dans %1$s</string>
     <string name="row_released">Récemment sortis</string>

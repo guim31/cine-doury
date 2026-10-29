@@ -15,7 +15,17 @@ enum class HomeRowType {
 
     /** « Récemment sortis »: films and series by release date. */
     RecentlyReleased,
+
+    /**
+     * « Continuer », under the mosaic « Ce soir » only: « Reprendre » then « À suivre » in one row
+     * (essai réel 5). Never stored: [HomeLayouts.withContinue] shows the two rows as it.
+     */
+    Continue,
 }
+
+/** « Reprendre » and « À suivre », which the mosaic shows as one row « Continuer ». */
+val HomeRowType.continues: Boolean
+    get() = this == HomeRowType.Resume || this == HomeRowType.NextUp
 
 /** How a row draws its items: 2:3 posters or 16:9 thumbnails. */
 enum class CardStyle {
@@ -37,7 +47,7 @@ data class HomeRowConfig(
     val type: HomeRowType,
     val libraries: Set<LibraryId> = emptySet(),
     val style: CardStyle = type.defaultStyle,
-    val windowDays: Int? = if (type == HomeRowType.NextUp) DEFAULT_NEXT_UP_DAYS else null,
+    val windowDays: Int? = if (type.hasWindow) DEFAULT_NEXT_UP_DAYS else null,
 ) {
     companion object {
         /** Two weeks, like Plex (`OnDeckWindow = 2`). */
@@ -45,10 +55,14 @@ data class HomeRowConfig(
     }
 }
 
+/** The rows of the next episodes, whose series count as in progress within a window. */
+val HomeRowType.hasWindow: Boolean
+    get() = this == HomeRowType.NextUp || this == HomeRowType.Continue
+
 val HomeRowType.defaultStyle: CardStyle
     get() =
         when (this) {
-            HomeRowType.Resume, HomeRowType.NextUp -> CardStyle.Thumbnail
+            HomeRowType.Resume, HomeRowType.NextUp, HomeRowType.Continue -> CardStyle.Thumbnail
             HomeRowType.Latest, HomeRowType.RecentlyReleased -> CardStyle.Poster
         }
 
@@ -61,6 +75,75 @@ object HomeLayouts {
             HomeRowConfig("latest", HomeRowType.Latest),
             HomeRowConfig("released", HomeRowType.RecentlyReleased),
         )
+
+    /** The id of the row « Continuer » (it is never stored). */
+    const val CONTINUE_ID = "continue"
+
+    /**
+     * The layout under the mosaic « Ce soir » (essai réel 5): « Reprendre » and « À suivre » become
+     * one row « Continuer », where the first of them stood. It keeps what the user chose for them:
+     * their libraries (all of them if one row took all), the cards of the first, the window of
+     * « À suivre ». Without either row, no « Continuer ».
+     */
+    fun withContinue(layout: List<HomeRowConfig>): List<HomeRowConfig> {
+        val merged = layout.filter { it.type.continues }
+        if (merged.isEmpty()) return layout
+        val at = layout.indexOfFirst { it.type.continues }
+        val row =
+            HomeRowConfig(
+                id = CONTINUE_ID,
+                type = HomeRowType.Continue,
+                libraries =
+                    if (merged.any { it.libraries.isEmpty() }) emptySet() else merged.flatMap { it.libraries }.toSet(),
+                style = merged.first().style,
+                windowDays =
+                    merged.firstOrNull { it.type == HomeRowType.NextUp }?.windowDays
+                        ?: HomeRowConfig.DEFAULT_NEXT_UP_DAYS,
+            )
+        // The rows before the first merged one are all kept: it goes back at the same index.
+        return layout.filterNot { it.type.continues }.toMutableList().apply { add(at, row) }
+    }
+
+    /**
+     * What to store after an edit of [view], a layout of [withContinue] over [stored]: « Continuer »
+     * becomes « Reprendre » and « À suivre » again, where it now stands, so that the home without the
+     * mosaic keeps its two rows. Unchanged, they come back exactly as they were stored.
+     */
+    fun withoutContinue(
+        view: List<HomeRowConfig>,
+        stored: List<HomeRowConfig>,
+    ): List<HomeRowConfig> {
+        val before = withContinue(stored).firstOrNull { it.type == HomeRowType.Continue }
+        return view.flatMap { row ->
+            when {
+                row.type != HomeRowType.Continue -> {
+                    listOf(row)
+                }
+
+                row == before -> {
+                    stored.filter { it.type.continues }
+                }
+
+                else -> {
+                    listOf(
+                        HomeRowConfig(idOf(stored, HomeRowType.Resume), HomeRowType.Resume, row.libraries, row.style),
+                        HomeRowConfig(
+                            idOf(stored, HomeRowType.NextUp),
+                            HomeRowType.NextUp,
+                            row.libraries,
+                            row.style,
+                            row.windowDays,
+                        ),
+                    )
+                }
+            }
+        }
+    }
+
+    private fun idOf(
+        stored: List<HomeRowConfig>,
+        type: HomeRowType,
+    ): String = stored.firstOrNull { it.type == type }?.id ?: DEFAULT.first { it.type == type }.id
 
     /** The choices of the « À suivre » window, in days; null is « Sans limite ». */
     val NEXT_UP_WINDOWS: List<Int?> = listOf(7, 14, 30, 90, null)
@@ -96,7 +179,7 @@ object HomeLayouts {
         rows: List<HomeRowConfig>,
         type: HomeRowType,
     ): List<HomeRowConfig> {
-        val base = DEFAULT.first { it.type == type }.id
+        val base = DEFAULT.firstOrNull { it.type == type }?.id ?: CONTINUE_ID
         val id =
             generateSequence(1) { it + 1 }
                 .map {

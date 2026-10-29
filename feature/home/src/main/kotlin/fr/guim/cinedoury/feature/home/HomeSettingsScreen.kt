@@ -29,6 +29,7 @@ import fr.guim.cinedoury.core.data.home.CardStyle
 import fr.guim.cinedoury.core.data.home.HomeRowConfig
 import fr.guim.cinedoury.core.data.home.HomeRowType
 import fr.guim.cinedoury.core.data.home.HomeRows
+import fr.guim.cinedoury.core.data.home.hasWindow
 import fr.guim.cinedoury.core.designsystem.component.CineIcons
 import fr.guim.cinedoury.core.designsystem.component.InitialFocus
 import fr.guim.cinedoury.core.designsystem.component.ListRow
@@ -118,7 +119,7 @@ fun HomeSettingsScreen(
                     )
                 }
                 item { ListSectionTitle(stringResource(R.string.customize_add)) }
-                items(HomeRowType.entries, key = { "add-${it.name}" }) { type ->
+                items(state.addable, key = { "add-${it.name}" }) { type ->
                     ListRow(
                         title = stringResource(R.string.customize_add_row, type.label()),
                         icon = CineIcons.Add,
@@ -203,7 +204,7 @@ private fun RowOptions(
                 modifier = Modifier.testTag("customize-style"),
             )
         }
-        if (row.type == HomeRowType.NextUp) {
+        if (row.type.hasWindow) {
             item {
                 ListRow(
                     title = stringResource(R.string.customize_window),
@@ -253,6 +254,7 @@ internal fun HomeRowType.label(): String =
             HomeRowType.NextUp -> R.string.row_next_up
             HomeRowType.Latest -> R.string.row_latest
             HomeRowType.RecentlyReleased -> R.string.row_released
+            HomeRowType.Continue -> R.string.row_continue
         },
     )
 

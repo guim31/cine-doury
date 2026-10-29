@@ -78,8 +78,9 @@ internal fun HomeRowView(
     val start = ContentStart - CineSizes.railCollapsed
     val pivot = if (poster) start + card.width + CineSpacing.m else start
     val scrolled = with(LocalDensity.current) { previewScroll.roundToPx() }
-    // « Retirer de Continuer » from the menu of a card of « Reprendre » (essai réel 5).
-    val continueRow = row.key.takeIf { row.type == HomeRowType.Resume }
+    // « Retirer de Continuer » from the menu of a card of « Reprendre », or of a playback in progress
+    // of « Continuer » (essai réel 5).
+    val resumeRow = row.key.takeIf { row.type == HomeRowType.Resume }
     Column(
         modifier = modifier.testTag("row-${row.key}"),
         verticalArrangement = Arrangement.spacedBy(CineSpacing.rowTitleGap),
@@ -102,8 +103,13 @@ internal fun HomeRowView(
                     val cardModifier =
                         Modifier
                             .testTag(HomePreview.card(row.key, index))
-                            .quickMenu(menu, item, anchor = "${row.key}/${item.id.value}", continueRow = continueRow)
-                            .onFocusChanged {
+                            .quickMenu(
+                                menu,
+                                item,
+                                anchor = "${row.key}/${item.id.value}",
+                                continueRow =
+                                    resumeRow ?: row.resumeRows[item.id],
+                            ).onFocusChanged {
                                 if (it.hasFocus) {
                                     last = index
                                     focused(item)
@@ -201,6 +207,10 @@ internal fun HomeRow.title(): String =
 
         HomeRowType.RecentlyReleased -> {
             stringResource(R.string.row_released)
+        }
+
+        HomeRowType.Continue -> {
+            stringResource(R.string.row_continue)
         }
     }
 

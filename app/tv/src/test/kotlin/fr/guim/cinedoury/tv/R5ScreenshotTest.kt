@@ -4,18 +4,23 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import fr.guim.cinedoury.core.data.home.HomeLayouts
 import fr.guim.cinedoury.core.data.home.HomeRowType
 import fr.guim.cinedoury.core.data.home.TonightKind
 import fr.guim.cinedoury.core.data.home.TonightTile
 import fr.guim.cinedoury.core.designsystem.theme.LayoutSize
 import fr.guim.cinedoury.core.designsystem.theme.ThemeVariant
+import fr.guim.cinedoury.core.model.EpisodeInfo
+import fr.guim.cinedoury.core.model.ItemId
 import fr.guim.cinedoury.core.model.MediaItem
 import fr.guim.cinedoury.core.ui.QuickMenuHost
 import fr.guim.cinedoury.core.ui.rememberQuickMenu
 import fr.guim.cinedoury.feature.home.HomePreview
 import fr.guim.cinedoury.feature.home.HomeScreen
+import fr.guim.cinedoury.feature.home.HomeSettingsScreen
 import fr.guim.cinedoury.feature.home.HomeState
 import fr.guim.cinedoury.feature.home.TonightState
+import fr.guim.cinedoury.feature.home.withContinue
 import fr.guim.cinedoury.feature.library.LibraryPreview
 import fr.guim.cinedoury.feature.library.LibraryScreen
 import fr.guim.cinedoury.feature.player.PlayerPreview
@@ -97,6 +102,37 @@ class R5ScreenshotTest {
             )
         }
 
+    /** F: under the mosaic, one row « Continuer »: a film in progress, then the next episode of « Brume ». */
+    @Test
+    fun continueRow() =
+        shoot("225-accueil-continuer", HomePreview.card(HomeLayouts.CONTINUE_ID, 0)) {
+            HomeScreen(
+                state = R5Samples.tonight,
+                sources = J2Samples.noImages,
+                navigation = NoHomeNavigation,
+                onRetry = {},
+            )
+        }
+
+    /** F, before: « Reprendre » with a single card, then « À suivre ». */
+    @Test
+    fun continueRowBefore() =
+        shoot("225-avant-accueil-continuer", HomePreview.card("resume", 0)) {
+            HomeScreen(
+                state = R5Samples.tonightBeforeContinue,
+                sources = J2Samples.noImages,
+                navigation = NoHomeNavigation,
+                onRetry = {},
+            )
+        }
+
+    /** F: « Personnaliser l'accueil » under the mosaic, « Continuer » chosen. */
+    @Test
+    fun customizeContinue() =
+        shoot("226-personnaliser-accueil-continuer", null) {
+            HomeSettingsScreen(R5Samples.customizationWithMosaic, actions = null, selectedRow = HomeLayouts.CONTINUE_ID)
+        }
+
     /** C: OK held on an episode of « Reprendre », on the home. */
     @Test
     fun menuOnTheHome() =
@@ -157,35 +193,71 @@ private fun MenuOver(
 
 /** The samples of the essai réel 5. */
 object R5Samples {
+    /** The next episode of « Brume », in « À suivre » after the one of « Une saison ». */
+    private val brumeNext =
+        J2Samples.homeRows
+            .first { it.key == "next-up" }
+            .items
+            .first()
+            .copy(
+                id = ItemId("ep-brume"),
+                title = "Brouillard",
+                episode = EpisodeInfo(ItemId("brume-series"), "Brume", null, 2, 3),
+            )
+
+    /** The rows of the home as read: « Reprendre », then « À suivre » with two episodes. */
+    private val tonightRows =
+        J2Samples.homeRows.map { row -> if (row.key == "next-up") row.copy(items = row.items + brumeNext) else row }
+
     /**
-     * The home with its mosaic « Ce soir »: an episode in progress on the large tile, a film in progress,
-     * an episode to watch next, a film added yesterday, a film never watched. « Reprendre » keeps what
-     * the mosaic has no room for.
+     * The mosaic « Ce soir »: an episode in progress on the large tile, a film in progress, an
+     * episode to watch next, a film added yesterday, a film never watched.
      */
+    private val tiles: List<TonightTile>
+        get() {
+            val resume = tonightRows.first { it.key == "resume" }.items
+            val next = tonightRows.first { it.key == "next-up" }.items.first()
+            val added = J2Samples.movies[10].copy(dateAdded = J3Samples.clock.instant().minusSeconds(DAY))
+            return listOf(
+                TonightTile(resume[0], TonightKind.Resume),
+                TonightTile(resume[1], TonightKind.Resume),
+                TonightTile(next, TonightKind.NextUp),
+                TonightTile(added, TonightKind.Added),
+                TonightTile(J2Samples.movies[3], TonightKind.Rediscover),
+            )
+        }
+
+    /** The home with its mosaic and, under it, « Continuer »: what the mosaic has no room for. */
     val tonight: HomeState
         get() {
-            val rows = J2Samples.homeRows
-            val resume = rows.first { it.key == "resume" }.items
-            val next = rows.first { it.key == "next-up" }.items.first()
-            val added = J2Samples.movies[10].copy(dateAdded = J3Samples.clock.instant().minusSeconds(DAY))
-            val tiles =
-                listOf(
-                    TonightTile(resume[0], TonightKind.Resume),
-                    TonightTile(resume[1], TonightKind.Resume),
-                    TonightTile(next, TonightKind.NextUp),
-                    TonightTile(added, TonightKind.Added),
-                    TonightTile(J2Samples.movies[3], TonightKind.Rediscover),
-                )
+            val inMosaic = tiles.map { it.item.episode?.seriesId ?: it.item.id }.toSet()
+            return J2Samples.home.copy(tonight = TonightState(tiles), rows = withContinue(tonightRows, inMosaic))
+        }
+
+    /**
+     * The same home before « Continuer » (essai réel 5, first pass): « Reprendre » with one card left,
+     * then « À suivre ».
+     */
+    val tonightBeforeContinue: HomeState
+        get() {
             val shown = tiles.map { it.item.id }.toSet()
             return J2Samples.home.copy(
                 tonight = TonightState(tiles),
                 rows =
-                    rows.mapNotNull { row ->
+                    tonightRows.mapNotNull { row ->
                         val keep = row.type != HomeRowType.Resume && row.type != HomeRowType.NextUp
                         row.copy(items = row.items.filter { keep || it.id !in shown }).takeIf { it.items.isNotEmpty() }
                     },
             )
         }
+
+    /** « Personnaliser l'accueil » under the mosaic: « Continuer » in place of its two rows. */
+    val customizationWithMosaic =
+        J2Samples.customization.copy(
+            layout = HomeLayouts.withContinue(HomeLayouts.DEFAULT),
+            stored = HomeLayouts.DEFAULT,
+            mosaic = true,
+        )
 
     private const val DAY = 86_400L
 

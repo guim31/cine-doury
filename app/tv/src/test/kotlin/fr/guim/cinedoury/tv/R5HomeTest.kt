@@ -129,15 +129,17 @@ abstract class R5HomeChecks(
                 "tile $it",
             )
         }
-        // « Reprendre » keeps only what the mosaic has no room for; « À suivre » is gone.
+        // « Reprendre » and « À suivre » are one row « Continuer », with what the mosaic has no room for.
         assertTrue(compose.onAllNodesWithTag("row-next-up").fetchSemanticsNodes().isEmpty(), "« À suivre » left")
+        assertTrue(compose.onAllNodesWithTag("row-resume").fetchSemanticsNodes().isEmpty(), "« Reprendre » left")
+        assertTrue(compose.onAllNodesWithTag("row-continue").fetchSemanticsNodes().isNotEmpty(), "« Continuer »")
     }
 
     @Test
     fun aRowAndAHalfUnderTheMosaic() {
         home()
         val screen = compose.onNodeWithTag("home").getBoundsInRoot().bottom
-        val row = compose.onNodeWithTag("row-resume").getUnclippedBoundsInRoot()
+        val row = compose.onNodeWithTag("row-continue").getUnclippedBoundsInRoot()
         // Against the height of the second row itself: posters, under a row of thumbnails.
         val second = compose.onNodeWithTag("row-latest:films").getUnclippedBoundsInRoot()
         val shown = (screen - top(HomePreview.rowTitle("latest:films"))) / (second.bottom - second.top)
@@ -156,9 +158,9 @@ abstract class R5HomeChecks(
         press(Key.DirectionRight)
         focusable(HomePreview.tonight(1)).assertIsFocused()
         press(Key.DirectionDown, times = 2)
-        focusable(HomePreview.card("resume", 0)).assertIsFocused()
+        focusable(HomePreview.card("continue", 0)).assertIsFocused()
         val home = compose.onNodeWithTag("home").getBoundsInRoot().top
-        val title = top(HomePreview.rowTitle("resume"))
+        val title = top(HomePreview.rowTitle("continue"))
         val mosaic = compose.onAllNodesWithTag(HomePreview.TONIGHT).fetchSemanticsNodes()
         val gone =
             mosaic.isEmpty() ||

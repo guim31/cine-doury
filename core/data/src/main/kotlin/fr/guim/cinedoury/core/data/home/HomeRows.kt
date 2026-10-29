@@ -97,7 +97,7 @@ object HomeRows {
                     setOf(LibraryKind.Movies, LibraryKind.Shows, LibraryKind.Mixed)
                 }
 
-                HomeRowType.Resume, HomeRowType.Latest -> {
+                HomeRowType.Resume, HomeRowType.Latest, HomeRowType.Continue -> {
                     setOf(LibraryKind.Movies, LibraryKind.Shows, LibraryKind.HomeVideos, LibraryKind.Mixed)
                 }
             }
@@ -117,6 +117,14 @@ object HomeRows {
             HomeRowType.NextUp -> {
                 val since = row.config.windowDays?.let { clock.instant().minus(it.toLong(), ChronoUnit.DAYS) }
                 perLibrary(row) { source.nextUp(it, since, LIMIT) }
+            }
+
+            HomeRowType.Continue -> {
+                val since = row.config.windowDays?.let { clock.instant().minus(it.toLong(), ChronoUnit.DAYS) }
+                val resume =
+                    perLibrary(row) { source.resume(it, LIMIT) }
+                        .sortedByDescending { it.userData?.lastPlayed ?: Instant.EPOCH }
+                (resume + perLibrary(row) { source.nextUp(it, since, LIMIT) }).distinctBy { it.id }
             }
 
             HomeRowType.Latest -> {

@@ -2,6 +2,7 @@
 <resources>
     <string name="row_resume">Resume</string>
     <string name="row_next_up">Up next</string>
+    <string name="row_continue">Continue watching</string>
     <string name="row_latest">Recently added</string>
     <string name="row_latest_in">Recently added in %1$s</string>
     <string name="row_released">Recently released</string>

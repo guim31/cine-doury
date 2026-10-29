@@ -140,7 +140,7 @@ Plex (`#E5A00D`).
   - OK sur une tuile en cours ou à suivre : la lecture (reprise) ; sur une autre : la fiche. Appui long : le menu d'options rapides (§ 2).
   - Focus initial sur la grande tuile ; → mène à la petite tuile en haut à gauche ; ↓ depuis la mosaïque descend dans les rangées.
   - À l'arrivée : la mosaïque, une rangée entière et la moitié de la suivante (la règle du bandeau de l'essai réel 4 ; en « Normale », la plus basse mosaïque laisse le titre et le haut des cartes de la deuxième). Quand le focus descend dans les rangées, la mosaïque défile hors de l'écran, par l'index de la rangée focalisée ; elle revient avec le focus.
-  - Sous la mosaïque, les rangées choisies dans « Personnaliser l'accueil » ; « Reprendre » et « À suivre » n'y gardent que ce que la mosaïque n'a pas pris, et disparaissent si elles sont vides.
+  - Sous la mosaïque, les rangées choisies dans « Personnaliser l'accueil ». « Reprendre » et « À suivre » n'y font qu'une rangée, **« Continuer »**, là où était la première des deux : les lectures en cours puis les épisodes à suivre, une carte par titre ou par série, sans ce que la mosaïque montre ; absente si elle est vide. Dans « Personnaliser l'accueil », elle prend la place des deux rangées et garde leurs réglages. Mosaïque coupée, « Reprendre » et « À suivre » reviennent comme avant.
 
 ### Fiche
 - Fond plein écran, voiles des § 4. Colonne gauche de 45 % : logo, ligne de métadonnées (« 2014 · 2 h 49 · 12 ans · se termine à 23 h 36 »), badges techniques en Légende sur `surface-2`, synopsis sur 3 lignes, dépliable.
@@ -194,7 +194,7 @@ Plex (`#E5A00D`).
 ## 10. Écrire dans l'interface
 
 - **Vocabulaire constant** :
-  - « Reprendre » (jamais « Continuer » ni « Poursuivre ») ;
+  - « Reprendre » (jamais « Continuer » ni « Poursuivre ») ; seule exception, le nom de la rangée « Continuer » sous la mosaïque « Ce soir » (essai réel 5), qui réunit « Reprendre » et « À suivre » ;
   - « À suivre » ;
   - « Ajouts récents » ;
   - « Marquer comme vu » ;

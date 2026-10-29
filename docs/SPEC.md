@@ -26,7 +26,7 @@ son domaine :
 | J8 — Finitions 1.0 (coût GPU, petits appareils, profils et mesures, accessibilité, captures 4K et grand texte, 20 gestes au canapé, 1.0.0 prête à étiqueter) | prêt, en revue (§ 4.20 ; captures dans `docs/screenshots/j8/`, numéros 180 à 198 ; CI complète verte sur `24243cb`) | [#13](https://github.com/guim31/cine-doury/pull/13) |
 | Essai réel 3 (27/10/2026, Shield en 4K, v0.7.0) : → depuis le rail ouvert, « Taille de l'interface » (Compacte par défaut), commandes du lecteur plus petites, barre des sous-titres à trois réglages, barre de la bibliothèque, bandeau de l'accueil fixe ; deuxième passage (28/10) : bandeau au-dessus des rangées, tailles Très compacte / Compacte / Normale, 27 icônes de bibliothèque | en cours (§ 4.21 ; captures dans `docs/screenshots/r3/`, numéros 200 à 208, et « avant ») | [#14](https://github.com/guim31/cine-doury/pull/14) |
 | Essai réel 4 (28/10/2026, Shield en 4K, v0.9.0) : « Très compacte » par défaut, bandeau de l'accueil plus bas (une deuxième rangée se voit), titre de rangée immobile, « Retour » qui quitte sans confirmation, versions d'essai signées installables par-dessus une release | terminé, fusionné (§ 4.22 et § 4.18 ; captures dans `docs/screenshots/r4/` : `avant-*` / `apres-*` pour A, B et D) | [#15](https://github.com/guim31/cine-doury/pull/15) |
-| Essai réel 5 (29/10/2026, Shield en 4K et Chromecast, v0.9.1) : banc de mesures réparé (libellés du rail lus par l'accessibilité), compte à rebours qui ne coupe plus la fin des épisodes, épisode précédent / suivant dans le lecteur, menu d'options rapides à l'appui long sur une jaquette, mosaïque « Ce soir » en haut de l'accueil | terminé, en revue (§ 4.23 ; captures dans `docs/screenshots/r5/` : `avant-*` / `apres-*` pour A, B, C et D) | [#16](https://github.com/guim31/cine-doury/pull/16) |
+| Essai réel 5 (29/10/2026, Shield en 4K et Chromecast, v0.9.1) : banc de mesures réparé (libellés du rail lus par l'accessibilité), compte à rebours qui ne coupe plus la fin des épisodes, épisode précédent / suivant dans le lecteur, menu d'options rapides à l'appui long sur une jaquette, mosaïque « Ce soir » en haut de l'accueil, rangée « Continuer » sous elle, notes de la 1.0.0 | terminé, en revue (§ 4.23 ; captures dans `docs/screenshots/r5/` : `avant-*` / `apres-*` pour A, B, C, D et F) | [#16](https://github.com/guim31/cine-doury/pull/16) |
 
 *(Chaque jalon met à jour ce tableau et ajoute ses contrats au § 4.)*
 
@@ -1999,7 +1999,8 @@ Quatre retours du mainteneur sur la v0.9.0 (Shield, écran 4K, taille « Très c
 ### 4.23 Essai réel 5 : la v0.9.1 au canapé (29/10/2026)
 
 Quatre retours du mainteneur sur la v0.9.1 (Shield en 4K et Chromecast, taille « Très compacte »)
-et une réparation du banc de mesures, faits dans l'ordre E, A, B, C, D.
+et une réparation du banc de mesures, faits dans l'ordre E, A, B, C, D ; puis, après l'essai de la
+`0.9.1-essai.1` (tout bon sur les deux appareils), F et G.
 
 - **E. Banc de mesures rouge depuis la v0.9.0** (« No entry Films in the rail ») : le banc cherche
   une bibliothèque en lisant le nom de l'entrée focalisée du rail par l'accessibilité. Depuis le J8,
@@ -2116,6 +2117,37 @@ et une réparation du banc de mesures, faits dans l'ordre E, A, B, C, D.
   `R5TonightFlowTest` (appli réelle : mosaïque pleine par défaut, « Reprendre » parti des rangées,
   « Retour » vers le rail puis hors de l'appli), `AppPreferencesTest` ; les parcours du bandeau
   (`J2FlowTest`, `J8FocusTest`) tournent mosaïque coupée. Capture 224 (`avant-d-*`, `apres-d-*`).
+
+- **F. Une seule rangée « Continuer » sous la mosaïque.** Une lecture en cours que la mosaïque n'avait
+  pas prise formait une rangée « Reprendre » d'une seule carte, suivie de « À suivre ». Sous la
+  mosaïque, les deux ne font plus qu'une rangée **« Continuer »** (`HomeRowType.Continue`), là où était
+  la première des deux : les lectures en cours, puis les épisodes à suivre (l'ordre de priorité de la
+  mosaïque), une carte par titre ou par série, rien de ce que la mosaïque montre (même titre ou même
+  série) ; pas de rangée quand il ne reste rien. **Écart à `UI.md` § 10** (« jamais Continuer ») :
+  c'est le nom de cette rangée seulement, demandé par le mainteneur ; les actions restent
+  « Reprendre ». Décisions :
+  - **rien ne change dans ce qui est enregistré** : la disposition garde « Reprendre » et « À suivre »
+    (avec leurs bibliothèques, présentation et fenêtre), lues et mises en cache comme avant ; la
+    fusion est une projection, à l'affichage (`withContinue`, `HomeViewModel`) et dans
+    « Personnaliser l'accueil » (`HomeLayouts.withContinue`). Mosaïque coupée, l'accueil et la
+    personnalisation de la 0.9.1 reviennent tels quels ;
+  - **personnalisation** : « Continuer » prend la place des deux rangées, et ce qui était réglé pour
+    elles se reporte sur elle : bibliothèques (toutes si l'une les prenait toutes, sinon la réunion),
+    présentation de la première, fenêtre de « À suivre ». Un changement (monter, descendre,
+    présentation, fenêtre, bibliothèques, retirer, ajouter) revient aux deux rangées enregistrées, à la
+    place de « Continuer » (`HomeLayouts.withoutContinue`) ; sans changement, elles restent exactement
+    comme enregistrées. « Ajouter » propose « Continuer » au lieu des deux rangées ;
+  - **« Retirer de Continuer »** sur une lecture en cours de la rangée l'enlève de la rangée
+    « Reprendre » du cache d'où elle vient (`HomeRow.resumeRows`).
+  Tests : `HomeLayoutsTest` (place, report des réglages, aller-retour, retrait et ajout),
+  `R5ContinueTest` (ordre, une carte par série, rien de la mosaïque, pas de rangée vide),
+  `R5Home1080pTest` et `R5Home4kTest` (la rangée sous la mosaïque est « Continuer »),
+  `R5TonightFlowTest` (appli réelle : « Continuer » en tête de la personnalisation, présentation
+  reportée aux deux rangées enregistrées, retirée avec elles). Captures 225 et 226 (`avant-f-*`,
+  `apres-f-*`).
+
+- **G. Notes de la 1.0.0** : `docs/releases/v1.0.0.md` (ce qui change depuis la 0.9.1, puis ce qu'est
+  la 1.0.0), reprises par `ci/release/package.sh` ; `CHANGELOG.md` : section « 1.0.0 — 29/10/2026 ».
 
 ## 5. Tests et CI
 
