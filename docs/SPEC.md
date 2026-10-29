@@ -27,7 +27,7 @@ son domaine :
 | Essai réel 3 (27/10/2026, Shield en 4K, v0.7.0) : → depuis le rail ouvert, « Taille de l'interface » (Compacte par défaut), commandes du lecteur plus petites, barre des sous-titres à trois réglages, barre de la bibliothèque, bandeau de l'accueil fixe ; deuxième passage (28/10) : bandeau au-dessus des rangées, tailles Très compacte / Compacte / Normale, 27 icônes de bibliothèque | en cours (§ 4.21 ; captures dans `docs/screenshots/r3/`, numéros 200 à 208, et « avant ») | [#14](https://github.com/guim31/cine-doury/pull/14) |
 | Essai réel 4 (28/10/2026, Shield en 4K, v0.9.0) : « Très compacte » par défaut, bandeau de l'accueil plus bas (une deuxième rangée se voit), titre de rangée immobile, « Retour » qui quitte sans confirmation, versions d'essai signées installables par-dessus une release | terminé, fusionné (§ 4.22 et § 4.18 ; captures dans `docs/screenshots/r4/` : `avant-*` / `apres-*` pour A, B et D) | [#15](https://github.com/guim31/cine-doury/pull/15) |
 | Essai réel 5 (29/10/2026, Shield en 4K et Chromecast, v0.9.1) : banc de mesures réparé (libellés du rail lus par l'accessibilité), compte à rebours qui ne coupe plus la fin des épisodes, épisode précédent / suivant dans le lecteur, menu d'options rapides à l'appui long sur une jaquette, mosaïque « Ce soir » en haut de l'accueil, rangée « Continuer » sous elle, notes de la 1.0.0 | terminé, en revue (§ 4.23 ; captures dans `docs/screenshots/r5/` : `avant-*` / `apres-*` pour A, B, C, D et F) | [#16](https://github.com/guim31/cine-doury/pull/16) |
-| Nouveau logo (29/10/2026) : un pot de pop-corn sur fond noir, pour l'icône et la bannière Android TV | en revue (§ 4.24 ; captures dans `docs/screenshots/logo/` : `avant-*` / `apres-*`) | — |
+| Nouveau logo et retouches de la 1.0.0 (29/10/2026) : un pot de pop-corn sur fond noir pour l'icône et la bannière Android TV ; H, tuiles de la mosaïque « Ce soir » rognées au focus ; I et J, rail qui s'ouvrait seul au lancement et après OK sur une de ses entrées | en revue (§ 4.24 et 4.25 ; captures dans `docs/screenshots/logo/` et `docs/screenshots/r6/`, numéros 230 et 231) | — |
 
 *(Chaque jalon met à jour ce tableau et ajoute ses contrats au § 4.)*
 
@@ -2171,6 +2171,38 @@ Inter (`Wordmark`, aucune image de logo), et rien d'autre ne change dans l'inter
   bannières et l'aperçu de l'icône (`docs/screenshots/logo/apres-icone.png`) avec les formes du
   vecteur ; changer l'un, c'est changer l'autre.
 - Aucune capture Roborazzi ne change : l'icône et la bannière n'apparaissent dans aucun écran.
+
+### 4.25 Retouches de la 1.0.0 (29/10/2026, Shield en 4K, « Très compacte »)
+
+- **H. Mosaïque « Ce soir » : tuiles du haut rognées au focus.** La liste de l'accueil coupe ce qui
+  dépasse de sa marge du haut (`padding`, pour ne laisser aucune bande de la mosaïque défilée), et
+  les tuiles de la première ligne y touchaient : focalisées, elles grandissent (`CineScale.TILE`,
+  `TILE_LARGE`) et dessinent contour et halo au-dessus d'elles, coupés. La mosaïque porte désormais,
+  dans la liste, une marge interne `mosaicFocusRoom` : `CineSizes.focusRoom` plus l'agrandissement
+  de la grande tuile, la plus haute (environ 23 dp). Ses tuiles descendent d'autant et sa hauteur
+  diminue d'autant : les rangées, et ce qu'elles montrent sous elle, ne bougent pas. Sur les côtés,
+  la marge de la mosaïque (`ContentStart`, `safeHorizontal`) suffisait. Test :
+  `R5Home1080pTest`/`R5Home4kTest.aFocusedTileIsNeverCut` (chaque tuile focalisée tour à tour, dans
+  les trois tailles, en 1080p et en 4K : agrandie, avec contour et halo, elle reste dans la liste et
+  l'écran, et aucune tuile ne bouge). Captures 230 (chaque tuile, 1080p) et 231 (4K, chaque taille) ;
+  avant / après dans `docs/screenshots/r6/`.
+- **I et J. Le rail s'ouvrait tout seul.** Chaque écran a son rail, qui s'ouvrait dès qu'il avait le
+  focus. Un écran qui charge (l'accueil au lancement, une bibliothèque après OK sur son entrée) n'a
+  encore rien d'autre de focalisable : le focus retombait sur son rail, qui s'ouvrait, puis
+  `InitialFocus` le posait sur le contenu arrivé et le rail se refermait. Vu dans le journal
+  (`GestureLog`, lignes `rail open` / `rail closed` ajoutées par `AppRail`) et reproduit par le test
+  ci-dessous avant le correctif. **Le rail ne s'ouvre plus que sur un geste** : `UserGestures`
+  (design system, fourni par `CineApp` en `LocalUserGestures`) est marqué à chaque touche par la
+  racine de l'appli et le reste jusqu'à la fin de son traitement (`postAtFrontOfQueue` : aucune image,
+  qui composerait l'écran suivant, ne passe avant). Le rail s'ouvre si le focus lui arrive pendant
+  une touche (← depuis le contenu ; « Retour » sur l'accueil, qui marque lui-même le geste, car il
+  peut arriver par le répartiteur de « Retour » plutôt que par les touches), ou à la première touche
+  qu'il reçoit (↑, ↓, OK sur un rail resté fermé). Un focus rendu par l'appli le laisse fermé.
+  Sans `LocalUserGestures` (aperçus, écrans testés seuls), il s'ouvre sur tout focus, comme avant.
+  Règles gardées : → depuis le rail ouvert ramène où l'on était (`onContentFocus`), pas de
+  `focusRestorer` sur tout un écran. Test : `J8FocusTest.theRailOpensOnlyOnAGesture` (appli entière :
+  rien au lancement ; ← l'ouvre une fois ; ↓ puis OK sur « Films » : la bibliothèque, le rail jamais
+  rouvert, au plus un changement).
 
 ## 5. Tests et CI
 

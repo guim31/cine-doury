@@ -19,6 +19,7 @@ import fr.guim.cinedoury.core.designsystem.theme.CineSizes
 import fr.guim.cinedoury.core.model.Library
 import fr.guim.cinedoury.core.model.LibraryIcon
 import fr.guim.cinedoury.core.model.LibraryId
+import fr.guim.cinedoury.core.source.GestureLog
 
 /** Where the rail leads (`UI.md` § 2, `FONCTIONNALITES.md` § 3). */
 sealed interface RailTarget {
@@ -102,6 +103,7 @@ fun AppRail(
         onSelect = { index -> all.getOrNull(index)?.let(onNavigate) },
         focusRequester = focusRequester,
         onContentFocus = onContentFocus,
+        onOpenChange = { open -> GestureLog.mark(if (open) "rail open" else "rail closed") },
         previewFocusedIndex = previewFocused?.let { all.indexOf(it) }?.takeIf { it >= 0 },
         modifier = modifier.testTag("rail"),
     )

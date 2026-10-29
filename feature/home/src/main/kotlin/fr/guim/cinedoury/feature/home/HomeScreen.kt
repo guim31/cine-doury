@@ -50,6 +50,7 @@ import fr.guim.cinedoury.core.designsystem.component.FeaturedBackdrop
 import fr.guim.cinedoury.core.designsystem.component.FeaturedBanner
 import fr.guim.cinedoury.core.designsystem.component.FocusPivot
 import fr.guim.cinedoury.core.designsystem.component.InitialFocus
+import fr.guim.cinedoury.core.designsystem.component.LocalUserGestures
 import fr.guim.cinedoury.core.designsystem.component.MessagePanel
 import fr.guim.cinedoury.core.designsystem.component.PrimaryButton
 import fr.guim.cinedoury.core.designsystem.component.ScrolledByIndex
@@ -198,6 +199,7 @@ fun HomeScreen(
             else -> rowRequesters.requester(rows.orEmpty().first().key)
         }
 
+    val gestures = LocalUserGestures.current
     BackHandler {
         when {
             railFocused -> {
@@ -213,6 +215,9 @@ fun HomeScreen(
             }
 
             else -> {
+                // « Retour » is a gesture: the rail opens (it may come through the back dispatcher,
+                // after the keys).
+                gestures?.mark()
                 runCatching { rail.requestFocus() }
             }
         }
