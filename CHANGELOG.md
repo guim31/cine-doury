@@ -6,7 +6,11 @@ technique est dans [`docs/SPEC.md`](docs/SPEC.md) ; les notes de chaque version 
 
 ## Non publié
 
-Essai réel 4 (28/10/2026, NVIDIA Shield TV en 4K, v0.9.0) :
+## 0.9.1 — 29/10/2026
+
+Essai réel 4 (28 et 29/10/2026, NVIDIA Shield TV en 4K et Chromecast avec Google TV, v0.9.0).
+Notes de version : [`docs/releases/v0.9.1.md`](docs/releases/v0.9.1.md).
+
 
 - **Taille de l'interface** : « Très compacte » par défaut ; une taille déjà choisie est gardée.
 - **Accueil** : sous le bandeau, une rangée entière et la moitié de la suivante ; le bandeau garde
