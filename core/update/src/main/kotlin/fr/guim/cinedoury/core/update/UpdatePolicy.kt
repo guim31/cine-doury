@@ -34,14 +34,17 @@ object UpdatePolicy {
         now: Instant,
     ): Boolean = current != null && (lastCheck == null || !now.isBefore(lastCheck.plus(CHECK_EVERY)))
 
-    /** The newest release above [current], if any. */
+    /**
+     * The newest release above [current], if any: from a trial build (`X.Y.Z-essai.N`), the next
+     * release, never another trial.
+     */
     fun status(
         current: AppVersion?,
         releases: List<Release>,
         ignoredVersion: String?,
     ): UpdateStatus {
         current ?: return UpdateStatus.Development
-        val newest = releases.filter { it.version > current }.maxByOrNull { it.version }
+        val newest = releases.filter { !it.version.isTrial && it.version > current }.maxByOrNull { it.version }
         return newest?.let { UpdateStatus.Available(it, ignored = it.version.name == ignoredVersion) }
             ?: UpdateStatus.UpToDate(current)
     }

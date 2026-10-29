@@ -899,7 +899,7 @@ private fun appearanceItems(
             stringResource(R.string.appearance_interface_description),
             InterfaceSize.entries,
             appearance.interfaceSize,
-            InterfaceSize.Compact,
+            InterfaceSize.VeryCompact,
             {
                 stringResource(
                     when (it) {

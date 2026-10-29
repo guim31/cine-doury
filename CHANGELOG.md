@@ -4,6 +4,24 @@ Ce que chaque étape a changé pour qui regarde, du point de vue de la télécom
 technique est dans [`docs/SPEC.md`](docs/SPEC.md) ; les notes de chaque version publiée, dans
 [`docs/releases/`](docs/releases/).
 
+## Non publié
+
+## 0.9.1 — 29/10/2026
+
+Essai réel 4 (28 et 29/10/2026, NVIDIA Shield TV en 4K et Chromecast avec Google TV, v0.9.0).
+Notes de version : [`docs/releases/v0.9.1.md`](docs/releases/v0.9.1.md).
+
+
+- **Taille de l'interface** : « Très compacte » par défaut ; une taille déjà choisie est gardée.
+- **Accueil** : sous le bandeau, une rangée entière et la moitié de la suivante ; le bandeau garde
+  titre ou logo, infos, résumé et boutons quand ils tiennent, le résumé partant d'abord ; le titre d'une rangée ne bouge plus quand on passe
+  d'une jaquette à l'autre.
+- **Rangées** : moins d'espace entre elles, et une rangée qui défile ne passe plus sous le menu de
+  gauche.
+- **Quitter** : « Retour » depuis le menu de l'accueil ferme l'appli sans demander de confirmation.
+- **Versions d'essai** : elles s'installent par-dessus la version publiée, sans désinstaller ni se
+  reconnecter ; la version publiée suivante s'installe ensuite par-dessus.
+
 ## 1.0.0 — à paraître
 
 La première version complète pour la télévision (Android TV et Google TV), qui remplace Plex au-dessus

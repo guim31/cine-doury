@@ -29,8 +29,9 @@ enum class TextSize(
 
 /**
  * « Taille de l'interface » (essai réel 3): how much a screen shows, by the width it is laid out on
- * (`LayoutSize` of the design system, `SPEC.md` § 4.21). Compact by default. « Grande » (`Large`)
- * was dropped on 28/10: kept on a device, it reads as [Normal].
+ * (`LayoutSize` of the design system, `SPEC.md` § 4.21). Very compact by default since essai réel 4 (a
+ * size already chosen is kept). « Grande » (`Large`) was dropped on 28/10: kept on a device, it reads
+ * as [Normal].
  */
 enum class InterfaceSize { VeryCompact, Compact, Normal }
 
@@ -39,7 +40,7 @@ data class Appearance(
     val theme: ThemeChoice = ThemeChoice.Dark,
     val reducedMotion: Boolean = false,
     val textSize: TextSize = TextSize.Normal,
-    val interfaceSize: InterfaceSize = InterfaceSize.Compact,
+    val interfaceSize: InterfaceSize = InterfaceSize.VeryCompact,
 )
 
 /** Which address of the server the app tries at start (`SPEC.md` § 4.7 and § 4.17). */
@@ -205,7 +206,7 @@ class AppPreferences(
 
     /** The size kept on this device; « Grande », dropped, becomes « Normale ». */
     private fun interfaceSizeOf(name: String?): InterfaceSize =
-        if (name == DROPPED_LARGE) InterfaceSize.Normal else enumOf(name, InterfaceSize.Compact)
+        if (name == DROPPED_LARGE) InterfaceSize.Normal else enumOf(name, InterfaceSize.VeryCompact)
 
     private inline fun <reified T : Enum<T>> enumOf(
         name: String?,

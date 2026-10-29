@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Names the release APK, checks it (version, signature), writes its SHA-256 and the changelog into
-# dist/ (SPEC.md § 4.18). Env: VERSION (X.Y.Z), TAG (vX.Y.Z), SIGNED, ROLLBACK_OF (optional).
+# dist/ (SPEC.md § 4.18). Env: VERSION (X.Y.Z or X.Y.Z-essai.N), TAG (vX.Y.Z…), SIGNED, ROLLBACK_OF
+# (optional).
 set -euo pipefail
 
 : "${VERSION:?}" "${TAG:?}"
@@ -16,9 +17,12 @@ fi
 name="cine-doury-$VERSION.apk"
 cp "$apk" "dist/$name"
 
-# The version Gradle wrote from the tag: versionName X.Y.Z, versionCode X × 10000 + Y × 100 + Z.
-IFS=. read -r major minor patch <<< "$VERSION"
-code=$((10#$major * 10000 + 10#$minor * 100 + 10#$patch))
+# The version Gradle wrote from the tag: versionName X.Y.Z (or X.Y.Z-essai.N, a trial build),
+# versionCode X × 1000000 + Y × 10000 + Z × 100 + N (N = 0 for a release).
+trial=0
+case "$VERSION" in *-essai.*) trial="${VERSION##*-essai.}" ;; esac
+IFS=. read -r major minor patch <<< "${VERSION%%-essai.*}"
+code=$((10#$major * 1000000 + 10#$minor * 10000 + 10#$patch * 100 + 10#$trial))
 tools="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
 badging="$("$tools/aapt2" dump badging "dist/$name" | sed -n 1p)"
 echo "$badging"

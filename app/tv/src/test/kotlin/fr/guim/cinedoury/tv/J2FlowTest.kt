@@ -6,6 +6,7 @@ import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.pressKey
@@ -47,6 +48,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import java.time.Instant
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 /**
  * The J2 path through the real app (view models, Room, cache) on an in-memory source: « Retour »
@@ -162,6 +165,33 @@ class J2FlowTest {
         compose.pressBack()
         waitForTag(LibraryPreview.item(7))
         focusable(LibraryPreview.item(7)).assertIsFocused()
+    }
+
+    @Test
+    fun `back from a library goes home, and from the rail of the home closes the app at once`() {
+        compose.setTvContent {
+            CineTheme(ThemeVariant.Dark) {
+                CineApp(ThemeVariant.Dark, onToggleVariant = {}, showCatalog = false, navigator = Navigator(Route.Home))
+            }
+        }
+        waitForTag(HomePreview.card("resume", 0))
+        focusable(HomePreview.PLAY).assertIsFocused()
+        // « Films », from the rail: a screen of the first level.
+        press(Key.DirectionLeft)
+        press(Key.DirectionDown)
+        press(Key.DirectionCenter)
+        waitForTag(LibraryPreview.item(0))
+        compose.pressBack()
+        waitForTag(HomePreview.PLAY)
+        focusable(HomePreview.PLAY).assertIsFocused()
+        assertFalse(compose.activity.isFinishing)
+        // « Retour » on the home: the rail, then out of the app, without « Quitter Ciné Doury ? » (essai
+        // réel 4).
+        compose.pressBack()
+        compose.onNode(isFocused() and hasAnyAncestor(hasTestTag("rail"))).assertExists()
+        assertFalse(compose.activity.isFinishing)
+        compose.pressBack()
+        assertTrue(compose.activity.isFinishing)
     }
 
     /** The details screen (J3). */

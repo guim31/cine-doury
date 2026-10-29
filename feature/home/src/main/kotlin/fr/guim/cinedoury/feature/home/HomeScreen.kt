@@ -16,31 +16,29 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import fr.guim.cinedoury.core.data.SessionManager
+import fr.guim.cinedoury.core.data.home.CardStyle
 import fr.guim.cinedoury.core.designsystem.component.AmbientBackdrop
 import fr.guim.cinedoury.core.designsystem.component.CineIcons
-import fr.guim.cinedoury.core.designsystem.component.ConfirmDialog
 import fr.guim.cinedoury.core.designsystem.component.Featured
 import fr.guim.cinedoury.core.designsystem.component.FeaturedBackdrop
 import fr.guim.cinedoury.core.designsystem.component.FeaturedBanner
@@ -48,12 +46,15 @@ import fr.guim.cinedoury.core.designsystem.component.FocusPivot
 import fr.guim.cinedoury.core.designsystem.component.InitialFocus
 import fr.guim.cinedoury.core.designsystem.component.MessagePanel
 import fr.guim.cinedoury.core.designsystem.component.PrimaryButton
+import fr.guim.cinedoury.core.designsystem.component.ScrolledByIndex
 import fr.guim.cinedoury.core.designsystem.component.SecondaryButton
 import fr.guim.cinedoury.core.designsystem.component.SkeletonLine
+import fr.guim.cinedoury.core.designsystem.component.featuredBannerMinHeight
 import fr.guim.cinedoury.core.designsystem.component.rememberCineFocus
 import fr.guim.cinedoury.core.designsystem.theme.CineSizes
 import fr.guim.cinedoury.core.designsystem.theme.CineSpacing
 import fr.guim.cinedoury.core.designsystem.theme.CineTheme
+import fr.guim.cinedoury.core.designsystem.theme.textLineHeight
 import fr.guim.cinedoury.core.model.MediaItem
 import fr.guim.cinedoury.core.ui.AppRail
 import fr.guim.cinedoury.core.ui.CollectEvents
@@ -83,7 +84,7 @@ interface HomeNavigation {
 
     fun customize()
 
-    /** « Quitter Ciné Doury ? » was confirmed. */
+    /** « Retour » from the rail: the app closes, without asking (essai réel 4). */
     fun quit()
 
     fun sessionEnded()
@@ -116,23 +117,27 @@ object HomePreview {
     /** The banner at the top of the home (title, line of metadata, buttons). */
     const val BANNER = "home-banner"
     const val DETAILS = "home-details"
-    const val QUIT_CANCEL = "home-quit-cancel"
 
     fun card(
         row: String,
         index: Int,
     ) = "card-$row-$index"
+
+    /** The title of a row (essai réel 4: it must not move with the focus). */
+    fun rowTitle(row: String) = "row-title-$row"
 }
 
 /**
  * The home (`UI.md` § 8, `FONCTIONNALITES.md` § 2): the ambient backdrop and the picture of the
- * focused title behind everything, the featured banner on 60 % of the screen, then the rows. The
- * banner follows the focus, never a carousel.
+ * focused title behind everything, the featured banner at the top, then the rows on the rest of the
+ * screen. The banner follows the focus, never a carousel.
  *
- * « Retour »: first back to the top of the page, then into the rail, then « Quitter Ciné Doury ? ».
+ * « Retour »: first back to the top of the page, then into the rail, then out of the app, without a
+ * dialog (essai réel 4: confirming was a chore).
  *
  * @param previewFeatured the title of the banner when nothing has the focus (screenshots).
  * @param previewRail draws the rail open on that entry (screenshots).
+ * @param previewScrolledRow the row of that key scrolled to the left, under where the rail is (screenshots).
  */
 @Composable
 fun HomeScreen(
@@ -143,7 +148,7 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     previewFeatured: MediaItem? = null,
     previewRail: RailTarget? = null,
-    previewQuit: Boolean = false,
+    previewScrolledRow: String? = null,
 ) {
     val rows = state.rows
     // Read only where it is drawn (banner, backdrops): a step of the focus recomposes them, not the
@@ -151,9 +156,6 @@ fun HomeScreen(
     val focusedItem = remember { mutableStateOf<MediaItem?>(null) }
     var focusedRow by rememberSaveable { mutableStateOf<String?>(null) }
     var railFocused by remember { mutableStateOf(false) }
-    var quitAsked by rememberSaveable { mutableStateOf(previewQuit) }
-    // « Annuler » gives the focus back to the rail, where « Retour » asked to quit.
-    var quitCancelled by remember { mutableIntStateOf(0) }
     val featuredItem = { focusedItem.value ?: previewFeatured ?: rows?.firstOrNull()?.items?.firstOrNull() }
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
@@ -167,13 +169,8 @@ fun HomeScreen(
 
     BackHandler {
         when {
-            quitAsked -> {
-                quitAsked = false
-                quitCancelled++
-            }
-
             railFocused -> {
-                quitAsked = true
+                navigation.quit()
             }
 
             focusedRow != null || listState.isScrolled -> {
@@ -193,13 +190,27 @@ fun HomeScreen(
     val shared = remember(rows) { rows.orEmpty().firstAppearances() }
     Box(modifier = modifier.fillMaxSize()) {
         HomeAmbience(featuredItem)
+        val scrollToRow: (Int) -> Unit =
+            remember(listState, scope) { { index -> scope.launch { listState.animateScrollToItem(index) } } }
+        // The rows arrive in steps (the cache, then the server): a lazy list keeps its first row by key,
+        // and would stay on a row read first while others came above it. Scrolled by index, the list is
+        // put back on the focused row, or at its top.
+        val rowKeys = remember(rows) { rows?.map { it.key } }
+        LaunchedEffect(rowKeys, banner) {
+            if (!banner || rowKeys == null) return@LaunchedEffect
+            listState.scrollToItem(rowKeys.indexOf(focusedRow).coerceAtLeast(0))
+        }
         BoxWithConstraints(Modifier.fillMaxSize()) {
-            val rowsArea = homeRowsHeight()
             if (banner) {
-                // The banner stands still (essai réel 3): fixed at the top, the rows scroll in the area
-                // under it, one row of posters high, the focused row at its top. In the list, the
-                // banner moved up and down with every row the focus went to.
-                val heroHeight = (maxHeight - rowsArea).coerceAtLeast(CineSpacing.none)
+                // The banner stands still (essai réel 3), on what a row and a half leave (essai réel 4):
+                // the first row whole and the top half of the next under it, whatever the size, at
+                // least its single band. The focused row goes to the top of their area, scrolled by its
+                // index: following the bounds of the focused card, which grows with the focus, moved
+                // its title.
+                val heroHeight =
+                    (maxHeight - homeRowsArea(rows)).coerceAtLeast(
+                        featuredBannerMinHeight() + CineSpacing.safeVertical + CineSpacing.s,
+                    )
                 HomeBackdrop(
                     featuredItem,
                     sources,
@@ -221,8 +232,7 @@ fun HomeScreen(
                                     if (it.hasFocus) focusedRow = null
                                 },
                     )
-                    // The cards of the focused row just under its title, at the top of the area.
-                    FocusPivot(offset = rowCardsTop()) {
+                    ScrolledByIndex {
                         HomeRows(
                             state = state,
                             listState = listState,
@@ -234,6 +244,8 @@ fun HomeScreen(
                                 focusedItem.value = item
                                 focusedRow = row
                             },
+                            onRowFocused = scrollToRow,
+                            previewScrolledRow = previewScrolledRow,
                             modifier = Modifier.weight(1f).fillMaxWidth(),
                         )
                     }
@@ -274,36 +286,10 @@ fun HomeScreen(
             previewFocused = previewRail,
             modifier = Modifier.onFocusChanged { railFocused = it.hasFocus },
         )
-        if (quitAsked) {
-            val cancel = remember { FocusRequester() }
-            InitialFocus(cancel)
-            ConfirmDialog(
-                title = stringResource(R.string.quit_title),
-                message = stringResource(R.string.quit_message),
-                confirmLabel = stringResource(R.string.quit_confirm),
-                cancelLabel = stringResource(R.string.quit_cancel),
-                onConfirm = navigation::quit,
-                onCancel = {
-                    quitAsked = false
-                    quitCancelled++
-                },
-                destructive = false,
-                cancelFocusRequester = cancel,
-                cancelFocus = rememberCineFocus(HomePreview.QUIT_CANCEL),
-                modifier = Modifier.testTag("quit-dialog"),
-            )
-        }
-    }
-    LaunchedEffect(quitCancelled) {
-        if (quitCancelled > 0) {
-            withFrameNanos { }
-            runCatching { rail.requestFocus() }
-        }
     }
     // The first focus, and the focus found again when coming back: the row left, else « Lire ».
     // Made here, not when the lazy row composes (later): the requester is the same for both.
     val initial = focusedRow?.let { rowRequesters.requester(it) }
-    // Not keyed on the quit dialog: closing it gives the focus back to the rail, not to « Lire ».
     InitialFocus(initial ?: top, key = rows?.isEmpty())
 }
 
@@ -316,6 +302,15 @@ internal val ContentStart = CineSizes.railCollapsed + CineSpacing.m
 private const val ROW_PIVOT = 0.48f
 private const val SKELETON_ROWS = 2
 
+/**
+ * Between two rows of the home: small, since a row already ends with the room of its captions, hidden
+ * on a poster without the focus (essai réel 4: « un grand vide »). What it saves goes to the banner.
+ */
+private val RowGap = CineSpacing.s
+
+/** How far [HomeScreen]'s `previewScrolledRow` is scrolled: two posters and a half. */
+private val PREVIEW_ROW_SCROLL = CineSizes.posterNormal.width * 2.5f
+
 /** The rows of the home in a list, and « Personnaliser l'accueil » at its end. */
 @Composable
 private fun HomeRows(
@@ -327,20 +322,22 @@ private fun HomeRows(
     rowRequesters: MutableMap<String, FocusRequester>,
     onFocused: (row: String, item: MediaItem) -> Unit,
     modifier: Modifier = Modifier,
+    onRowFocused: ((index: Int) -> Unit)? = null,
     top: Dp = CineSpacing.none,
+    previewScrolledRow: String? = null,
 ) {
     val rows = state.rows
     LazyColumn(
         state = listState,
         modifier = modifier.testTag("home"),
         contentPadding = PaddingValues(top = top, bottom = CineSpacing.xxl),
-        verticalArrangement = Arrangement.spacedBy(CineSpacing.l),
+        verticalArrangement = Arrangement.spacedBy(RowGap),
     ) {
         if (rows == null) {
             items(SKELETON_ROWS) { SkeletonRow() }
         } else {
-            items(rows, key = { it.key }, contentType = { it.style }) { row ->
-                val next = rows.getOrNull(rows.indexOf(row) + 1)
+            itemsIndexed(rows, key = { _, row -> row.key }, contentType = { _, row -> row.style }) { index, row ->
+                val next = rows.getOrNull(index + 1)
                 HomeRowView(
                     row = row,
                     next = next,
@@ -349,6 +346,8 @@ private fun HomeRows(
                     restore = rowRequesters.requester(row.key),
                     onFocused = { item -> onFocused(row.key, item) },
                     onOpen = navigation::open,
+                    modifier = Modifier.onRowFocused(onRowFocused, index),
+                    previewScroll = if (row.key == previewScrolledRow) PREVIEW_ROW_SCROLL else CineSpacing.none,
                 )
             }
             item(key = "customize", contentType = "customize") {
@@ -359,6 +358,7 @@ private fun HomeRows(
                     modifier =
                         Modifier
                             .padding(start = ContentStart)
+                            .onRowFocused(onRowFocused, rows.size)
                             .testTag("customize"),
                 )
             }
@@ -366,27 +366,37 @@ private fun HomeRows(
     }
 }
 
-/** From the top of a row to the top of its cards: its title and the gap under it. */
-@Composable
-private fun rowCardsTop(): Dp =
-    with(LocalDensity.current) {
-        CineTheme.typography.title2.lineHeight
-            .toDp()
-    } + CineSpacing.rowTitleGap
-
 /**
- * The area of the rows under the banner: one row of posters, its title over it and two lines of
- * caption under it, with the room of the focus treatment below. At the text size of the settings.
+ * Under the banner, a row and a half (essai réel 4): the first row whole, its title, cards and captions
+ * included, the gap between rows, then the top half of the second one, each at the height of its kind
+ * of cards. Without rows yet, two rows of thumbnails, the shape of the skeletons.
  */
 @Composable
-private fun homeRowsHeight(): Dp {
-    val caption =
-        with(LocalDensity.current) {
-            CineTheme.typography.caption.lineHeight
-                .toDp()
-        }
-    return rowCardsTop() + CineSizes.posterNormal.height + CineSpacing.s + caption * 2 + CineSizes.focusRoom
+private fun homeRowsArea(rows: List<HomeRow>?): Dp {
+    val first = rows?.firstOrNull()?.style ?: CardStyle.Thumbnail
+    val second = rows?.getOrNull(1)?.style ?: first
+    return homeRowHeight(first) + RowGap + homeRowHeight(second) / 2
 }
+
+/** A row of the home: its title, the gap under it, a card and its caption of two lines (`HomeRowView`). */
+@Composable
+private fun homeRowHeight(style: CardStyle): Dp {
+    val typography = CineTheme.typography
+    val card = if (style == CardStyle.Poster) CineSizes.posterNormal else CineSizes.thumbnail
+    return textLineHeight(typography.title2) + CineSpacing.rowTitleGap + card.height + CineSpacing.s +
+        textLineHeight(typography.caption) * 2
+}
+
+/** Tells [onRowFocused] when the focus comes into the element at [index] of the list. */
+private fun Modifier.onRowFocused(
+    onRowFocused: ((Int) -> Unit)?,
+    index: Int,
+): Modifier =
+    if (onRowFocused == null) {
+        this
+    } else {
+        onFocusChanged { if (it.hasFocus) onRowFocused(index) }
+    }
 
 /** The ambient backdrop of the focused title. */
 @Composable
@@ -414,14 +424,18 @@ private fun Hero(
     play: FocusRequester,
     modifier: Modifier = Modifier,
 ) {
-    // Its content at the bottom, at its own height: taller than the room left above the rows (a large
-    // text), it goes up under the top of the screen, never squeezed (essai réel 3).
+    // Its content at the bottom of the height it is given, under the top of the screen: the banner
+    // chooses what fits (FeaturedBanner). An error, larger, goes up under the top, never squeezed.
     Box(
         modifier =
             modifier
                 .fillMaxWidth()
-                .padding(start = ContentStart, bottom = CineSpacing.s)
-                .wrapContentHeight(align = Alignment.Bottom, unbounded = true),
+                .padding(
+                    start = ContentStart,
+                    top = CineSpacing.safeVertical,
+                    end = CineSpacing.safeHorizontal,
+                    bottom = CineSpacing.s,
+                ),
     ) {
         val error = state.error
         val rows = state.rows
@@ -431,7 +445,11 @@ private fun Hero(
                     error = error,
                     onRetry = onRetry,
                     retryFocusRequester = play,
-                    modifier = Modifier.align(Alignment.BottomStart),
+                    modifier =
+                        Modifier
+                            .align(
+                                Alignment.BottomStart,
+                            ).wrapContentHeight(Alignment.Bottom, unbounded = true),
                 )
             }
 
@@ -447,13 +465,20 @@ private fun Hero(
                     onAction = navigation::customize,
                     icon = CineIcons.Movies,
                     actionFocusRequester = play,
-                    modifier = Modifier.align(Alignment.BottomStart),
+                    modifier =
+                        Modifier
+                            .align(
+                                Alignment.BottomStart,
+                            ).wrapContentHeight(Alignment.Bottom, unbounded = true),
                 )
             }
 
             else -> {
                 val item = focused()
-                FeaturedBanner(featured = item?.toFeatured(sources), modifier = Modifier.align(Alignment.BottomStart)) {
+                FeaturedBanner(
+                    featured = item?.toFeatured(sources),
+                    modifier = Modifier.fillMaxWidth().align(Alignment.BottomStart),
+                ) {
                     if (item != null) {
                         PrimaryButton(
                             text =
@@ -488,19 +513,21 @@ private fun Hero(
 
 @Composable
 private fun HeroSkeleton(modifier: Modifier = Modifier) {
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(CineSpacing.s)) {
+    // The single band of the banner (FeaturedBanner): the title, then the buttons and the metadata.
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(CineSpacing.xs)) {
         SkeletonLine(CineSizes.heroTextWidth * HERO_SKELETON_TITLE, Modifier.height(CineSizes.buttonHeight))
-        SkeletonLine(CineSizes.heroTextWidth / 2)
-        SkeletonLine(CineSizes.heroTextWidth * HERO_SKELETON_TAGLINE)
-        Row(Modifier.padding(top = CineSpacing.xs), horizontalArrangement = Arrangement.spacedBy(CineSpacing.m)) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(CineSpacing.m),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             SkeletonLine(CineSizes.avatarLarge, Modifier.height(CineSizes.buttonHeight))
             SkeletonLine(CineSizes.avatarLarge, Modifier.height(CineSizes.buttonHeight))
+            SkeletonLine(CineSizes.heroTextWidth / 2)
         }
     }
 }
 
 private const val HERO_SKELETON_TITLE = 0.7f
-private const val HERO_SKELETON_TAGLINE = 0.9f
 
 /** The banner of [this]: its backdrop (or its series'), its logo, its line of metadata. */
 @Composable

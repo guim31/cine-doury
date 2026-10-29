@@ -19,8 +19,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import fr.guim.cinedoury.core.data.home.CardStyle
 import fr.guim.cinedoury.core.data.home.HomeRowType
 import fr.guim.cinedoury.core.designsystem.component.FocusPivot
@@ -49,6 +51,7 @@ import fr.guim.cinedoury.core.ui.rememberArt
  * @param restore attached to the card to give the focus back to.
  * @param next the row below, whose first images are loaded in advance.
  * @param shared the items whose poster flies to the details screen from this row.
+ * @param previewScroll the row scrolled by this much from its start (screenshots).
  */
 @Composable
 internal fun HomeRowView(
@@ -60,22 +63,27 @@ internal fun HomeRowView(
     onFocused: (MediaItem) -> Unit,
     onOpen: (MediaItem) -> Unit,
     modifier: Modifier = Modifier,
+    previewScroll: Dp = CineSpacing.none,
 ) {
     var last by rememberSaveable(row.key) { mutableIntStateOf(0) }
     val focused by rememberUpdatedState(onFocused)
     val poster = row.style == CardStyle.Poster
     val card = if (poster) CineSizes.posterNormal else CineSizes.thumbnail
-    val pivot = if (poster) ContentStart + card.width + CineSpacing.m else ContentStart
+    // The list starts at the edge of the rail, so that its cards never pass under it (essai réel 4, the
+    // rail has no background): the pivot and the margin count from there.
+    val start = ContentStart - CineSizes.railCollapsed
+    val pivot = if (poster) start + card.width + CineSpacing.m else start
+    val scrolled = with(LocalDensity.current) { previewScroll.roundToPx() }
     Column(
         modifier = modifier.testTag("row-${row.key}"),
         verticalArrangement = Arrangement.spacedBy(CineSpacing.rowTitleGap),
     ) {
-        RowTitle(row.title(), Modifier.padding(start = ContentStart))
+        RowTitle(row.title(), Modifier.padding(start = ContentStart).testTag(HomePreview.rowTitle(row.key)))
         FocusPivot(offset = pivot) {
             LazyRow(
-                state = rememberLazyListState(),
-                modifier = Modifier.focusRestorer(restore),
-                contentPadding = PaddingValues(horizontal = ContentStart),
+                state = rememberLazyListState(initialFirstVisibleItemScrollOffset = scrolled),
+                modifier = Modifier.padding(start = CineSizes.railCollapsed).focusRestorer(restore),
+                contentPadding = PaddingValues(start = start, end = ContentStart),
                 horizontalArrangement = Arrangement.spacedBy(CineSpacing.m),
             ) {
                 itemsIndexed(row.items, key = {

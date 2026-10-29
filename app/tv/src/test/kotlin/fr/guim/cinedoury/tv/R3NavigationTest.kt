@@ -329,9 +329,6 @@ class R3NavigationTest {
                 key = "long",
                 title = "Le gardien du phare et la tempête du siècle, version longue",
                 metadata = "2001 · 1 h 52 · Drame · Tous publics",
-                tagline =
-                    "Trois hivers sans quitter le phare, jusqu'à la nuit où la tempête ramène sur la " +
-                        "côte un navire que tout le monde croyait perdu depuis vingt ans.",
             )
         val short = Featured(key = "short", title = "Soleil")
         var featured by mutableStateOf(long)
@@ -371,8 +368,9 @@ class R3NavigationTest {
             compose.runOnIdle { size = each }
             compose.waitForIdle()
         }
-        // 1920 px wide: 1 440 dp in Très compacte, 1 200 in Compacte (the default), 1 080 in Normale.
-        assertEquals(LayoutSize.Compact, LayoutSize.Default)
+        // 1920 px wide: 1 440 dp in Très compacte (the default since essai réel 4), 1 200 in Compacte,
+        // 1 080 in Normale.
+        assertEquals(LayoutSize.VeryCompact, LayoutSize.Default)
         assertEquals(1440f, widths.getValue(LayoutSize.VeryCompact), 1f)
         assertEquals(1200f, widths.getValue(LayoutSize.Compact), 1f)
         assertEquals(1080f, widths.getValue(LayoutSize.Normal), 1f)

@@ -123,7 +123,8 @@ class ReleaseClient(
     private fun JsonObject.toRelease(): Release? {
         val published = bool("draft") != true && bool("prerelease") != true
         val tag = string("tag_name")?.takeIf { published }
-        val version = AppVersion.parse(tag)
+        // A trial build is never published; a release tagged like one is not offered either.
+        val version = AppVersion.parse(tag)?.takeUnless { it.isTrial }
         val assets = (this["assets"] as? JsonArray).orEmpty().mapNotNull { (it as? JsonObject)?.toAsset() }
         val apk = assets.firstOrNull { it.name.endsWith(".apk") }
         if (tag == null || version == null || apk == null) return null

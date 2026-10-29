@@ -67,9 +67,6 @@ class J2ScreenshotTest(
     fun homeSkeletons() = shoot("43-accueil-squelettes", null) { Home(J2Samples.home.copy(rows = null)) }
 
     @Test
-    fun quit() = shoot("44-quitter", HomePreview.QUIT_CANCEL) { Home(quit = true) }
-
-    @Test
     fun customization() =
         shoot("45-personnaliser-l-accueil", PREVIEW_CUSTOMIZE_ROW) {
             HomeSettingsScreen(J2Samples.customization, actions = null, selectedRow = "latest")
@@ -162,7 +159,6 @@ class J2ScreenshotTest(
         state: HomeState = J2Samples.home,
         featured: MediaItem? = null,
         rail: RailTarget? = null,
-        quit: Boolean = false,
     ) {
         HomeScreen(
             state = state,
@@ -171,7 +167,6 @@ class J2ScreenshotTest(
             onRetry = {},
             previewFeatured = featured,
             previewRail = rail,
-            previewQuit = quit,
         )
     }
 

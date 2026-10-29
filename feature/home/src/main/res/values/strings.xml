@@ -11,10 +11,6 @@
     <string name="action_customize">Personnaliser l\'accueil</string>
     <string name="home_empty_title">Votre accueil est vide pour l\'instant.</string>
     <string name="home_empty_message">Ajoutez des films ou des séries au serveur, ou choisissez d\'autres rangées.</string>
-    <string name="quit_title">Quitter Ciné Doury ?</string>
-    <string name="quit_message">Vous retrouverez l\'accueil tel que vous l\'avez laissé.</string>
-    <string name="quit_confirm">Quitter</string>
-    <string name="quit_cancel">Annuler</string>
     <string name="customize_title">Personnaliser l\'accueil</string>
     <string name="customize_subtitle">Choisissez les rangées, leur ordre et leurs bibliothèques. Ces choix valent pour ce profil, sur cet appareil.</string>
     <string name="customize_rows">Rangées</string>

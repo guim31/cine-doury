@@ -25,6 +25,7 @@ son domaine :
 | J7 — Réglages et mise à jour (pages de réglages P0, mise à jour proposée depuis les releases, publication signée, rapport de diagnostic) | terminé, fusionné (§ 4.17 à 4.19 ; captures dans `docs/screenshots/j7/`, numéros 150 à 174) | [#11](https://github.com/guim31/cine-doury/pull/11) |
 | J8 — Finitions 1.0 (coût GPU, petits appareils, profils et mesures, accessibilité, captures 4K et grand texte, 20 gestes au canapé, 1.0.0 prête à étiqueter) | prêt, en revue (§ 4.20 ; captures dans `docs/screenshots/j8/`, numéros 180 à 198 ; CI complète verte sur `24243cb`) | [#13](https://github.com/guim31/cine-doury/pull/13) |
 | Essai réel 3 (27/10/2026, Shield en 4K, v0.7.0) : → depuis le rail ouvert, « Taille de l'interface » (Compacte par défaut), commandes du lecteur plus petites, barre des sous-titres à trois réglages, barre de la bibliothèque, bandeau de l'accueil fixe ; deuxième passage (28/10) : bandeau au-dessus des rangées, tailles Très compacte / Compacte / Normale, 27 icônes de bibliothèque | en cours (§ 4.21 ; captures dans `docs/screenshots/r3/`, numéros 200 à 208, et « avant ») | [#14](https://github.com/guim31/cine-doury/pull/14) |
+| Essai réel 4 (28/10/2026, Shield en 4K, v0.9.0) : « Très compacte » par défaut, bandeau de l'accueil plus bas (une deuxième rangée se voit), titre de rangée immobile, « Retour » qui quitte sans confirmation, versions d'essai signées installables par-dessus une release | prêt, en revue (§ 4.22 et § 4.18 ; captures dans `docs/screenshots/r4/` : `avant-*` / `apres-*` pour A, B et D) | [#15](https://github.com/guim31/cine-doury/pull/15) |
 
 *(Chaque jalon met à jour ce tableau et ajoute ses contrats au § 4.)*
 
@@ -422,8 +423,10 @@ accessibles par la navigation » ; les cacher du rail est un choix local.
 - une bibliothèque garde **en base**, par profil : onglet, vue, tri, filtres, regroupement des
   collections et **index** de l'élément focalisé (écrit 500 ms après le dernier déplacement) ; elle
   rouvre la grille à cet index, sa page lue en premier ;
-- « Retour » sur l'accueil : en haut de page (focus sur « Lire »), puis le rail, puis « Quitter
-  Ciné Doury ? » (focus sur « Annuler »).
+- « Retour » sur l'accueil : en haut de page (focus sur « Lire »), puis le rail, puis l'appli se
+  ferme, **sans confirmation** depuis l'essai réel 4 (§ 4.22 ; « Quitter Ciné Doury ? » auparavant).
+  Depuis un autre écran de premier niveau (bibliothèque, recherche, réglages), « Retour » ramène à
+  l'accueil ; ailleurs, il remonte d'un niveau.
 
 **Pagination** : `ItemPager` lit des pages de 60 ; la première donne le total et la grille pose
 d'emblée toutes ses cases (squelettes de la forme exacte des cartes) : rien ne bouge quand une page
@@ -1493,9 +1496,15 @@ reste inchangé) ; `SourceConnector.setDeviceName` change le `DeviceInfo` de tou
 
 ### 4.18 Mise à jour, versions et publication (J7)
 
-**Versions** : `versionName` = `X.Y.Z` de l'étiquette `vX.Y.Z`, `versionCode` = X × 10 000 + Y × 100 + Z
-(Y et Z sous 100 : 1.10.0 > 1.9.99), écrits par Gradle depuis `CINE_DOURY_VERSION` (workflow
-« Release »). Sans elle (CI, postes) : `0.1.0-dev`, code 1, une **version de développement** : elle
+**Versions** : `versionName` = `X.Y.Z` de l'étiquette `vX.Y.Z`, `versionCode` = X × 1 000 000 +
+Y × 10 000 + Z × 100 + N (Y et Z sous 100 : 1.10.0 > 1.9.99 ; N, de 1 à 99, le numéro d'une
+**version d'essai**, 0 pour une release), écrits par Gradle depuis `CINE_DOURY_VERSION` (workflow
+« Release »). Jusqu'à la 0.9.0, le code valait X × 10 000 + Y × 100 + Z (900 pour la 0.9.0) : le
+nouveau reste au-dessus (0.9.1 = 90 100). **Version d'essai** (essai réel 4, § 4.22) :
+`X.Y.Z-essai.N`, le code d'une branche signé avec la clé de release, qui s'installe par-dessus la
+release `X.Y.Z` sans désinstaller (donc sans se reconnecter), et sous laquelle la release suivante
+s'installe à son tour. Elle n'est jamais publiée, et l'appli ne propose jamais une version d'essai :
+installée, elle se voit proposer la release suivante (`UpdatePolicy`, `ReleaseClient`). Sans elle (CI, postes) : `0.1.0-dev`, code 1, une **version de développement** : elle
 le dit (Réglages → Appareil, écran de mise à jour) et ne se voit rien proposer, sans interroger
 GitHub.
 
@@ -1541,6 +1550,13 @@ paragraphes ; gras, code et liens réduits à leur texte ; ↑ ↓ le font défi
   le dit par un avertissement, sans échouer.
 - **Chaque PR le joue à blanc** (job « Release (dry run) ») : version `v0.0.1`, jamais de secret
   (même sur une PR du dépôt), jamais publié ; APK, SHA-256 et journal en artefact.
+- **Version d'essai**, à la main : « Run workflow » de « Release » avec `trial: true` et `source` =
+  une branche (`gh workflow run release.yml -f trial=true -f source=<branche>`). Le workflow
+  construit le code de la branche, le signe avec la clé de release (secrets, comme une release), le
+  numérote `X.Y.Z-essai.N` (X.Y.Z la dernière étiquette, N `trial_number` ou le numéro du run ramené
+  de 1 à 99) et le dépose **en artefact seulement** (`release-X.Y.Z-essai.N`) : ni release, ni
+  étiquette. Seul un mainteneur peut lancer un workflow à la main : les secrets ne sont jamais donnés
+  à une PR. `version.sh` refuse une version `-essai` hors de ce mode.
 - La clé de débogage versionnée (`app/tv/debug.keystore`) ne signe que les APK de débogage.
 
 **Retour arrière** : Android refuse un `versionCode` inférieur pour une appli non système, et
@@ -1823,8 +1839,8 @@ Six retours du mainteneur sur la v0.7.0 (Shield, Android 11, écran 4K, mise en 
    en dp sur l'écran de `UI.md`. Valeurs :
    | Taille | Écran de référence | Échelle par rapport à `UI.md` | Corps / minimum sur un 1080p |
    |---|---|---|---|
-   | Très compacte (28/10) | 1 440 × 810 dp, texte × 1,1 | 67 % (texte 73 %) | 29 px / 21 px |
-   | **Compacte** (défaut) | 1 200 × 675 dp | 80 % | 32 px / 22 px |
+   | **Très compacte** (28/10 ; défaut depuis l'essai réel 4, § 4.22) | 1 440 × 810 dp, texte × 1,1 | 67 % (texte 73 %) | 29 px / 21 px |
+   | Compacte (défaut jusqu'à l'essai réel 4) | 1 200 × 675 dp | 80 % | 32 px / 22 px |
    | Normale | 1 080 × 608 dp | 89 % | 36 px / 25 px |
    Pourquoi 1 200 dp par défaut : c'est la plus compacte qui reste lisible à 3 m sans retouche. Le
    plus petit texte (« Minimum absolu », 14 sp) y fait 22 px sur un 1080p, un peu sous les 24 px que
@@ -1911,6 +1927,70 @@ Six retours du mainteneur sur la v0.7.0 (Shield, Android 11, écran 4K, mise en 
    chaque bibliothèque montre son icône (`SettingItem.Choice.optionIcons` et `icon`). Une icône
    choisie à la main est gardée par son nom : les anciens choix restent valables. Test :
    `LibraryIconTest` ; captures 207 (rail) et 208 (sélecteur).
+
+### 4.22 Essai réel 4 : la v0.9.0 au canapé (28/10/2026)
+
+Quatre retours du mainteneur sur la v0.9.0 (Shield, écran 4K, taille « Très compacte »).
+
+- **A. « Très compacte » par défaut** (`LayoutSize.Default`, `Appearance.interfaceSize`) : c'est
+  celle que le mainteneur a choisie. La taille se garde par son nom (`interface_size`) : une valeur
+  déjà enregistrée, « Compacte » comprise, ne change pas ; seul un appareil qui n'en a jamais choisi
+  passe à 1 440 dp. Les captures de référence suivent la nouvelle valeur par défaut. Test :
+  `AppPreferencesTest`.
+- **B. Une rangée et demie sous le bandeau.** Le bandeau prenait ce que laissait une zone d'une
+  rangée de haut : on ne devinait pas qu'il y en avait d'autres. Premier passage : bandeau réduit à une
+  bande (titre, boutons et infos sur une ligne), les rangées sur tout le reste ; essayé sur la Shield
+  (`0.9.0-essai.1`), c'était trop : deux rangées entières en « Très compacte », un bandeau qui
+  « passe à peine ». **Règle retenue** (deuxième passage, 28/10) : la hauteur du bandeau est celle de
+  l'écran moins **une rangée entière (titre compris) et la moitié de la suivante**, chacune à la
+  hauteur de ses cartes (affiches ou vignettes, d'après les deux premières rangées ; deux rangées de
+  vignettes tant qu'elles ne sont pas lues ; `homeRowsArea`). Le bandeau se met en page dans cette
+  hauteur, en bas (`FeaturedBanner`) : en colonne comme en 0.9.0 (logo ou titre dans 96 dp, infos,
+  une ligne de résumé, boutons dessous) ; ce qui ne tient pas disparaît dans l'ordre, le résumé
+  d'abord, puis la colonne elle-même pour une seule bande (titre sur deux lignes de « Titre 2 », infos
+  à droite des boutons), qui est aussi sa hauteur minimale. Le choix dépend de la hauteur seule, jamais
+  du titre : rien ne bouge d'un titre à l'autre. Les hauteurs additionnent des lignes de texte
+  mesurées comme `Text` les pose (`textLineHeight`), pas le `lineHeight` des styles. Avec deux rangées
+  de vignettes, une rangée et demie dans les trois tailles ; avec deux rangées d'affiches, une et
+  demie en « Très compacte » ; en « Compacte » et « Normale », une rangée et demie d'affiches ne
+  laisserait pas la place des boutons : le bandeau garde sa bande et la deuxième rangée montre son
+  titre et le haut de ses affiches. Test : `R4Home1080pTest` et `R4Home4kTest` (part visible de la
+  deuxième rangée entre 40 et 60 %, dans chaque taille). Captures 200 (les trois tailles,
+  réenregistrées), `avant-b-*` et `apres-b-*` dans `docs/screenshots/r4/`.
+- **C. Le titre de la rangée sautillait** en passant d'une jaquette à l'autre. La liste des rangées
+  suivait le rectangle de la carte focalisée (`BringIntoViewSpec`) ; ce rectangle compte
+  l'agrandissement au focus (`graphicsLayer`), animé : la liste défilait de quelques points pendant
+  l'animation, titre compris. Elle ne suit plus le focus d'elle-même (`ScrolledByIndex`) : l'accueil
+  la fait défiler **par l'index** de la rangée qui reçoit le focus (`animateScrollToItem`), la rangée
+  focalisée en haut de la zone. Se déplacer dans une rangée ne déplace rien verticalement. Les rangées
+  arrivant en plusieurs temps (cache, puis serveur), la liste est remise sur la rangée focalisée, ou
+  en haut, quand elles changent : une `LazyColumn` garde sinon sa première rangée par clé, et restait
+  sur une rangée lue avant les autres. Test :
+  `R4Home*Test` (position du titre identique le long d'une rangée, d'une rangée à l'autre et au
+  retour).
+- **F. Les rangées passaient sous le rail** (essai de `0.9.0-essai.2`, vu sur le Chromecast) : une
+  rangée de l'accueil défilée vers la droite faisait passer ses affiches sous le rail, qui n'a pas de
+  fond, ses icônes dessinées par-dessus. La liste de chaque rangée commence désormais au bord du rail
+  (`HomeRowView`) : ses cartes y sont coupées, et sa marge et son pivot comptent depuis ce bord. Les
+  autres rangées n'étaient pas touchées : la recherche pose ses rangées à droite du clavier, les fiches
+  n'ont pas de rail, et la grille d'une bibliothèque défile de haut en bas. Test : `R4Home*Test`
+  (aucune carte à gauche du bord du rail après cinq →) ; capture 210 (`apres-f-*`).
+- **G. Un peu plus de bandeau, moins de vide entre les rangées** (même essai) : il restait un grand
+  vide entre la première rangée et le titre de la suivante, la place des légendes (cachées sur une
+  affiche sans le focus) suivie de 32 dp. L'écart entre deux rangées de l'accueil passe à 16 dp
+  (`RowGap`, dans la liste et dans la règle de B) : la règle « une rangée et demie » rend ces 16 dp au
+  bandeau, qui descend d'autant et laisse mieux voir l'image à la une. Captures 200 (1080p) et 211
+  (4K), les trois tailles (`apres-g-*`).
+- **E. Versions d'essai installables par-dessus une release** (demandé par l'orchestrateur pour
+  essayer A à D sur la Shield) : l'APK de la CI d'une PR, signé de la clé de débogage et de code 1,
+  obligeait à désinstaller la v0.9.0 (code 900), donc à se reconnecter. Nouveau schéma de
+  `versionCode` et workflow d'essai : § 4.18. Test : `UpdateLogicTest` (codes, ordre, une version
+  d'essai ne se voit proposer que la release suivante).
+- **D. Plus de « Quitter Ciné Doury ? »** : la confirmation était pénible. « Retour » sur l'accueil
+  remonte en haut de page, puis va au rail, puis ferme l'appli aussitôt (§ 4.9). Ailleurs, rien ne
+  change : « Retour » remonte d'un niveau, et un écran de premier niveau ramène à l'accueil. La
+  capture 44 est retirée. Test : `J2NavigationTest`, `J2FlowTest` (bibliothèque → accueil → rail →
+  appli fermée), `J8FocusTest`.
 
 ## 5. Tests et CI
 
