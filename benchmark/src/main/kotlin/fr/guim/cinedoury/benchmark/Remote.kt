@@ -96,8 +96,8 @@ internal class Remote(
 
     /**
      * The label of the focused element inside the element tagged [tag] (a rail entry): its text, its
-     * first text inside, or its description (a rail entry says its name there, essai réel 5). Searched inside [tag], as the view that holds Compose is
-     * the first focused node of the window.
+     * first text inside, or its description (where a rail entry says its name, essai réel 5). Searched
+     * inside [tag], as the view that holds Compose is the first focused node of the window.
      */
     fun focusedText(tag: String): String? {
         val focused = device.findObject(By.res(tag))?.findObjects(By.focused(true))?.lastOrNull()
@@ -283,7 +283,8 @@ private fun Remote.homeOrProfiles() = has(HOME_PLAY) || has(PROFILE_0)
 internal fun Remote.openLibrary(name: String) {
     press(KeyEvent.KEYCODE_DPAD_LEFT)
     waitFocusIn(RAIL)
-    repeat(RAIL_ENTRIES) {
+    var left = RAIL_ENTRIES
+    while (left-- > 0) {
         // What accessibility says lags the focus a little: wait for it to say the entry.
         val reached = runCatching { waitUntil("$name focused", FOCUS_SETTLE) { focusedText(RAIL) == name } }.isSuccess
         if (reached) {

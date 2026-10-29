@@ -316,11 +316,7 @@ class PlayerViewModel(
         if (shows && snapshot.playing) countdown += TICK
         if (!shows) countdown = Duration.ZERO
         val total = state.settings.nextCountdownSeconds.seconds
-        // Without an Outro segment, the countdown ends with the episode, never before (essai réel 5).
-        val left =
-            PlaybackRules
-                .countdownLeft(position, duration, state.segments, countdown, total)
-                ?.takeIf { shows && state.settings.autoplayNext && total.isPositive() }
+        val left = countdownLeft(state, shows, position, duration)
         local.update {
             it.copy(
                 position = position,
@@ -331,13 +327,31 @@ class PlayerViewModel(
                 reconnecting = bufferingFor >= RECONNECTING,
                 skip = skip,
                 nextShown = shows && !it.stillWatching,
-                nextCountdown = left?.let { (it / total).toFloat() },
-                nextSeconds = left?.let { ((it.inWholeMilliseconds + MILLIS - 1) / MILLIS).toInt() },
+                nextCountdown = left?.div(total)?.toFloat(),
+                nextSeconds = left?.wholeSecondsUp(),
                 info = if (infoVisible) snapshot else null,
             )
         }
         if (left != null && !left.isPositive() && PlaybackRules.countdownStartsNext(state.segments)) autoplay()
     }
+
+    /**
+     * What is left of the countdown of « Épisode suivant », null without one. Without an Outro
+     * segment, it ends with the episode, never before (essai réel 5).
+     */
+    private fun countdownLeft(
+        state: PlayerState,
+        shows: Boolean,
+        position: Duration,
+        duration: Duration,
+    ): Duration? {
+        val total = state.settings.nextCountdownSeconds.seconds
+        if (!shows || !state.settings.autoplayNext || !total.isPositive()) return null
+        return PlaybackRules.countdownLeft(position, duration, state.segments, countdown, total)
+    }
+
+    /** The seconds left, rounded up: « dans 10 s » until the last tenth. */
+    private fun Duration.wholeSecondsUp(): Int = ((inWholeMilliseconds + MILLIS - 1) / MILLIS).toInt()
 
     private fun showsNext(
         state: PlayerState,

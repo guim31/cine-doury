@@ -61,11 +61,7 @@ class R5RailTest {
         assertEquals("Camille", description(RailTags.PROFILES), state)
         assertEquals("Réglages", description(RailTags.SETTINGS), state)
         // Read once: the transparent text next to the icon says nothing more.
-        assertEquals(
-            0,
-            compose.onAllNodesWithText("Réglages", useUnmergedTree = true).fetchSemanticsNodes().size,
-            state,
-        )
+        assertEquals(0, compose.onAllNodesWithText("Réglages").fetchSemanticsNodes().size, state)
     }
 
     @Test
