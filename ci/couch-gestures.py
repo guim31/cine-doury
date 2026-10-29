@@ -833,9 +833,12 @@ class Couch:
 # its own tag, `details-panel`, closed).
 MENU_LINE = "details-line-"
 
-# The buttons of the player, left to right (`PlayerScreen`; chapters and quality only when they apply).
+# The buttons of the player, left to right (`PlayerScreen`; the episodes around « Lecture », chapters and
+# quality only when they apply).
 CONTROLS = [
+    "player-previous-episode",
     "player-play",
+    "player-next-episode",
     "player-chapters",
     "player-tracks",
     "player-subtitles",

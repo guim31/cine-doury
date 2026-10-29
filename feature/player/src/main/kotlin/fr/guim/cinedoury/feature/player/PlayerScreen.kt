@@ -101,6 +101,8 @@ enum class PlayerPanel {
 object PlayerPreview {
     const val PROGRESS = "player-progress"
     const val PLAY = "player-play"
+    const val PREVIOUS_EPISODE = "player-previous-episode"
+    const val NEXT_EPISODE = "player-next-episode"
     const val CHAPTERS = "player-chapters"
     const val TRACKS = "player-tracks"
     const val SUBTITLES = "player-subtitles"
@@ -273,12 +275,14 @@ fun PlayerScreen(
                             actions.scrub(forward = false, repeat = repeat)
                         }
 
+                        // An episode with a neighbour: the next or previous episode, as its buttons
+                        // (essai réel 5); else a chapter.
                         NativeKeyEvent.KEYCODE_MEDIA_NEXT -> {
-                            actions.chapter(forward = true)
+                            if (state.next != null) actions.playNext() else actions.chapter(forward = true)
                         }
 
                         NativeKeyEvent.KEYCODE_MEDIA_PREVIOUS -> {
-                            actions.chapter(forward = false)
+                            if (state.previous != null) actions.playPrevious() else actions.chapter(forward = false)
                         }
 
                         NativeKeyEvent.KEYCODE_MEDIA_STOP -> {
@@ -610,6 +614,18 @@ private fun Controls(
         modifier = Modifier.fillMaxWidth().padding(top = CineSpacing.xs),
         horizontalArrangement = Arrangement.spacedBy(CineSpacing.m, Alignment.CenterHorizontally),
     ) {
+        // An episode: the previous and the next one on each side of « Lecture », absent at the ends of
+        // the series (essai réel 5).
+        if (state.previous != null) {
+            RoundIconButton(
+                icon = CineIcons.SkipPrevious,
+                label = stringResource(R.string.player_previous_episode),
+                onClick = actions::playPrevious,
+                focus = rememberCineFocus(PlayerPreview.PREVIOUS_EPISODE),
+                small = true,
+                modifier = Modifier.testTag(PlayerPreview.PREVIOUS_EPISODE).logFocus(PlayerPreview.PREVIOUS_EPISODE),
+            )
+        }
         RoundIconButton(
             icon = if (state.playing) CineIcons.Pause else CineIcons.Play,
             label = stringResource(if (state.playing) R.string.player_pause else R.string.player_play),
@@ -618,6 +634,16 @@ private fun Controls(
             small = true,
             modifier = Modifier.testTag(PlayerPreview.PLAY).logFocus(PlayerPreview.PLAY),
         )
+        if (state.next != null) {
+            RoundIconButton(
+                icon = CineIcons.SkipNext,
+                label = stringResource(R.string.player_next_episode),
+                onClick = actions::playNext,
+                focus = rememberCineFocus(PlayerPreview.NEXT_EPISODE),
+                small = true,
+                modifier = Modifier.testTag(PlayerPreview.NEXT_EPISODE).logFocus(PlayerPreview.NEXT_EPISODE),
+            )
+        }
         if (state.chapters.isNotEmpty()) {
             RoundIconButton(
                 icon = CineIcons.Chapters,

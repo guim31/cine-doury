@@ -10,6 +10,9 @@ Essai réel 5 (29/10/2026, NVIDIA Shield TV en 4K et Chromecast avec Google TV, 
 
 - **Épisode suivant** : sans générique repéré par le serveur, l'épisode suivant ne démarre plus
   avant la fin de l'épisode en cours ; le compte à rebours se termine à la fin.
+- **Lecteur** : pour un épisode, « Épisode précédent » et « Épisode suivant » de part et d'autre de
+  lecture/pause, d'une saison à l'autre ; les touches précédent / suivant de la télécommande font de
+  même.
 - **TalkBack** : chaque entrée du menu de gauche dit de nouveau son nom, menu ouvert ou fermé.
 
 ## 0.9.1 — 29/10/2026

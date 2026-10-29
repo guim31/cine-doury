@@ -150,7 +150,7 @@ Plex (`#E5A00D`).
 ### Lecteur
 - **Rien à l'écran pendant la lecture.** Une touche fait apparaître l'interface, qui disparaît après 4 s sans action.
 - En haut à gauche : titre, ou série et « S02 · E05 — titre ». En haut à droite : l'heure et l'heure de fin.
-- En bas : barre de progression pleine largeur, temps écoulé et temps restant, rangée de commandes (lecture, chapitres, audio et sous-titres, taille des sous-titres, qualité, réglages, informations).
+- En bas : barre de progression pleine largeur, temps écoulé et temps restant, rangée de commandes (lecture, chapitres, audio et sous-titres, taille des sous-titres, qualité, réglages, informations). Pour un épisode *(essai réel 5)*, « Épisode précédent » ⏮ et « Épisode suivant » ⏭ encadrent lecture/pause ; un bouton est absent (pas grisé) au premier ou au dernier épisode de la série.
 - **Recherche dans la vidéo** : la vignette d'aperçu (trickplay) apparaît au-dessus de la barre, à 320 dp de large ; l'image en fond reste figée. L'accélération est progressive si on maintient la touche.
 - **Passer l'intro** : bouton en bas à droite, dans la couleur d'accent, focalisé d'office et sans masquer la vidéo, qui disparaît seul à la fin du segment.
 - **Épisode suivant** : carte en bas à droite pendant le générique (vignette, titre, compte à rebours circulaire). La vidéo réduite reste visible derrière.

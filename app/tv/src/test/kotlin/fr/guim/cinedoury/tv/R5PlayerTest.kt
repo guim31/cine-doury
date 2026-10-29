@@ -45,7 +45,7 @@ import kotlin.time.toJavaDuration
 
 /**
  * The player of the essai réel 5 (`SPEC.md` § 4.23) through its view model, the source in memory and
- * a fake player: the countdown of « Épisode suivant » (A).
+ * a fake player: the countdown of « Épisode suivant » (A), the previous and next episodes (B).
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = TV_1080P)
@@ -210,6 +210,58 @@ class R5PlayerTest {
         assertTrue(model.state.value.nextShown)
         model.playNext()
         loaded(episodes[2])
+    }
+
+    @Test
+    fun theNeighboursFollowTheSeriesFromASeasonToTheNext() {
+        play(episodes[3])
+        assertEquals(
+            episodes[2].id,
+            model.state.value.previous
+                ?.id,
+            "S01E04 after S01E03",
+        )
+        assertEquals(
+            episodes[4].id,
+            model.state.value.next
+                ?.id,
+            "S02E01 after S01E04",
+        )
+    }
+
+    @Test
+    fun noPreviousForTheFirstEpisodeNoNextForTheLast() {
+        play(episodes[0])
+        assertNull(model.state.value.previous)
+        assertEquals(
+            episodes[1].id,
+            model.state.value.next
+                ?.id,
+        )
+        play(episodes.last())
+        assertNull(model.state.value.next)
+        assertEquals(
+            episodes[4].id,
+            model.state.value.previous
+                ?.id,
+        )
+    }
+
+    @Test
+    fun previousEpisodeLeavesThisOneWhereItStands() {
+        play(episodes[4])
+        at(10.minutes)
+        model.playPrevious()
+        loaded(episodes[3])
+        // The episode left is reported where it stood, as on « Retour ».
+        waitUntil("the stop of S02E01") {
+            source.playback.reports.any { (kind, report) ->
+                kind == "stopped" && report.item == episodes[4].id && report.position == 10.minutes
+            }
+        }
+        // And back to the next one, from the button.
+        model.playNext()
+        loaded(episodes[4])
     }
 
     private companion object {

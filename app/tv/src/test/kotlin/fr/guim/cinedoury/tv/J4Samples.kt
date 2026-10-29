@@ -266,6 +266,8 @@ internal object J4Samples {
 
             override fun playNext() = Unit
 
+            override fun playPrevious() = Unit
+
             override fun dismissNext() = Unit
 
             override fun keepWatching() = Unit

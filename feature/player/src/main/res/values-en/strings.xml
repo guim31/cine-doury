@@ -16,6 +16,8 @@
     <string name="player_skip_commercial">Skip commercial</string>
     <string name="player_next">Next episode</string>
     <string name="player_next_in">Next episode in %1$d\u00A0s</string>
+    <string name="player_previous_episode">Previous episode</string>
+    <string name="player_next_episode">Next episode</string>
     <string name="player_still_title">Are you still watching?</string>
     <string name="player_still_message">Several episodes played in a row without you touching the remote. Playback waits for you to go on.</string>
     <string name="player_still_continue">Keep watching</string>

@@ -845,7 +845,8 @@ retrouve dans « Apparence des sous-titres ».
 taille des sous-titres ; sur la barre, ← → recherchent (pas de
 10 s, puis 30 s, 1, 2, 5 min, 6 répétitions de touche chacun), la vignette trickplay au-dessus, OK
 ou 1,2 s sans touche y va ; touches média : lecture, pause, lecture/pause, avance et retour rapides
-(recherche), suivant et précédent (chapitres), stop ; Info : écran d'informations. L'interface
+(recherche), suivant et précédent (épisode suivant ou précédent pour un épisode qui en a un, essai réel
+5 ; sinon chapitres), stop ; Info : écran d'informations. L'interface
 disparaît 4 s après la dernière touche pendant la lecture. Panneaux à droite, l'image visible :
 Audio | Sous-titres (deux colonnes), Qualité, Réglages, Chapitres ; en haut, la barre des
 sous-titres. L'écran reste allumé, la lecture
@@ -2025,6 +2026,20 @@ et une réparation du banc de mesures, faits dans l'ordre E, A, B, C, D.
   - OK sur la carte lance toujours l'épisode suivant tout de suite ; « Retour » l'écarte.
   Tests : `PlaybackRulesTest` (avec et sans segment), `R5PlayerTest` (modèle de vue : rien 20 s avant
   la fin sans générique, la fin lance le suivant ; avec générique, le compte à rebours le lance ; OK).
+
+- **B. Épisode précédent / suivant depuis les contrôles de lecture.** Pour un épisode, la rangée de
+  commandes du lecteur a deux boutons ronds de part et d'autre de lecture/pause, « Épisode précédent »
+  et « Épisode suivant » (icônes ⏮ ⏭ de Material dans `CineIcons`, `SkipPrevious` et `SkipNext` ;
+  le libellé est la description lue par TalkBack). L'ordre est celui de la série, d'une saison à
+  l'autre (les spéciaux seulement autour d'un spécial, comme la carte « Épisode suivant ») ; un bouton
+  est **absent**, pas grisé, au premier ou au dernier épisode, et pour un film. Les touches média
+  « précédent » et « suivant » de la télécommande font la même chose quand l'épisode a un voisin, et
+  sautent d'un chapitre sinon (le comportement d'avant pour un film). L'épisode quitté est enregistré
+  comme sur « Retour » (dernier rapport au serveur, cache de l'accueil et des fiches), et le compteur
+  de « Vous êtes toujours là ? » repart de 1 (c'est une touche). Le lecteur connaît les deux voisins
+  dès le chargement (`PlayerState.previous`, `next`). Tests : `R5PlayerTest` (voisins d'une saison à
+  l'autre, aucun aux bouts, position de l'épisode quitté rapportée), `R5PlayerControlsTest` (boutons
+  présents ou absents, libellés TalkBack, touches média) ; capture 221 (`avant-b-*`, `apres-b-*`).
 
 ## 5. Tests et CI
 
