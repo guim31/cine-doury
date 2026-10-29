@@ -4,6 +4,11 @@ Ce que chaque étape a changé pour qui regarde, du point de vue de la télécom
 technique est dans [`docs/SPEC.md`](docs/SPEC.md) ; les notes de chaque version publiée, dans
 [`docs/releases/`](docs/releases/).
 
+## Non publié
+
+- **Nouveau logo** : un pot de pop-corn, sur l'icône de l'appli et sur la bannière de l'écran
+  d'accueil d'Android TV (« Ciné Doury » à côté du pot).
+
 ## 1.0.0 — 29/10/2026
 
 La première version complète pour la télévision (Android TV et Google TV), qui remplace Plex au-dessus

@@ -27,6 +27,7 @@ son domaine :
 | Essai réel 3 (27/10/2026, Shield en 4K, v0.7.0) : → depuis le rail ouvert, « Taille de l'interface » (Compacte par défaut), commandes du lecteur plus petites, barre des sous-titres à trois réglages, barre de la bibliothèque, bandeau de l'accueil fixe ; deuxième passage (28/10) : bandeau au-dessus des rangées, tailles Très compacte / Compacte / Normale, 27 icônes de bibliothèque | en cours (§ 4.21 ; captures dans `docs/screenshots/r3/`, numéros 200 à 208, et « avant ») | [#14](https://github.com/guim31/cine-doury/pull/14) |
 | Essai réel 4 (28/10/2026, Shield en 4K, v0.9.0) : « Très compacte » par défaut, bandeau de l'accueil plus bas (une deuxième rangée se voit), titre de rangée immobile, « Retour » qui quitte sans confirmation, versions d'essai signées installables par-dessus une release | terminé, fusionné (§ 4.22 et § 4.18 ; captures dans `docs/screenshots/r4/` : `avant-*` / `apres-*` pour A, B et D) | [#15](https://github.com/guim31/cine-doury/pull/15) |
 | Essai réel 5 (29/10/2026, Shield en 4K et Chromecast, v0.9.1) : banc de mesures réparé (libellés du rail lus par l'accessibilité), compte à rebours qui ne coupe plus la fin des épisodes, épisode précédent / suivant dans le lecteur, menu d'options rapides à l'appui long sur une jaquette, mosaïque « Ce soir » en haut de l'accueil, rangée « Continuer » sous elle, notes de la 1.0.0 | terminé, en revue (§ 4.23 ; captures dans `docs/screenshots/r5/` : `avant-*` / `apres-*` pour A, B, C, D et F) | [#16](https://github.com/guim31/cine-doury/pull/16) |
+| Nouveau logo (29/10/2026) : un pot de pop-corn sur fond noir, pour l'icône et la bannière Android TV | en revue (§ 4.24 ; captures dans `docs/screenshots/logo/` : `avant-*` / `apres-*`) | — |
 
 *(Chaque jalon met à jour ce tableau et ajoute ses contrats au § 4.)*
 
@@ -145,6 +146,7 @@ configuration.
 | SDK Android | `compileSdk` / `targetSdk` 37, **`minSdk` 30** (Android 11 : Shield TV ; le Chromecast avec Google TV à jour est en Android 12 ou plus) | — |
 | Interface | Compose (BOM), Compose for TV `tv-material` | BOM 2026.09.00 (ui 1.12.1), 1.1.0 |
 | Police | Inter, fichiers statiques 400/500/600/700, SIL OFL 1.1 (`core/designsystem/INTER-LICENSE.txt`) | 4.1 |
+| Bannière (nom de l'appli) | Lilita One (Google Fonts, SIL OFL 1.1) : seule l'image rendue entre dans le dépôt, jamais la police (§ 4.24) | — |
 | Client Jellyfin | SDK Kotlin officiel `org.jellyfin.sdk:jellyfin-core` (variante JVM, OkHttp) | 1.9.3 |
 | Coroutines | kotlinx.coroutines | 1.11.0 |
 | Tests | JUnit 4, kotlin-test, MockWebServer 3, Robolectric, Roborazzi | 4.13.2, —, 5.5.1, 4.17, 1.77.0 |
@@ -2148,6 +2150,27 @@ et une réparation du banc de mesures, faits dans l'ordre E, A, B, C, D ; puis, 
 
 - **G. Notes de la 1.0.0** : `docs/releases/v1.0.0.md` (ce qui change depuis la 0.9.1, puis ce qu'est
   la 1.0.0), reprises par `ci/release/package.sh` ; `CHANGELOG.md` : section « 1.0.0 — 29/10/2026 ».
+
+### 4.24 Nouveau logo (29/10/2026)
+
+Choisi par le mainteneur : **un pot de pop-corn** (cinq grains jaunes, pot crème à deux rayures
+rouges), sur fond **noir `#000000`**, sans triangle de lecture. Il remplace le rond jaune au
+triangle, qui n'apparaissait que sur l'icône et la bannière : dans l'appli, le nom reste écrit en
+Inter (`Wordmark`, aucune image de logo), et rien d'autre ne change dans l'interface.
+
+- **Icône** : `ic_launcher_foreground.xml` (vecteur, repère 108 × 108 de l'icône adaptative), le
+  dessin réduit à 88 % autour du centre pour tenir dans le cercle sûr de 66 dp ; fond
+  `@color/launcher_background` = `#000000`. L'appli n'a ni icône ronde ni icône monochrome.
+- **Bannière Android TV** : `drawable-xhdpi/banner.png` (640 × 360) et `drawable-xxhdpi/banner.png`
+  (960 × 540, plus nette sur un lanceur en haute densité) : fond noir, le pot à gauche (150 px de
+  haut sur la 640), le nom sur deux lignes, « Ciné » en `#F4F1EA` et « Doury » en `#F2C14E`.
+- **Police de la bannière : Lilita One** (Google Fonts, SIL Open Font License 1.1). La licence
+  n'impose rien sur une image rendue avec la police ; la police elle-même n'est ni dans le dépôt ni
+  dans l'APK.
+- **Refaire les images** : `ci/brand/popcorn.py LilitaOne-Regular.ttf` (Pillow) dessine les deux
+  bannières et l'aperçu de l'icône (`docs/screenshots/logo/apres-icone.png`) avec les formes du
+  vecteur ; changer l'un, c'est changer l'autre.
+- Aucune capture Roborazzi ne change : l'icône et la bannière n'apparaissent dans aucun écran.
 
 ## 5. Tests et CI
 
