@@ -56,6 +56,7 @@ import fr.guim.cinedoury.core.designsystem.component.ScrolledByIndex
 import fr.guim.cinedoury.core.designsystem.component.SecondaryButton
 import fr.guim.cinedoury.core.designsystem.component.SkeletonLine
 import fr.guim.cinedoury.core.designsystem.component.featuredBannerMinHeight
+import fr.guim.cinedoury.core.designsystem.component.mosaicFocusRoom
 import fr.guim.cinedoury.core.designsystem.component.rememberCineFocus
 import fr.guim.cinedoury.core.designsystem.theme.CineSizes
 import fr.guim.cinedoury.core.designsystem.theme.CineSpacing
@@ -240,10 +241,11 @@ fun HomeScreen(
             if (tonight != null) {
                 // The mosaic « Ce soir » (essai réel 5): above a row and a half, as the banner was; it
                 // scrolls away by index when the focus goes down into the rows, and comes back with it.
-                val mosaic =
-                    (maxHeight - homeRowsArea(rows) - CineSpacing.safeVertical - RowGap).coerceAtLeast(
-                        tonightMinHeight(),
-                    )
+                // Its top stands lower by the room of the focus: the list clips at the safe area, and a
+                // focused tile grows and draws its outline and halo above itself (1.0.0: cut on the Shield).
+                val available = maxHeight - homeRowsArea(rows) - CineSpacing.safeVertical - RowGap
+                val room = mosaicFocusRoom(available)
+                val mosaic = (available - room).coerceAtLeast(tonightMinHeight())
                 ScrolledByIndex {
                     HomeRows(
                         state = state,
@@ -275,6 +277,7 @@ fun HomeScreen(
                             TonightMosaic(
                                 state = tonight,
                                 height = mosaic,
+                                room = room,
                                 sources = sources,
                                 menu = menu,
                                 navigation = navigation,
