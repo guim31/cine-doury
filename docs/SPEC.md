@@ -1968,6 +1968,13 @@ Quatre retours du mainteneur sur la v0.9.0 (Shield, écran 4K, taille « Très c
   sur une rangée lue avant les autres. Test :
   `R4Home*Test` (position du titre identique le long d'une rangée, d'une rangée à l'autre et au
   retour).
+- **F. Les rangées passaient sous le rail** (essai de `0.9.0-essai.2`, vu sur le Chromecast) : une
+  rangée de l'accueil défilée vers la droite faisait passer ses affiches sous le rail, qui n'a pas de
+  fond, ses icônes dessinées par-dessus. La liste de chaque rangée commence désormais au bord du rail
+  (`HomeRowView`) : ses cartes y sont coupées, et sa marge et son pivot comptent depuis ce bord. Les
+  autres rangées n'étaient pas touchées : la recherche pose ses rangées à droite du clavier, les fiches
+  n'ont pas de rail, et la grille d'une bibliothèque défile de haut en bas. Test : `R4Home*Test`
+  (aucune carte à gauche du bord du rail après cinq →) ; capture 210 (`apres-f-*`).
 - **E. Versions d'essai installables par-dessus une release** (demandé par l'orchestrateur pour
   essayer A à D sur la Shield) : l'APK de la CI d'une PR, signé de la clé de débogage et de code 1,
   obligeait à désinstaller la v0.9.0 (code 900), donc à se reconnecter. Nouveau schéma de

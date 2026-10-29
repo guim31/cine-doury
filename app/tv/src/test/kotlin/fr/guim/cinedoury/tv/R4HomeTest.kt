@@ -7,10 +7,13 @@ import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.pressKey
+import androidx.compose.ui.unit.dp
+import fr.guim.cinedoury.core.designsystem.theme.CineSizes
 import fr.guim.cinedoury.core.designsystem.theme.CineTheme
 import fr.guim.cinedoury.core.designsystem.theme.LayoutSize
 import fr.guim.cinedoury.core.designsystem.theme.ThemeVariant
@@ -154,6 +157,30 @@ abstract class R4HomeChecks(
         assertEquals(shown, secondRowShown("latest:films", "latest:series"), "$size, the first row focused")
     }
 
+    /** Essai réel 4, F: scrolled to the right, the cards of a row are cut at the edge of the rail. */
+    @Test
+    fun theCardsOfARowNeverPassUnderTheRail() {
+        home()
+        press(Key.DirectionDown)
+        press(Key.DirectionRight, times = 5)
+        val row = J2Samples.homeRows.first { it.key == "latest:films" }
+        val shown =
+            row.items.indices.mapNotNull { index ->
+                val tag = HomePreview.card("latest:films", index)
+                if (compose.onAllNodesWithTag(tag).fetchSemanticsNodes().isEmpty()) return@mapNotNull null
+                compose.onNodeWithTag(tag).getBoundsInRoot().takeIf { it.right > it.left }
+            }
+        assertTrue(shown.size > 1, "$size: the row shows cards")
+        shown.forEach { bounds ->
+            assertTrue(
+                bounds.left >= CineSizes.railCollapsed - EDGE,
+                "$size: a card starts at ${bounds.left}, under the rail",
+            )
+        }
+        // Scrolled: a card was cut at the edge.
+        assertTrue(shown.any { it.left < CineSizes.railCollapsed + EDGE }, "$size: no card cut at the edge of the rail")
+    }
+
     @Test
     fun theTitleOfARowStaysInPlaceWhileTheFocusMoves() {
         home()
@@ -181,6 +208,9 @@ abstract class R4HomeChecks(
 
         /** At least the title of the second row and the top of its cards. */
         const val PEEK = 0.2f
+
+        /** Half a pixel, in dp. */
+        val EDGE = 0.5.dp
         const val SETTLE_MILLIS = 1_000L
     }
 }

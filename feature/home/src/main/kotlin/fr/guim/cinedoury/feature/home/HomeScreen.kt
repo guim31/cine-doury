@@ -137,6 +137,7 @@ object HomePreview {
  *
  * @param previewFeatured the title of the banner when nothing has the focus (screenshots).
  * @param previewRail draws the rail open on that entry (screenshots).
+ * @param previewScrolledRow the row of that key scrolled to the left, under where the rail is (screenshots).
  */
 @Composable
 fun HomeScreen(
@@ -147,6 +148,7 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     previewFeatured: MediaItem? = null,
     previewRail: RailTarget? = null,
+    previewScrolledRow: String? = null,
 ) {
     val rows = state.rows
     // Read only where it is drawn (banner, backdrops): a step of the focus recomposes them, not the
@@ -243,6 +245,7 @@ fun HomeScreen(
                                 focusedRow = row
                             },
                             onRowFocused = scrollToRow,
+                            previewScrolledRow = previewScrolledRow,
                             modifier = Modifier.weight(1f).fillMaxWidth(),
                         )
                     }
@@ -299,6 +302,9 @@ internal val ContentStart = CineSizes.railCollapsed + CineSpacing.m
 private const val ROW_PIVOT = 0.48f
 private const val SKELETON_ROWS = 2
 
+/** How far [HomeScreen]'s `previewScrolledRow` is scrolled: two posters and a half. */
+private val PREVIEW_ROW_SCROLL = CineSizes.posterNormal.width * 2.5f
+
 /** The rows of the home in a list, and « Personnaliser l'accueil » at its end. */
 @Composable
 private fun HomeRows(
@@ -312,6 +318,7 @@ private fun HomeRows(
     modifier: Modifier = Modifier,
     onRowFocused: ((index: Int) -> Unit)? = null,
     top: Dp = CineSpacing.none,
+    previewScrolledRow: String? = null,
 ) {
     val rows = state.rows
     LazyColumn(
@@ -334,6 +341,7 @@ private fun HomeRows(
                     onFocused = { item -> onFocused(row.key, item) },
                     onOpen = navigation::open,
                     modifier = Modifier.onRowFocused(onRowFocused, index),
+                    previewScroll = if (row.key == previewScrolledRow) PREVIEW_ROW_SCROLL else CineSpacing.none,
                 )
             }
             item(key = "customize", contentType = "customize") {
