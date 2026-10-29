@@ -203,26 +203,30 @@ abstract class R5HomeChecks(
         home()
         val list = compose.onNodeWithTag("home").getBoundsInRoot()
         val screen = compose.onRoot().getBoundsInRoot()
-        val still = (0 until TILES).associateWith { compose.onNodeWithTag(HomePreview.tonight(it)).getBoundsInRoot() }
+
+        fun bounds(tile: Int) = compose.onNodeWithTag(HomePreview.tonight(tile)).getBoundsInRoot()
+        // The bounds of each tile at rest (a focused one reports its growth): the large one once the
+        // focus has left it.
+        val others = (1 until TILES).associateWith { bounds(it) }
+        press(Key.DirectionRight)
+        val still = others + (0 to bounds(0))
+        press(Key.DirectionLeft)
         // Through every tile: the large one, the top line, then the bottom one from right to left.
         val path = listOf(null, Key.DirectionRight, Key.DirectionRight, Key.DirectionDown, Key.DirectionLeft)
         for ((tile, key) in listOf(0, 1, 2, 4, 3).zip(path)) {
             if (key != null) press(key)
             focusable(HomePreview.tonight(tile)).assertIsFocused()
-            val bounds = compose.onNodeWithTag(HomePreview.tonight(tile)).getBoundsInRoot()
+            val rest = still.getValue(tile)
             val scale = if (tile == 0) CineScale.TILE_LARGE else CineScale.TILE
-            val dx = (bounds.right - bounds.left) * ((scale - 1f) / 2f) + CineSizes.focusRoom
-            val dy = (bounds.bottom - bounds.top) * ((scale - 1f) / 2f) + CineSizes.focusRoom
+            val dx = (rest.right - rest.left) * ((scale - 1f) / 2f) + CineSizes.focusRoom
+            val dy = (rest.bottom - rest.top) * ((scale - 1f) / 2f) + CineSizes.focusRoom
             val where = "$size, tile $tile"
-            assertTrue(bounds.top - dy >= list.top - EDGE, "$where: its top is cut (${bounds.top - dy} < ${list.top})")
-            assertTrue(bounds.left - dx >= screen.left - EDGE, "$where: its left is cut")
-            assertTrue(bounds.right + dx <= screen.right + EDGE, "$where: its right is cut")
+            assertTrue(rest.top - dy >= list.top - EDGE, "$where: its top is cut (${rest.top - dy} < ${list.top})")
+            assertTrue(rest.left - dx >= screen.left - EDGE, "$where: its left is cut")
+            assertTrue(rest.right + dx <= screen.right + EDGE, "$where: its right is cut")
+            // The focus moves no other tile.
             for ((other, before) in still) {
-                assertEquals(
-                    before,
-                    compose.onNodeWithTag(HomePreview.tonight(other)).getBoundsInRoot(),
-                    "$where moved $other",
-                )
+                if (other != tile) assertEquals(before, bounds(other), "$where moved $other")
             }
         }
     }
