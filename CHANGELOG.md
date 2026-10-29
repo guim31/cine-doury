@@ -8,6 +8,8 @@ technique est dans [`docs/SPEC.md`](docs/SPEC.md) ; les notes de chaque version 
 
 Essai réel 5 (29/10/2026, NVIDIA Shield TV en 4K et Chromecast avec Google TV, v0.9.1).
 
+- **Épisode suivant** : sans générique repéré par le serveur, l'épisode suivant ne démarre plus
+  avant la fin de l'épisode en cours ; le compte à rebours se termine à la fin.
 - **TalkBack** : chaque entrée du menu de gauche dit de nouveau son nom, menu ouvert ou fermé.
 
 ## 0.9.1 — 29/10/2026

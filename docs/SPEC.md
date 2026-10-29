@@ -784,7 +784,9 @@ fois par segment), « Rien ». Le générique (Outro) mène à l'épisode suivan
 **Épisode suivant** : le suivant dans l'ordre de la série (les spéciaux seulement après un
 spécial). La carte apparaît au début du segment Outro, sinon 30 s avant la fin, focalisée, avec un
 compte à rebours de 10 s (qui ne court que pendant la lecture) ; à zéro, ou à la fin du fichier,
-l'épisode suivant démarre si « Épisode suivant automatique » est actif. « Retour » écarte la carte.
+l'épisode suivant démarre si « Épisode suivant automatique » est actif. **Sans segment Outro**
+(essai réel 5, § 4.23), le compte à rebours ne lance rien : il commence quand il reste exactement sa
+durée et finit à la fin réelle de l'épisode, dont la fin lance le suivant. « Retour » écarte la carte.
 
 **« Vous êtes toujours là ? »** (`StillWatching`) : l'épisode lancé par l'utilisateur compte 1,
 chaque épisode lancé par le compte à rebours ajoute 1, toute touche repart de 1 ; quand 3 épisodes
@@ -2007,6 +2009,22 @@ et une réparation du banc de mesures, faits dans l'ordre E, A, B, C, D.
   Le nom est désormais la description de l'entrée elle-même (`NavigationRail`), texte et avatar
   n'exposant rien de plus. Le banc s'arrête aussi au bas du rail (« Réglages ») et dit le dernier nom
   lu. Test : `R5RailTest` (chaque entrée dit son nom, rail fermé et ouvert, une seule fois).
+
+- **A. Le compte à rebours coupait la fin des épisodes.** Sans segment Outro,
+  `PlaybackRules.creditsStart` suppose un générique de 30 s : la carte « Épisode suivant » apparaissait
+  30 s avant la fin, et son compte à rebours (10 s) lançait l'épisode suivant **environ 20 s avant la
+  fin réelle**, coupant la fin d'un épisode sans générique. **Règle** (`PlaybackRules.countdownLeft`,
+  `countdownStartsNext`) :
+  - **avec** un segment Outro : inchangé ; la carte dès le début du générique, le compte à rebours
+    court pendant la lecture, puis l'épisode suivant démarre ;
+  - **sans** segment Outro : la carte apparaît toujours 30 s avant la fin, d'abord sans compte à
+    rebours ; celui-ci commence quand il reste exactement sa durée et suit ce qui reste de l'épisode
+    (une pause l'arrête, un retour en arrière le remonte) ; à zéro, il ne lance rien : c'est la fin de
+    l'épisode (`PlayerEvent.Ended`) qui lance le suivant. L'épisode suivant ne démarre donc **jamais
+    avant la fin réelle**.
+  - OK sur la carte lance toujours l'épisode suivant tout de suite ; « Retour » l'écarte.
+  Tests : `PlaybackRulesTest` (avec et sans segment), `R5PlayerTest` (modèle de vue : rien 20 s avant
+  la fin sans générique, la fin lance le suivant ; avec générique, le compte à rebours le lance ; OK).
 
 ## 5. Tests et CI
 

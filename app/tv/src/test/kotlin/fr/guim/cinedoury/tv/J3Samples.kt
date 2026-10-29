@@ -262,6 +262,12 @@ internal object J3Samples {
             episode("Les Marées", 2, 2, "Le chenal", LocalDate.of(2016, 3, 14)),
         )
 
+    /** The episodes of « Les Marées », each with a version to play (the player tests, essai réel 5). */
+    val mareesPlayable =
+        mareesEpisodes.map { it.copy(mediaSources = listOf(hd.copy(id = "src-${it.id.value}", name = null))) }
+
+    val mareesSeasons = listOf(season("Les Marées", 1, 3), season("Les Marées", 2, 2))
+
     val marees =
         MediaItem(
             id = ItemId("Les Marées"),

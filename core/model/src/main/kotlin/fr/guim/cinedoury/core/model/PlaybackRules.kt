@@ -77,7 +77,10 @@ enum class SegmentAction {
 object PlaybackRules {
     const val DEFAULT_WATCHED_THRESHOLD = 0.9f
 
-    /** Without an Outro segment, the credits are the last 30 seconds. */
+    /**
+     * Without an Outro segment, « Épisode suivant » shows for the last 30 seconds (its countdown ends
+     * at the end of the episode: [countdownLeft]).
+     */
     val CREDITS_WITHOUT_SEGMENT = 30.seconds
 
     /** The countdown of « Épisode suivant ». */
@@ -110,6 +113,35 @@ object PlaybackRules {
         segments: List<MediaSegment>,
         hasNext: Boolean,
     ): Boolean = hasNext && runtime.isPositive() && position >= creditsStart(runtime, segments) && position < runtime
+
+    /**
+     * What is left of the countdown of « Épisode suivant » (`SPEC.md` § 4.23), or null while it has not
+     * begun.
+     *
+     * With an Outro segment, the credits are known: the countdown runs from their start, for
+     * [countdown] of playing time ([elapsed]), then the next episode starts. Without, the last 30 s
+     * are only a guess, and an episode without credits would lose its end (essai réel 5): the
+     * countdown ends at the end of the episode, never before, and begins when exactly [countdown] is
+     * left; the next episode starts when this one ends.
+     */
+    fun countdownLeft(
+        position: Duration,
+        runtime: Duration,
+        segments: List<MediaSegment>,
+        elapsed: Duration,
+        countdown: Duration,
+    ): Duration? =
+        if (segments.outro() != null) {
+            (countdown - elapsed).coerceAtLeast(Duration.ZERO)
+        } else {
+            (runtime - position).coerceAtLeast(Duration.ZERO).takeIf { it <= countdown }
+        }
+
+    /**
+     * Whether the end of the countdown starts the next episode at once: only during known credits.
+     * Without an Outro segment, the end of the episode does.
+     */
+    fun countdownStartsNext(segments: List<MediaSegment>): Boolean = segments.outro() != null
 
     /** The skippable segment at [position], if any. */
     fun skippableAt(

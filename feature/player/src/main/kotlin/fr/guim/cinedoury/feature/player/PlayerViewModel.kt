@@ -308,9 +308,12 @@ class PlayerViewModel(
         val shows = showsNext(state, position, duration)
         if (shows && snapshot.playing) countdown += TICK
         if (!shows) countdown = Duration.ZERO
-        val counting = shows && state.settings.autoplayNext
         val total = state.settings.nextCountdownSeconds.seconds
-        val left = (total - countdown).coerceAtLeast(Duration.ZERO)
+        // Without an Outro segment, the countdown ends with the episode, never before (essai réel 5).
+        val left =
+            PlaybackRules
+                .countdownLeft(position, duration, state.segments, countdown, total)
+                ?.takeIf { shows && state.settings.autoplayNext && total.isPositive() }
         local.update {
             it.copy(
                 position = position,
@@ -321,12 +324,12 @@ class PlayerViewModel(
                 reconnecting = bufferingFor >= RECONNECTING,
                 skip = skip,
                 nextShown = shows && !it.stillWatching,
-                nextCountdown = (left / total).toFloat().takeIf { counting },
-                nextSeconds = ((left.inWholeMilliseconds + MILLIS - 1) / MILLIS).toInt().takeIf { counting },
+                nextCountdown = left?.let { (it / total).toFloat() },
+                nextSeconds = left?.let { ((it.inWholeMilliseconds + MILLIS - 1) / MILLIS).toInt() },
                 info = if (infoVisible) snapshot else null,
             )
         }
-        if (counting && !left.isPositive()) autoplay()
+        if (left != null && !left.isPositive() && PlaybackRules.countdownStartsNext(state.segments)) autoplay()
     }
 
     private fun showsNext(
