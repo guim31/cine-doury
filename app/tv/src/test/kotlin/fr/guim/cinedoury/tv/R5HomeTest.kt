@@ -218,7 +218,11 @@ abstract class R5HomeChecks(
             assertTrue(bounds.left - dx >= screen.left - EDGE, "$where: its left is cut")
             assertTrue(bounds.right + dx <= screen.right + EDGE, "$where: its right is cut")
             for ((other, before) in still) {
-                assertEquals(before, compose.onNodeWithTag(HomePreview.tonight(other)).getBoundsInRoot(), "$where moved $other")
+                assertEquals(
+                    before,
+                    compose.onNodeWithTag(HomePreview.tonight(other)).getBoundsInRoot(),
+                    "$where moved $other",
+                )
             }
         }
     }

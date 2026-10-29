@@ -27,7 +27,13 @@ class R6TonightScreenshotTest(
 
     @Test
     fun focused() =
-        compose.shootJ8("230-accueil-mosaique-tuile-$tile", ThemeVariant.Dark, 1f, HomePreview.tonight(tile), LayoutSize.Default) {
+        compose.shootJ8(
+            "230-accueil-mosaique-tuile-$tile",
+            ThemeVariant.Dark,
+            1f,
+            HomePreview.tonight(tile),
+            LayoutSize.Default,
+        ) {
             Tonight()
         }
 
