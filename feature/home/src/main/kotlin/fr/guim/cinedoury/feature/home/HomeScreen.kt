@@ -26,10 +26,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -253,6 +259,18 @@ fun HomeScreen(
                         },
                         onRowFocused = scrollToRow,
                         top = CineSpacing.safeVertical,
+                        // ↑ from the first row: back to the mosaic, scrolled out of the list (the 2D
+                        // search would find the rail first, seen on the emulator).
+                        onUpFromFirstRow = {
+                            scope.launch {
+                                listState.scrollToItem(0)
+                                // The mosaic composes again a frame or two later.
+                                repeat(UP_ATTEMPTS) {
+                                    withFrameNanos { }
+                                    if (runCatching { mainTile.requestFocus() }.getOrDefault(false)) return@launch
+                                }
+                            }
+                        },
                         leading = {
                             TonightMosaic(
                                 state = tonight,
@@ -372,6 +390,9 @@ fun HomeScreen(
 
 private val LazyListState.isScrolled: Boolean get() = firstVisibleItemIndex > 0 || firstVisibleItemScrollOffset > 0
 
+/** Frames to wait for the mosaic to come back before it takes the focus. */
+private const val UP_ATTEMPTS = 10
+
 /** The rows start right of the closed rail. */
 internal val ContentStart = CineSizes.railCollapsed + CineSpacing.m
 
@@ -403,6 +424,7 @@ private fun HomeRows(
     onRowFocused: ((index: Int) -> Unit)? = null,
     top: Dp = CineSpacing.none,
     previewScrolledRow: String? = null,
+    onUpFromFirstRow: (() -> Unit)? = null,
     leading: (@Composable () -> Unit)? = null,
 ) {
     val rows = state.rows
@@ -430,7 +452,10 @@ private fun HomeRows(
                     menu = menu,
                     onFocused = { item -> onFocused(row.key, item) },
                     onOpen = navigation::open,
-                    modifier = Modifier.onRowFocused(onRowFocused, first + index),
+                    modifier =
+                        Modifier
+                            .onRowFocused(onRowFocused, first + index)
+                            .upTo(onUpFromFirstRow.takeIf { index == 0 }),
                     previewScroll = if (row.key == previewScrolledRow) PREVIEW_ROW_SCROLL else CineSpacing.none,
                 )
             }
@@ -483,6 +508,18 @@ private fun homeRowHeight(style: CardStyle): Dp {
     return textLineHeight(typography.title2) + CineSpacing.rowTitleGap + card.height + CineSpacing.s +
         textLineHeight(typography.caption) * 2
 }
+
+/** ↑ inside this element goes to [target] instead of searching for what is above. */
+private fun Modifier.upTo(target: (() -> Unit)?): Modifier =
+    if (target == null) {
+        this
+    } else {
+        onPreviewKeyEvent { event ->
+            if (event.key != Key.DirectionUp) return@onPreviewKeyEvent false
+            if (event.type == KeyEventType.KeyDown) target()
+            true
+        }
+    }
 
 /** Tells [onRowFocused] when the focus comes into the element at [index] of the list. */
 private fun Modifier.onRowFocused(

@@ -169,9 +169,9 @@ abstract class R5HomeChecks(
         assertEquals(title, top(HomePreview.rowTitle("latest:films")), "$size")
         press(Key.DirectionRight)
         assertEquals(title, top(HomePreview.rowTitle("latest:films")), "$size, along the row")
-        // Back up: the mosaic comes back, a tile focused.
+        // Back up: the mosaic comes back, its large tile focused (never the rail).
         press(Key.DirectionUp, times = 2)
-        compose.onNode(isFocused() and hasAnyAncestor(hasTestTag(HomePreview.TONIGHT))).assertExists()
+        focusable(HomePreview.tonight(0)).assertIsFocused()
         assertTrue(compose.onNodeWithTag(HomePreview.TONIGHT).getBoundsInRoot().top >= home, "$size, mosaic back")
     }
 

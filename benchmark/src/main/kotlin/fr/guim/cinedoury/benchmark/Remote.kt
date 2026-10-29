@@ -264,10 +264,16 @@ internal fun Remote.signInIfNeeded() {
 internal fun Remote.waitHome() {
     val shown = runCatching { waitUntil("the home or the profiles", SIGN_IN_TIMEOUT) { homeOrProfiles() } }.isSuccess
     if (!shown) {
-        // « Le serveur ne répond pas » (the test server, loaded, missed an answer): OK on « Réessayer »,
-        // which has the focus, as a user would.
-        press(KeyEvent.KEYCODE_DPAD_CENTER)
-        waitUntil("the home or the profiles, after « Réessayer »", SIGN_IN_TIMEOUT) { homeOrProfiles() }
+        if (!device.hasObject(By.pkg(PACKAGE))) {
+            // The app did not come to the front (seen on the emulator after a few iterations): OK
+            // would open something of the launcher. Started again.
+            launch()
+        } else {
+            // « Le serveur ne répond pas » (the test server, loaded, missed an answer): OK on
+            // « Réessayer », which has the focus, as a user would.
+            press(KeyEvent.KEYCODE_DPAD_CENTER)
+        }
+        waitUntil("the home or the profiles, once more", SIGN_IN_TIMEOUT) { homeOrProfiles() }
     }
     if (!onHome()) {
         waitFocusIn(PROFILE_0, nudge = KeyEvent.KEYCODE_DPAD_LEFT)

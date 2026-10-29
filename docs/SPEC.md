@@ -2099,7 +2099,9 @@ et une réparation du banc de mesures, faits dans l'ordre E, A, B, C, D.
     sont recadrées à la tuile (Coil demande la taille de la tuile). La liste défile **par index** :
     la rangée focalisée en haut, la mosaïque hors de l'écran ; la marge du haut coupe la liste, pour
     qu'il ne reste aucune bande de mosaïque au-dessus de la rangée. → depuis la grande tuile va à la
-    petite tuile du haut (`focusProperties`), les deux étant à égale distance ;
+    petite tuile du haut (`focusProperties`), les deux étant à égale distance ; ↑ depuis la première
+    rangée ramène la mosaïque et sa grande tuile (la recherche 2D trouvait le rail d'abord, vu sur
+    l'émulateur du banc) ;
   - **fluidité** : chaque tuile lit son propre focus (`MosaicTile`, `rememberCineFocus`) ; le fond
     d'ambiance lit le titre focalisé au dessin ; rien d'autre ne recompose au passage d'une tuile à
     l'autre ;
