@@ -330,25 +330,37 @@ internal fun Remote.backToFirstCard() {
     }
 }
 
-/** From the home, into the rail and onto the library named [name] (a name given by the server). */
+/**
+ * From the home, into the rail and onto the library named [name] (a name given by the server). The
+ * rail opens on the entry the focus left last, which can be « Réglages » at its bottom (back from the
+ * settings): down first, then up to its top.
+ */
 internal fun Remote.openLibrary(name: String) {
     press(KeyEvent.KEYCODE_DPAD_LEFT)
     waitFocusIn(RAIL)
-    var left = RAIL_ENTRIES
-    while (left-- > 0) {
+    val found =
+        railWalk(name, KeyEvent.KEYCODE_DPAD_DOWN, RAIL_SETTINGS) ||
+            railWalk(name, KeyEvent.KEYCODE_DPAD_UP, RAIL_SEARCH)
+    if (!found) throw AssertionError("No entry $name in the rail (last read: ${focusedText(RAIL)})\n${screen()}")
+    press(KeyEvent.KEYCODE_DPAD_CENTER)
+    waitFor(LIBRARY_ITEMS, SIGN_IN_TIMEOUT)
+    waitFocusIn(LIBRARY_ITEMS, SIGN_IN_TIMEOUT, nudge = KeyEvent.KEYCODE_DPAD_DOWN)
+}
+
+/** Along the rail with [key] until the entry [name] has the focus, or the entry [end] is reached. */
+private fun Remote.railWalk(
+    name: String,
+    key: Int,
+    end: String,
+): Boolean {
+    repeat(RAIL_ENTRIES) {
         // What accessibility says lags the focus a little: wait for it to say the entry.
         val reached = runCatching { waitUntil("$name focused", FOCUS_SETTLE) { focusedText(RAIL) == name } }.isSuccess
-        if (reached) {
-            press(KeyEvent.KEYCODE_DPAD_CENTER)
-            waitFor(LIBRARY_ITEMS, SIGN_IN_TIMEOUT)
-            waitFocusIn(LIBRARY_ITEMS, SIGN_IN_TIMEOUT, nudge = KeyEvent.KEYCODE_DPAD_DOWN)
-            return
-        }
-        // The bottom of the rail: the library is not below.
-        if (focusedIn(RAIL_SETTINGS)) break
-        press(KeyEvent.KEYCODE_DPAD_DOWN)
+        if (reached) return true
+        if (focusedIn(end)) return false
+        press(key)
     }
-    throw AssertionError("No entry $name in the rail (last read: ${focusedText(RAIL)})\n${screen()}")
+    return false
 }
 
 internal const val START = "start"
@@ -367,6 +379,7 @@ internal const val RAIL = "rail"
 internal const val LIBRARY_ITEMS = "library-items"
 internal const val DETAILS = "details"
 internal const val RAIL_SETTINGS = "rail-settings"
+private const val RAIL_SEARCH = "rail-search"
 internal const val SETTINGS = "settings"
 internal const val SETTINGS_PAGE = "settings-page"
 internal const val SETTINGS_DEVICE = "setting-Device"
