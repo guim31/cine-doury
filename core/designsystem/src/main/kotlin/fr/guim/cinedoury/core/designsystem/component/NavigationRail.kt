@@ -43,6 +43,8 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -222,16 +224,21 @@ private fun RailItem(
                 .withFocusRequester(focusRequester)
                 .cineFocusable(focus, RailItemShape, CineScale.RAIL, onClick, halo = CineSizes.railFocusHalo)
                 .then(destination.tag?.let { Modifier.testTag(it) } ?: Modifier)
-                // TalkBack: one entry, read once by its label (the icon says nothing more), and which one is open.
-                .semantics { this.selected = selected }
-                .background(if (focused) colors.text else Color.Transparent)
+                // TalkBack: one entry, read once by its label (the icon says nothing more), and which one is
+                // open. The label is on the entry itself: the text next to the icon is transparent while the
+                // rail is closed, and Compose leaves a transparent node out of accessibility, without
+                // putting it back when the alpha, drawn in a layer, comes up (essai réel 5).
+                .semantics {
+                    contentDescription = destination.label
+                    this.selected = selected
+                }.background(if (focused) colors.text else Color.Transparent)
                 .padding(horizontal = RailItemPadding),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(CineSpacing.s),
     ) {
         val avatar = destination.avatar
         if (avatar != null) {
-            Box(Modifier.size(CineSizes.icon), contentAlignment = Alignment.Center) { avatar() }
+            Box(Modifier.size(CineSizes.icon).clearAndSetSemantics {}, contentAlignment = Alignment.Center) { avatar() }
         } else {
             Icon(
                 imageVector = destination.icon,
@@ -241,7 +248,7 @@ private fun RailItem(
                 modifier = Modifier.size(CineSizes.icon),
             )
         }
-        Box(Modifier.graphicsLayer { alpha = labelAlpha }) {
+        Box(Modifier.graphicsLayer { alpha = labelAlpha }.clearAndSetSemantics {}) {
             Text(
                 text = destination.label,
                 style = CineTheme.typography.label,

@@ -18,6 +18,7 @@ import fr.guim.cinedoury.core.data.library.LibraryStateRepository
 import fr.guim.cinedoury.core.data.manage.ManageRepository
 import fr.guim.cinedoury.core.data.manage.ManageUpdates
 import fr.guim.cinedoury.core.data.prefs.AppPreferences
+import fr.guim.cinedoury.core.data.quick.QuickActions
 import fr.guim.cinedoury.core.data.search.RequestSettings
 import fr.guim.cinedoury.core.data.search.SearchRepository
 import fr.guim.cinedoury.core.data.search.TitleIndex
@@ -55,6 +56,7 @@ val dataModule =
             LibraryStateRepository(get()) { profile -> preferences.browsing(profile).first().defaultView }
         }
         single { UserDataUpdates() }
+        single { QuickActions(get(), get(), get()) }
         single { ManageUpdates() }
         single { ManageRepository(get(), get(), get()) }
         single<TokenCipher> { KeystoreTokenCipher() }

@@ -4,7 +4,31 @@ Ce que chaque étape a changé pour qui regarde, du point de vue de la télécom
 technique est dans [`docs/SPEC.md`](docs/SPEC.md) ; les notes de chaque version publiée, dans
 [`docs/releases/`](docs/releases/).
 
-## Non publié
+## 1.0.0 — 29/10/2026
+
+La première version complète pour la télévision (Android TV et Google TV), qui remplace Plex au-dessus
+d'un serveur Jellyfin 12.3 : elle réunit tout ce journal, de J0 à l'essai réel 5.
+Notes de version : [`docs/releases/v1.0.0.md`](docs/releases/v1.0.0.md).
+
+Essai réel 5 (29/10/2026, NVIDIA Shield TV en 4K et Chromecast avec Google TV, v0.9.1).
+
+- **Épisode suivant** : sans générique repéré par le serveur, l'épisode suivant ne démarre plus
+  avant la fin de l'épisode en cours ; le compte à rebours se termine à la fin.
+- **Lecteur** : pour un épisode, « Épisode précédent » et « Épisode suivant » de part et d'autre de
+  lecture/pause, d'une saison à l'autre ; les touches précédent / suivant de la télécommande font de
+  même.
+- **Appui long sur une jaquette** (accueil, bibliothèques, recherche, fiches) : un menu d'options
+  rapides : reprendre ou lire, lire depuis le début, ouvrir la fiche, aller à la série ou à la saison,
+  marquer comme vu ou non vu, retirer de « Continuer », ajouter aux favoris ou les retirer ; dans une
+  bibliothèque, « Sélectionner » pour les comptes qui gèrent.
+- **Accueil** : en haut, la mosaïque « Ce soir » remplace le bandeau : une grande tuile (la lecture
+  en cours la plus récente) et quatre petites (autres lectures, épisodes à suivre, nouveaux épisodes,
+  derniers ajouts, un titre à redécouvrir). Dessous, une seule rangée « Continuer » : les lectures en
+  cours puis les épisodes à suivre que la mosaïque ne montre pas ; dans « Personnaliser l'accueil »,
+  elle prend la place de « Reprendre » et « À suivre », et garde ce qui était réglé pour elles.
+  Réglages → Accueil et navigation → « Mosaïque « Ce soir » » pour revenir au bandeau, avec
+  « Reprendre » et « À suivre » comme avant.
+- **TalkBack** : chaque entrée du menu de gauche dit de nouveau son nom, menu ouvert ou fermé.
 
 ## 0.9.1 — 29/10/2026
 
@@ -21,11 +45,6 @@ Notes de version : [`docs/releases/v0.9.1.md`](docs/releases/v0.9.1.md).
 - **Quitter** : « Retour » depuis le menu de l'accueil ferme l'appli sans demander de confirmation.
 - **Versions d'essai** : elles s'installent par-dessus la version publiée, sans désinstaller ni se
   reconnecter ; la version publiée suivante s'installe ensuite par-dessus.
-
-## 1.0.0 — à paraître
-
-La première version complète pour la télévision (Android TV et Google TV), qui remplace Plex au-dessus
-d'un serveur Jellyfin 12.3. Elle réunit tout ce qui suit, de J0 à J8.
 
 ## 0.9.0 — à paraître
 

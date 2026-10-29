@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -65,12 +66,16 @@ import fr.guim.cinedoury.core.designsystem.theme.CineSizes
 import fr.guim.cinedoury.core.designsystem.theme.CineSpacing
 import fr.guim.cinedoury.core.designsystem.theme.CineTheme
 import fr.guim.cinedoury.core.model.MediaItem
+import fr.guim.cinedoury.core.model.PlaybackRequest
 import fr.guim.cinedoury.core.model.RequestCandidate
 import fr.guim.cinedoury.core.model.RequestStatus
 import fr.guim.cinedoury.core.model.SearchGroup
 import fr.guim.cinedoury.core.ui.AppRail
 import fr.guim.cinedoury.core.ui.CollectEvents
 import fr.guim.cinedoury.core.ui.ImageSources
+import fr.guim.cinedoury.core.ui.LocalQuickMenu
+import fr.guim.cinedoury.core.ui.QuickMenuHost
+import fr.guim.cinedoury.core.ui.QuickMenuNavigation
 import fr.guim.cinedoury.core.ui.RailTarget
 import fr.guim.cinedoury.core.ui.ambience
 import fr.guim.cinedoury.core.ui.cardSubtitle
@@ -78,20 +83,25 @@ import fr.guim.cinedoury.core.ui.cardTitle
 import fr.guim.cinedoury.core.ui.imageSource
 import fr.guim.cinedoury.core.ui.landscapeImage
 import fr.guim.cinedoury.core.ui.posterImage
+import fr.guim.cinedoury.core.ui.quickMenu
 import fr.guim.cinedoury.core.ui.rememberArt
+import fr.guim.cinedoury.core.ui.rememberQuickMenu
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 
 /** What the search asks the app to open. */
-interface SearchNavigation {
+interface SearchNavigation : QuickMenuNavigation {
     fun navigate(target: RailTarget)
 
     /** The details of [item] (J3). */
-    fun open(item: MediaItem)
+    override fun open(item: MediaItem)
 
     fun sessionEnded()
+
+    /** Plays [request], from the menu of a card (essai réel 5); its details by default. */
+    override fun play(request: PlaybackRequest) = open(request.item)
 }
 
 /**
@@ -185,6 +195,7 @@ fun SearchScreen(
     val first = remember { FocusRequester() }
     val keyboard = remember { FocusRequester() }
     val rowRequesters = remember { mutableMapOf<String, FocusRequester>() }
+    val menu = rememberQuickMenu()
     val open: (MediaItem) -> Unit = { item ->
         actions.opened()
         navigation.open(item)
@@ -200,72 +211,74 @@ fun SearchScreen(
 
     Box(modifier = modifier.fillMaxSize()) {
         AmbientBackdrop(ambience = focusedItem?.ambience)
-        Row(
-            Modifier
-                .fillMaxSize()
-                .padding(start = ContentStart),
-        ) {
-            Column(
-                modifier =
-                    Modifier
-                        .padding(top = CineSpacing.safeVertical + CineSpacing.s)
-                        .width(keySpan(KEYS_PER_ROW)),
-                verticalArrangement = Arrangement.spacedBy(CineSpacing.s),
+        CompositionLocalProvider(LocalQuickMenu provides menu) {
+            Row(
+                Modifier
+                    .fillMaxSize()
+                    .padding(start = ContentStart),
             ) {
-                if (systemKeyboard) {
-                    SystemKeyboardField(
-                        query = state.query,
-                        onQuery = actions::setQuery,
-                        onClose = { systemKeyboard = false },
-                    )
-                } else {
-                    SearchQueryLine(
-                        text = state.genre?.let { stringResource(R.string.genre_title, it) } ?: state.query,
-                        placeholder = stringResource(R.string.search_placeholder),
-                        modifier = Modifier.fillMaxWidth().testTag("query"),
-                    )
-                }
-                SearchKeyboard(
-                    onType = actions::type,
-                    onErase = actions::erase,
-                    onClear = actions::clear,
-                    onVoice = if (voice.available) voice::start else null,
-                    onSystemKeyboard = { systemKeyboard = true },
-                    first = first,
-                    page = previewPage,
-                    // The key left, for → from the open rail (essai réel 3).
+                Column(
                     modifier =
                         Modifier
-                            .onFocusChanged { if (it.hasFocus) focusedRow = null }
-                            .focusRequester(keyboard)
-                            .focusRestorer(first)
-                            .focusGroup(),
-                )
-                voice.problem?.let { problem ->
-                    Text(
-                        text = stringResource(problem.message),
-                        style = CineTheme.typography.caption,
-                        color = CineTheme.colors.text2,
-                        modifier = Modifier.testTag("voice-problem"),
+                            .padding(top = CineSpacing.safeVertical + CineSpacing.s)
+                            .width(keySpan(KEYS_PER_ROW)),
+                    verticalArrangement = Arrangement.spacedBy(CineSpacing.s),
+                ) {
+                    if (systemKeyboard) {
+                        SystemKeyboardField(
+                            query = state.query,
+                            onQuery = actions::setQuery,
+                            onClose = { systemKeyboard = false },
+                        )
+                    } else {
+                        SearchQueryLine(
+                            text = state.genre?.let { stringResource(R.string.genre_title, it) } ?: state.query,
+                            placeholder = stringResource(R.string.search_placeholder),
+                            modifier = Modifier.fillMaxWidth().testTag("query"),
+                        )
+                    }
+                    SearchKeyboard(
+                        onType = actions::type,
+                        onErase = actions::erase,
+                        onClear = actions::clear,
+                        onVoice = if (voice.available) voice::start else null,
+                        onSystemKeyboard = { systemKeyboard = true },
+                        first = first,
+                        page = previewPage,
+                        // The key left, for → from the open rail (essai réel 3).
+                        modifier =
+                            Modifier
+                                .onFocusChanged { if (it.hasFocus) focusedRow = null }
+                                .focusRequester(keyboard)
+                                .focusRestorer(first)
+                                .focusGroup(),
                     )
+                    voice.problem?.let { problem ->
+                        Text(
+                            text = stringResource(problem.message),
+                            style = CineTheme.typography.caption,
+                            color = CineTheme.colors.text2,
+                            modifier = Modifier.testTag("voice-problem"),
+                        )
+                    }
                 }
+                Results(
+                    state = state,
+                    sources = sources,
+                    actions = actions,
+                    onOpen = open,
+                    requesters = rowRequesters,
+                    onFocused = { row, item ->
+                        focusedRow = row
+                        focusedItem = item
+                    },
+                    modifier =
+                        Modifier
+                            .padding(start = CineSpacing.l)
+                            .fillMaxHeight()
+                            .weight(1f),
+                )
             }
-            Results(
-                state = state,
-                sources = sources,
-                actions = actions,
-                onOpen = open,
-                requesters = rowRequesters,
-                onFocused = { row, item ->
-                    focusedRow = row
-                    focusedItem = item
-                },
-                modifier =
-                    Modifier
-                        .padding(start = CineSpacing.l)
-                        .fillMaxHeight()
-                        .weight(1f),
-            )
         }
         AppRail(
             state = state.rail,
@@ -275,6 +288,8 @@ fun SearchScreen(
             onContentFocus = { (focusedRow?.let { rowRequesters.requester(it) } ?: keyboard).requestFocus() },
             previewFocused = previewRail,
         )
+        // OK held on a card of the results (essai réel 5).
+        QuickMenuHost(menu, navigation)
         RequestDialogs(state.dialog, actions)
         if (voice.listening) {
             VoiceListening(
@@ -584,7 +599,7 @@ private fun ResultRow(
                 }, contentType = { _, _ -> group }) { index, item ->
                     val tag = SearchPreview.card(key, index)
                     val cardModifier =
-                        Modifier.testTag(tag).onFocusChanged {
+                        Modifier.testTag(tag).quickMenu(item, anchor = "$key/${item.id.value}").onFocusChanged {
                             if (it.hasFocus) {
                                 last = index
                                 onFocused(key, item)

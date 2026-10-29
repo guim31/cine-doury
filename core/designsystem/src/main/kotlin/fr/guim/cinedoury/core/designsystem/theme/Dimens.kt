@@ -109,6 +109,9 @@ object CineSizes {
      * under it moves from one title to the next (essai réel 3).
      */
     val heroTitleHeight = 96.dp
+
+    /** The logo on the large tile of the mosaic « Ce soir » (essai réel 5). */
+    val mosaicLogoHeight = 64.dp
     val tabHeight = 40.dp
     val alphabetKey = 18.dp
     val alphabetWidth = 32.dp
@@ -202,6 +205,10 @@ object CineScale {
     const val POSTER = 1.08f
     const val BUTTON = 1.05f
     const val THUMBNAIL = 1.05f
+
+    /** The tiles of the mosaic « Ce soir » (essai réel 5): wide, they grow less. */
+    const val TILE = 1.04f
+    const val TILE_LARGE = 1.02f
 
     /** Wide elements (text fields, list rows): a light growth, so that they stay in their column. */
     const val FIELD = 1.02f

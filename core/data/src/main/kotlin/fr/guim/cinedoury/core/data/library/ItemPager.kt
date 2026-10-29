@@ -40,6 +40,17 @@ data class PagedItems(
 
     val loadedCount: Int get() = pages.values.sumOf { it.size }
 
+    /** The list with [id] changed by [change], where it is read (« vu » from a menu, essai réel 5). */
+    internal fun changed(
+        id: ItemId,
+        change: (MediaItem) -> MediaItem,
+    ): PagedItems =
+        if (pages.values.none { items -> items.any { it.id == id } }) {
+            this
+        } else {
+            copy(pages = pages.mapValues { (_, items) -> items.map { if (it.id == id) change(it) else it } })
+        }
+
     internal fun with(page: Page<MediaItem>): PagedItems =
         copy(total = page.totalCount, pages = pages + (page.startIndex / pageSize to page.items), error = null)
 }
@@ -83,6 +94,12 @@ class ItemPager(
         if (offset >= pageSize / 2) fetch(page + 1)
         if (offset < pageSize / PREVIOUS_SHARE && page > 0) fetch(page - 1)
     }
+
+    /** Changes the item [id] where it is read, without reading anything again. */
+    fun update(
+        id: ItemId,
+        change: (MediaItem) -> MediaItem,
+    ) = state.update { it.changed(id, change) }
 
     /** Asks again for the pages that failed. */
     fun retry() {

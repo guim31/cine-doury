@@ -22,7 +22,7 @@ pas un tableau de bord. Les fonctionnalités sont dans `FONCTIONNALITES.md`.
   - chaque élément focalisable a un voisin évident dans les quatre directions ;
   - aucun piège à focus ;
   - aucun élément accessible seulement au toucher ;
-  - un appui long sur OK ouvre le menu contextuel de l'élément.
+  - un appui long sur OK ouvre le menu contextuel de l'élément. *(Essai réel 5)* Sur une jaquette, partout où il y a des cartes (accueil, bibliothèques, recherche, fiches : saisons, épisodes, similaires, saga, filmographie), c'est le **menu d'options rapides** : un panneau à droite de l'écran (400 dp, `surface-2`, l'écran visible derrière son voile), le titre de la carte (et « S01 · E02 — titre » pour un épisode), puis ses options, chacune une ligne avec son icône : « Reprendre » (si entamé) ou « Lire », « Lire depuis le début » (si entamé), « Ouvrir la fiche », « Aller à la série » et « Aller à la saison » (épisode), « Marquer comme vu » / « Marquer comme non vu » (série ou saison : tous ses épisodes), « Retirer de Continuer » (accueil, carte de « Reprendre »), « Ajouter aux favoris » / « Retirer des favoris », et « Sélectionner » en dernier dans une bibliothèque, pour les comptes qui gèrent. Aucune action de gestion : elles restent dans « ⋯ » et la barre de gestion. Focus sur la première ligne, piégé dans le panneau ; « Retour » le ferme ; une option ou « Retour » rend le focus à la carte. Un appui bref ouvre toujours la carte.
 - **Mémoire du focus** par rangée et par écran. Une rangée qu'on retrouve redonne le focus au dernier élément choisi, pas au premier.
 - **Retour** : remonte d'un niveau. Sur l'accueil, un premier appui ramène en haut de page, un second ouvre le menu latéral, et rien ne quitte l'appli sans confirmation.
 - **Rail latéral** : fermé, il ne montre que les icônes (72 dp de large) ; avec le focus, il s'ouvre en recouvrant le contenu avec les libellés (240 dp). Plex vient de rétablir ce menu à gauche sous la pression de ses utilisateurs : c'est le bon modèle.
@@ -133,6 +133,14 @@ Plex (`#E5A00D`).
 - Bandeau à la une sur 60 % de la hauteur. Le fond est le **film focalisé**, pas un carrousel qui défile seul. On peut le remplacer en réglage par un fond animé lent (Ken Burns à 3 % de zoom en 20 s), désactivé par défaut.
 - **Raccord** *(retouche du 25/10/2026)* : le fond du bandeau se fond dans le fond d'ambiance par la transparence, à gauche et en bas, sur une courbe douce : aucune arête ne marque l'endroit où il s'arrête, dans les deux thèmes.
 - Rangées en dessous ; titre de rangée en Titre 2, à 24 dp au-dessus des cartes.
+- **Mosaïque « Ce soir »** *(essai réel 5, par défaut ; choisie par le mainteneur parmi trois maquettes)* : elle remplace le bandeau en haut de l'accueil (Réglages → Accueil et navigation → « Mosaïque « Ce soir » » ; désactivée, l'accueil reprend le bandeau de la 0.9.1).
+  - Grille de 4 colonnes sur 2 lignes dans la largeur du contenu, à droite du rail : une **grande tuile** sur 2 × 2 à gauche, **quatre petites** à droite, 16 dp entre elles ; tuiles au format paysage, l'image de fond (fond du titre ou vignette d'épisode) recadrée, un voile vers le bas sous le texte.
+  - Grande tuile : une pastille dans la couleur d'accent qui dit pourquoi elle est là (« REPRENDRE · RESTE 14 MIN »), le logo du titre (sinon son titre en Titre 1), une ligne d'infos (« S01 · E08 — titre de l'épisode », ou année, durée, classification, note), la barre de progression. C'est la lecture en cours la plus récente ; à défaut l'épisode « À suivre » le plus récent ; à défaut le dernier ajout.
+  - Petites tuiles, sans doublon (ni titre ni série deux fois), dans cet ordre : les autres lectures en cours (temps restant, barre), les épisodes à suivre (« À SUIVRE »), les nouveaux épisodes d'une série suivie (« NOUVEL ÉPISODE », ajoutés depuis moins de 14 jours), les derniers ajouts (« AJOUTÉ AUJOURD'HUI », « AJOUTÉ HIER », « AJOUTÉ CETTE SEMAINE », « AJOUTÉ CE MOIS-CI »), puis un film ou une série à redécouvrir (« JAMAIS VU », « PAS VU DEPUIS 2 ANS »). Elle est pleine tant que les bibliothèques ont cinq titres ; elle suit les bibliothèques exclues de l'accueil et le profil.
+  - OK sur une tuile en cours ou à suivre : la lecture (reprise) ; sur une autre : la fiche. Appui long : le menu d'options rapides (§ 2).
+  - Focus initial sur la grande tuile ; → mène à la petite tuile en haut à gauche ; ↓ depuis la mosaïque descend dans les rangées.
+  - À l'arrivée : la mosaïque, une rangée entière et la moitié de la suivante (la règle du bandeau de l'essai réel 4 ; en « Normale », la plus basse mosaïque laisse le titre et le haut des cartes de la deuxième). Quand le focus descend dans les rangées, la mosaïque défile hors de l'écran, par l'index de la rangée focalisée ; elle revient avec le focus.
+  - Sous la mosaïque, les rangées choisies dans « Personnaliser l'accueil ». « Reprendre » et « À suivre » n'y font qu'une rangée, **« Continuer »**, là où était la première des deux : les lectures en cours puis les épisodes à suivre, une carte par titre ou par série, sans ce que la mosaïque montre ; absente si elle est vide. Dans « Personnaliser l'accueil », elle prend la place des deux rangées et garde leurs réglages. Mosaïque coupée, « Reprendre » et « À suivre » reviennent comme avant.
 
 ### Fiche
 - Fond plein écran, voiles des § 4. Colonne gauche de 45 % : logo, ligne de métadonnées (« 2014 · 2 h 49 · 12 ans · se termine à 23 h 36 »), badges techniques en Légende sur `surface-2`, synopsis sur 3 lignes, dépliable.
@@ -150,7 +158,7 @@ Plex (`#E5A00D`).
 ### Lecteur
 - **Rien à l'écran pendant la lecture.** Une touche fait apparaître l'interface, qui disparaît après 4 s sans action.
 - En haut à gauche : titre, ou série et « S02 · E05 — titre ». En haut à droite : l'heure et l'heure de fin.
-- En bas : barre de progression pleine largeur, temps écoulé et temps restant, rangée de commandes (lecture, chapitres, audio et sous-titres, taille des sous-titres, qualité, réglages, informations).
+- En bas : barre de progression pleine largeur, temps écoulé et temps restant, rangée de commandes (lecture, chapitres, audio et sous-titres, taille des sous-titres, qualité, réglages, informations). Pour un épisode *(essai réel 5)*, « Épisode précédent » ⏮ et « Épisode suivant » ⏭ encadrent lecture/pause ; un bouton est absent (pas grisé) au premier ou au dernier épisode de la série.
 - **Recherche dans la vidéo** : la vignette d'aperçu (trickplay) apparaît au-dessus de la barre, à 320 dp de large ; l'image en fond reste figée. L'accélération est progressive si on maintient la touche.
 - **Passer l'intro** : bouton en bas à droite, dans la couleur d'accent, focalisé d'office et sans masquer la vidéo, qui disparaît seul à la fin du segment.
 - **Épisode suivant** : carte en bas à droite pendant le générique (vignette, titre, compte à rebours circulaire). La vidéo réduite reste visible derrière.
@@ -186,7 +194,7 @@ Plex (`#E5A00D`).
 ## 10. Écrire dans l'interface
 
 - **Vocabulaire constant** :
-  - « Reprendre » (jamais « Continuer » ni « Poursuivre ») ;
+  - « Reprendre » (jamais « Continuer » ni « Poursuivre ») ; seule exception, le nom de la rangée « Continuer » sous la mosaïque « Ce soir » (essai réel 5), qui réunit « Reprendre » et « À suivre » ;
   - « À suivre » ;
   - « Ajouts récents » ;
   - « Marquer comme vu » ;

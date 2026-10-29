@@ -107,6 +107,8 @@ class J2FlowTest {
             sessions.addServer(ServerAddress.of("http://192.0.2.10:8096"))
             sessions.signIn(Credentials.Password("admin", "secret"))
         }
+        // The paths of the banner (essai réel 4); the mosaic « Ce soir » has its own (R5TonightFlowTest).
+        withoutTonightMosaic()
     }
 
     @After

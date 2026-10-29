@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import fr.guim.cinedoury.core.data.ActiveSession
 import fr.guim.cinedoury.core.data.SessionManager
+import fr.guim.cinedoury.core.data.UserDataUpdates
 import fr.guim.cinedoury.core.data.home.HomeRepository
 import fr.guim.cinedoury.core.data.home.ProfileKey
 import fr.guim.cinedoury.core.data.library.LibraryIconRepository
@@ -14,6 +15,7 @@ import fr.guim.cinedoury.core.data.search.SearchRepository
 import fr.guim.cinedoury.core.data.search.SearchSuggestions
 import fr.guim.cinedoury.core.model.ItemKind
 import fr.guim.cinedoury.core.model.LibraryId
+import fr.guim.cinedoury.core.model.MediaItem
 import fr.guim.cinedoury.core.model.RequestCandidate
 import fr.guim.cinedoury.core.model.RequestKind
 import fr.guim.cinedoury.core.model.RequestSeason
@@ -153,6 +155,7 @@ class SearchViewModel(
     icons: LibraryIconRepository,
     requestSettings: RequestSettings,
     private val requestConnector: RequestConnector,
+    updates: UserDataUpdates? = null,
 ) : ViewModel(),
     SearchActions {
     private val active: ActiveSession? = sessions.active.value
@@ -184,6 +187,23 @@ class SearchViewModel(
     )
 
     init {
+        // « Vu » or a favourite from the menu of a card: the card changes where it is (essai réel 5).
+        updates?.let { flow ->
+            viewModelScope.launch {
+                flow.updates.collect { (id, data) ->
+                    fun List<MediaItem>.changed() = map { if (it.id == id) it.copy(userData = data) else it }
+                    local.update { state ->
+                        state.copy(
+                            rows = state.rows.map { row -> row.copy(items = row.items.changed()) },
+                            suggestions =
+                                state.suggestions.copy(
+                                    recentlyAdded = state.suggestions.recentlyAdded.changed(),
+                                ),
+                        )
+                    }
+                }
+            }
+        }
         if (profile != null && active != null) {
             viewModelScope.launch {
                 home.railState(sessions, icons).collect { rail ->

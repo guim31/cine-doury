@@ -51,6 +51,7 @@ toutes les cibles où elle a du sens.
 - [P0] Rangées :
   - « Reprendre » (films et épisodes commencés) ;
   - « À suivre » (prochain épisode des séries en cours), avec une **fenêtre réglable**, 2 semaines par défaut comme Plex (`OnDeckWindow = 2`) ;
+  - *(Essai réel 5)* sous la mosaïque « Ce soir », « Reprendre » et « À suivre » ne font qu'une rangée « Continuer » (lectures en cours, puis épisodes à suivre, sans ce que la mosaïque montre) ;
   - « Ajouts récents » par bibliothèque ;
   - « Récemment sortis ».
 - [P0] Les bibliothèques **exclues de l'accueil** dans les préférences Jellyfin du profil (`MyMediaExcludes`, `LatestItemsExcludes`) n'y apparaissent pas, comme les bibliothèques masquées de Plex. Elles restent accessibles par la navigation.

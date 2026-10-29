@@ -284,4 +284,6 @@
     <string name="report_sent">In the logs of the server: “%1$s”.</string>
     <string name="report_failed">The server did not receive the report. Check the connection, then try again.</string>
     <string name="report_no_server">No server open: the report cannot be sent.</string>
+    <string name="browsing_tonight">“Tonight” mosaic</string>
+    <string name="browsing_tonight_description">Instead of the banner: what you are watching, next episodes, latest additions.</string>
 </resources>

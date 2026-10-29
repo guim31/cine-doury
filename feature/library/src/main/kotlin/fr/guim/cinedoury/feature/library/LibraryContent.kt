@@ -43,7 +43,6 @@ import fr.guim.cinedoury.core.designsystem.component.SelectionMark
 import fr.guim.cinedoury.core.designsystem.component.SkeletonCard
 import fr.guim.cinedoury.core.designsystem.component.SkeletonListRow
 import fr.guim.cinedoury.core.designsystem.component.ThumbnailCard
-import fr.guim.cinedoury.core.designsystem.component.onLongPress
 import fr.guim.cinedoury.core.designsystem.component.rememberCineFocus
 import fr.guim.cinedoury.core.designsystem.theme.CineSizes
 import fr.guim.cinedoury.core.designsystem.theme.CineSpacing
@@ -54,12 +53,14 @@ import fr.guim.cinedoury.core.model.LibraryScan
 import fr.guim.cinedoury.core.model.MediaItem
 import fr.guim.cinedoury.core.model.SortField
 import fr.guim.cinedoury.core.ui.ImageSources
+import fr.guim.cinedoury.core.ui.QuickMenuState
 import fr.guim.cinedoury.core.ui.SourceErrorPanel
 import fr.guim.cinedoury.core.ui.cardSubtitle
 import fr.guim.cinedoury.core.ui.cardTitle
 import fr.guim.cinedoury.core.ui.landscapeImage
 import fr.guim.cinedoury.core.ui.metadataLine
 import fr.guim.cinedoury.core.ui.posterImage
+import fr.guim.cinedoury.core.ui.quickMenu
 import fr.guim.cinedoury.core.ui.rememberArt
 
 /** What a library screen asks of its view model; a no-op for screenshots. */
@@ -119,6 +120,7 @@ internal fun LibraryContent(
     state: LibraryUiState,
     sources: ImageSources,
     actions: LibraryActions,
+    menu: QuickMenuState,
     onOpen: (MediaItem) -> Unit,
     onFocused: (MediaItem) -> Unit,
     jump: Jump?,
@@ -143,7 +145,7 @@ internal fun LibraryContent(
             if (episodes == null) {
                 SkeletonGrid(LibraryView.Thumbnails, contentEnd)
             } else {
-                EpisodeGrid(episodes, sources, onOpen, onFocused, contentEnd)
+                EpisodeGrid(episodes, sources, menu, onOpen, onFocused, contentEnd)
             }
         }
 
@@ -173,7 +175,7 @@ internal fun LibraryContent(
                 ItemGrid(
                     items = items,
                     selection = state.selection,
-                    onLongPress = if (state.rights.canManage) actions::startSelection else null,
+                    menu = menu,
                     view = if (browse.tab == LibraryTab.Collections) LibraryView.Posters else browse.view,
                     position = actions.focusedIndex ?: browse.position,
                     sources = sources,
@@ -220,7 +222,7 @@ private const val GRID_PIVOT = 0.25f
 private fun ItemGrid(
     items: PagedItems,
     selection: Set<ItemId>?,
-    onLongPress: ((MediaItem) -> Unit)?,
+    menu: QuickMenuState,
     view: LibraryView,
     position: Int,
     sources: ImageSources,
@@ -260,7 +262,7 @@ private fun ItemGrid(
                     Modifier
                         .testTag(
                             LibraryPreview.item(index),
-                        ).onLongPress(onLongPress?.let { { it(item) } })
+                        ).quickMenu(menu, item)
                         .onFocusChanged {
                             if (it.hasFocus) {
                                 actions.onFocused(index)
@@ -458,6 +460,7 @@ private fun GenreGrid(
 private fun EpisodeGrid(
     episodes: List<MediaItem>,
     sources: ImageSources,
+    menu: QuickMenuState,
     onOpen: (MediaItem) -> Unit,
     onFocused: (MediaItem) -> Unit,
     contentEnd: Dp,
@@ -486,7 +489,7 @@ private fun EpisodeGrid(
                     focusRequester = if (index == 0) first else null,
                     focus = rememberCineFocus(LibraryPreview.item(index)),
                     image = rememberArt(item.landscapeImage, sources),
-                    modifier = Modifier.onFocusChanged { if (it.hasFocus) onFocused(item) },
+                    modifier = Modifier.quickMenu(menu, item).onFocusChanged { if (it.hasFocus) onFocused(item) },
                 )
             }
         }

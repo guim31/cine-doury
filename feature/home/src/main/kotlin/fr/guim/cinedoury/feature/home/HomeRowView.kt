@@ -37,10 +37,12 @@ import fr.guim.cinedoury.core.designsystem.theme.CineSizes
 import fr.guim.cinedoury.core.designsystem.theme.CineSpacing
 import fr.guim.cinedoury.core.model.MediaItem
 import fr.guim.cinedoury.core.ui.ImageSources
+import fr.guim.cinedoury.core.ui.QuickMenuState
 import fr.guim.cinedoury.core.ui.cardSubtitle
 import fr.guim.cinedoury.core.ui.cardTitle
 import fr.guim.cinedoury.core.ui.landscapeImage
 import fr.guim.cinedoury.core.ui.posterImage
+import fr.guim.cinedoury.core.ui.quickMenu
 import fr.guim.cinedoury.core.ui.rememberArt
 
 /**
@@ -49,6 +51,7 @@ import fr.guim.cinedoury.core.ui.rememberArt
  * focused card stays at the same place: second column for posters, first for thumbnails (`UI.md` § 3).
  *
  * @param restore attached to the card to give the focus back to.
+ * @param menu opened by OK held on a card (essai réel 5).
  * @param next the row below, whose first images are loaded in advance.
  * @param shared the items whose poster flies to the details screen from this row.
  * @param previewScroll the row scrolled by this much from its start (screenshots).
@@ -60,6 +63,7 @@ internal fun HomeRowView(
     shared: Set<String>,
     sources: ImageSources,
     restore: FocusRequester,
+    menu: QuickMenuState,
     onFocused: (MediaItem) -> Unit,
     onOpen: (MediaItem) -> Unit,
     modifier: Modifier = Modifier,
@@ -74,6 +78,9 @@ internal fun HomeRowView(
     val start = ContentStart - CineSizes.railCollapsed
     val pivot = if (poster) start + card.width + CineSpacing.m else start
     val scrolled = with(LocalDensity.current) { previewScroll.roundToPx() }
+    // « Retirer de Continuer » from the menu of a card of « Reprendre », or of a playback in progress
+    // of « Continuer » (essai réel 5).
+    val resumeRow = row.key.takeIf { row.type == HomeRowType.Resume }
     Column(
         modifier = modifier.testTag("row-${row.key}"),
         verticalArrangement = Arrangement.spacedBy(CineSpacing.rowTitleGap),
@@ -94,12 +101,20 @@ internal fun HomeRowView(
                 }, contentType = { _, _ -> row.style }) { index, item ->
                     val requester = if (index == last.coerceAtMost(row.items.lastIndex)) restore else null
                     val cardModifier =
-                        Modifier.testTag(HomePreview.card(row.key, index)).onFocusChanged {
-                            if (it.hasFocus) {
-                                last = index
-                                focused(item)
+                        Modifier
+                            .testTag(HomePreview.card(row.key, index))
+                            .quickMenu(
+                                menu,
+                                item,
+                                anchor = "${row.key}/${item.id.value}",
+                                continueRow =
+                                    resumeRow ?: row.resumeRows[item.id],
+                            ).onFocusChanged {
+                                if (it.hasFocus) {
+                                    last = index
+                                    focused(item)
+                                }
                             }
-                        }
                     HomeCard(
                         item = item,
                         poster = poster,
@@ -192,6 +207,10 @@ internal fun HomeRow.title(): String =
 
         HomeRowType.RecentlyReleased -> {
             stringResource(R.string.row_released)
+        }
+
+        HomeRowType.Continue -> {
+            stringResource(R.string.row_continue)
         }
     }
 

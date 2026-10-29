@@ -35,6 +35,13 @@ fun Modifier.onLongPress(onLongPress: (() -> Unit)?): Modifier {
     return onPreviewKeyEvent { event ->
         if (event.key !in SELECT_KEYS) return@onPreviewKeyEvent false
         when {
+            // A new press: the release of the one before may have gone elsewhere (the menu it opened,
+            // essai réel 5), and must not swallow this one.
+            event.type == KeyEventType.KeyDown && event.nativeKeyEvent.repeatCount == 0 -> {
+                held[0] = false
+                false
+            }
+
             event.type == KeyEventType.KeyDown && event.nativeKeyEvent.repeatCount > 0 -> {
                 if (!held[0]) {
                     held[0] = true

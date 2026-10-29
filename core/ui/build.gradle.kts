@@ -12,4 +12,5 @@ dependencies {
     api(projects.core.data)
     api(libs.androidx.lifecycle.viewmodel.compose)
     api(libs.koin.androidx.compose)
+    implementation(libs.androidx.activity.compose)
 }

@@ -38,6 +38,7 @@ sealed interface PlayerError {
  * @param fallback what failed when the file was played as it is, before the server transcoded it
  * (`SPEC.md` § 4.11); the information screen says it.
  * @param skip the segment « Passer l'intro » would skip, while it plays.
+ * @param previous the episode before this one, once known: « Épisode précédent » (essai réel 5).
  * @param next the next episode, once known; [nextShown] during the credits, [nextCountdown] from 1
  * to 0 (null without autoplay).
  * @param scrub where a search would go, while the user moves through the film.
@@ -63,6 +64,7 @@ data class PlayerState(
     val maxBitrate: Int? = null,
     val segments: List<MediaSegment> = emptyList(),
     val skip: MediaSegment? = null,
+    val previous: MediaItem? = null,
     val next: MediaItem? = null,
     val nextShown: Boolean = false,
     val nextCountdown: Float? = null,
@@ -137,6 +139,9 @@ interface PlayerActions {
     fun skipSegment()
 
     fun playNext()
+
+    /** The episode before this one (essai réel 5). */
+    fun playPrevious()
 
     fun dismissNext()
 

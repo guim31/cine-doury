@@ -5,7 +5,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyEvent
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.hasAnyAncestor
@@ -14,7 +13,6 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performKeyInput
-import androidx.compose.ui.test.performKeyPress
 import androidx.compose.ui.test.pressKey
 import fr.guim.cinedoury.core.data.library.LibraryTab
 import fr.guim.cinedoury.core.data.library.LibraryView
@@ -24,6 +22,7 @@ import fr.guim.cinedoury.core.model.ItemFilters
 import fr.guim.cinedoury.core.model.ItemId
 import fr.guim.cinedoury.core.model.MediaItem
 import fr.guim.cinedoury.core.model.PlaybackRequest
+import fr.guim.cinedoury.core.model.QuickOption
 import fr.guim.cinedoury.core.model.SortField
 import fr.guim.cinedoury.core.ui.LocalClock
 import fr.guim.cinedoury.feature.details.DetailsActions
@@ -44,7 +43,6 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import android.view.KeyEvent as NativeKeyEvent
 
 /**
  * Management with the remote alone (`FONCTIONNALITES.md` § 9, `UI.md` § 8): « Supprimer » is two
@@ -269,30 +267,26 @@ class J6NavigationTest {
         compose.waitForIdle()
     }
 
-    private fun holdOk() {
-        val down = { repeat: Int ->
-            NativeKeyEvent(0L, 0L, NativeKeyEvent.ACTION_DOWN, NativeKeyEvent.KEYCODE_DPAD_CENTER, repeat)
-        }
-        compose.onRoot().performKeyPress(KeyEvent(down(0)))
-        compose.onRoot().performKeyPress(KeyEvent(down(1)))
-        compose.onRoot().performKeyPress(KeyEvent(down(2)))
-        compose.onRoot().performKeyPress(
-            KeyEvent(NativeKeyEvent(0L, 0L, NativeKeyEvent.ACTION_UP, NativeKeyEvent.KEYCODE_DPAD_CENTER, 0)),
-        )
-        compose.waitForIdle()
-    }
-
     @Test
-    fun `OK held on a poster starts a selection with it, then OK ticks`() {
+    fun `OK held on a poster opens its menu, whose last line starts a selection, then OK ticks`() {
         val actions = Library()
         showLibrary(actions)
         focusable(LibraryPreview.item(0)).assertIsFocused()
-        holdOk()
+        // Essai réel 5: OK held opens the menu of the card; « Sélectionner » is its last line.
+        compose.holdOk()
+        assertTrue(actions.started.isEmpty(), "held: the menu, not yet a selection")
+        val select = focusable(quickLine(QuickOption.Select))
+        repeat(QUICK_LINES_BEFORE_SELECT) { press(Key.DirectionDown) }
+        select.assertIsFocused()
+        press(Key.DirectionCenter)
         val first = J2Samples.library().items[0]
-        assertEquals(listOf<MediaItem?>(first), actions.started, "held once, started once, not opened")
+        assertEquals(listOf<MediaItem?>(first), actions.started, "« Sélectionner » starts it, not opened")
         library = J6Samples.selection
         compose.waitForIdle()
         press(Key.DirectionCenter)
         assertTrue(actions.toggled.isNotEmpty())
     }
 }
+
+/** « Lire », « Ouvrir la fiche », « Marquer comme vu », « Ajouter aux favoris », then « Sélectionner ». */
+private const val QUICK_LINES_BEFORE_SELECT = 4

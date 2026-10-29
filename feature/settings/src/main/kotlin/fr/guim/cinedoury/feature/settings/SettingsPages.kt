@@ -645,6 +645,13 @@ private fun browsingItems(
             onClick = navigation::customizeHome,
         ),
         toggle(
+            "tonight",
+            stringResource(R.string.browsing_tonight),
+            stringResource(R.string.browsing_tonight_description),
+            browsing.tonightMosaic,
+            defaults.tonightMosaic,
+        ) { actions.updateBrowsing { it.copy(tonightMosaic = !it.tonightMosaic) } },
+        toggle(
             "banner",
             stringResource(R.string.browsing_banner),
             stringResource(R.string.browsing_banner_description),

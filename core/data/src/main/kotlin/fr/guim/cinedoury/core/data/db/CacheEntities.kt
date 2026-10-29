@@ -176,6 +176,34 @@ abstract class HomeCacheDao {
         clearLibraries(serverId, userId)
     }
 
+    /** A favourite added or removed from the menu of a card (essai réel 5). */
+    @Query(
+        """
+        UPDATE cached_items SET favorite = :favorite
+        WHERE server_id = :serverId AND user_id = :userId AND item_id = :itemId
+        """,
+    )
+    abstract suspend fun updateFavorite(
+        serverId: String,
+        userId: String,
+        itemId: String,
+        favorite: Boolean,
+    )
+
+    /** Takes an item out of one row (« Retirer de Continuer », essai réel 5). */
+    @Query(
+        """
+        DELETE FROM home_row_items
+        WHERE server_id = :serverId AND user_id = :userId AND row_key = :rowKey AND item_id = :itemId
+        """,
+    )
+    abstract suspend fun removeFromRow(
+        serverId: String,
+        userId: String,
+        rowKey: String,
+        itemId: String,
+    )
+
     /**
      * Forgets an item deleted on the server, for every profile (J6): its cards leave the rows at
      * once, with those of its seasons and episodes.

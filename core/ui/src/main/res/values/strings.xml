@@ -96,4 +96,16 @@
     <string name="size_gb">%1$s Go</string>
     <string name="size_mb">%1$s Mo</string>
     <string name="date_pattern">d MMM yyyy</string>
+    <string name="quick_resume">Reprendre</string>
+    <string name="quick_play">Lire</string>
+    <string name="quick_play_from_start">Lire depuis le début</string>
+    <string name="quick_open_details">Ouvrir la fiche</string>
+    <string name="quick_go_to_series">Aller à la série</string>
+    <string name="quick_go_to_season">Aller à la saison</string>
+    <string name="quick_mark_watched">Marquer comme vu</string>
+    <string name="quick_mark_unwatched">Marquer comme non vu</string>
+    <string name="quick_remove_from_continue">Retirer de Continuer</string>
+    <string name="quick_add_favorite">Ajouter aux favoris</string>
+    <string name="quick_remove_favorite">Retirer des favoris</string>
+    <string name="quick_select">Sélectionner</string>
 </resources>

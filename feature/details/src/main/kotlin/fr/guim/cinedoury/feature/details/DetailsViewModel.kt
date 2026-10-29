@@ -158,10 +158,14 @@ class DetailsViewModel(
     private val updates: UserDataUpdates = UserDataUpdates(),
     private val manager: ItemManager? = null,
     manageUpdates: ManageUpdates? = null,
+    season: ItemId? = null,
 ) : ViewModel(),
     DetailsActions {
     private val active: ActiveSession? = sessions.active.value
-    private val local = MutableStateFlow(DetailsState(initial, rights = manager?.cachedRights ?: ManageRights.NONE))
+
+    // A series opened on one of its seasons (« Aller à la saison », essai réel 5): kept once they load.
+    private val local =
+        MutableStateFlow(DetailsState(initial, rights = manager?.cachedRights ?: ManageRights.NONE, season = season))
     private var preferences = PlaybackPreferences()
 
     val state: StateFlow<DetailsState> = local.asStateFlow()
@@ -191,6 +195,7 @@ class DetailsViewModel(
         // Back from the player: the position and « vu » it left, at once (`SPEC.md` § 4.11).
         viewModelScope.launch {
             updates.updates.collect { (id, data) ->
+                val before = local.value
                 local.update { state ->
                     val changed = state.withUserData(id) { data }
                     if (changed.item.kind == ItemKind.Series) {
@@ -198,6 +203,14 @@ class DetailsViewModel(
                     } else {
                         changed
                     }
+                }
+                // A season or the series marked from the menu of a card (essai réel 5): its episodes too.
+                val series = before.item.takeIf { it.kind == ItemKind.Series }
+                val whole = id == before.item.id || before.seasons.any { it.id == id }
+                if (series != null &&
+                    whole
+                ) {
+                    active?.library?.let { source -> guarded { loadEpisodes(source, series.id) } }
                 }
             }
         }

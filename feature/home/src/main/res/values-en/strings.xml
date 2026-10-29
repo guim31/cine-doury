@@ -2,6 +2,7 @@
 <resources>
     <string name="row_resume">Resume</string>
     <string name="row_next_up">Up next</string>
+    <string name="row_continue">Continue watching</string>
     <string name="row_latest">Recently added</string>
     <string name="row_latest_in">Recently added in %1$s</string>
     <string name="row_released">Recently released</string>
@@ -34,4 +35,21 @@
     <string name="customize_window_none">No limit</string>
     <string name="customize_remove">Remove the row</string>
     <string name="customize_excluded">Excluded from the home on the server</string>
+    <string name="tonight_resume">Resume · %1$s left</string>
+    <string name="tonight_next_up">Up next</string>
+    <string name="tonight_new_episode">New episode</string>
+    <string name="tonight_added_today">Added today</string>
+    <string name="tonight_added_yesterday">Added yesterday</string>
+    <string name="tonight_added_this_week">Added this week</string>
+    <string name="tonight_added_this_month">Added this month</string>
+    <string name="tonight_added">Recently added</string>
+    <string name="tonight_never_watched">Never watched</string>
+    <plurals name="tonight_not_watched_years">
+        <item quantity="one">Not watched for %d year</item>
+        <item quantity="other">Not watched for %d years</item>
+    </plurals>
+    <plurals name="tonight_not_watched_months">
+        <item quantity="one">Not watched for %d month</item>
+        <item quantity="other">Not watched for %d months</item>
+    </plurals>
 </resources>

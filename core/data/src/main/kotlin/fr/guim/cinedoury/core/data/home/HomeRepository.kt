@@ -92,6 +92,7 @@ class HomeRepository(
     suspend fun refresh(
         profile: ProfileKey,
         source: LibrarySource,
+        tonight: Boolean = false,
     ): Map<String, List<MediaItem>> {
         val libraries =
             coroutineScope {
@@ -102,10 +103,23 @@ class HomeRepository(
         val specs = HomeRows.plan(layout(profile).first(), libraries.libraries, libraries.exclusions)
         val rows =
             coroutineScope {
+                // The mosaic « Ce soir » reads its own sources, whatever rows the home shows (essai réel 5).
+                val mosaic =
+                    async {
+                        if (tonight) {
+                            HomeRows.fetchTonight(
+                                libraries.libraries,
+                                libraries.exclusions,
+                                source,
+                            )
+                        } else {
+                            emptyMap()
+                        }
+                    }
                 specs
                     .map { spec -> async { spec.key to HomeRows.fetch(spec, source, clock) } }
                     .awaitAll()
-                    .toMap()
+                    .toMap() + mosaic.await()
             }
         cache.replaceLibraries(profile.serverId, profile.userId, libraries.toEntities(profile))
         cache.replaceRows(
@@ -135,6 +149,20 @@ class HomeRepository(
             lastPlayed = data.lastPlayed?.toEpochMilli(),
         )
     }
+
+    /** A favourite added or removed (essai réel 5), on the cards of the home at once. */
+    suspend fun updateFavorite(
+        profile: ProfileKey,
+        item: ItemId,
+        favorite: Boolean,
+    ) = cache.updateFavorite(profile.serverId, profile.userId, item.value, favorite)
+
+    /** Takes [item] out of the row [rowKey] of the home, until the next refresh says otherwise. */
+    suspend fun removeFromRow(
+        profile: ProfileKey,
+        rowKey: String,
+        item: ItemId,
+    ) = cache.removeFromRow(profile.serverId, profile.userId, rowKey, item.value)
 
     /** Forgets [items], deleted on the server, from the rows of every profile of the server (J6). */
     suspend fun forget(

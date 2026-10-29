@@ -5,6 +5,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.ZERO
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
@@ -32,6 +33,40 @@ class PlaybackRulesTest {
         assertFalse(PlaybackRules.showsNext(41.minutes, runtime, emptyList(), hasNext = true))
         assertTrue(PlaybackRules.showsNext(runtime - 20.seconds, runtime, emptyList(), hasNext = true))
         assertEquals(runtime - 30.seconds, PlaybackRules.creditsStart(runtime, listOf(intro)))
+    }
+
+    @Test
+    fun `with credits, the countdown runs from their start, then starts the next episode`() {
+        val countdown = 10.seconds
+        assertEquals(countdown, PlaybackRules.countdownLeft(40.minutes, runtime, listOf(outro), ZERO, countdown))
+        assertEquals(4.seconds, PlaybackRules.countdownLeft(40.minutes, runtime, listOf(outro), 6.seconds, countdown))
+        assertEquals(ZERO, PlaybackRules.countdownLeft(40.minutes, runtime, listOf(outro), 12.seconds, countdown))
+        assertTrue(PlaybackRules.countdownStartsNext(listOf(intro, outro)))
+    }
+
+    @Test
+    fun `without credits, the countdown never ends before the end of the episode`() {
+        val countdown = 10.seconds
+        // The card shows for the last 30 s; the countdown waits until exactly 10 s are left.
+        assertNull(PlaybackRules.countdownLeft(runtime - 30.seconds, runtime, listOf(intro), 20.seconds, countdown))
+        assertNull(PlaybackRules.countdownLeft(runtime - 11.seconds, runtime, emptyList(), 19.seconds, countdown))
+        assertEquals(
+            countdown,
+            PlaybackRules.countdownLeft(runtime - 10.seconds, runtime, emptyList(), 20.seconds, countdown),
+        )
+        // Whatever time has passed with the card shown (a pause, a jump back): what is left of the episode.
+        assertEquals(
+            3.seconds,
+            PlaybackRules.countdownLeft(runtime - 3.seconds, runtime, emptyList(), 2.minutes, countdown),
+        )
+        assertEquals(ZERO, PlaybackRules.countdownLeft(runtime, runtime, emptyList(), 2.minutes, countdown))
+        // A countdown longer than the card: it starts with the card, still at the end.
+        assertEquals(
+            30.seconds,
+            PlaybackRules.countdownLeft(runtime - 30.seconds, runtime, emptyList(), ZERO, 45.seconds),
+        )
+        // Its end starts nothing: the end of the episode does.
+        assertFalse(PlaybackRules.countdownStartsNext(listOf(intro)))
     }
 
     @Test

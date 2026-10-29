@@ -26,10 +26,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -56,9 +62,13 @@ import fr.guim.cinedoury.core.designsystem.theme.CineSpacing
 import fr.guim.cinedoury.core.designsystem.theme.CineTheme
 import fr.guim.cinedoury.core.designsystem.theme.textLineHeight
 import fr.guim.cinedoury.core.model.MediaItem
+import fr.guim.cinedoury.core.model.PlaybackRequest
 import fr.guim.cinedoury.core.ui.AppRail
 import fr.guim.cinedoury.core.ui.CollectEvents
 import fr.guim.cinedoury.core.ui.ImageSources
+import fr.guim.cinedoury.core.ui.QuickMenuHost
+import fr.guim.cinedoury.core.ui.QuickMenuNavigation
+import fr.guim.cinedoury.core.ui.QuickMenuState
 import fr.guim.cinedoury.core.ui.RailTarget
 import fr.guim.cinedoury.core.ui.RemoteIndicator
 import fr.guim.cinedoury.core.ui.SourceErrorPanel
@@ -68,19 +78,23 @@ import fr.guim.cinedoury.core.ui.catchLine
 import fr.guim.cinedoury.core.ui.imageSource
 import fr.guim.cinedoury.core.ui.metadataLine
 import fr.guim.cinedoury.core.ui.rememberArt
+import fr.guim.cinedoury.core.ui.rememberQuickMenu
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 
 /** What the home asks the app to open. */
-interface HomeNavigation {
+interface HomeNavigation : QuickMenuNavigation {
     fun navigate(target: RailTarget)
 
     /** The details of [item] (J3). */
-    fun open(item: MediaItem)
+    override fun open(item: MediaItem)
 
     /** Plays or resumes [item] (J4). */
     fun play(item: MediaItem)
+
+    /** Plays [request]: from the start, from the menu of a card (essai réel 5). */
+    override fun play(request: PlaybackRequest) = play(request.item)
 
     fun customize()
 
@@ -117,6 +131,12 @@ object HomePreview {
     /** The banner at the top of the home (title, line of metadata, buttons). */
     const val BANNER = "home-banner"
     const val DETAILS = "home-details"
+
+    /** The mosaic « Ce soir » (essai réel 5). */
+    const val TONIGHT = "home-tonight"
+
+    /** A tile of the mosaic: 0 is the large one, the first focus of the home. */
+    fun tonight(index: Int) = "tonight-$index"
 
     fun card(
         row: String,
@@ -156,7 +176,11 @@ fun HomeScreen(
     val focusedItem = remember { mutableStateOf<MediaItem?>(null) }
     var focusedRow by rememberSaveable { mutableStateOf<String?>(null) }
     var railFocused by remember { mutableStateOf(false) }
-    val featuredItem = { focusedItem.value ?: previewFeatured ?: rows?.firstOrNull()?.items?.firstOrNull() }
+    val tonight = state.tonight
+    val featuredItem = {
+        focusedItem.value ?: previewFeatured ?: tonight?.tiles?.firstOrNull()?.item
+            ?: rows?.firstOrNull()?.items?.firstOrNull()
+    }
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     val play = remember { FocusRequester() }
@@ -165,7 +189,13 @@ fun HomeScreen(
     // « Bandeau à la une » off (`SPEC.md` § 4.17): the rows from the top, the first one focused. The
     // skeletons, an error or an empty home still use the space of the banner.
     val banner = state.featuredBanner || rows.isNullOrEmpty()
-    val top = if (banner) play else rowRequesters.requester(rows.orEmpty().first().key)
+    val mainTile = remember { FocusRequester() }
+    val top =
+        when {
+            tonight != null -> mainTile
+            banner -> play
+            else -> rowRequesters.requester(rows.orEmpty().first().key)
+        }
 
     BackHandler {
         when {
@@ -188,6 +218,7 @@ fun HomeScreen(
     }
 
     val shared = remember(rows) { rows.orEmpty().firstAppearances() }
+    val menu = rememberQuickMenu()
     Box(modifier = modifier.fillMaxSize()) {
         HomeAmbience(featuredItem)
         val scrollToRow: (Int) -> Unit =
@@ -196,12 +227,72 @@ fun HomeScreen(
         // and would stay on a row read first while others came above it. Scrolled by index, the list is
         // put back on the focused row, or at its top.
         val rowKeys = remember(rows) { rows?.map { it.key } }
-        LaunchedEffect(rowKeys, banner) {
-            if (!banner || rowKeys == null) return@LaunchedEffect
-            listState.scrollToItem(rowKeys.indexOf(focusedRow).coerceAtLeast(0))
+        LaunchedEffect(rowKeys, banner, tonight != null) {
+            if (rowKeys == null) return@LaunchedEffect
+            if (tonight != null) {
+                // The mosaic is the first item of the list: a row stands one further.
+                listState.scrollToItem(focusedRow?.let { rowKeys.indexOf(it) + 1 }?.coerceAtLeast(0) ?: 0)
+            } else if (banner) {
+                listState.scrollToItem(rowKeys.indexOf(focusedRow).coerceAtLeast(0))
+            }
         }
         BoxWithConstraints(Modifier.fillMaxSize()) {
-            if (banner) {
+            if (tonight != null) {
+                // The mosaic « Ce soir » (essai réel 5): above a row and a half, as the banner was; it
+                // scrolls away by index when the focus goes down into the rows, and comes back with it.
+                val mosaic =
+                    (maxHeight - homeRowsArea(rows) - CineSpacing.safeVertical - RowGap).coerceAtLeast(
+                        tonightMinHeight(),
+                    )
+                ScrolledByIndex {
+                    HomeRows(
+                        state = state,
+                        listState = listState,
+                        shared = shared,
+                        sources = sources,
+                        navigation = navigation,
+                        rowRequesters = rowRequesters,
+                        menu = menu,
+                        onFocused = { row, item ->
+                            focusedItem.value = item
+                            focusedRow = row
+                        },
+                        onRowFocused = scrollToRow,
+                        top = CineSpacing.safeVertical,
+                        // ↑ from the first row: back to the mosaic, scrolled out of the list (the 2D
+                        // search would find the rail first, seen on the emulator).
+                        onUpFromFirstRow = {
+                            scope.launch {
+                                listState.scrollToItem(0)
+                                // The mosaic composes again a frame or two later.
+                                repeat(UP_ATTEMPTS) {
+                                    withFrameNanos { }
+                                    if (runCatching { mainTile.requestFocus() }.getOrDefault(false)) return@launch
+                                }
+                            }
+                        },
+                        leading = {
+                            TonightMosaic(
+                                state = tonight,
+                                height = mosaic,
+                                sources = sources,
+                                menu = menu,
+                                navigation = navigation,
+                                main = mainTile,
+                                onFocused = { focusedItem.value = it },
+                                modifier =
+                                    Modifier.onFocusChanged {
+                                        if (it.hasFocus) {
+                                            focusedRow = null
+                                            scrollToRow(0)
+                                        }
+                                    },
+                            )
+                        },
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+            } else if (banner) {
                 // The banner stands still (essai réel 3), on what a row and a half leave (essai réel 4):
                 // the first row whole and the top half of the next under it, whatever the size, at
                 // least its single band. The focused row goes to the top of their area, scrolled by its
@@ -240,6 +331,7 @@ fun HomeScreen(
                             sources = sources,
                             navigation = navigation,
                             rowRequesters = rowRequesters,
+                            menu = menu,
                             onFocused = { row, item ->
                                 focusedItem.value = item
                                 focusedRow = row
@@ -259,6 +351,7 @@ fun HomeScreen(
                         sources = sources,
                         navigation = navigation,
                         rowRequesters = rowRequesters,
+                        menu = menu,
                         onFocused = { row, item ->
                             focusedItem.value = item
                             focusedRow = row
@@ -286,6 +379,8 @@ fun HomeScreen(
             previewFocused = previewRail,
             modifier = Modifier.onFocusChanged { railFocused = it.hasFocus },
         )
+        // OK held on a card (essai réel 5).
+        QuickMenuHost(menu, navigation)
     }
     // The first focus, and the focus found again when coming back: the row left, else « Lire ».
     // Made here, not when the lazy row composes (later): the requester is the same for both.
@@ -294,6 +389,9 @@ fun HomeScreen(
 }
 
 private val LazyListState.isScrolled: Boolean get() = firstVisibleItemIndex > 0 || firstVisibleItemScrollOffset > 0
+
+/** Frames to wait for the mosaic to come back before it takes the focus. */
+private const val UP_ATTEMPTS = 10
 
 /** The rows start right of the closed rail. */
 internal val ContentStart = CineSizes.railCollapsed + CineSpacing.m
@@ -320,19 +418,26 @@ private fun HomeRows(
     sources: ImageSources,
     navigation: HomeNavigation,
     rowRequesters: MutableMap<String, FocusRequester>,
+    menu: QuickMenuState,
     onFocused: (row: String, item: MediaItem) -> Unit,
     modifier: Modifier = Modifier,
     onRowFocused: ((index: Int) -> Unit)? = null,
     top: Dp = CineSpacing.none,
     previewScrolledRow: String? = null,
+    onUpFromFirstRow: (() -> Unit)? = null,
+    leading: (@Composable () -> Unit)? = null,
 ) {
     val rows = state.rows
+    // The mosaic before the rows: every row stands one further in the list.
+    val first = if (leading != null) 1 else 0
     LazyColumn(
         state = listState,
-        modifier = modifier.testTag("home"),
-        contentPadding = PaddingValues(top = top, bottom = CineSpacing.xxl),
+        // Under the mosaic, the margin at the top clips the list: what scrolled away leaves no sliver.
+        modifier = modifier.padding(top = if (leading != null) top else CineSpacing.none).testTag("home"),
+        contentPadding = PaddingValues(top = if (leading != null) CineSpacing.none else top, bottom = CineSpacing.xxl),
         verticalArrangement = Arrangement.spacedBy(RowGap),
     ) {
+        if (leading != null) item(key = "tonight", contentType = "tonight") { leading() }
         if (rows == null) {
             items(SKELETON_ROWS) { SkeletonRow() }
         } else {
@@ -344,9 +449,13 @@ private fun HomeRows(
                     shared = shared[row.key].orEmpty(),
                     sources = sources,
                     restore = rowRequesters.requester(row.key),
+                    menu = menu,
                     onFocused = { item -> onFocused(row.key, item) },
                     onOpen = navigation::open,
-                    modifier = Modifier.onRowFocused(onRowFocused, index),
+                    modifier =
+                        Modifier
+                            .onRowFocused(onRowFocused, first + index)
+                            .upTo(onUpFromFirstRow.takeIf { index == 0 }),
                     previewScroll = if (row.key == previewScrolledRow) PREVIEW_ROW_SCROLL else CineSpacing.none,
                 )
             }
@@ -358,7 +467,7 @@ private fun HomeRows(
                     modifier =
                         Modifier
                             .padding(start = ContentStart)
-                            .onRowFocused(onRowFocused, rows.size)
+                            .onRowFocused(onRowFocused, first + rows.size)
                             .testTag("customize"),
                 )
             }
@@ -378,6 +487,19 @@ private fun homeRowsArea(rows: List<HomeRow>?): Dp {
     return homeRowHeight(first) + RowGap + homeRowHeight(second) / 2
 }
 
+/**
+ * The lowest the mosaic goes, larger text included: a small tile shows its pill, its title and its
+ * line, twice, with the gap between them.
+ */
+@Composable
+private fun tonightMinHeight(): Dp {
+    val typography = CineTheme.typography
+    val small =
+        CineSpacing.s * 2 + CineSizes.progressHeight + textLineHeight(typography.minimum) +
+            textLineHeight(typography.label) + textLineHeight(typography.caption) + CineSpacing.xs
+    return small * 2 + CineSpacing.m
+}
+
 /** A row of the home: its title, the gap under it, a card and its caption of two lines (`HomeRowView`). */
 @Composable
 private fun homeRowHeight(style: CardStyle): Dp {
@@ -386,6 +508,18 @@ private fun homeRowHeight(style: CardStyle): Dp {
     return textLineHeight(typography.title2) + CineSpacing.rowTitleGap + card.height + CineSpacing.s +
         textLineHeight(typography.caption) * 2
 }
+
+/** ↑ inside this element goes to [target] instead of searching for what is above. */
+private fun Modifier.upTo(target: (() -> Unit)?): Modifier =
+    if (target == null) {
+        this
+    } else {
+        onPreviewKeyEvent { event ->
+            if (event.key != Key.DirectionUp) return@onPreviewKeyEvent false
+            if (event.type == KeyEventType.KeyDown) target()
+            true
+        }
+    }
 
 /** Tells [onRowFocused] when the focus comes into the element at [index] of the list. */
 private fun Modifier.onRowFocused(

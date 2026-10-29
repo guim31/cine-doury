@@ -16,6 +16,8 @@
     <string name="player_skip_commercial">Passer la publicité</string>
     <string name="player_next">Épisode suivant</string>
     <string name="player_next_in">Épisode suivant dans %1$d\u00A0s</string>
+    <string name="player_previous_episode">Épisode précédent</string>
+    <string name="player_next_episode">Épisode suivant</string>
     <string name="player_still_title">Vous êtes toujours là ?</string>
     <string name="player_still_message">Plusieurs épisodes se sont enchaînés sans que vous touchiez la télécommande. La lecture attend votre accord pour continuer.</string>
     <string name="player_still_continue">Continuer la lecture</string>

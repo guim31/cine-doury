@@ -6,6 +6,6 @@ import org.koin.dsl.module
 /** `:feature:search` for Koin. The app provides the `RequestConnector` (Seerr). */
 val searchModule =
     module {
-        viewModel { SearchViewModel(get(), get(), get(), get(), get(), get()) }
+        viewModel { SearchViewModel(get(), get(), get(), get(), get(), get(), get()) }
         viewModel { SeerrSettingsViewModel(get(), get(), get()) }
     }

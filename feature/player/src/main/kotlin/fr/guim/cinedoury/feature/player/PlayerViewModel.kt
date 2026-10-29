@@ -140,7 +140,7 @@ class PlayerViewModel(
             }
             if (!request.trailer) {
                 viewModelScope.launch { loadSegments(source, item) }
-                viewModelScope.launch { loadNext(source, item) }
+                viewModelScope.launch { loadNeighbours(source, item) }
             }
             val stream = source.playback.playbackInfo(firstRequest(item, profile, settings, selection, start))
             val player = player ?: players.create(capabilities, settings).also { created -> watch(created) }
@@ -179,8 +179,11 @@ class PlayerViewModel(
         local.update { it.copy(segments = segments) }
     }
 
-    /** The episode after this one, in the order of the series; the specials only after a special. */
-    private suspend fun loadNext(
+    /**
+     * The episodes before and after this one, in the order of the series, from a season to the next;
+     * the specials only around a special.
+     */
+    private suspend fun loadNeighbours(
         source: LibrarySource,
         item: MediaItem,
     ) {
@@ -190,8 +193,8 @@ class PlayerViewModel(
         val special = item.episode?.seasonNumber == 0
         val list = episodes.filter { special || it.episode?.seasonNumber != 0 }
         val index = list.indexOfFirst { it.id == item.id }
-        val next = if (index >= 0) list.getOrNull(index + 1) else null
-        local.update { it.copy(next = next) }
+        if (index < 0) return
+        local.update { it.copy(previous = list.getOrNull(index - 1), next = list.getOrNull(index + 1)) }
     }
 
     private fun watch(player: VideoPlayer) {
@@ -245,7 +248,11 @@ class PlayerViewModel(
     }
 
     private fun startNext() {
-        val next = local.value.next ?: return
+        startEpisode(local.value.next ?: return)
+    }
+
+    /** Leaves this episode where it stands (its position saved as on « Retour ») for [next]. */
+    private fun startEpisode(next: MediaItem) {
         leave()
         val settings = local.value.settings
         fellBack = false
@@ -308,9 +315,8 @@ class PlayerViewModel(
         val shows = showsNext(state, position, duration)
         if (shows && snapshot.playing) countdown += TICK
         if (!shows) countdown = Duration.ZERO
-        val counting = shows && state.settings.autoplayNext
         val total = state.settings.nextCountdownSeconds.seconds
-        val left = (total - countdown).coerceAtLeast(Duration.ZERO)
+        val left = countdownLeft(state, shows, position, duration)
         local.update {
             it.copy(
                 position = position,
@@ -321,13 +327,31 @@ class PlayerViewModel(
                 reconnecting = bufferingFor >= RECONNECTING,
                 skip = skip,
                 nextShown = shows && !it.stillWatching,
-                nextCountdown = (left / total).toFloat().takeIf { counting },
-                nextSeconds = ((left.inWholeMilliseconds + MILLIS - 1) / MILLIS).toInt().takeIf { counting },
+                nextCountdown = left?.div(total)?.toFloat(),
+                nextSeconds = left?.wholeSecondsUp(),
                 info = if (infoVisible) snapshot else null,
             )
         }
-        if (counting && !left.isPositive()) autoplay()
+        if (left != null && !left.isPositive() && PlaybackRules.countdownStartsNext(state.segments)) autoplay()
     }
+
+    /**
+     * What is left of the countdown of « Épisode suivant », null without one. Without an Outro
+     * segment, it ends with the episode, never before (essai réel 5).
+     */
+    private fun countdownLeft(
+        state: PlayerState,
+        shows: Boolean,
+        position: Duration,
+        duration: Duration,
+    ): Duration? {
+        val total = state.settings.nextCountdownSeconds.seconds
+        if (!shows || !state.settings.autoplayNext || !total.isPositive()) return null
+        return PlaybackRules.countdownLeft(position, duration, state.segments, countdown, total)
+    }
+
+    /** The seconds left, rounded up: « dans 10 s » until the last tenth. */
+    private fun Duration.wholeSecondsUp(): Int = ((inWholeMilliseconds + MILLIS - 1) / MILLIS).toInt()
 
     private fun showsNext(
         state: PlayerState,
@@ -560,6 +584,12 @@ class PlayerViewModel(
     override fun playNext() {
         stillWatching.onInteraction()
         startNext()
+    }
+
+    override fun playPrevious() {
+        val previous = local.value.previous ?: return
+        stillWatching.onInteraction()
+        startEpisode(previous)
     }
 
     override fun dismissNext() {

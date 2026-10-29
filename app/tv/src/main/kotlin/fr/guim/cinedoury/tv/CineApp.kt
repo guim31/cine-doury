@@ -38,6 +38,7 @@ import coil3.SingletonImageLoader
 import fr.guim.cinedoury.core.data.Profile
 import fr.guim.cinedoury.core.data.SessionManager
 import fr.guim.cinedoury.core.data.StartupTarget
+import fr.guim.cinedoury.core.data.quick.QuickActions
 import fr.guim.cinedoury.core.designsystem.component.LocalSharedElements
 import fr.guim.cinedoury.core.designsystem.component.SharedElements
 import fr.guim.cinedoury.core.designsystem.component.Wordmark
@@ -45,11 +46,13 @@ import fr.guim.cinedoury.core.designsystem.theme.CineMotion
 import fr.guim.cinedoury.core.designsystem.theme.CineSpacing
 import fr.guim.cinedoury.core.designsystem.theme.CineTheme
 import fr.guim.cinedoury.core.designsystem.theme.ThemeVariant
+import fr.guim.cinedoury.core.model.ItemId
 import fr.guim.cinedoury.core.model.LibraryId
 import fr.guim.cinedoury.core.model.MediaItem
 import fr.guim.cinedoury.core.model.PlaybackRequest
 import fr.guim.cinedoury.core.model.RemoteTrailer
 import fr.guim.cinedoury.core.source.GestureLog
+import fr.guim.cinedoury.core.ui.LocalQuickActions
 import fr.guim.cinedoury.core.ui.RailTarget
 import fr.guim.cinedoury.core.ui.avatarSource
 import fr.guim.cinedoury.feature.auth.AddressMode
@@ -124,6 +127,7 @@ fun CineApp(
         val updates = GlobalContext.getOrNull()?.getOrNull<UpdateRepository>() ?: return@LaunchedEffect
         if (updates.checkAtStart() && navigator.current.route == Route.Home) navigator.push(Route.Update)
     }
+    val quickActions = remember { GlobalContext.getOrNull()?.getOrNull<QuickActions>() }
     val saveable = rememberSaveableStateHolder()
     navigator.onRemoved = { saveable.removeState(it.id) }
     val reduced = CineTheme.reducedMotion
@@ -158,6 +162,8 @@ fun CineApp(
         ) { entry ->
             CompositionLocalProvider(
                 LocalViewModelStoreOwner provides entry,
+                // « Vu » and favourites from the menu of a card (essai réel 5).
+                LocalQuickActions provides quickActions,
                 // Kept for the screen: it remembers which of its cards had the focus last.
                 LocalSharedElements provides
                     remember { SharedElements(this@SharedTransitionLayout, this@AnimatedContent) },
@@ -305,7 +311,7 @@ private fun SessionScreen(
         }
 
         is Route.Details -> {
-            DetailsRoute(route.item, navigation = detailsNavigation(navigator, LocalContext.current))
+            DetailsRoute(route.item, route.season, navigation = detailsNavigation(navigator, LocalContext.current))
         }
 
         is Route.Player -> {
@@ -445,6 +451,13 @@ private fun searchNavigation(
 
     override fun open(item: MediaItem) = navigator.push(Route.Details(item))
 
+    override fun play(request: PlaybackRequest) = navigator.push(Route.Player(request))
+
+    override fun openSeries(
+        series: MediaItem,
+        season: ItemId?,
+    ) = navigator.push(Route.Details(series, season))
+
     override fun sessionEnded() = navigator.replaceAll(Route.Profiles)
 }
 
@@ -458,6 +471,13 @@ private fun homeNavigation(
     override fun open(item: MediaItem) = navigator.push(Route.Details(item))
 
     override fun play(item: MediaItem) = navigator.push(Route.Player(PlaybackRequest(item)))
+
+    override fun play(request: PlaybackRequest) = navigator.push(Route.Player(request))
+
+    override fun openSeries(
+        series: MediaItem,
+        season: ItemId?,
+    ) = navigator.push(Route.Details(series, season))
 
     override fun customize() = navigator.push(Route.HomeSettings)
 
@@ -476,6 +496,13 @@ private fun libraryNavigation(
 
     override fun open(item: MediaItem) = navigator.push(Route.Details(item))
 
+    override fun play(request: PlaybackRequest) = navigator.push(Route.Player(request))
+
+    override fun openSeries(
+        series: MediaItem,
+        season: ItemId?,
+    ) = navigator.push(Route.Details(series, season))
+
     override fun problems(
         library: LibraryId,
         name: String,
@@ -491,6 +518,11 @@ private fun detailsNavigation(
     override fun open(item: MediaItem) = navigator.push(Route.Details(item))
 
     override fun play(request: PlaybackRequest) = navigator.push(Route.Player(request))
+
+    override fun openSeries(
+        series: MediaItem,
+        season: ItemId?,
+    ) = navigator.push(Route.Details(series, season))
 
     override fun openTrailer(url: String) = openTrailerApp(context, url)
 

@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import fr.guim.cinedoury.core.data.Profile
 import fr.guim.cinedoury.core.data.SavedServer
+import fr.guim.cinedoury.core.model.ItemId
 import fr.guim.cinedoury.core.model.LibraryId
 import fr.guim.cinedoury.core.model.MediaItem
 import fr.guim.cinedoury.core.model.PlaybackRequest
@@ -64,9 +65,13 @@ sealed interface Route {
     /** « Demandes (Seerr) » (J5). */
     data object SeerrSettings : Route
 
-    /** The details of an item: a film, a series, an episode, a person, a collection. */
+    /**
+     * The details of an item: a film, a series, an episode, a person, a collection; a series on its
+     * [season] (« Aller à la saison », essai réel 5).
+     */
     data class Details(
         val item: MediaItem,
+        val season: ItemId? = null,
     ) : Route
 
     /** The player (J4): a film, an episode, a local trailer. */

@@ -25,7 +25,8 @@ son domaine :
 | J7 — Réglages et mise à jour (pages de réglages P0, mise à jour proposée depuis les releases, publication signée, rapport de diagnostic) | terminé, fusionné (§ 4.17 à 4.19 ; captures dans `docs/screenshots/j7/`, numéros 150 à 174) | [#11](https://github.com/guim31/cine-doury/pull/11) |
 | J8 — Finitions 1.0 (coût GPU, petits appareils, profils et mesures, accessibilité, captures 4K et grand texte, 20 gestes au canapé, 1.0.0 prête à étiqueter) | prêt, en revue (§ 4.20 ; captures dans `docs/screenshots/j8/`, numéros 180 à 198 ; CI complète verte sur `24243cb`) | [#13](https://github.com/guim31/cine-doury/pull/13) |
 | Essai réel 3 (27/10/2026, Shield en 4K, v0.7.0) : → depuis le rail ouvert, « Taille de l'interface » (Compacte par défaut), commandes du lecteur plus petites, barre des sous-titres à trois réglages, barre de la bibliothèque, bandeau de l'accueil fixe ; deuxième passage (28/10) : bandeau au-dessus des rangées, tailles Très compacte / Compacte / Normale, 27 icônes de bibliothèque | en cours (§ 4.21 ; captures dans `docs/screenshots/r3/`, numéros 200 à 208, et « avant ») | [#14](https://github.com/guim31/cine-doury/pull/14) |
-| Essai réel 4 (28/10/2026, Shield en 4K, v0.9.0) : « Très compacte » par défaut, bandeau de l'accueil plus bas (une deuxième rangée se voit), titre de rangée immobile, « Retour » qui quitte sans confirmation, versions d'essai signées installables par-dessus une release | prêt, en revue (§ 4.22 et § 4.18 ; captures dans `docs/screenshots/r4/` : `avant-*` / `apres-*` pour A, B et D) | [#15](https://github.com/guim31/cine-doury/pull/15) |
+| Essai réel 4 (28/10/2026, Shield en 4K, v0.9.0) : « Très compacte » par défaut, bandeau de l'accueil plus bas (une deuxième rangée se voit), titre de rangée immobile, « Retour » qui quitte sans confirmation, versions d'essai signées installables par-dessus une release | terminé, fusionné (§ 4.22 et § 4.18 ; captures dans `docs/screenshots/r4/` : `avant-*` / `apres-*` pour A, B et D) | [#15](https://github.com/guim31/cine-doury/pull/15) |
+| Essai réel 5 (29/10/2026, Shield en 4K et Chromecast, v0.9.1) : banc de mesures réparé (libellés du rail lus par l'accessibilité), compte à rebours qui ne coupe plus la fin des épisodes, épisode précédent / suivant dans le lecteur, menu d'options rapides à l'appui long sur une jaquette, mosaïque « Ce soir » en haut de l'accueil, rangée « Continuer » sous elle, notes de la 1.0.0 | terminé, en revue (§ 4.23 ; captures dans `docs/screenshots/r5/` : `avant-*` / `apres-*` pour A, B, C, D et F) | [#16](https://github.com/guim31/cine-doury/pull/16) |
 
 *(Chaque jalon met à jour ce tableau et ajoute ses contrats au § 4.)*
 
@@ -783,7 +784,9 @@ fois par segment), « Rien ». Le générique (Outro) mène à l'épisode suivan
 **Épisode suivant** : le suivant dans l'ordre de la série (les spéciaux seulement après un
 spécial). La carte apparaît au début du segment Outro, sinon 30 s avant la fin, focalisée, avec un
 compte à rebours de 10 s (qui ne court que pendant la lecture) ; à zéro, ou à la fin du fichier,
-l'épisode suivant démarre si « Épisode suivant automatique » est actif. « Retour » écarte la carte.
+l'épisode suivant démarre si « Épisode suivant automatique » est actif. **Sans segment Outro**
+(essai réel 5, § 4.23), le compte à rebours ne lance rien : il commence quand il reste exactement sa
+durée et finit à la fin réelle de l'épisode, dont la fin lance le suivant. « Retour » écarte la carte.
 
 **« Vous êtes toujours là ? »** (`StillWatching`) : l'épisode lancé par l'utilisateur compte 1,
 chaque épisode lancé par le compte à rebours ajoute 1, toute touche repart de 1 ; quand 3 épisodes
@@ -842,7 +845,8 @@ retrouve dans « Apparence des sous-titres ».
 taille des sous-titres ; sur la barre, ← → recherchent (pas de
 10 s, puis 30 s, 1, 2, 5 min, 6 répétitions de touche chacun), la vignette trickplay au-dessus, OK
 ou 1,2 s sans touche y va ; touches média : lecture, pause, lecture/pause, avance et retour rapides
-(recherche), suivant et précédent (chapitres), stop ; Info : écran d'informations. L'interface
+(recherche), suivant et précédent (épisode suivant ou précédent pour un épisode qui en a un, essai réel
+5 ; sinon chapitres), stop ; Info : écran d'informations. L'interface
 disparaît 4 s après la dernière touche pendant la lecture. Panneaux à droite, l'image visible :
 Audio | Sous-titres (deux colonnes), Qualité, Réglages, Chapitres ; en haut, la barre des
 sous-titres. L'écran reste allumé, la lecture
@@ -1991,6 +1995,159 @@ Quatre retours du mainteneur sur la v0.9.0 (Shield, écran 4K, taille « Très c
   change : « Retour » remonte d'un niveau, et un écran de premier niveau ramène à l'accueil. La
   capture 44 est retirée. Test : `J2NavigationTest`, `J2FlowTest` (bibliothèque → accueil → rail →
   appli fermée), `J8FocusTest`.
+
+### 4.23 Essai réel 5 : la v0.9.1 au canapé (29/10/2026)
+
+Quatre retours du mainteneur sur la v0.9.1 (Shield en 4K et Chromecast, taille « Très compacte »)
+et une réparation du banc de mesures, faits dans l'ordre E, A, B, C, D ; puis, après l'essai de la
+`0.9.1-essai.1` (tout bon sur les deux appareils), F et G.
+
+- **E. Banc de mesures rouge depuis la v0.9.0** (« No entry Films in the rail ») : le banc cherche
+  une bibliothèque en lisant le nom de l'entrée focalisée du rail par l'accessibilité. Depuis le J8,
+  l'icône d'une entrée n'a plus de description (pour que TalkBack ne lise pas le nom deux fois) et le
+  nom n'est plus qu'un texte, transparent rail fermé (`graphicsLayer { alpha }`). Compose retire un
+  nœud transparent de l'arbre d'accessibilité et ne l'y remet pas quand l'alpha, lu au dessin, remonte :
+  le texte n'était exposé ni au banc ni à TalkBack (un défaut d'accessibilité, corrigé dans l'appli).
+  Le nom est désormais la description de l'entrée elle-même (`NavigationRail`), texte et avatar
+  n'exposant rien de plus. Le banc s'arrête aussi au bas du rail (« Réglages ») et dit le dernier nom
+  lu. Test : `R5RailTest` (chaque entrée dit son nom, rail fermé et ouvert, une seule fois).
+
+- **A. Le compte à rebours coupait la fin des épisodes.** Sans segment Outro,
+  `PlaybackRules.creditsStart` suppose un générique de 30 s : la carte « Épisode suivant » apparaissait
+  30 s avant la fin, et son compte à rebours (10 s) lançait l'épisode suivant **environ 20 s avant la
+  fin réelle**, coupant la fin d'un épisode sans générique. **Règle** (`PlaybackRules.countdownLeft`,
+  `countdownStartsNext`) :
+  - **avec** un segment Outro : inchangé ; la carte dès le début du générique, le compte à rebours
+    court pendant la lecture, puis l'épisode suivant démarre ;
+  - **sans** segment Outro : la carte apparaît toujours 30 s avant la fin, d'abord sans compte à
+    rebours ; celui-ci commence quand il reste exactement sa durée et suit ce qui reste de l'épisode
+    (une pause l'arrête, un retour en arrière le remonte) ; à zéro, il ne lance rien : c'est la fin de
+    l'épisode (`PlayerEvent.Ended`) qui lance le suivant. L'épisode suivant ne démarre donc **jamais
+    avant la fin réelle**.
+  - OK sur la carte lance toujours l'épisode suivant tout de suite ; « Retour » l'écarte.
+  Tests : `PlaybackRulesTest` (avec et sans segment), `R5PlayerTest` (modèle de vue : rien 20 s avant
+  la fin sans générique, la fin lance le suivant ; avec générique, le compte à rebours le lance ; OK).
+
+- **B. Épisode précédent / suivant depuis les contrôles de lecture.** Pour un épisode, la rangée de
+  commandes du lecteur a deux boutons ronds de part et d'autre de lecture/pause, « Épisode précédent »
+  et « Épisode suivant » (icônes ⏮ ⏭ de Material dans `CineIcons`, `SkipPrevious` et `SkipNext` ;
+  le libellé est la description lue par TalkBack). L'ordre est celui de la série, d'une saison à
+  l'autre (les spéciaux seulement autour d'un spécial, comme la carte « Épisode suivant ») ; un bouton
+  est **absent**, pas grisé, au premier ou au dernier épisode, et pour un film. Les touches média
+  « précédent » et « suivant » de la télécommande font la même chose quand l'épisode a un voisin, et
+  sautent d'un chapitre sinon (le comportement d'avant pour un film). L'épisode quitté est enregistré
+  comme sur « Retour » (dernier rapport au serveur, cache de l'accueil et des fiches), et le compteur
+  de « Vous êtes toujours là ? » repart de 1 (c'est une touche). Le lecteur connaît les deux voisins
+  dès le chargement (`PlayerState.previous`, `next`). Tests : `R5PlayerTest` (voisins d'une saison à
+  l'autre, aucun aux bouts, position de l'épisode quitté rapportée), `R5PlayerControlsTest` (boutons
+  présents ou absents, libellés TalkBack, touches média) ; capture 221 (`avant-b-*`, `apres-b-*`).
+
+- **C. Appui long sur une jaquette : menu d'options rapides** (`UI.md` § 2). Une seule logique,
+  branchée partout :
+  - **options** (`QuickOptions.of`, `:core:model`) : lecture (« Reprendre » si entamé, sinon « Lire »,
+    puis « Lire depuis le début » si entamé) pour un film, un épisode ou une vidéo ; une série ou une
+    saison ne se lance pas d'ici (sa fiche choisit l'épisode) ; « Ouvrir la fiche » (pas pour une
+    saison, onglet de la fiche de sa série) ; « Aller à la série » et « Aller à la saison » pour un
+    épisode (la fiche de la série, ouverte sur la saison : `Route.Details(item, season)`) ; « vu » pour
+    un film, un épisode, une série ou une saison ; « Retirer de Continuer » pour une carte entamée de
+    « Reprendre » ; favoris pour tout sauf un dossier ; « Sélectionner » en dernier dans une
+    bibliothèque pour les comptes qui gèrent (l'appui long y commençait une sélection, J6). Jamais
+    d'action de gestion ;
+  - **« Retirer de Continuer »** : Jellyfin 12.3 n'a pas d'appel « masquer de la reprise »
+    (`docs/api/`) ; `POST /UserItems/{itemId}/UserData` avec `PlaybackPositionTicks = 0` retire
+    l'élément de `/UserItems/Resume` sans le marquer vu (`LibrarySource.clearProgress`, test
+    d'intégration) ;
+  - **changements** (`QuickActions`, `:core:data`) : « vu », « Retirer de Continuer » et favoris se
+    voient aussitôt (la réponse attendue, puis celle du serveur ; un échec remet l'état d'avant et se
+    journalise) : `UserDataUpdates` pour les modèles de vue (bibliothèque et recherche changent la
+    carte là où elle est, `ItemPager.update` ; une fiche relit les épisodes d'une saison ou d'une série
+    marquée), le cache de l'accueil pour ses rangées (favori, position ; la carte quitte
+    « Reprendre » une fois retirée ou vue). Rien n'est relu en entier ;
+  - **interface** : `QuickMenu` (`:core:designsystem`) est un panneau latéral à droite (il tient mieux
+    qu'un panneau près de la carte en « Très compacte », où une carte fait 160 dp), focus piégé comme
+    `ConfirmDialog`, « Retour » le ferme ; l'appui maintenu qui l'a ouvert (répétitions et
+    relâchement) n'y choisit rien, seul un nouvel appui compte. `QuickMenuHost` et
+    `Modifier.quickMenu` (`:core:ui`) l'ouvrent et rendent le focus à la carte d'où il vient (un
+    `FocusRequester` posé sur le conteneur de la carte, qui le passe à la partie focalisable) ;
+    `LocalQuickMenu` sert les cartes au fond des listes (recherche, fiches). L'appui long
+    (`Modifier.onLongPress`) oubliait aussi qu'il était maintenu quand le relâchement partait ailleurs
+    (dans le menu) : l'appui suivant était avalé ; un nouvel appui le remet à zéro.
+  Tests : `QuickOptionsTest` (options selon le type et l'état), `R5QuickMenuTest` (accueil : appui bref
+  ou long, contenu, focus piégé puis rendu à la carte, une option qui mène), `R5QuickMenuFlowTest`
+  (appli réelle : « Marquer comme vu » d'une carte de bibliothèque arrive au serveur, la carte change
+  sans relire la bibliothèque, le menu propose ensuite « Marquer comme non vu »), `J6NavigationTest`
+  (« Sélectionner » commence la sélection) ; captures 222 et 223 (`avant-c-*`, `apres-c-*`).
+
+- **D. Nouvel accueil : la mosaïque « Ce soir »** (`UI.md` § 8, « Accueil » ; choisie par le
+  mainteneur parmi trois maquettes). **Écart à `UI.md` (bandeau à la une)** : dès qu'il y avait des
+  lectures en cours, le bandeau répétait la première et la rangée « À suivre » n'avait qu'une carte ;
+  la mosaïque montre cinq titres dans la même hauteur. Décisions :
+  - **sources** (`HomeRows.fetchTonight`, une lecture de plus au rafraîchissement de l'accueil, quand
+    la mosaïque est active) : lectures en cours, épisodes à suivre, derniers ajouts et titres anciens
+    (les plus vieux ajouts, films et séries) des bibliothèques admises sur l'accueil, au plus 12 par
+    source, quelles que soient les rangées choisies. Elles vont au cache de l'accueil sous des clés à
+    part (`tonight:*`) : la mosaïque s'affiche aussitôt au lancement suivant, comme les rangées ;
+  - **choix** (`Tonight.pick`, `:core:data`) : grande tuile = la lecture en cours la plus récente,
+    sinon le premier « À suivre » (le serveur les donne par série regardée en dernier), sinon le
+    dernier ajout ; puis les autres lectures, « À suivre », nouveaux épisodes (un « À suivre » ajouté
+    depuis moins de 14 jours), ajouts, un titre à redécouvrir (jamais vu, ou vu il y a plus d'un an ;
+    un autre chaque jour, le même toute la journée : la mosaïque ne change pas à chaque retour), sans
+    doublon de titre ni de série. Les rangées « Reprendre » et « À suivre » perdent ce que la mosaïque
+    montre (`HomeViewModel`) ;
+  - **mise en page** : la mosaïque est le premier élément de la liste de l'accueil, de la hauteur que
+    laissent une rangée entière et la moitié de la suivante (`homeRowsArea`, la règle de l'essai réel
+    4), au moins ce qu'il faut à deux petites tuiles ; sa largeur est celle du contenu, les images
+    sont recadrées à la tuile (Coil demande la taille de la tuile). La liste défile **par index** :
+    la rangée focalisée en haut, la mosaïque hors de l'écran ; la marge du haut coupe la liste, pour
+    qu'il ne reste aucune bande de mosaïque au-dessus de la rangée. → depuis la grande tuile va à la
+    petite tuile du haut (`focusProperties`), les deux étant à égale distance ; ↑ depuis la première
+    rangée ramène la mosaïque et sa grande tuile (la recherche 2D trouvait le rail d'abord, vu sur
+    l'émulateur du banc) ;
+  - **fluidité** : chaque tuile lit son propre focus (`MosaicTile`, `rememberCineFocus`) ; le fond
+    d'ambiance lit le titre focalisé au dessin ; rien d'autre ne recompose au passage d'une tuile à
+    l'autre ;
+  - **réglage** : « Mosaïque « Ce soir » » (Accueil et navigation, profil, `tonight_mosaic`, activée par
+    défaut) ; désactivée, l'accueil reprend le bandeau de la 0.9.1 et « Bandeau à la une » s'applique ;
+  - **parcours automatiques** : le banc (`Remote.waitHome`, `backToStart`), les profils,
+    `SignInJourneyTest` et `ci/couch-gestures.py` partent de la grande tuile (`tonight-0`), ou de
+    « Lire » quand la mosaïque est coupée ; le geste 2 ouvre la fiche par le menu de la tuile.
+  Tests : `TonightTest` (ordre, grande tuile, sans doublon, toujours pleine, à redécouvrir),
+  `R5Home1080pTest` et `R5Home4kTest` (cinq tuiles, grande tuile focalisée, une rangée et demie dans
+  les trois tailles, mosaïque défilée par index et revenue, titre immobile, OK qui lit ou ouvre),
+  `R5TonightFlowTest` (appli réelle : mosaïque pleine par défaut, « Reprendre » parti des rangées,
+  « Retour » vers le rail puis hors de l'appli), `AppPreferencesTest` ; les parcours du bandeau
+  (`J2FlowTest`, `J8FocusTest`) tournent mosaïque coupée. Capture 224 (`avant-d-*`, `apres-d-*`).
+
+- **F. Une seule rangée « Continuer » sous la mosaïque.** Une lecture en cours que la mosaïque n'avait
+  pas prise formait une rangée « Reprendre » d'une seule carte, suivie de « À suivre ». Sous la
+  mosaïque, les deux ne font plus qu'une rangée **« Continuer »** (`HomeRowType.Continue`), là où était
+  la première des deux : les lectures en cours, puis les épisodes à suivre (l'ordre de priorité de la
+  mosaïque), une carte par titre ou par série, rien de ce que la mosaïque montre (même titre ou même
+  série) ; pas de rangée quand il ne reste rien. **Écart à `UI.md` § 10** (« jamais Continuer ») :
+  c'est le nom de cette rangée seulement, demandé par le mainteneur ; les actions restent
+  « Reprendre ». Décisions :
+  - **rien ne change dans ce qui est enregistré** : la disposition garde « Reprendre » et « À suivre »
+    (avec leurs bibliothèques, présentation et fenêtre), lues et mises en cache comme avant ; la
+    fusion est une projection, à l'affichage (`withContinue`, `HomeViewModel`) et dans
+    « Personnaliser l'accueil » (`HomeLayouts.withContinue`). Mosaïque coupée, l'accueil et la
+    personnalisation de la 0.9.1 reviennent tels quels ;
+  - **personnalisation** : « Continuer » prend la place des deux rangées, et ce qui était réglé pour
+    elles se reporte sur elle : bibliothèques (toutes si l'une les prenait toutes, sinon la réunion),
+    présentation de la première, fenêtre de « À suivre ». Un changement (monter, descendre,
+    présentation, fenêtre, bibliothèques, retirer, ajouter) revient aux deux rangées enregistrées, à la
+    place de « Continuer » (`HomeLayouts.withoutContinue`) ; sans changement, elles restent exactement
+    comme enregistrées. « Ajouter » propose « Continuer » au lieu des deux rangées ;
+  - **« Retirer de Continuer »** sur une lecture en cours de la rangée l'enlève de la rangée
+    « Reprendre » du cache d'où elle vient (`HomeRow.resumeRows`).
+  Tests : `HomeLayoutsTest` (place, report des réglages, aller-retour, retrait et ajout),
+  `R5ContinueTest` (ordre, une carte par série, rien de la mosaïque, pas de rangée vide),
+  `R5Home1080pTest` et `R5Home4kTest` (la rangée sous la mosaïque est « Continuer »),
+  `R5TonightFlowTest` (appli réelle : « Continuer » en tête de la personnalisation, présentation
+  reportée aux deux rangées enregistrées, retirée avec elles). Captures 225 et 226 (`avant-f-*`,
+  `apres-f-*`).
+
+- **G. Notes de la 1.0.0** : `docs/releases/v1.0.0.md` (ce qui change depuis la 0.9.1, puis ce qu'est
+  la 1.0.0), reprises par `ci/release/package.sh` ; `CHANGELOG.md` : section « 1.0.0 — 29/10/2026 ».
 
 ## 5. Tests et CI
 

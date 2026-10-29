@@ -31,7 +31,6 @@ import java.util.Collections
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.test.assertTrue
 import fr.guim.cinedoury.feature.auth.R as AuthR
-import fr.guim.cinedoury.feature.home.R as HomeR
 
 /**
  * The sign-in of a real user, from the first launch to the home, against the Jellyfin of the CI
@@ -234,13 +233,16 @@ class SignInJourneyTest {
         remote(KeyEvent.KEYCODE_DPAD_CENTER)
         type(password)
 
-        // Signed in, the token kept by the Keystore: the home of the administrator.
-        waitFor(hasText(text(HomeR.string.row_resume)), SIGN_IN_TIMEOUT)
+        // Signed in, the token kept by the Keystore: the home of the administrator, its mosaic « Ce
+        // soir » (essai réel 5), or its banner when the mosaic is off.
+        val start =
+            hasTestTag(TONIGHT_MAIN) or hasAnyAncestor(hasTestTag(TONIGHT_MAIN)) or hasTestTag(HOME_PLAY) or
+                hasAnyAncestor(hasTestTag(HOME_PLAY))
+        waitFor(start, SIGN_IN_TIMEOUT)
 
         // And on to the player of J4 with the session just made (PlaybackOnDeviceTest checks the
-        // playback itself): the main button of the banner has the focus.
-        val play = hasTestTag(HOME_PLAY) or hasAnyAncestor(hasTestTag(HOME_PLAY))
-        waitFor(isFocused() and play)
+        // playback itself): the large tile, a film in progress on the test server, has the focus.
+        waitFor(isFocused() and start)
         remote(KeyEvent.KEYCODE_DPAD_CENTER)
         waitFor(hasTestTag(PLAYER), SIGN_IN_TIMEOUT)
         remote(KeyEvent.KEYCODE_BACK)
@@ -254,6 +256,7 @@ class SignInJourneyTest {
         const val DISCOVERY_TIMEOUT = 15_000L
         const val SIGN_IN_TIMEOUT = 30_000L
         const val HOME_PLAY = "home-play"
+        const val TONIGHT_MAIN = "tonight-0"
         const val PLAYER = "player"
     }
 }

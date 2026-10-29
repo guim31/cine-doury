@@ -34,6 +34,7 @@ import fr.guim.cinedoury.core.designsystem.theme.LayoutSize
 import fr.guim.cinedoury.core.designsystem.theme.ThemeVariant
 import fr.guim.cinedoury.core.model.ItemFilters
 import fr.guim.cinedoury.core.model.MediaItem
+import fr.guim.cinedoury.core.model.PlaybackRequest
 import fr.guim.cinedoury.core.model.PlayerSettings
 import fr.guim.cinedoury.core.model.RequestCandidate
 import fr.guim.cinedoury.core.model.SortField
@@ -104,6 +105,8 @@ class R3NavigationTest {
         override fun open(item: MediaItem) = Unit
 
         override fun play(item: MediaItem) = Unit
+
+        override fun play(request: PlaybackRequest) = Unit
 
         override fun customize() = Unit
 
