@@ -1975,6 +1975,12 @@ Quatre retours du mainteneur sur la v0.9.0 (Shield, écran 4K, taille « Très c
   autres rangées n'étaient pas touchées : la recherche pose ses rangées à droite du clavier, les fiches
   n'ont pas de rail, et la grille d'une bibliothèque défile de haut en bas. Test : `R4Home*Test`
   (aucune carte à gauche du bord du rail après cinq →) ; capture 210 (`apres-f-*`).
+- **G. Un peu plus de bandeau, moins de vide entre les rangées** (même essai) : il restait un grand
+  vide entre la première rangée et le titre de la suivante, la place des légendes (cachées sur une
+  affiche sans le focus) suivie de 32 dp. L'écart entre deux rangées de l'accueil passe à 16 dp
+  (`RowGap`, dans la liste et dans la règle de B) : la règle « une rangée et demie » rend ces 16 dp au
+  bandeau, qui descend d'autant et laisse mieux voir l'image à la une. Captures 200 (1080p) et 211
+  (4K), les trois tailles (`apres-g-*`).
 - **E. Versions d'essai installables par-dessus une release** (demandé par l'orchestrateur pour
   essayer A à D sur la Shield) : l'APK de la CI d'une PR, signé de la clé de débogage et de code 1,
   obligeait à désinstaller la v0.9.0 (code 900), donc à se reconnecter. Nouveau schéma de

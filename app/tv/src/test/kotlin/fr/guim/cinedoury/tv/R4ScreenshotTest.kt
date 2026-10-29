@@ -7,6 +7,7 @@ import fr.guim.cinedoury.feature.home.HomeScreen
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.ParameterizedRobolectricTestRunner
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
@@ -40,4 +41,27 @@ class R4ScreenshotTest {
                 previewScrolledRow = "latest:films",
             )
         }
+}
+
+/** The home in each size in 4K (essai réel 4, G): the banner, a row and a half (211). */
+@RunWith(ParameterizedRobolectricTestRunner::class)
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+@Config(sdk = [35], qualifiers = TV_4K_SHIELD)
+class R4Home4kScreenshotTest(
+    private val size: LayoutSize,
+) {
+    @get:Rule
+    val compose = createTvComposeRule()
+
+    @Test
+    fun home() =
+        compose.shootJ8("211-accueil-4k-${size.slug}", ThemeVariant.Dark, 1f, null, size) {
+            KeyScreens.Home()
+        }
+
+    companion object {
+        @JvmStatic
+        @ParameterizedRobolectricTestRunner.Parameters(name = "{0}")
+        fun sizes(): List<Array<Any>> = LayoutSize.entries.map { arrayOf(it) }
+    }
 }

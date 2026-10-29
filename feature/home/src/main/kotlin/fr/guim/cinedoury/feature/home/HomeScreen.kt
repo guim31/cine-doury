@@ -302,6 +302,12 @@ internal val ContentStart = CineSizes.railCollapsed + CineSpacing.m
 private const val ROW_PIVOT = 0.48f
 private const val SKELETON_ROWS = 2
 
+/**
+ * Between two rows of the home: small, since a row already ends with the room of its captions, hidden
+ * on a poster without the focus (essai réel 4: « un grand vide »). What it saves goes to the banner.
+ */
+private val RowGap = CineSpacing.s
+
 /** How far [HomeScreen]'s `previewScrolledRow` is scrolled: two posters and a half. */
 private val PREVIEW_ROW_SCROLL = CineSizes.posterNormal.width * 2.5f
 
@@ -325,7 +331,7 @@ private fun HomeRows(
         state = listState,
         modifier = modifier.testTag("home"),
         contentPadding = PaddingValues(top = top, bottom = CineSpacing.xxl),
-        verticalArrangement = Arrangement.spacedBy(CineSpacing.l),
+        verticalArrangement = Arrangement.spacedBy(RowGap),
     ) {
         if (rows == null) {
             items(SKELETON_ROWS) { SkeletonRow() }
@@ -369,7 +375,7 @@ private fun HomeRows(
 private fun homeRowsArea(rows: List<HomeRow>?): Dp {
     val first = rows?.firstOrNull()?.style ?: CardStyle.Thumbnail
     val second = rows?.getOrNull(1)?.style ?: first
-    return homeRowHeight(first) + CineSpacing.l + homeRowHeight(second) / 2
+    return homeRowHeight(first) + RowGap + homeRowHeight(second) / 2
 }
 
 /** A row of the home: its title, the gap under it, a card and its caption of two lines (`HomeRowView`). */

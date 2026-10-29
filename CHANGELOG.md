@@ -12,6 +12,8 @@ Essai réel 4 (28/10/2026, NVIDIA Shield TV en 4K, v0.9.0) :
 - **Accueil** : sous le bandeau, une rangée entière et la moitié de la suivante ; le bandeau garde
   titre ou logo, infos, résumé et boutons quand ils tiennent, le résumé partant d'abord ; le titre d'une rangée ne bouge plus quand on passe
   d'une jaquette à l'autre.
+- **Rangées** : moins d'espace entre elles, et une rangée qui défile ne passe plus sous le menu de
+  gauche.
 - **Quitter** : « Retour » depuis le menu de l'accueil ferme l'appli sans demander de confirmation.
 - **Versions d'essai** : elles s'installent par-dessus la version publiée, sans désinstaller ni se
   reconnecter ; la version publiée suivante s'installe ensuite par-dessus.

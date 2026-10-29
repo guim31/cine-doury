@@ -188,7 +188,7 @@ class R3IconsScreenshotTest {
 }
 
 /** « compacte », « normale », « grande », in the names of the screenshots. */
-private val LayoutSize.slug: String
+internal val LayoutSize.slug: String
     get() =
         when (this) {
             LayoutSize.VeryCompact -> "tres-compacte"
