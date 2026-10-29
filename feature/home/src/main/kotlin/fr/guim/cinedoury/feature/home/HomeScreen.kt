@@ -56,9 +56,13 @@ import fr.guim.cinedoury.core.designsystem.theme.CineSpacing
 import fr.guim.cinedoury.core.designsystem.theme.CineTheme
 import fr.guim.cinedoury.core.designsystem.theme.textLineHeight
 import fr.guim.cinedoury.core.model.MediaItem
+import fr.guim.cinedoury.core.model.PlaybackRequest
 import fr.guim.cinedoury.core.ui.AppRail
 import fr.guim.cinedoury.core.ui.CollectEvents
 import fr.guim.cinedoury.core.ui.ImageSources
+import fr.guim.cinedoury.core.ui.QuickMenuHost
+import fr.guim.cinedoury.core.ui.QuickMenuNavigation
+import fr.guim.cinedoury.core.ui.QuickMenuState
 import fr.guim.cinedoury.core.ui.RailTarget
 import fr.guim.cinedoury.core.ui.RemoteIndicator
 import fr.guim.cinedoury.core.ui.SourceErrorPanel
@@ -68,19 +72,23 @@ import fr.guim.cinedoury.core.ui.catchLine
 import fr.guim.cinedoury.core.ui.imageSource
 import fr.guim.cinedoury.core.ui.metadataLine
 import fr.guim.cinedoury.core.ui.rememberArt
+import fr.guim.cinedoury.core.ui.rememberQuickMenu
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 
 /** What the home asks the app to open. */
-interface HomeNavigation {
+interface HomeNavigation : QuickMenuNavigation {
     fun navigate(target: RailTarget)
 
     /** The details of [item] (J3). */
-    fun open(item: MediaItem)
+    override fun open(item: MediaItem)
 
     /** Plays or resumes [item] (J4). */
     fun play(item: MediaItem)
+
+    /** Plays [request]: from the start, from the menu of a card (essai réel 5). */
+    override fun play(request: PlaybackRequest) = play(request.item)
 
     fun customize()
 
@@ -188,6 +196,7 @@ fun HomeScreen(
     }
 
     val shared = remember(rows) { rows.orEmpty().firstAppearances() }
+    val menu = rememberQuickMenu()
     Box(modifier = modifier.fillMaxSize()) {
         HomeAmbience(featuredItem)
         val scrollToRow: (Int) -> Unit =
@@ -240,6 +249,7 @@ fun HomeScreen(
                             sources = sources,
                             navigation = navigation,
                             rowRequesters = rowRequesters,
+                            menu = menu,
                             onFocused = { row, item ->
                                 focusedItem.value = item
                                 focusedRow = row
@@ -259,6 +269,7 @@ fun HomeScreen(
                         sources = sources,
                         navigation = navigation,
                         rowRequesters = rowRequesters,
+                        menu = menu,
                         onFocused = { row, item ->
                             focusedItem.value = item
                             focusedRow = row
@@ -286,6 +297,8 @@ fun HomeScreen(
             previewFocused = previewRail,
             modifier = Modifier.onFocusChanged { railFocused = it.hasFocus },
         )
+        // OK held on a card (essai réel 5).
+        QuickMenuHost(menu, navigation)
     }
     // The first focus, and the focus found again when coming back: the row left, else « Lire ».
     // Made here, not when the lazy row composes (later): the requester is the same for both.
@@ -320,6 +333,7 @@ private fun HomeRows(
     sources: ImageSources,
     navigation: HomeNavigation,
     rowRequesters: MutableMap<String, FocusRequester>,
+    menu: QuickMenuState,
     onFocused: (row: String, item: MediaItem) -> Unit,
     modifier: Modifier = Modifier,
     onRowFocused: ((index: Int) -> Unit)? = null,
@@ -344,6 +358,7 @@ private fun HomeRows(
                     shared = shared[row.key].orEmpty(),
                     sources = sources,
                     restore = rowRequesters.requester(row.key),
+                    menu = menu,
                     onFocused = { item -> onFocused(row.key, item) },
                     onOpen = navigation::open,
                     modifier = Modifier.onRowFocused(onRowFocused, index),

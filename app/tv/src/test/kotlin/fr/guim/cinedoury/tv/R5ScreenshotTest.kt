@@ -1,7 +1,18 @@
 package fr.guim.cinedoury.tv
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.Modifier
 import fr.guim.cinedoury.core.designsystem.theme.LayoutSize
 import fr.guim.cinedoury.core.designsystem.theme.ThemeVariant
+import fr.guim.cinedoury.core.model.MediaItem
+import fr.guim.cinedoury.core.ui.QuickMenuHost
+import fr.guim.cinedoury.core.ui.rememberQuickMenu
+import fr.guim.cinedoury.feature.home.HomePreview
+import fr.guim.cinedoury.feature.home.HomeScreen
+import fr.guim.cinedoury.feature.library.LibraryPreview
+import fr.guim.cinedoury.feature.library.LibraryScreen
 import fr.guim.cinedoury.feature.player.PlayerPreview
 import org.junit.Rule
 import org.junit.Test
@@ -56,6 +67,63 @@ class R5ScreenshotTest {
         shoot("221-avant-lecteur-episode-precedent-suivant", PlayerPreview.PLAY) {
             J4Player(R5Samples.episodePlaying.copy(previous = null, next = null), osd = true)
         }
+
+    /** C: OK held on an episode of « Reprendre », on the home. */
+    @Test
+    fun menuOnTheHome() =
+        shoot("222-accueil-menu-carte", HomePreview.card("resume", 0)) {
+            MenuOver(J2Samples.resumeEpisode, continueRow = "resume") {
+                HomeScreen(
+                    state = J2Samples.home,
+                    sources = J2Samples.noImages,
+                    navigation = NoHomeNavigation,
+                    onRetry = {},
+                )
+            }
+        }
+
+    /** C, before: OK held on the home did nothing in 0.9.1. */
+    @Test
+    fun menuOnTheHomeBefore() =
+        shoot("222-avant-accueil-menu-carte", HomePreview.card("resume", 0)) {
+            HomeScreen(
+                state = J2Samples.home,
+                sources = J2Samples.noImages,
+                navigation = NoHomeNavigation,
+                onRetry = {},
+            )
+        }
+
+    /** C: in a library, for a profile that manages it, « Sélectionner » last. */
+    @Test
+    fun menuInALibrary() =
+        shoot("223-bibliotheque-menu-carte", LibraryPreview.item(6)) {
+            MenuOver(J2Samples.movies[6], selectable = true) {
+                LibraryScreen(
+                    state = J6Samples.library.copy(scan = null),
+                    sources = J2Samples.noImages,
+                    actions = NoLibraryActions,
+                    navigation = NoLibraryNavigation,
+                )
+            }
+        }
+}
+
+/** The menu of a card open for [item] over [content], its first line focused (screenshots). */
+@androidx.compose.runtime.Composable
+private fun MenuOver(
+    item: MediaItem,
+    continueRow: String? = null,
+    selectable: Boolean = false,
+    content: @androidx.compose.runtime.Composable () -> Unit,
+) {
+    Box(Modifier.fillMaxSize()) {
+        content()
+        val menu = rememberQuickMenu()
+        LaunchedEffect(item) { menu.open(item, continueRow = continueRow) }
+        val select: ((MediaItem) -> Unit)? = if (selectable) ({ _ -> }) else null
+        QuickMenuHost(menu, NoHomeNavigation, onSelect = select, previewFocusedIndex = 0)
+    }
 }
 
 /** The samples of the essai réel 5. */

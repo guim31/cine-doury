@@ -20,6 +20,7 @@ import fr.guim.cinedoury.core.designsystem.theme.LayoutSize
 import fr.guim.cinedoury.core.designsystem.theme.ThemeVariant
 import fr.guim.cinedoury.core.model.ItemFilters
 import fr.guim.cinedoury.core.model.MediaItem
+import fr.guim.cinedoury.core.model.PlaybackRequest
 import fr.guim.cinedoury.core.model.SortField
 import fr.guim.cinedoury.core.ui.Events
 import fr.guim.cinedoury.core.ui.RailTarget
@@ -85,6 +86,8 @@ class J2NavigationTest {
         }
 
         override fun play(item: MediaItem) = Unit
+
+        override fun play(request: PlaybackRequest) = Unit
 
         override fun customize() = Unit
 

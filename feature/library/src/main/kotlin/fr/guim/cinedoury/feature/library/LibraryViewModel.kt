@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import fr.guim.cinedoury.core.data.ConnectionMode
 import fr.guim.cinedoury.core.data.SessionManager
+import fr.guim.cinedoury.core.data.UserDataUpdates
 import fr.guim.cinedoury.core.data.home.HomeRepository
 import fr.guim.cinedoury.core.data.home.ProfileKey
 import fr.guim.cinedoury.core.data.index.IndexStatus
@@ -117,6 +118,7 @@ class LibraryViewModel(
     private val index: LibraryIndex,
     private val manager: ItemManager? = null,
     manageUpdates: ManageUpdates? = null,
+    updates: UserDataUpdates? = null,
 ) : ViewModel(),
     LibraryActions {
     private val active = sessions.active.value
@@ -189,6 +191,18 @@ class LibraryViewModel(
         manageUpdates?.let { flow ->
             viewModelScope.launch {
                 flow.updates.collect { reload(around = position) }
+            }
+        }
+        // « Vu » or a favourite from the menu of a card, a position left by the player: the card
+        // changes where it is, nothing is read again (essai réel 5).
+        updates?.let { flow ->
+            viewModelScope.launch {
+                flow.updates.collect { (id, data) ->
+                    pager.update(id) { it.copy(userData = data) }
+                    local.update { state ->
+                        state.copy(nextUp = state.nextUp?.map { if (it.id == id) it.copy(userData = data) else it })
+                    }
+                }
             }
         }
     }

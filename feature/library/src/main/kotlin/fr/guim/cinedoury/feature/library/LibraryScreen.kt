@@ -43,14 +43,18 @@ import fr.guim.cinedoury.core.model.ItemFilters
 import fr.guim.cinedoury.core.model.ItemId
 import fr.guim.cinedoury.core.model.LibraryId
 import fr.guim.cinedoury.core.model.MediaItem
+import fr.guim.cinedoury.core.model.PlaybackRequest
 import fr.guim.cinedoury.core.ui.AppRail
 import fr.guim.cinedoury.core.ui.CollectEvents
 import fr.guim.cinedoury.core.ui.Events
 import fr.guim.cinedoury.core.ui.ImageSources
+import fr.guim.cinedoury.core.ui.QuickMenuHost
+import fr.guim.cinedoury.core.ui.QuickMenuNavigation
 import fr.guim.cinedoury.core.ui.RailTarget
 import fr.guim.cinedoury.core.ui.RemoteIndicator
 import fr.guim.cinedoury.core.ui.ambience
 import fr.guim.cinedoury.core.ui.imageSource
+import fr.guim.cinedoury.core.ui.rememberQuickMenu
 import fr.guim.cinedoury.feature.manage.ManageErrorDialog
 import fr.guim.cinedoury.feature.manage.ManageNoticePill
 import org.koin.androidx.compose.koinViewModel
@@ -59,11 +63,11 @@ import org.koin.core.parameter.parametersOf
 import fr.guim.cinedoury.feature.manage.R as ManageR
 
 /** What a library asks the app to open. */
-interface LibraryNavigation {
+interface LibraryNavigation : QuickMenuNavigation {
     fun navigate(target: RailTarget)
 
     /** The details of [item] (J3). */
-    fun open(item: MediaItem)
+    override fun open(item: MediaItem)
 
     /** « Éléments à problème » of the library (J6). */
     fun problems(
@@ -72,6 +76,9 @@ interface LibraryNavigation {
     ) {}
 
     fun sessionEnded()
+
+    /** Plays [request], from the menu of a card (essai réel 5); its details by default. */
+    override fun play(request: PlaybackRequest) = open(request.item)
 }
 
 /** The panels of a library, over its right side. */
@@ -164,6 +171,7 @@ fun LibraryScreen(
     val browse = state.browse
     val library = state.library
     val content = remember { FocusRequester() }
+    val menu = rememberQuickMenu()
     Box(modifier = modifier.fillMaxSize()) {
         AmbientBackdrop(ambience = focusedItem?.ambience)
         Column(
@@ -216,6 +224,7 @@ fun LibraryScreen(
                     state = state,
                     sources = sources,
                     actions = actions,
+                    menu = menu,
                     onOpen = navigation::open,
                     onFocused = { focusedItem = it },
                     jump = jump,
@@ -258,6 +267,8 @@ fun LibraryScreen(
             },
             onProblems = { library?.let { navigation.problems(it.id, it.name) } },
         )
+        // OK held on a card (essai réel 5): « Sélectionner » last, for the profiles that manage.
+        QuickMenuHost(menu, navigation, onSelect = if (state.rights.canManage) actions::startSelection else null)
         ManageNoticePill(state.notice)
         state.manageError?.let { ManageErrorDialog(it, onDismiss = actions::dismissManageError) }
     }

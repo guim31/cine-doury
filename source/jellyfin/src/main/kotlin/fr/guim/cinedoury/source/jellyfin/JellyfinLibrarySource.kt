@@ -43,6 +43,7 @@ import org.jellyfin.sdk.model.api.ItemSortBy
 import org.jellyfin.sdk.model.api.MediaType
 import org.jellyfin.sdk.model.api.SortOrder
 import org.jellyfin.sdk.model.api.SubtitlePlaybackMode
+import org.jellyfin.sdk.model.api.UpdateUserItemDataDto
 import java.time.Instant
 import java.time.ZoneId
 
@@ -363,6 +364,19 @@ internal class JellyfinLibrarySource(
                 } else {
                     api.userDataApi.unmarkFavoriteItem(itemId = id, userId = userId)
                 }
+            data.content.toModel()
+        }
+
+    // Jellyfin 12.3 has no « hide from resume »: a position of zero takes the item out of
+    // `/UserItems/Resume` and leaves « vu » as it was (`POST /UserItems/{itemId}/UserData`).
+    override suspend fun clearProgress(item: ItemId): UserData =
+        jellyfinCall(what = "item ${item.value}") {
+            val data =
+                api.userDataApi.updateItemUserData(
+                    item.value.toJellyfinUuid(),
+                    userId,
+                    UpdateUserItemDataDto(playbackPositionTicks = 0L),
+                )
             data.content.toModel()
         }
 

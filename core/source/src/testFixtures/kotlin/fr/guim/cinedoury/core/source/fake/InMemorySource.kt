@@ -411,6 +411,13 @@ class InMemorySource(
             return data.copy(isFavorite = favorite).also { changes[item] = it }
         }
 
+        override suspend fun clearProgress(item: ItemId): UserData {
+            count("clearProgress")
+            val target = items[item] ?: throw SourceException.NotFound("item ${item.value}")
+            val data = target.current().userData ?: UserData(false, Duration.ZERO, 0, false)
+            return data.copy(playbackPosition = Duration.ZERO).also { changes[item] = it }
+        }
+
         override suspend fun playbackPreferences(): PlaybackPreferences {
             count("playbackPreferences")
             return preferences

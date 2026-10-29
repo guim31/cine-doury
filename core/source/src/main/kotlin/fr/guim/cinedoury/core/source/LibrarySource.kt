@@ -97,6 +97,12 @@ interface LibrarySource {
 
     suspend fun setFavorite(item: ItemId, favorite: Boolean): UserData
 
+    /**
+     * Forgets where [item] was left, without marking it watched: it leaves « Reprendre » (essai réel
+     * 5, « Retirer de Continuer »). Returns the new data.
+     */
+    suspend fun clearProgress(item: ItemId): UserData
+
     /** How the profile chooses its audio and subtitle tracks. */
     suspend fun playbackPreferences(): PlaybackPreferences
 

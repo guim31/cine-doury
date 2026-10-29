@@ -136,6 +136,20 @@ class HomeRepository(
         )
     }
 
+    /** A favourite added or removed (essai réel 5), on the cards of the home at once. */
+    suspend fun updateFavorite(
+        profile: ProfileKey,
+        item: ItemId,
+        favorite: Boolean,
+    ) = cache.updateFavorite(profile.serverId, profile.userId, item.value, favorite)
+
+    /** Takes [item] out of the row [rowKey] of the home, until the next refresh says otherwise. */
+    suspend fun removeFromRow(
+        profile: ProfileKey,
+        rowKey: String,
+        item: ItemId,
+    ) = cache.removeFromRow(profile.serverId, profile.userId, rowKey, item.value)
+
     /** Forgets [items], deleted on the server, from the rows of every profile of the server (J6). */
     suspend fun forget(
         serverId: String,

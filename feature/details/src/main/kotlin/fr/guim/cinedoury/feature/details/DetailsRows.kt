@@ -41,6 +41,7 @@ import fr.guim.cinedoury.core.ui.cardSubtitle
 import fr.guim.cinedoury.core.ui.cardTitle
 import fr.guim.cinedoury.core.ui.landscapeImage
 import fr.guim.cinedoury.core.ui.posterImage
+import fr.guim.cinedoury.core.ui.quickMenu
 import fr.guim.cinedoury.core.ui.rememberArt
 
 /** A row of cards under the hero: its key, its title and its cards. */
@@ -187,12 +188,16 @@ private fun CardRow(
                         sharedKey = item.id.value.takeIf { !row.people && it in shared },
                         image = rememberArt(item.posterImage, sources),
                         modifier =
-                            Modifier.testTag(tag).onFocusChanged {
-                                if (it.hasFocus) {
-                                    last = index
-                                    onFocused(key)
-                                }
-                            },
+                            Modifier
+                                .testTag(
+                                    tag,
+                                ).quickMenu(item, anchor = "${row.key}/${item.id.value}")
+                                .onFocusChanged {
+                                    if (it.hasFocus) {
+                                        last = index
+                                        onFocused(key)
+                                    }
+                                },
                     )
                 }
             }
@@ -242,7 +247,8 @@ internal fun LazyListScope.episodes(
                 Modifier
                     .testTag(
                         DetailsPreview.episode(index),
-                    ).onFocusChanged { if (it.hasFocus) onFocused(key) },
+                    ).quickMenu(episode)
+                    .onFocusChanged { if (it.hasFocus) onFocused(key) },
         )
     }
 }
@@ -282,7 +288,8 @@ private fun Seasons(
                         Modifier
                             .testTag(
                                 DetailsPreview.season(index),
-                            ).onFocusChanged { if (it.hasFocus) onFocused(key) },
+                            ).quickMenu(item)
+                            .onFocusChanged { if (it.hasFocus) onFocused(key) },
                 )
             }
         }

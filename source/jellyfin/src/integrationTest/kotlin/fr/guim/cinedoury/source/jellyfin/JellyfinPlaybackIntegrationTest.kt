@@ -173,6 +173,29 @@ class JellyfinPlaybackIntegrationTest {
         }
 
     @Test
+    fun `clearing the progress takes a film out of resume without marking it watched`() =
+        runTest {
+            val source = source()
+            val film = source.film("Zone blanche")
+            try {
+                val stream = source.playback.playbackInfo(PlaybackInfoRequest(film.id, full))
+                val playback = source.playback
+                playback.reportStart(report(film, stream.playSessionId, 0.seconds, stream.method))
+                playback.reportStopped(report(film, stream.playSessionId, 20.minutes, stream.method))
+                assertTrue(source.resume(null, 50).any { it.id == film.id }, "the film is in resume")
+
+                val data = source.clearProgress(film.id)
+                assertEquals(0L, data.playbackPosition.inWholeSeconds, data.toString())
+                assertFalse(data.played)
+                assertFalse(source.item(film.id).userData?.played == true)
+                assertFalse(source.resume(null, 50).any { it.id == film.id }, "the film left resume")
+            } finally {
+                source.clearProgress(film.id)
+                source.restoreLastPlayed(film)
+            }
+        }
+
+    @Test
     fun `segments are read, from the chapters when Chapter Segments Provider is installed`() =
         runTest {
             val source = source()

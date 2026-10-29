@@ -13,6 +13,10 @@ Essai réel 5 (29/10/2026, NVIDIA Shield TV en 4K et Chromecast avec Google TV, 
 - **Lecteur** : pour un épisode, « Épisode précédent » et « Épisode suivant » de part et d'autre de
   lecture/pause, d'une saison à l'autre ; les touches précédent / suivant de la télécommande font de
   même.
+- **Appui long sur une jaquette** (accueil, bibliothèques, recherche, fiches) : un menu d'options
+  rapides : reprendre ou lire, lire depuis le début, ouvrir la fiche, aller à la série ou à la saison,
+  marquer comme vu ou non vu, retirer de « Reprendre », ajouter aux favoris ou les retirer ; dans une
+  bibliothèque, « Sélectionner » pour les comptes qui gèrent.
 - **TalkBack** : chaque entrée du menu de gauche dit de nouveau son nom, menu ouvert ou fermé.
 
 ## 0.9.1 — 29/10/2026

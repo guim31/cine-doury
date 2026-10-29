@@ -2041,6 +2041,42 @@ et une réparation du banc de mesures, faits dans l'ordre E, A, B, C, D.
   l'autre, aucun aux bouts, position de l'épisode quitté rapportée), `R5PlayerControlsTest` (boutons
   présents ou absents, libellés TalkBack, touches média) ; capture 221 (`avant-b-*`, `apres-b-*`).
 
+- **C. Appui long sur une jaquette : menu d'options rapides** (`UI.md` § 2). Une seule logique,
+  branchée partout :
+  - **options** (`QuickOptions.of`, `:core:model`) : lecture (« Reprendre » si entamé, sinon « Lire »,
+    puis « Lire depuis le début » si entamé) pour un film, un épisode ou une vidéo ; une série ou une
+    saison ne se lance pas d'ici (sa fiche choisit l'épisode) ; « Ouvrir la fiche » (pas pour une
+    saison, onglet de la fiche de sa série) ; « Aller à la série » et « Aller à la saison » pour un
+    épisode (la fiche de la série, ouverte sur la saison : `Route.Details(item, season)`) ; « vu » pour
+    un film, un épisode, une série ou une saison ; « Retirer de Continuer » pour une carte entamée de
+    « Reprendre » ; favoris pour tout sauf un dossier ; « Sélectionner » en dernier dans une
+    bibliothèque pour les comptes qui gèrent (l'appui long y commençait une sélection, J6). Jamais
+    d'action de gestion ;
+  - **« Retirer de Continuer »** : Jellyfin 12.3 n'a pas d'appel « masquer de la reprise »
+    (`docs/api/`) ; `POST /UserItems/{itemId}/UserData` avec `PlaybackPositionTicks = 0` retire
+    l'élément de `/UserItems/Resume` sans le marquer vu (`LibrarySource.clearProgress`, test
+    d'intégration) ;
+  - **changements** (`QuickActions`, `:core:data`) : « vu », « Retirer de Continuer » et favoris se
+    voient aussitôt (la réponse attendue, puis celle du serveur ; un échec remet l'état d'avant et se
+    journalise) : `UserDataUpdates` pour les modèles de vue (bibliothèque et recherche changent la
+    carte là où elle est, `ItemPager.update` ; une fiche relit les épisodes d'une saison ou d'une série
+    marquée), le cache de l'accueil pour ses rangées (favori, position ; la carte quitte
+    « Reprendre » une fois retirée ou vue). Rien n'est relu en entier ;
+  - **interface** : `QuickMenu` (`:core:designsystem`) est un panneau latéral à droite (il tient mieux
+    qu'un panneau près de la carte en « Très compacte », où une carte fait 160 dp), focus piégé comme
+    `ConfirmDialog`, « Retour » le ferme ; l'appui maintenu qui l'a ouvert (répétitions et
+    relâchement) n'y choisit rien, seul un nouvel appui compte. `QuickMenuHost` et
+    `Modifier.quickMenu` (`:core:ui`) l'ouvrent et rendent le focus à la carte d'où il vient (un
+    `FocusRequester` posé sur le conteneur de la carte, qui le passe à la partie focalisable) ;
+    `LocalQuickMenu` sert les cartes au fond des listes (recherche, fiches). L'appui long
+    (`Modifier.onLongPress`) oubliait aussi qu'il était maintenu quand le relâchement partait ailleurs
+    (dans le menu) : l'appui suivant était avalé ; un nouvel appui le remet à zéro.
+  Tests : `QuickOptionsTest` (options selon le type et l'état), `R5QuickMenuTest` (accueil : appui bref
+  ou long, contenu, focus piégé puis rendu à la carte, une option qui mène), `R5QuickMenuFlowTest`
+  (appli réelle : « Marquer comme vu » d'une carte de bibliothèque arrive au serveur, la carte change
+  sans relire la bibliothèque, le menu propose ensuite « Marquer comme non vu »), `J6NavigationTest`
+  (« Sélectionner » commence la sélection) ; captures 222 et 223 (`avant-c-*`, `apres-c-*`).
+
 ## 5. Tests et CI
 
 - GitHub Actions sur `ubuntu-latest` :

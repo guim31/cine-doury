@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -50,11 +51,15 @@ import fr.guim.cinedoury.core.designsystem.theme.CineSizes
 import fr.guim.cinedoury.core.designsystem.theme.CineSpacing
 import fr.guim.cinedoury.core.designsystem.theme.CineTheme
 import fr.guim.cinedoury.core.designsystem.theme.tabular
+import fr.guim.cinedoury.core.model.ItemId
 import fr.guim.cinedoury.core.model.ItemKind
 import fr.guim.cinedoury.core.model.MediaItem
 import fr.guim.cinedoury.core.model.PlaybackRequest
 import fr.guim.cinedoury.core.ui.CollectEvents
 import fr.guim.cinedoury.core.ui.ImageSources
+import fr.guim.cinedoury.core.ui.LocalQuickMenu
+import fr.guim.cinedoury.core.ui.QuickMenuHost
+import fr.guim.cinedoury.core.ui.QuickMenuNavigation
 import fr.guim.cinedoury.core.ui.SEPARATOR
 import fr.guim.cinedoury.core.ui.SourceErrorPanel
 import fr.guim.cinedoury.core.ui.ambience
@@ -62,6 +67,7 @@ import fr.guim.cinedoury.core.ui.cardTitle
 import fr.guim.cinedoury.core.ui.imageSource
 import fr.guim.cinedoury.core.ui.label
 import fr.guim.cinedoury.core.ui.rememberArt
+import fr.guim.cinedoury.core.ui.rememberQuickMenu
 import fr.guim.cinedoury.feature.manage.DeleteDialog
 import fr.guim.cinedoury.feature.manage.ManageErrorDialog
 import fr.guim.cinedoury.feature.manage.ManageNoticePill
@@ -70,12 +76,12 @@ import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
 
 /** What a details screen asks the app to open. */
-interface DetailsNavigation {
+interface DetailsNavigation : QuickMenuNavigation {
     /** Another details screen: an episode, a person, a film of the saga. */
-    fun open(item: MediaItem)
+    override fun open(item: MediaItem)
 
     /** The player (J4), with the version and tracks chosen. */
-    fun play(request: PlaybackRequest)
+    override fun play(request: PlaybackRequest)
 
     /** A trailer on the web, in the app of its site (YouTube). */
     fun openTrailer(url: String)
@@ -107,8 +113,10 @@ enum class DetailsPanel {
 @Composable
 fun DetailsRoute(
     item: MediaItem,
+    season: ItemId? = null,
     navigation: DetailsNavigation,
-    viewModel: DetailsViewModel = koinViewModel(key = "details-${item.id.value}") { parametersOf(item) },
+    viewModel: DetailsViewModel =
+        koinViewModel(key = "details-${item.id.value}-${season?.value}") { parametersOf(item, season) },
     sessions: SessionManager = koinInject(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -182,53 +190,57 @@ fun DetailsScreen(
 
     val play: () -> Unit = { actions.playRequest()?.let(navigation::play) }
     val open: (MediaItem) -> Unit = navigation::open
+    val menu = rememberQuickMenu()
     Box(modifier = modifier.fillMaxSize().testTag("details")) {
         AmbientBackdrop(ambience = item.ambience)
         val backdrop = rememberArt(item.images.backdrop, sources)
         if (backdrop != null) {
             Box(Modifier.fillMaxSize().readabilityScrims(CineTheme.colors.background)) { backdrop() }
         }
-        FocusPivot(fraction = PIVOT) {
-            LazyColumn(
-                state = rememberLazyListState(initialFirstVisibleItemIndex = previewFirstItem),
-                modifier = Modifier.fillMaxSize(),
-                contentPadding =
-                    PaddingValues(
-                        top = CineSpacing.safeVertical + CineSpacing.s,
-                        bottom = CineSpacing.xxl,
-                    ),
-                verticalArrangement = Arrangement.spacedBy(CineSpacing.l),
-            ) {
-                item(key = "hero", contentType = "hero") {
-                    Hero(
-                        state = state,
-                        sources = sources,
-                        actions = actions,
-                        expanded = expanded,
-                        onExpand = { expanded = !expanded },
-                        onPlay = play,
-                        onRestart = { actions.playRequest(fromStart = true)?.let(navigation::play) },
-                        onTrailer = {
-                            when (val trailer = state.trailer) {
-                                is Trailer.Local -> {
-                                    navigation.play(PlaybackRequest(trailer.item, resume = false, trailer = true))
-                                }
+        // OK held on a card, an episode or a season (essai réel 5).
+        CompositionLocalProvider(LocalQuickMenu provides menu) {
+            FocusPivot(fraction = PIVOT) {
+                LazyColumn(
+                    state = rememberLazyListState(initialFirstVisibleItemIndex = previewFirstItem),
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding =
+                        PaddingValues(
+                            top = CineSpacing.safeVertical + CineSpacing.s,
+                            bottom = CineSpacing.xxl,
+                        ),
+                    verticalArrangement = Arrangement.spacedBy(CineSpacing.l),
+                ) {
+                    item(key = "hero", contentType = "hero") {
+                        Hero(
+                            state = state,
+                            sources = sources,
+                            actions = actions,
+                            expanded = expanded,
+                            onExpand = { expanded = !expanded },
+                            onPlay = play,
+                            onRestart = { actions.playRequest(fromStart = true)?.let(navigation::play) },
+                            onTrailer = {
+                                when (val trailer = state.trailer) {
+                                    is Trailer.Local -> {
+                                        navigation.play(PlaybackRequest(trailer.item, resume = false, trailer = true))
+                                    }
 
-                                is Trailer.Remote -> {
-                                    navigation.openTrailer(trailer.url)
-                                }
+                                    is Trailer.Remote -> {
+                                        navigation.openTrailer(trailer.url)
+                                    }
 
-                                null -> {}
-                            }
-                        },
-                        onPanel = { panel = it },
-                        onSeries = { state.series?.let(open) },
-                        requesters = requesters,
-                        onFocused = { focused = it },
-                    )
+                                    null -> {}
+                                }
+                            },
+                            onPanel = { panel = it },
+                            onSeries = { state.series?.let(open) },
+                            requesters = requesters,
+                            onFocused = { focused = it },
+                        )
+                    }
+                    episodes(state, sources, actions, open, requesters) { focused = it }
+                    rows(state, sources, open, requesters) { focused = it }
                 }
-                episodes(state, sources, actions, open, requesters) { focused = it }
-                rows(state, sources, open, requesters) { focused = it }
             }
         }
         DetailsPanels(
@@ -243,6 +255,7 @@ fun DetailsScreen(
             onIdentify = { navigation.identify(item) },
             onImages = { navigation.images(item) },
         )
+        QuickMenuHost(menu, navigation)
         ManageNoticePill(state.notice)
         // A dialog that closes gives the focus back to the element it came from, as a panel does:
         // the focus never falls out of the screen. Its buttons do it at once (`ConfirmDialog` lets
