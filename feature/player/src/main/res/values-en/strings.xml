@@ -150,4 +150,32 @@
     <string name="mobile_player_back_10">Back 10 seconds</string>
     <string name="mobile_player_forward_10">Forward 10 seconds</string>
     <string name="mobile_player_still_message">Several episodes played in a row without a touch on the screen. Playback waits for you to go on.</string>
+    <!-- The touch player and the margin of the phone (M2). -->
+    <string name="mobile_player_offline">The network is down. Playback will resume as soon as it is back.</string>
+    <string name="mobile_player_quality_reduced">Quality lowered: weak network</string>
+    <string name="mobile_player_quality_estimate">About %1$s\u00A0GB per hour</string>
+    <string name="mobile_player_quality_estimate_mb">About %1$s\u00A0MB per hour</string>
+    <string name="mobile_player_quality_auto_mobile">Follows the network: lower when the margin melts, higher when it is full</string>
+    <string name="mobile_player_info">Information</string>
+    <string name="mobile_player_lock">Lock the screen</string>
+    <string name="mobile_player_unlock">Unlock the screen (long press)</string>
+    <string name="mobile_player_locked_hint">Screen locked. Hold the padlock to unlock it.</string>
+    <string name="mobile_player_portrait">Keep in portrait</string>
+    <string name="mobile_player_landscape">Back to landscape</string>
+    <string name="mobile_player_jump_back">\u2212%1$d\u00A0s</string>
+    <string name="mobile_player_jump_forward">+%1$d\u00A0s</string>
+    <string name="mobile_player_fill">Fill the screen</string>
+    <string name="mobile_player_fit">Original format</string>
+    <string name="info_margin">Margin</string>
+    <string name="info_margin_value">%1$d\u00A0min (%2$d in memory)</string>
+    <string name="info_margin_seconds">%1$d\u00A0s (in memory)</string>
+    <string name="info_margin_offline">%1$s, offline</string>
+    <string name="info_margin_bandwidth">Measured speed</string>
+    <string name="mobile_settings_title">Playback on this phone</string>
+    <string name="mobile_settings_margin">Playback margin</string>
+    <string name="mobile_settings_margin_detail">What is loaded ahead during playback, to get through places without a network</string>
+    <string name="mobile_settings_margin_value">%1$d\u00A0min</string>
+    <string name="mobile_settings_wifi">Quality on Wi-Fi</string>
+    <string name="mobile_settings_mobile">Quality on the mobile network</string>
+    <string name="mobile_settings_quality_detail">By default, at the start of each playback</string>
 </resources>

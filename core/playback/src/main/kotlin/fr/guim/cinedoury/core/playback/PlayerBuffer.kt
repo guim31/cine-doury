@@ -1,14 +1,17 @@
 package fr.guim.cinedoury.core.playback
 
 import androidx.media3.datasource.DataSource
+import fr.guim.cinedoury.core.model.MarginBudget
+import fr.guim.cinedoury.core.model.MarginPlan
 
 /**
  * How much of the film the player keeps ahead (`SPEC.md` § 4.11): ExoPlayer starts with
  * [startMillis] loaded, starts again after a stall with [rebufferMillis], and keeps between [minMillis]
  * and [maxMillis] ahead, up to [targetBytes] in memory.
  *
- * [Tv] is what the TV has always had. [Phone] is the same until M2 sets the phone's own (a buffer on
- * disk against the places where the network is poor, `SPEC.md` § 4.26): the TV never changes with it.
+ * [Tv] is what the TV has always had, and never changes. [phone] is the memory stage of the margin of
+ * the phone (M2, `SPEC.md` § 4.27): the same start (1.5 s), then about 2 min ahead, capped in bytes by
+ * the heap of the app; the disk stage follows it ([Nomad]).
  */
 data class PlayerBuffer(
     val minMillis: Int,
@@ -27,8 +30,17 @@ data class PlayerBuffer(
                 targetBytes = 192 * 1024 * 1024,
             )
 
-        /** The phone's (M1): the TV's for now; M2 tunes it. */
-        val Phone = Tv
+        /** The memory of the phone's margin: up to 2 min, at most [MarginBudget.memoryBytes] of its heap. */
+        fun phone(memoryClassMegabytes: Int) =
+            PlayerBuffer(
+                minMillis = MarginPlan.LOW_MEMORY.inWholeMilliseconds.toInt(),
+                maxMillis = PHONE_MEMORY_MILLIS,
+                startMillis = Tv.startMillis,
+                rebufferMillis = Tv.rebufferMillis,
+                targetBytes = MarginBudget.memoryBytes(memoryClassMegabytes),
+            )
+
+        private const val PHONE_MEMORY_MILLIS = 120_000
     }
 }
 

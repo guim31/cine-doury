@@ -184,6 +184,8 @@ data class MobileSheetLine(
     val label: String,
     val icon: ImageVector?,
     val tag: String,
+    /** A second line under the label (« environ 1,8 Go par heure », M2). */
+    val detail: String? = null,
     val onClick: () -> Unit,
 )
 
@@ -239,7 +241,10 @@ fun MobileSheetLines(
             horizontalArrangement = Arrangement.spacedBy(CineSpacing.s),
         ) {
             line.icon?.let { Icon(it, contentDescription = null, tint = CineTheme.colors.text2) }
-            Text(line.label, style = CineTheme.typography.body, modifier = Modifier.weight(1f))
+            Column(Modifier.weight(1f)) {
+                Text(line.label, style = CineTheme.typography.body)
+                line.detail?.let { Text(it, style = CineTheme.typography.caption, color = CineTheme.colors.text2) }
+            }
             if (line.tag == selected) Icon(CineIcons.Watched, contentDescription = null, tint = CineTheme.colors.accent)
         }
     }

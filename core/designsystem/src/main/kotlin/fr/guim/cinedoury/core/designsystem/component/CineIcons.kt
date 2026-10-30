@@ -468,6 +468,39 @@ object CineIcons {
 
     val Remove: ImageVector by lazy { icon("Remove", "M19 13H5v-2h14v2z") }
 
+    /** The touch player of the phone (M2): unlock, rotation, brightness and volume. */
+    val LockOpen: ImageVector by lazy {
+        icon(
+            "LockOpen",
+            "M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6h1.9c0-1.71 " +
+                "1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0" +
+                "-1.1-.9-2-2-2zm0 12H6V10h12v10z",
+        )
+    }
+    val ScreenRotation: ImageVector by lazy {
+        icon(
+            "ScreenRotation",
+            "M16.48 2.52c3.27 1.55 5.61 4.72 5.97 8.48h1.5C23.44 4.84 18.29 0 12 0l-.66.03 3.81 3.81 1.33-1.32zm-6" +
+                ".25-.77c-.59-.59-1.54-.59-2.12 0L1.75 8.11c-.59.59-.59 1.54 0 2.12l12.02 12.02c.59.59 1.54.59 2.12 0" +
+                "l6.36-6.36c.59-.59.59-1.54 0-2.12L10.23 1.75zm4.6 19.44L2.81 9.17l6.36-6.36 12.02 12.02-6.36 6.36zm" +
+                "-7.31.29C4.25 19.94 1.91 16.76 1.55 13H.05C.56 19.16 5.71 24 12 24l.66-.03-3.81-3.81-1.33 1.32z",
+        )
+    }
+    val Brightness: ImageVector by lazy {
+        icon(
+            "Brightness",
+            "M20 15.31L23.31 12 20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v" +
+                "-4.69zM12 18V6c3.31 0 6 2.69 6 6s-2.69 6-6 6z",
+        )
+    }
+    val Volume: ImageVector by lazy {
+        icon(
+            "Volume",
+            "M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06" +
+                "c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z",
+        )
+    }
+
     /** The size of the subtitles. */
     val TextSize: ImageVector by lazy { icon("TextSize", "M9 4v3h5v12h3V7h5V4H9zm-6 8h3v7h3v-7h3V9H3v3z") }
 

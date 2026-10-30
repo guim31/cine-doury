@@ -59,6 +59,7 @@ import fr.guim.cinedoury.feature.home.mobile.MobileHomeRoute
 import fr.guim.cinedoury.feature.library.LibraryNavigation
 import fr.guim.cinedoury.feature.library.mobile.MobileLibrariesRoute
 import fr.guim.cinedoury.feature.library.mobile.MobileLibraryRoute
+import fr.guim.cinedoury.feature.player.mobile.MobilePlaybackSettingsRoute
 import fr.guim.cinedoury.feature.player.mobile.MobilePlayerRoute
 import fr.guim.cinedoury.feature.search.SearchNavigation
 import fr.guim.cinedoury.feature.search.mobile.MobileSearchRoute
@@ -280,6 +281,7 @@ private fun SessionScreen(
                         override fun serverForgotten() = navigator.replaceAll(Route.Welcome)
                     },
                 version = version,
+                playback = { MobilePlaybackSettingsRoute() },
             )
         }
 

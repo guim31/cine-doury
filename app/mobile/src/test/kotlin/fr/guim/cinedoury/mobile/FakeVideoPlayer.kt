@@ -1,6 +1,7 @@
 package fr.guim.cinedoury.mobile
 
 import androidx.media3.common.Player
+import fr.guim.cinedoury.core.model.MarginStatus
 import fr.guim.cinedoury.core.model.PlaybackStream
 import fr.guim.cinedoury.core.playback.PlayerEvent
 import fr.guim.cinedoury.core.playback.PlayerSnapshot
@@ -23,6 +24,9 @@ class FakeVideoPlayer : VideoPlayer {
     var duration: Duration = Duration.ZERO
     var playing = false
     var released = false
+
+    /** The margin of the phone the player says it has (M2). */
+    var margin: MarginStatus? = null
 
     /** Whether the tracks asked for are in the stream (direct play), or need another stream. */
     var tracksInStream = true
@@ -57,7 +61,8 @@ class FakeVideoPlayer : VideoPlayer {
 
     override fun selectSubtitles(index: Int?): Boolean = tracksInStream
 
-    override fun snapshot() = PlayerSnapshot(position = position, duration = duration, playing = playing)
+    override fun snapshot() =
+        PlayerSnapshot(position = position, duration = duration, playing = playing, margin = margin)
 
     override fun release() {
         released = true

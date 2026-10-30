@@ -15,6 +15,7 @@ import fr.guim.cinedoury.core.model.FallbackAction
 import fr.guim.cinedoury.core.model.ItemKind
 import fr.guim.cinedoury.core.model.MediaItem
 import fr.guim.cinedoury.core.model.MediaSegment
+import fr.guim.cinedoury.core.model.NetworkKind
 import fr.guim.cinedoury.core.model.PlayMethod
 import fr.guim.cinedoury.core.model.PlaybackFailure
 import fr.guim.cinedoury.core.model.PlaybackFallback
@@ -26,11 +27,13 @@ import fr.guim.cinedoury.core.model.PlaybackRequest
 import fr.guim.cinedoury.core.model.PlaybackRules
 import fr.guim.cinedoury.core.model.PlaybackStream
 import fr.guim.cinedoury.core.model.PlayerSettings
+import fr.guim.cinedoury.core.model.QualityGovernor
 import fr.guim.cinedoury.core.model.SegmentAction
 import fr.guim.cinedoury.core.model.StillWatching
 import fr.guim.cinedoury.core.model.TrackPreselection
 import fr.guim.cinedoury.core.model.TrackSelection
 import fr.guim.cinedoury.core.model.UserData
+import fr.guim.cinedoury.core.playback.NetworkMonitor
 import fr.guim.cinedoury.core.playback.PlaybackReporter
 import fr.guim.cinedoury.core.playback.PlayerEvent
 import fr.guim.cinedoury.core.playback.PlayerSettingsStore
@@ -64,6 +67,8 @@ import kotlin.time.Duration.Companion.seconds
  * in the cache of the home and of the details screens.
  *
  * @param reportScope outlives the screen: the last report leaves after it.
+ * @param network the network of a phone (M2, `SPEC.md` § 4.27): its default quality follows it (Wi-Fi or
+ * mobile), and the quality goes down and back up with the margin ([QualityGovernor]); null on the TV.
  */
 @Suppress("TooManyFunctions", "LargeClass", "LongParameterList") // A gesture each; the services it joins.
 class PlayerViewModel(
@@ -76,6 +81,7 @@ class PlayerViewModel(
     private val updates: UserDataUpdates,
     private val reportScope: CoroutineScope,
     private val clock: Clock = Clock.systemUTC(),
+    private val network: NetworkMonitor? = null,
 ) : ViewModel(),
     PlayerActions {
     private val active: ActiveSession? = sessions.active.value
@@ -108,17 +114,27 @@ class PlayerViewModel(
     private var infoVisible = false
     private var finished = false
 
+    /** The quality was chosen in the panel: nothing changes it any more (M2). */
+    private var qualityChosen = false
+    private var governor: QualityGovernor? = null
+    private var networkKind: NetworkKind? = network?.state?.value?.kind
+    private var sampledAt = Duration.ZERO
+    private var noticeUntil = Duration.ZERO
+    private var elapsed = Duration.ZERO
+
     init {
         viewModelScope.launch { start(request) }
     }
 
+    @Suppress("CyclomaticComplexMethod") // The steps of a start, the phone's quality among them.
     private suspend fun start(request: PlaybackRequest) {
         val source = source ?: return
         guarded {
             val settings = settingsStore.current()
             val capabilities = readCapabilities()
             val remote = active?.connection?.mode == ConnectionMode.Remote
-            val profile = PlaybackProfiles.build(capabilities, settings.profileOptions(remote))
+            networkKind = network?.state?.value?.kind
+            val profile = PlaybackProfiles.build(capabilities, settings.profileOptions(remote, networkKind))
             this.profile = profile
             stillWatching = StillWatching(settings.stillWatchingAfter).also { it.restoreFrom(stillWatching) }
             val item = if (request.trailer) request.item else source.item(request.item.id)
@@ -135,8 +151,16 @@ class PlayerViewModel(
                     subtitleIndex = selection?.subtitleIndex,
                     duration = item.runtime ?: it.duration,
                     // The default quality of the settings (`SPEC.md` § 4.17), unless one was chosen.
-                    maxBitrate = it.maxBitrate ?: settings.defaultQuality(remote),
+                    maxBitrate = it.maxBitrate ?: settings.defaultQuality(remote, networkKind),
                 )
+            }
+            if (network != null && !qualityChosen && !request.trailer) {
+                governor =
+                    QualityGovernor(
+                        ceiling = settings.defaultQuality(remote, networkKind),
+                        sourceBitrate = item.mediaSources.firstOrNull()?.bitrate,
+                        current = local.value.maxBitrate,
+                    )
             }
             if (!request.trailer) {
                 viewModelScope.launch { loadSegments(source, item) }
@@ -325,6 +349,9 @@ class PlayerViewModel(
                 playing = snapshot.playing,
                 buffering = snapshot.buffering,
                 reconnecting = bufferingFor >= RECONNECTING,
+                margin = snapshot.margin,
+                offline = snapshot.margin?.offline == true,
+                qualityReduced = elapsed < noticeUntil,
                 skip = skip,
                 nextShown = shows && !it.stillWatching,
                 nextCountdown = left?.div(total)?.toFloat(),
@@ -333,6 +360,50 @@ class PlayerViewModel(
             )
         }
         if (left != null && !left.isPositive() && PlaybackRules.countdownStartsNext(state.segments)) autoplay()
+        adaptQuality(snapshot)
+    }
+
+    /**
+     * The phone's quality (M2, `SPEC.md` § 4.27), once a second: the default of the new network when
+     * the phone changes network, one step down when the margin melts, back up when it is full again.
+     * Never when the user chose a quality.
+     */
+    @Suppress("ReturnCount") // Nothing to adapt: on the TV, without a margin, a chosen quality, loading.
+    private fun adaptQuality(snapshot: PlayerSnapshot) {
+        elapsed += TICK
+        val monitor = network ?: return
+        val margin = snapshot.margin ?: return
+        if (qualityChosen || local.value.loading || elapsed - sampledAt < QUALITY_LOOK) return
+        sampledAt = elapsed
+        val kind = monitor.state.value.kind
+        if (kind != networkKind && monitor.state.value.online) {
+            networkKind = kind
+            val remote = active?.connection?.mode == ConnectionMode.Remote
+            val ceiling = local.value.settings.defaultQuality(remote, kind)
+            val current = local.value.maxBitrate
+            governor =
+                QualityGovernor(
+                    ceiling,
+                    local.value.item.mediaSources
+                        .firstOrNull()
+                        ?.bitrate,
+                    current,
+                )
+            if (ceiling != null && (current == null || current > ceiling)) changeQuality(ceiling)
+            return
+        }
+        val change = governor?.sample(elapsed, margin, snapshot.playing, margin.bandwidth) ?: return
+        if (change.down) {
+            noticeUntil = elapsed + NOTICE
+            local.update { it.copy(qualityReduced = true) }
+        }
+        GestureLog.mark("quality ${change.maxBitrate ?: "original"}")
+        changeQuality(change.maxBitrate)
+    }
+
+    private fun changeQuality(maxBitrate: Int?) {
+        if (maxBitrate == local.value.maxBitrate) return
+        reload(maxBitrate = maxBitrate)
     }
 
     /**
@@ -473,8 +544,6 @@ class PlayerViewModel(
         allowDirect = !fellBack && settings.directPlay != DirectPlayMode.Never,
         forceDirect = !fellBack && settings.directPlay == DirectPlayMode.Forced,
     )
-
-    private fun PlayerSettings.defaultQuality(remote: Boolean): Int? = if (remote) remoteQuality else localQuality
 
     /** What was played and how, for the diagnostic report (`SPEC.md` § 4.19). */
     private fun logDecision(
@@ -625,6 +694,9 @@ class PlayerViewModel(
     }
 
     override fun selectQuality(maxBitrate: Int?) {
+        qualityChosen = true
+        governor = null
+        local.update { it.copy(qualityChosen = true) }
         if (maxBitrate == local.value.maxBitrate) return
         reload(maxBitrate = maxBitrate)
     }
@@ -725,6 +797,10 @@ class PlayerViewModel(
 
     companion object {
         val TICK = 250.milliseconds
+        private val QUALITY_LOOK = 1.seconds
+
+        /** How long « Qualité réduite : réseau faible » stays. */
+        val NOTICE = 5.seconds
         val RECONNECTING = 3.seconds
         val CHAPTER_GRACE = 3.seconds
 

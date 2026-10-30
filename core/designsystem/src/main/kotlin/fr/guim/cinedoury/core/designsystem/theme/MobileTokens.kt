@@ -91,4 +91,15 @@ object MobileSizes {
     val playerIcon = 28.dp
     val playerIconLarge = 40.dp
     val seekBarTouch = 48.dp
+
+    /** The touch player (M2): the bar with its margin, the indicators of the gestures, the preview. */
+    val seekTrack = 4.dp
+    val seekTrackActive = 6.dp
+    val seekThumb = 16.dp
+    val playerSmallButton = 48.dp
+    val gestureIndicator = DpSize(160.dp, 48.dp)
+    val gestureBar = DpSize(120.dp, 4.dp)
+    val seekPreview = DpSize(192.dp, 108.dp)
+    val jumpBubble = 112.dp
+    val pipButton = 40.dp
 }

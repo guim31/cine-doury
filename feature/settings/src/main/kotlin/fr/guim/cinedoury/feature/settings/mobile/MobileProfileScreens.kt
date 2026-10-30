@@ -88,6 +88,7 @@ fun MobileProfileRoute(
     version: String,
     viewModel: SettingsViewModel = koinViewModel(),
     sessions: SessionManager = koinInject(),
+    playback: @Composable () -> Unit = {},
 ) {
     val settings by viewModel.state.collectAsStateWithLifecycle()
     // The address follows the network of the phone (SessionManager.followNetwork): read as it changes.
@@ -113,13 +114,15 @@ fun MobileProfileRoute(
         onConnectDevice = navigation::connectDevice,
         onSwitchProfile = viewModel::switchProfile,
         onSignOut = viewModel::signOut,
+        playback = playback,
     )
 }
 
 /**
  * The profile tab (M1, `UI.md` § 9): the profile and its server, a discreet line that says which
  * address is in use (the house's, or the public one away from it), « Connecter un appareil », then
- * the profile picker and the sign-out. The other settings come with M3.
+ * the playback settings of the phone ([playback], M2: the margin and the qualities), the profile
+ * picker and the sign-out. The other settings come with M3.
  */
 @Composable
 fun MobileProfileScreen(
@@ -128,6 +131,7 @@ fun MobileProfileScreen(
     onSwitchProfile: () -> Unit,
     onSignOut: () -> Unit,
     modifier: Modifier = Modifier,
+    playback: @Composable () -> Unit = {},
 ) {
     val colors = CineTheme.colors
     Column(
@@ -197,6 +201,7 @@ fun MobileProfileScreen(
                 onClick = onConnectDevice,
                 modifier = Modifier.testTag(MobileProfileTags.CONNECT_DEVICE),
             )
+            playback()
             MobileListRow(
                 title = stringResource(R.string.switch_profile),
                 subtitle = stringResource(R.string.mobile_switch_profile_description),

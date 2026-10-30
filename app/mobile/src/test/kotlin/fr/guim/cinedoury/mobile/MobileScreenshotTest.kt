@@ -17,11 +17,16 @@ import fr.guim.cinedoury.core.designsystem.theme.ThemeVariant
 import fr.guim.cinedoury.core.model.ItemFilters
 import fr.guim.cinedoury.core.model.ItemId
 import fr.guim.cinedoury.core.model.LibraryId
+import fr.guim.cinedoury.core.model.MarginStatus
 import fr.guim.cinedoury.core.model.MediaItem
+import fr.guim.cinedoury.core.model.PlayMethod
 import fr.guim.cinedoury.core.model.PlaybackRequest
+import fr.guim.cinedoury.core.model.PlaybackStream
 import fr.guim.cinedoury.core.model.PlayerSettings
 import fr.guim.cinedoury.core.model.RequestCandidate
 import fr.guim.cinedoury.core.model.SortField
+import fr.guim.cinedoury.core.model.TranscodeReason
+import fr.guim.cinedoury.core.playback.PlayerSnapshot
 import fr.guim.cinedoury.core.source.SourceException
 import fr.guim.cinedoury.core.ui.LocalClock
 import fr.guim.cinedoury.core.ui.RailTarget
@@ -54,6 +59,9 @@ import fr.guim.cinedoury.feature.library.mobile.MobileLibrariesScreen
 import fr.guim.cinedoury.feature.library.mobile.MobileLibraryScreen
 import fr.guim.cinedoury.feature.player.PlayerActions
 import fr.guim.cinedoury.feature.player.PlayerState
+import fr.guim.cinedoury.feature.player.mobile.MobilePlaybackSettings
+import fr.guim.cinedoury.feature.player.mobile.MobilePlaybackSheet
+import fr.guim.cinedoury.feature.player.mobile.MobilePlayerPreview
 import fr.guim.cinedoury.feature.player.mobile.MobilePlayerScreen
 import fr.guim.cinedoury.feature.search.PreviewVoice
 import fr.guim.cinedoury.feature.search.SearchActions
@@ -255,8 +263,113 @@ class MobileScreenshotTest(
                 {},
                 {},
                 {},
+                playback = { MobilePlaybackSettings(PlayerSettings(), {}) },
             )
         }
+
+    // The touch player and the margin (M2, from 240).
+
+    @Test
+    @Config(qualifiers = PHONE_LAND)
+    fun playerMargin() = shootPlayer("240-lecteur-marge", MobilePlayerPreview.Controls)
+
+    @Test
+    @Config(qualifiers = PHONE_LAND)
+    fun playerLocked() = shootPlayer("241-lecteur-verrouille", MobilePlayerPreview.Locked)
+
+    @Test
+    @Config(qualifiers = PHONE_LAND)
+    fun playerQuality() = shootPlayer("242-lecteur-qualite", MobilePlayerPreview.Quality)
+
+    @Test
+    @Config(qualifiers = PHONE_LAND)
+    fun playerInfo() = shootPlayer("243-lecteur-informations", MobilePlayerPreview.Info)
+
+    @Test
+    @Config(qualifiers = PHONE_LAND)
+    fun playerJump() = shootPlayer("244-lecteur-double-appui", MobilePlayerPreview.Jump)
+
+    @Test
+    @Config(qualifiers = PHONE_LAND)
+    fun playerSeek() = shootPlayer("245-lecteur-glisser-rechercher", MobilePlayerPreview.Seek)
+
+    @Test
+    @Config(qualifiers = PHONE_LAND)
+    fun playerBrightness() = shootPlayer("246-lecteur-luminosite", MobilePlayerPreview.Brightness)
+
+    @Test
+    @Config(qualifiers = PHONE_LAND)
+    fun playerOffline() =
+        shoot("247-lecteur-reseau-coupe") {
+            MobilePlayerScreen(nomadState().copy(buffering = true, offline = true), NoPlayer, {})
+        }
+
+    @Test
+    @Config(qualifiers = PHONE_LAND)
+    fun playerQualityReduced() =
+        shoot("248-lecteur-qualite-reduite") {
+            MobilePlayerScreen(nomadState().copy(qualityReduced = true), NoPlayer, {})
+        }
+
+    @Test
+    fun playerPortrait() =
+        shoot("249-lecteur-portrait") {
+            MobilePlayerScreen(nomadState(), NoPlayer, {}, portrait = true, preview = MobilePlayerPreview.Controls)
+        }
+
+    @Test
+    fun marginSetting() =
+        shoot("250-reglage-marge") {
+            MobilePlaybackSettings(PlayerSettings(), {}, previewSheet = MobilePlaybackSheet.Margin)
+        }
+
+    @Test
+    fun mobileQualitySetting() =
+        shoot("251-reglage-qualite-reseau-mobile") {
+            MobilePlaybackSettings(PlayerSettings(), {}, previewSheet = MobilePlaybackSheet.Mobile)
+        }
+
+    private fun shootPlayer(
+        name: String,
+        preview: MobilePlayerPreview,
+    ) = shoot(name) {
+        MobilePlayerScreen(nomadState(), NoPlayer, {}, preview = preview) { Box(Modifier.fillMaxSize()) }
+    }
+
+    /** A film transcoded at 4 Mb/s on a mobile network, 12 min of margin ahead, 2 of them in memory. */
+    private fun nomadState(): PlayerState {
+        val state = playerState()
+        val margin =
+            MarginStatus(
+                position = state.position,
+                end = state.position + 12.minutes,
+                memoryEnd = state.position + 2.minutes,
+                target = 15.minutes,
+                bandwidth = 6_400_000,
+            )
+        val film = state.item
+        val stream =
+            PlaybackStream(
+                url = "http://192.0.2.10:8096/videos/film-0/master.m3u8",
+                method = PlayMethod.Transcode,
+                reasons = setOf(TranscodeReason.ContainerBitrateExceedsLimit),
+                playSessionId = "session",
+                source = film.mediaSources.first(),
+                container = "ts",
+                isHls = true,
+                subtitles = emptyList(),
+                audioIndex = 1,
+                subtitleIndex = null,
+                maxBitrate = 4_000_000,
+            )
+        return state.copy(
+            stream = stream,
+            maxBitrate = 4_000_000,
+            margin = margin,
+            info =
+                PlayerSnapshot(position = state.position, buffered = 2.minutes, margin = margin, bandwidth = 7_100_000),
+        )
+    }
 
     @Test
     fun connectDevice() =
