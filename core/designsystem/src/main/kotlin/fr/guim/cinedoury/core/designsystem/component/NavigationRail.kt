@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -76,9 +77,14 @@ private val RailItemPadding = (CineSizes.railCollapsed - CineSizes.railInset * 2
 private const val RAIL_SCRIM_ALPHA = 0.72f
 
 /**
- * The side rail of `UI.md` § 2. Closed, it shows the icons only (72 dp); as soon as it holds the
- * focus it opens to 240 dp with the labels, over the content, which it dims. Lay the content out
+ * The side rail of `UI.md` § 2. Closed, it shows the icons only (72 dp); when the remote brings it
+ * the focus, it opens to 240 dp with the labels, over the content, which it dims. Lay the content out
  * with a start padding of [CineSizes.railCollapsed] and the rail on top of it.
+ *
+ * It opens on a gesture only ([LocalUserGestures], 1.0.0, I and J): a key that brought the focus, or
+ * a key received while it holds it. A screen that loads has nothing else to focus, and the focus
+ * fell on its rail until the content came: the rail opened at launch and after OK on one of its
+ * entries, then closed again. Without [LocalUserGestures], any focus opens it.
  *
  * @param bottomDestinations pinned to the bottom (« Réglages »); their indices follow [destinations].
  * @param expanded forces a state, for specimens; null lets the focus decide.
@@ -89,6 +95,7 @@ private const val RAIL_SCRIM_ALPHA = 0.72f
  * @param onContentFocus gives the focus back to the content of the screen, where it was left, on →
  * from the open rail (essai réel 3): the rail covers the left of the content, where a search to the
  * right finds nothing or an element under the rail. Returns whether the focus moved.
+ * @param onOpenChange told when the rail opens or closes (`GestureLog`, `ci/couch-gestures.sh`).
  */
 @Composable
 fun NavigationRail(
@@ -101,11 +108,25 @@ fun NavigationRail(
     previewFocusedIndex: Int? = null,
     focusRequester: FocusRequester? = null,
     onContentFocus: (() -> Boolean)? = null,
+    onOpenChange: ((Boolean) -> Unit)? = null,
 ) {
+    val gestures = LocalUserGestures.current
     var hasFocus by remember { mutableStateOf(false) }
+    // The focus came with a key, or a key came since: the user wants the rail.
+    var wanted by remember { mutableStateOf(false) }
     // Entering the rail lands on the entry focused last, else on the selected one.
     val selected = focusRequester ?: remember { FocusRequester() }
-    val open = expanded ?: (hasFocus || previewFocusedIndex != null)
+    val open = expanded ?: ((hasFocus && (wanted || gestures == null)) || previewFocusedIndex != null)
+    if (onOpenChange != null) {
+        // Only the changes: a rail composed closed says nothing.
+        var told by remember { mutableStateOf(open) }
+        LaunchedEffect(open) {
+            if (open != told) {
+                told = open
+                onOpenChange(open)
+            }
+        }
+    }
     val expansion by animateFloatAsState(
         targetValue = if (open) 1f else 0f,
         animationSpec = CineMotion.panel(reduced = CineTheme.reducedMotion),
@@ -138,12 +159,19 @@ fun NavigationRail(
                             size = Size(scrim, size.height),
                         )
                     }
-                }.onFocusChanged { hasFocus = it.hasFocus }
-                .onPreviewKeyEvent { event ->
-                    onContentFocus != null &&
-                        event.key == Key.DirectionRight &&
-                        event.type == KeyEventType.KeyDown &&
-                        onContentFocus()
+                }.onFocusChanged {
+                    if (it.hasFocus && !hasFocus) wanted = gestures?.active ?: true
+                    if (!it.hasFocus) wanted = false
+                    hasFocus = it.hasFocus
+                }.onPreviewKeyEvent { event ->
+                    val back =
+                        onContentFocus != null &&
+                            event.key == Key.DirectionRight &&
+                            event.type == KeyEventType.KeyDown &&
+                            onContentFocus()
+                    // Any other key here is a gesture: the rail the app left focused opens with it.
+                    if (!back && event.type == KeyEventType.KeyDown) wanted = true
+                    back
                 }.focusRestorer(selected)
                 .focusGroup()
                 .padding(vertical = CineSpacing.safeVertical + CineSpacing.m - CineSizes.railInset),

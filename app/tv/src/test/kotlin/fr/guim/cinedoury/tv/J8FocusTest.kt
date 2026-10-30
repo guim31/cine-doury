@@ -25,6 +25,7 @@ import fr.guim.cinedoury.core.designsystem.theme.ThemeVariant
 import fr.guim.cinedoury.core.model.ServerInfo
 import fr.guim.cinedoury.core.playback.playbackModule
 import fr.guim.cinedoury.core.source.Credentials
+import fr.guim.cinedoury.core.source.GestureLog
 import fr.guim.cinedoury.core.source.MediaRequests
 import fr.guim.cinedoury.core.source.RequestConnector
 import fr.guim.cinedoury.core.source.ServerAddress
@@ -62,6 +63,8 @@ import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowLog
 import java.io.File
 import java.util.UUID
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 /**
  * « Focus toujours visible » (`FONCTIONNALITES.md` § 13, J8): on the whole app over an in-memory
@@ -147,7 +150,44 @@ class J8FocusTest {
 
     @After
     fun stop() {
+        GestureLog.sink = GestureLog.Sink { }
         stopKoin()
+    }
+
+    /**
+     * 1.0.0, I and J: the rail opened at launch, and after OK on a library, then closed at once: the
+     * screen that loads had nothing to focus but its rail. It opens and closes once per gesture now,
+     * never on its own (the « rail open » and « rail closed » lines of `GestureLog`).
+     */
+    @Test
+    fun theRailOpensOnlyOnAGesture() {
+        val rail = mutableListOf<String>()
+        GestureLog.sink = GestureLog.Sink { if (it.startsWith("rail ")) synchronized(rail) { rail += it } }
+        start()
+        assertFocusOn("the home", HomePreview.PLAY)
+        compose.mainClock.advanceTimeBy(SETTLE_MILLIS)
+        compose.waitForIdle()
+        assertEquals(emptyList(), rail.toList(), "at launch")
+
+        // ← from « Lire »: the rail opens, once.
+        press(Key.DirectionLeft)
+        assertFocusOn("the rail", RailTags.HOME)
+        assertEquals(listOf("rail open"), rail.toList(), "←")
+
+        // ↓ to « Films », OK: the library, its rail closed, and never open on the way.
+        rail.clear()
+        press(Key.DirectionDown)
+        assertFocusOn("« Films »", RailTags.library(J2Samples.films.id.value))
+        press(Key.DirectionCenter)
+        waitForTag(LibraryPreview.item(0))
+        assertSomethingFocused("the library")
+        compose.mainClock.advanceTimeBy(SETTLE_MILLIS)
+        compose.waitForIdle()
+        assertTrue("rail open" !in rail, "the rail opened again after OK: $rail")
+        assertTrue(rail.size <= 1, "the rail changed more than once after OK: $rail")
+        check(compose.onAllNodes(isFocused() and hasAnyAncestor(hasTestTag("rail"))).fetchSemanticsNodes().isEmpty()) {
+            "The focus stayed on the rail"
+        }
     }
 
     @Test
