@@ -553,7 +553,7 @@ private fun StatusLine(text: String) {
     Text(text = text, style = CineTheme.typography.body, color = CineTheme.colors.text2)
 }
 
-private val SearchGroup.title: Int
+internal val SearchGroup.title: Int
     get() =
         when (this) {
             SearchGroup.Movies -> R.string.row_movies
@@ -728,7 +728,7 @@ private fun RequestRow(
 
 /** « 2001 · Demandé », « 2022 », « Disponible ». */
 @Composable
-private fun RequestCandidate.statusLine(): String? {
+internal fun RequestCandidate.statusLine(): String? {
     val status =
         when (status) {
             RequestStatus.None -> null

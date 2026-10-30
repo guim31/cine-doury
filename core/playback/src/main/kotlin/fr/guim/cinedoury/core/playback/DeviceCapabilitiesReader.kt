@@ -29,6 +29,8 @@ import fr.guim.cinedoury.core.model.VideoDecoderInfo
  */
 class DeviceCapabilitiesReader(
     private val context: Context,
+    /** False on a phone (M1): no amplifier, the profile declares no passthrough. */
+    private val allowPassthrough: Boolean = true,
 ) {
     fun read(): DeviceCapabilities {
         val codecs = MediaCodecList(MediaCodecList.REGULAR_CODECS).codecInfos.filterNot { it.isEncoder }
@@ -39,7 +41,7 @@ class DeviceCapabilitiesReader(
             videoDecoders = codecs.flatMap { videoDecoders(it) },
             dolbyVisionProfiles = dolbyVisionProfiles(codecs),
             audioDecoders = audioDecoders(codecs),
-            passthrough = passthrough(),
+            passthrough = if (allowPassthrough) passthrough() else emptySet(),
             maxPcmChannels = pcmChannels(),
             display = display?.let(::displayCapabilities) ?: DisplayCapabilities(FALLBACK_WIDTH, FALLBACK_HEIGHT),
             subtitleFormats = SUBTITLE_FORMATS,

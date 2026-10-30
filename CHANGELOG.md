@@ -6,6 +6,27 @@ technique est dans [`docs/SPEC.md`](docs/SPEC.md) ; les notes de chaque version 
 
 ## Non publié
 
+M1 — l'appli **téléphone et tablette** (Android), première étape ; pas encore dans les releases :
+le mainteneur l'installe depuis les artefacts de la CI ou du workflow « Release ».
+
+- **Une appli à part** (« Ciné Doury » sur le téléphone, à côté de celle de la TV), mêmes couleurs,
+  même jaune projecteur, même noir OLED, à la main : barre du bas Accueil, Recherche, Bibliothèques,
+  Profil ; rotation, geste de retour, bord à bord.
+- **Connexion** comme sur la TV, avec le clavier du téléphone : serveur trouvé sur le réseau ou
+  adresse saisie, profils, Quick Connect ou mot de passe, code PIN. En passant du Wi-Fi au réseau
+  mobile, l'appli bascule seule sur l'adresse publique, et revient à l'adresse de la maison au retour ;
+  le profil dit laquelle est utilisée.
+- **Connecter un appareil** (Profil) : le code à six chiffres de la TV, validé depuis le téléphone :
+  la TV se connecte sans mot de passe.
+- **Accueil** : la mosaïque « Ce soir » (grande tuile, quatre petites dessous), puis les rangées de la
+  TV. **Bibliothèques** en grille, tri, filtres, A–Z ; **fiches** avec les boutons en haut ;
+  **recherche** instantanée, au clavier ou à la voix ; **appui long** sur une jaquette : le menu
+  d'options rapides de la TV.
+- **Lecture** en plein écran paysage : lecture/pause, −10 s / +10 s, barre à faire glisser, pistes
+  audio et sous-titres, épisode suivant ; reprise et position partagées avec la TV.
+- **TV** : rien ne change à l'écran. Pour les versions suivantes, chaque appli ne prendra dans une
+  release que son propre fichier.
+
 ## 1.0.1 — 30/10/2026
 
 Notes de version : [`docs/releases/v1.0.1.md`](docs/releases/v1.0.1.md).

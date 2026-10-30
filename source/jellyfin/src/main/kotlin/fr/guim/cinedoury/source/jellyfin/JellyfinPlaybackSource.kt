@@ -43,7 +43,8 @@ internal class JellyfinPlaybackSource(
     private val api: ApiClient,
     private val userId: UUID,
 ) : PlaybackSource {
-    private val base = api.baseUrl.orEmpty().trimEnd('/')
+    // Read at each call: the address follows the network of the phone (LibrarySource.moveTo, M1).
+    private val base get() = api.baseUrl.orEmpty().trimEnd('/')
 
     // Jellyfin 12 only takes the token in this header (CLAUDE.md, « Pièges »): ExoPlayer sends it
     // with every request for the stream, the subtitles and the preview pictures.

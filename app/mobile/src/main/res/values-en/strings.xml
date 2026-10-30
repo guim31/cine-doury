@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="startup_connecting">Connecting to the server…</string>
+    <string name="tab_home">Home</string>
+    <string name="tab_search">Search</string>
+    <string name="tab_libraries">Libraries</string>
+    <string name="tab_profile">Profile</string>
+</resources>

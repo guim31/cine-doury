@@ -48,4 +48,9 @@
     <string name="pin_mismatch">The two codes do not match. Start over.</string>
     <string name="pin_erase">Erase</string>
     <string name="change_server">Change server</string>
+    <!-- The phone and the tablet (M1). -->
+    <string name="mobile_welcome_title">Welcome</string>
+    <string name="mobile_welcome_tagline">Your Jellyfin library, on your phone and your tablet.</string>
+    <string name="mobile_quick_connect_instruction">On a device already signed in (the TV, or the Jellyfin web interface), open your profile › Quick Connect, and enter this code.</string>
+    <string name="mobile_quick_connect_waiting">Waiting for approval on the other device…</string>
 </resources>

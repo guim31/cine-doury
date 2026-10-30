@@ -146,4 +146,8 @@
     <string name="device_direct_audio">Direct play: audio</string>
     <string name="device_transcode">Transcoding asked for</string>
     <string name="device_subtitle_rules">Subtitles sent</string>
+    <!-- The phone and the tablet (M1). -->
+    <string name="mobile_player_back_10">Back 10 seconds</string>
+    <string name="mobile_player_forward_10">Forward 10 seconds</string>
+    <string name="mobile_player_still_message">Several episodes played in a row without a touch on the screen. Playback waits for you to go on.</string>
 </resources>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name" translatable="false">Ciné Doury</string>
+    <string name="startup_connecting">Connexion au serveur…</string>
+    <string name="tab_home">Accueil</string>
+    <string name="tab_search">Recherche</string>
+    <string name="tab_libraries">Bibliothèques</string>
+    <string name="tab_profile">Profil</string>
+</resources>

@@ -23,6 +23,7 @@ val settingsModule =
                 updates = getOrNull(),
             )
         }
+        viewModel { ConnectDeviceViewModel(get()) }
         viewModel {
             val reader = get<DeviceCapabilitiesReader>()
             DiagnosticViewModel(get(), get(), get(), get(), AndroidDeviceFacts(androidContext())) { reader.read() }

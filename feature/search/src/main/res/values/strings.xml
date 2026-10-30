@@ -78,4 +78,6 @@
     <string name="seerr_error_not_seerr">Ce n\'est pas un serveur Seerr. Vérifiez l\'adresse, sans chemin en trop.</string>
     <string name="seerr_error_other">Seerr a répondu par une erreur. Réessayez dans un instant.</string>
     <string name="seerr_error_empty">Saisissez l\'adresse et la clé d\'API.</string>
+    <!-- The phone and the tablet (M1). -->
+    <string name="mobile_voice_denied">Le micro n\'est pas autorisé. Autorisez-le dans les réglages du téléphone.</string>
 </resources>

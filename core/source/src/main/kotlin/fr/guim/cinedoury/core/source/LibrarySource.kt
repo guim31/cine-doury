@@ -126,6 +126,21 @@ interface LibrarySource {
      */
     suspend fun sendDiagnostic(report: String): String
 
+    /**
+     * Approves the Quick Connect [code] another device shows (« Connecter un appareil », M1): that
+     * device signs in as the user of this session. Jellyfin: `POST /QuickConnect/Authorize`. Throws
+     * [SourceException.QuickConnectExpired] for a code the server does not know (mistyped, or older
+     * than 10 minutes), [SourceException.QuickConnectDisabled] when Quick Connect is off.
+     */
+    suspend fun authorizeQuickConnect(code: String)
+
+    /**
+     * Follows the server to [address] (M1, `SPEC.md` § 4.26): the phone went from the Wi-Fi of the
+     * house to the mobile network, or back. Every call from then on, the screens already open
+     * included, goes there; [session] keeps the address of the sign-in.
+     */
+    fun moveTo(address: ServerAddress) {}
+
     // The local index (J3, `SPEC.md` § 4.10).
 
     /**

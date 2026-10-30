@@ -198,6 +198,46 @@ class JellyfinIntegrationTest {
         }
 
     @Test
+    fun `the phone approves the Quick Connect code of a TV`() =
+        runTest {
+            // « Connecter un appareil » (M1): the TV, another device, asks for a code; the phone,
+            // signed in as the administrator, approves it; the TV signs in as the administrator.
+            val tv =
+                JellyfinConnector(
+                    ClientIdentity(
+                        appVersion = "0.0.0-test",
+                        deviceId = "cine-doury-integration-tv",
+                        deviceName = "TV",
+                    ),
+                )
+            val request = tv.startQuickConnect(address)
+            assertEquals(false, tv.isQuickConnectApproved(address, request))
+            val phone = library()
+            phone.authorizeQuickConnect(request.code)
+            assertTrue(tv.isQuickConnectApproved(address, request))
+            val session = tv.signIn(address, Credentials.QuickConnect(request))
+            assertEquals(username, session.user.name)
+            tv.signOut(session)
+        }
+
+    @Test
+    fun `an unknown Quick Connect code cannot be approved`() =
+        runTest {
+            assertFailsWith<SourceException.QuickConnectExpired> { library().authorizeQuickConnect("000000") }
+        }
+
+    @Test
+    fun `a session follows the server to another address`() =
+        runTest {
+            // The phone left the Wi-Fi (M1): the session opened at an address that no longer answers
+            // (192.0.2.1, documentation only) moves to the one that does.
+            val session = signIn()
+            val library = connector.open(session.copy(server = ServerAddress.of("http://192.0.2.1:8096")))
+            library.moveTo(address)
+            assertTrue(library.libraries().isNotEmpty())
+        }
+
+    @Test
     fun `two profiles stay signed in side by side, and signing out ends only one`() =
         runTest {
             val admin = signIn()

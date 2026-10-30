@@ -108,4 +108,8 @@
     <string name="quick_add_favorite">Ajouter aux favoris</string>
     <string name="quick_remove_favorite">Retirer des favoris</string>
     <string name="quick_select">Sélectionner</string>
+    <!-- The phone and the tablet (M1). -->
+    <string name="mobile_libraries_title">Bibliothèques</string>
+    <string name="mobile_libraries_empty_title">Aucune bibliothèque pour l\'instant.</string>
+    <string name="mobile_libraries_empty_message">Ajoutez une bibliothèque de films ou de séries au serveur, puis revenez ici.</string>
 </resources>

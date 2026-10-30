@@ -7,7 +7,10 @@ name: Release
 #   (`version: v1.2.1`, `source: v1.1.0`), since Android never installs a lower versionCode.
 # - By hand, a trial build (`trial: true`, `source`: a branch; essai réel 4): the code of the branch,
 #   signed with the release key and numbered `X.Y.Z-essai.N` after the last tag, so that it installs
-#   over the release without uninstalling; left as an artifact only: no release, no tag. Only a
+#   over the release without uninstalling; left as an artifact only: no release, no tag.
+# - The app for phones and tablets (M1, SPEC.md § 4.26) is built, signed and checked the same way, in
+#   every case, but left as an artifact only (`release-mobile-…`): never in a release before M3, so
+#   that a TV in 1.0.0, which takes the first APK of a release, can never take it. Only a
 #   maintainer can run a workflow by hand: the secrets are never given to a pull request.
 # - Every pull request: the same steps, dry run: never signed with the release key, never published.
 on:
@@ -80,7 +83,7 @@ jobs:
             echo "RELEASE_KEYSTORE_FILE=$RUNNER_TEMP/release.p12" >> "$GITHUB_ENV"
             echo "SIGNED=true" >> "$GITHUB_ENV"
           fi
-      - name: Build the release APK
+      - name: Build the release APKs
         env:
           CINE_DOURY_VERSION: ${{ steps.version.outputs.tag }}
           RELEASE_KEYSTORE_PASSWORD: ${{ github.event_name != 'pull_request' && secrets.RELEASE_KEYSTORE_PASSWORD || '' }}
@@ -88,13 +91,15 @@ jobs:
           RELEASE_KEY_PASSWORD: ${{ github.event_name != 'pull_request' && secrets.RELEASE_KEY_PASSWORD || '' }}
         run: |
           set -o pipefail
-          ./gradlew :app:tv:assembleRelease 2>&1 | tee gradle.log
+          ./gradlew :app:tv:assembleRelease :app:mobile:assembleRelease 2>&1 | tee gradle.log
       - name: APK, SHA-256 and changelog
         env:
           VERSION: ${{ steps.version.outputs.version }}
           TAG: ${{ steps.version.outputs.tag }}
           ROLLBACK_OF: ${{ inputs.trial != true && inputs.source || '' }}
-        run: ci/release/package.sh
+        run: |
+          APP=tv ci/release/package.sh
+          APP=mobile ci/release/package.sh
       - name: Remove the key
         if: always()
         run: rm -f "$RUNNER_TEMP/release.p12"
@@ -105,9 +110,9 @@ jobs:
           TAG: ${{ steps.version.outputs.tag }}
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          gh release create "$TAG" dist/*.apk dist/*.apk.sha256 \
+          gh release create "$TAG" dist/tv/*.apk dist/tv/*.apk.sha256 \
             --title "Ciné Doury $VERSION" \
-            --notes-file dist/notes.md \
+            --notes-file dist/tv/notes.md \
             --target "$(git rev-parse HEAD)"
       - name: Not published
         if: env.DRY_RUN == 'true' || env.TRIAL == 'true' || env.SIGNED != 'true'
@@ -127,5 +132,12 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: release-${{ steps.version.outputs.version || 'unknown' }}
-          path: dist/
+          path: dist/tv/
+          if-no-files-found: ignore
+      - name: Release files of the phone app (an artifact only, M1)
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-mobile-${{ steps.version.outputs.version || 'unknown' }}
+          path: dist/mobile/
           if-no-files-found: ignore

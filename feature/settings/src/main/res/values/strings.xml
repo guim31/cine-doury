@@ -303,4 +303,23 @@
     <string name="report_no_server">Aucun serveur ouvert : le rapport ne peut pas être envoyé.</string>
     <string name="browsing_tonight">Mosaïque « Ce soir »</string>
     <string name="browsing_tonight_description">À la place du bandeau : lectures en cours, épisodes à suivre, derniers ajouts.</string>
+    <!-- The phone and the tablet (M1). -->
+    <string name="mobile_profile_tab">Profil</string>
+    <string name="mobile_connection_local">Connecté à la maison (adresse locale)</string>
+    <string name="mobile_connection_remote">Connecté à distance (adresse publique)</string>
+    <string name="mobile_server_line">Serveur : %1$s</string>
+    <string name="mobile_connect_device">Connecter un appareil</string>
+    <string name="mobile_connect_device_description">Validez le code à six chiffres qu\'affiche la télévision.</string>
+    <string name="mobile_connect_device_instruction">Sur la télévision, choisissez votre profil ou « Autre compte » : un code à six chiffres s\'affiche. Saisissez-le ici pour la connecter à votre profil, sans mot de passe.</string>
+    <string name="mobile_connect_device_code">Code de l\'appareil</string>
+    <string name="mobile_connect_device_placeholder" translatable="false">000000</string>
+    <string name="mobile_connect_device_approve">Valider</string>
+    <string name="mobile_connect_device_done_title">Appareil connecté</string>
+    <string name="mobile_connect_device_done_message">L\'appareil qui affichait le code %1$s se connecte à votre profil.</string>
+    <string name="mobile_connect_device_again">Connecter un autre appareil</string>
+    <string name="mobile_code_unknown_title">Ce code n\'est pas reconnu.</string>
+    <string name="mobile_code_unknown_message">Vérifiez le code affiché sur l\'autre appareil, ou demandez-en un nouveau, puis réessayez.</string>
+    <string name="mobile_switch_profile_description">Revenir à « Qui regarde ? ».</string>
+    <string name="mobile_sign_out_description">Ce profil est oublié sur ce téléphone ; les autres restent connectés.</string>
+    <string name="mobile_app_version">Ciné Doury %1$s</string>
 </resources>

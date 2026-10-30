@@ -81,7 +81,7 @@ private const val ROW_SERIES = "series"
 
 /** The rows of a details screen: cast, saga, similar titles, the works of a person. */
 @Composable
-private fun DetailsState.detailRows(): List<DetailsRow> {
+internal fun DetailsState.detailRows(): List<DetailsRow> {
     val cast =
         item.people
             .filter { it.type == CreditType.Actor || it.type == CreditType.GuestStar }
