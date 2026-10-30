@@ -4,10 +4,10 @@ import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.onRoot
-import com.github.takahirom.roborazzi.captureRoboImage
+import com.github.takahirom.roborazzi.captureScreenRoboImage
 import fr.guim.cinedoury.core.data.ConnectionMode
 import fr.guim.cinedoury.core.data.library.LibraryTab
 import fr.guim.cinedoury.core.data.library.LibraryView
@@ -23,6 +23,7 @@ import fr.guim.cinedoury.core.model.RequestCandidate
 import fr.guim.cinedoury.core.model.SortField
 import fr.guim.cinedoury.core.source.SourceException
 import fr.guim.cinedoury.core.ui.RailTarget
+import fr.guim.cinedoury.core.ui.mobile.MobileQuickMenu
 import fr.guim.cinedoury.feature.auth.AddressMode
 import fr.guim.cinedoury.feature.auth.AddressState
 import fr.guim.cinedoury.feature.auth.PasswordState
@@ -264,6 +265,13 @@ class MobileScreenshotTest(
             "228-appareil-connecte",
         ) { MobileConnectDeviceScreen(ConnectDeviceState(approved = "482913"), {}, {}, {}, {}) }
 
+    @Test
+    fun quickMenu() =
+        shoot("229-menu-d-une-carte") {
+            val menu = remember { MobileQuickMenu().also { it.open(samples.movies[1], continueRow = "resume") } }
+            MobileHomeScreen(samples.home, SampleArt.sources, NoNavigation, menu = menu)
+        }
+
     @Composable
     private fun Home(state: HomeState) = MobileHomeScreen(state, SampleArt.sources, NoNavigation)
 
@@ -297,7 +305,8 @@ class MobileScreenshotTest(
             CineMobileTheme(variant = variant) { SampleArt.Provide(content) }
         }
         compose.waitForIdle()
-        compose.onRoot().captureRoboImage("src/test/screenshots/$name-${variant.slug}.png")
+        // The whole screen: a sheet from the bottom is a window of its own.
+        captureScreenRoboImage("src/test/screenshots/$name-${variant.slug}.png")
     }
 
     companion object {

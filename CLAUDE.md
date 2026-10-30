@@ -73,7 +73,7 @@ JELLYFIN_URL=http://localhost:8096 ./gradlew :source:jellyfin:integrationTest
 ci/jellyfin/run-local.sh down
 ./gradlew :app:mobile:assembleDebug      # appli téléphone et tablette (M1) : app/mobile/build/outputs/apk/debug/
 ./gradlew :app:mobile:testDebugUnitTest  # ses tests (Robolectric), captures comprises
-./gradlew :app:mobile:recordRoborazziDebug   # ses captures de référence (app/mobile/src/test/screenshots, 200 à 228)
+./gradlew :app:mobile:recordRoborazziDebug   # ses captures de référence (app/mobile/src/test/screenshots, 200 à 229)
 ```
 
 - Identifiants du Jellyfin de test (serveur jetable, pas des secrets) : `admin` / `cinedoury-test`, et un profil enfant `enfant` sans mot de passe. Bibliothèques « Films » et « Séries », collection « Le Phare : la saga ».

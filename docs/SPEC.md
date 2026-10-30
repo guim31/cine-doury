@@ -28,7 +28,7 @@ son domaine :
 | Essai réel 4 (28/10/2026, Shield en 4K, v0.9.0) : « Très compacte » par défaut, bandeau de l'accueil plus bas (une deuxième rangée se voit), titre de rangée immobile, « Retour » qui quitte sans confirmation, versions d'essai signées installables par-dessus une release | terminé, fusionné (§ 4.22 et § 4.18 ; captures dans `docs/screenshots/r4/` : `avant-*` / `apres-*` pour A, B et D) | [#15](https://github.com/guim31/cine-doury/pull/15) |
 | Essai réel 5 (29/10/2026, Shield en 4K et Chromecast, v0.9.1) : banc de mesures réparé (libellés du rail lus par l'accessibilité), compte à rebours qui ne coupe plus la fin des épisodes, épisode précédent / suivant dans le lecteur, menu d'options rapides à l'appui long sur une jaquette, mosaïque « Ce soir » en haut de l'accueil, rangée « Continuer » sous elle, notes de la 1.0.0 | terminé, en revue (§ 4.23 ; captures dans `docs/screenshots/r5/` : `avant-*` / `apres-*` pour A, B, C, D et F) | [#16](https://github.com/guim31/cine-doury/pull/16) |
 | Nouveau logo et retouches de la 1.0.0 (29/10/2026) : un pot de pop-corn sur fond noir pour l'icône et la bannière Android TV ; H, tuiles de la mosaïque « Ce soir » rognées au focus ; I et J, rail qui s'ouvrait seul au lancement et après OK sur une de ses entrées | en revue (§ 4.24 et 4.25 ; captures dans `docs/screenshots/logo/` et `docs/screenshots/r6/`, numéros 230 et 231) | — |
-| M1 — Socle mobile et navigation (appli `:app:mobile` pour téléphone et tablette : jetons partagés, composants Material 3, connexion, « Connecter un appareil », barre des onglets, accueil, bibliothèques, fiches, recherche, lecture simple ; chaque appli choisit son APK dans une release) | en revue (§ 4.26 ; captures dans `docs/screenshots/m1/`, numéros 200 à 228) | [#18](https://github.com/guim31/cine-doury/pull/18) |
+| M1 — Socle mobile et navigation (appli `:app:mobile` pour téléphone et tablette : jetons partagés, composants Material 3, connexion, « Connecter un appareil », barre des onglets, accueil, bibliothèques, fiches, recherche, lecture simple ; chaque appli choisit son APK dans une release) | en revue (§ 4.26 ; captures dans `docs/screenshots/m1/`, numéros 200 à 229) | [#18](https://github.com/guim31/cine-doury/pull/18) |
 
 *(Chaque jalon met à jour ce tableau et ajoute ses contrats au § 4.)*
 
@@ -2317,7 +2317,7 @@ assurer. **Proposition pour le M3** : publier l'APK mobile sous une étiquette �
 ou attendre que toutes les TV soient en 1.1 ; à défaut, téléverser l'APK TV seul à la création, puis
 le mobile par un second `gh release upload`.
 
-**Tests** : `MobileScreenshotTest` (captures 200 à 228, sombre et noir OLED, téléphone en portrait,
+**Tests** : `MobileScreenshotTest` (captures 200 à 229, sombre et noir OLED, téléphone en portrait,
 en paysage et tablette 11 pouces), `MobileFlowTest` (appli réelle sur une source en mémoire : premier
 lancement par Quick Connect, carte → fiche → « Lire » → « Retour », onglets, TV validée depuis le
 profil), `NavigatorTest`, `MobileArchitectureTest`, `SessionManagerTest` (bascule et retour, validation
