@@ -153,4 +153,32 @@
     <string name="mobile_player_back_10">Reculer de 10 secondes</string>
     <string name="mobile_player_forward_10">Avancer de 10 secondes</string>
     <string name="mobile_player_still_message">Plusieurs épisodes se sont enchaînés sans que vous touchiez l\'écran. La lecture attend votre accord pour continuer.</string>
+    <!-- The touch player and the margin of the phone (M2). -->
+    <string name="mobile_player_offline">Le réseau est coupé. La lecture reprendra dès son retour.</string>
+    <string name="mobile_player_quality_reduced">Qualité réduite\u00A0: réseau faible</string>
+    <string name="mobile_player_quality_estimate">Environ %1$s\u00A0Go par heure</string>
+    <string name="mobile_player_quality_estimate_mb">Environ %1$s\u00A0Mo par heure</string>
+    <string name="mobile_player_quality_auto_mobile">Suit le réseau\u00A0: baisse si la marge fond, remonte quand elle est pleine</string>
+    <string name="mobile_player_info">Informations</string>
+    <string name="mobile_player_lock">Verrouiller l\'écran</string>
+    <string name="mobile_player_unlock">Déverrouiller l\'écran (appui long)</string>
+    <string name="mobile_player_locked_hint">Écran verrouillé. Maintenez le cadenas pour le déverrouiller.</string>
+    <string name="mobile_player_portrait">Garder en portrait</string>
+    <string name="mobile_player_landscape">Revenir en paysage</string>
+    <string name="mobile_player_jump_back">\u2212%1$d\u00A0s</string>
+    <string name="mobile_player_jump_forward">+%1$d\u00A0s</string>
+    <string name="mobile_player_fill">Remplir l\'écran</string>
+    <string name="mobile_player_fit">Format d\'origine</string>
+    <string name="info_margin">Marge</string>
+    <string name="info_margin_value">%1$d\u00A0min (dont %2$d en mémoire)</string>
+    <string name="info_margin_seconds">%1$d\u00A0s (en mémoire)</string>
+    <string name="info_margin_offline">%1$s, hors réseau</string>
+    <string name="info_margin_bandwidth">Débit mesuré</string>
+    <string name="mobile_settings_title">Lecture sur ce téléphone</string>
+    <string name="mobile_settings_margin">Marge de lecture</string>
+    <string name="mobile_settings_margin_detail">Ce qui est chargé d\'avance pendant la lecture, pour traverser les zones sans réseau</string>
+    <string name="mobile_settings_margin_value">%1$d\u00A0min</string>
+    <string name="mobile_settings_wifi">Qualité en Wi-Fi</string>
+    <string name="mobile_settings_mobile">Qualité sur le réseau mobile</string>
+    <string name="mobile_settings_quality_detail">Par défaut, au début de chaque lecture</string>
 </resources>

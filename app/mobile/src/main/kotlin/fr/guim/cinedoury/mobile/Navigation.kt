@@ -24,8 +24,10 @@ sealed interface Route {
 
     data object ServerSearch : Route
 
+    /** [offer]: the remote address offered after a first sign-in on the network of the house (F, M2). */
     data class Address(
         val mode: AddressMode,
+        val offer: Boolean = false,
     ) : Route
 
     data class Unreachable(

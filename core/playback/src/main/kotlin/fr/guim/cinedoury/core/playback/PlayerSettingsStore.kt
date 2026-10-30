@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
+import fr.guim.cinedoury.core.model.MarginPlan
 import fr.guim.cinedoury.core.model.PassthroughFormat
 import fr.guim.cinedoury.core.model.PlayerSettings
 import fr.guim.cinedoury.core.model.SubtitleScale
@@ -46,6 +47,8 @@ class PlayerSettingsStore(
             prefs[DOLBY_VISION] = next.allowDolbyVision
             prefs.putOrRemove(LOCAL_QUALITY, next.localQuality)
             prefs.putOrRemove(REMOTE_QUALITY, next.remoteQuality ?: ORIGINAL)
+            prefs.putOrRemove(MOBILE_QUALITY, next.mobileQuality ?: ORIGINAL)
+            prefs[MARGIN] = next.marginMinutes
             prefs[CEILING] = next.bitrateCeiling
             prefs[DIRECT_PLAY] = next.directPlay.name
             prefs[BURN_IN_ASS] = next.burnInAss
@@ -144,6 +147,13 @@ class PlayerSettingsStore(
                     ORIGINAL -> null
                     else -> remote
                 },
+            mobileQuality =
+                when (val mobile = this[MOBILE_QUALITY]) {
+                    null -> defaults.mobileQuality
+                    ORIGINAL -> null
+                    else -> mobile
+                },
+            marginMinutes = this[MARGIN]?.takeIf { it in MarginPlan.MINUTES } ?: defaults.marginMinutes,
             bitrateCeiling = this[CEILING] ?: defaults.bitrateCeiling,
             directPlay = enumOf(this[DIRECT_PLAY], defaults.directPlay),
             burnInAss = this[BURN_IN_ASS] ?: defaults.burnInAss,
@@ -174,7 +184,7 @@ class PlayerSettingsStore(
     companion object {
         const val FILE = "player"
 
-        /** A remote quality of « Originale », told apart from « never set » (the default, 8 Mb/s). */
+        /** A remote (or mobile) quality of « Originale », told apart from « never set » (the default, 8 Mb/s). */
         private const val ORIGINAL = 0
         private val PASSTHROUGH = stringSetPreferencesKey("passthrough")
         private val STEREO = booleanPreferencesKey("force_stereo")
@@ -188,6 +198,8 @@ class PlayerSettingsStore(
         private val LOCAL_QUALITY = intPreferencesKey("max_bitrate")
         private val REMOTE_QUALITY = intPreferencesKey("remote_quality")
         private val CEILING = intPreferencesKey("bitrate_ceiling")
+        private val MOBILE_QUALITY = intPreferencesKey("mobile_quality")
+        private val MARGIN = intPreferencesKey("margin_minutes")
         private val DIRECT_PLAY = stringPreferencesKey("direct_play")
         private val BURN_IN_ASS = booleanPreferencesKey("burn_in_ass")
         private val ASPECT = stringPreferencesKey("aspect")

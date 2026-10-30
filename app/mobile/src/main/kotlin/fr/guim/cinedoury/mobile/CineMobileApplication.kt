@@ -11,13 +11,18 @@ import coil3.disk.DiskCache
 import coil3.memory.MemoryCache
 import coil3.request.crossfade
 import fr.guim.cinedoury.core.data.DeviceIdentity
+import fr.guim.cinedoury.core.data.SessionManager
 import fr.guim.cinedoury.core.data.di.dataModule
 import fr.guim.cinedoury.core.data.index.IndexScheduler
 import fr.guim.cinedoury.core.designsystem.image.ImageBudget
 import fr.guim.cinedoury.core.designsystem.image.addCineImages
 import fr.guim.cinedoury.core.designsystem.theme.CineMotion
+import fr.guim.cinedoury.core.playback.AndroidNetworkMonitor
 import fr.guim.cinedoury.core.playback.DeviceCapabilitiesReader
 import fr.guim.cinedoury.core.playback.ExoVideoPlayer
+import fr.guim.cinedoury.core.playback.NetworkMonitor
+import fr.guim.cinedoury.core.playback.Nomad
+import fr.guim.cinedoury.core.playback.PlaybackCache
 import fr.guim.cinedoury.core.playback.PlayerBuffer
 import fr.guim.cinedoury.core.playback.VideoPlayerFactory
 import fr.guim.cinedoury.core.playback.playbackModule
@@ -45,6 +50,7 @@ import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import org.koin.dsl.module
 import java.io.File
+import kotlin.time.Duration.Companion.minutes
 
 /**
  * Starts Koin with the modules of the TV (M1, `SPEC.md` § 4.26: the same view models, repositories,
@@ -149,14 +155,19 @@ val requestsModule =
 /**
  * What a phone does otherwise than a TV (M1, `SPEC.md` § 4.26), over the modules of the TV:
  * - its capabilities without passthrough: a phone has no amplifier, the server sends audio it decodes;
- * - its player with the buffer of the phone ([PlayerBuffer.Phone]: the TV's until M2 sets it) and no
- *   passthrough, whatever the settings say.
+ * - its player with no passthrough, whatever the settings say, and the margin of the phone (M2,
+ *   `SPEC.md` § 4.27): about 2 min in memory ([PlayerBuffer.phone], by the heap of the app), then the
+ *   disk up to « Marge de lecture » ([Nomad]), through the address the session uses now.
  */
 val phoneModule =
     module {
         single { DeviceCapabilitiesReader(get(), allowPassthrough = false) }
+        single { PlaybackCache(get()) }
+        single<NetworkMonitor> { AndroidNetworkMonitor(get()) }
         single<VideoPlayerFactory> {
             val context = get<Context>()
+            val sessions = get<SessionManager>()
+            val memoryClass = context.getSystemService(ActivityManager::class.java).memoryClass
             VideoPlayerFactory { capabilities, settings ->
                 ExoVideoPlayer(
                     context,
@@ -165,7 +176,18 @@ val phoneModule =
                     matchFrameRate = settings.matchFrameRate,
                     audioOffsetMillis = settings.audioOffsetMillis,
                     allowDolbyVision = settings.allowDolbyVision,
-                    buffer = PlayerBuffer.Phone,
+                    buffer = PlayerBuffer.phone(memoryClass),
+                    nomad =
+                        Nomad(
+                            cache = get(),
+                            network = get(),
+                            address = {
+                                sessions.connection.value
+                                    ?.address
+                                    ?.url
+                            },
+                            margin = settings.marginMinutes.minutes,
+                        ),
                 )
             }
         }

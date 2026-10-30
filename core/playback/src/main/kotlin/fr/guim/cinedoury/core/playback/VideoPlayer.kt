@@ -1,6 +1,7 @@
 package fr.guim.cinedoury.core.playback
 
 import androidx.media3.common.Player
+import fr.guim.cinedoury.core.model.MarginStatus
 import fr.guim.cinedoury.core.model.PlaybackFailure
 import fr.guim.cinedoury.core.model.PlaybackStream
 import kotlinx.coroutines.flow.Flow
@@ -69,6 +70,8 @@ data class PlayerSnapshot(
     val droppedFrames: Int = 0,
     /** The bandwidth the player measured, in bits per second. */
     val bandwidth: Long? = null,
+    /** The margin of the phone (M2, `SPEC.md` § 4.27); null on the TV. */
+    val margin: MarginStatus? = null,
 )
 
 /**

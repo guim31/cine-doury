@@ -7,7 +7,8 @@
 
     <!-- Cleartext: a home Jellyfin server answers in http:// on the local network (SPEC.md § 4.7).
          No leanback, any orientation: a phone and a tablet (M1). The activity handles its own rotation
-         (configChanges): the screens keep their state, the player keeps playing. -->
+         (configChanges): the screens keep their state, the player keeps playing; leaving the app while a
+         film plays shrinks it into a small window (picture in picture, M2). -->
     <application
         android:name=".CineMobileApplication"
         android:allowBackup="false"
@@ -21,7 +22,7 @@
         <activity
             android:name=".MainActivity"
             android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenLayout|screenSize|smallestScreenSize|uiMode|density"
-            android:supportsPictureInPicture="false"
+            android:supportsPictureInPicture="true"
             android:windowSoftInputMode="adjustResize"
             android:exported="true">
             <intent-filter>

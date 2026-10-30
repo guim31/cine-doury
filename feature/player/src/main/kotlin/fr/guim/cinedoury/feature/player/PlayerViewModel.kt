@@ -15,6 +15,7 @@ import fr.guim.cinedoury.core.model.FallbackAction
 import fr.guim.cinedoury.core.model.ItemKind
 import fr.guim.cinedoury.core.model.MediaItem
 import fr.guim.cinedoury.core.model.MediaSegment
+import fr.guim.cinedoury.core.model.NetworkKind
 import fr.guim.cinedoury.core.model.PlayMethod
 import fr.guim.cinedoury.core.model.PlaybackFailure
 import fr.guim.cinedoury.core.model.PlaybackFallback
@@ -26,11 +27,13 @@ import fr.guim.cinedoury.core.model.PlaybackRequest
 import fr.guim.cinedoury.core.model.PlaybackRules
 import fr.guim.cinedoury.core.model.PlaybackStream
 import fr.guim.cinedoury.core.model.PlayerSettings
+import fr.guim.cinedoury.core.model.QualityGovernor
 import fr.guim.cinedoury.core.model.SegmentAction
 import fr.guim.cinedoury.core.model.StillWatching
 import fr.guim.cinedoury.core.model.TrackPreselection
 import fr.guim.cinedoury.core.model.TrackSelection
 import fr.guim.cinedoury.core.model.UserData
+import fr.guim.cinedoury.core.playback.NetworkMonitor
 import fr.guim.cinedoury.core.playback.PlaybackReporter
 import fr.guim.cinedoury.core.playback.PlayerEvent
 import fr.guim.cinedoury.core.playback.PlayerSettingsStore
@@ -64,6 +67,8 @@ import kotlin.time.Duration.Companion.seconds
  * in the cache of the home and of the details screens.
  *
  * @param reportScope outlives the screen: the last report leaves after it.
+ * @param network the network of a phone (M2, `SPEC.md` § 4.27): its default quality follows it (Wi-Fi or
+ * mobile), and the quality goes down and back up with the margin ([QualityGovernor]); null on the TV.
  */
 @Suppress("TooManyFunctions", "LargeClass", "LongParameterList") // A gesture each; the services it joins.
 class PlayerViewModel(
@@ -76,6 +81,7 @@ class PlayerViewModel(
     private val updates: UserDataUpdates,
     private val reportScope: CoroutineScope,
     private val clock: Clock = Clock.systemUTC(),
+    private val network: NetworkMonitor? = null,
 ) : ViewModel(),
     PlayerActions {
     private val active: ActiveSession? = sessions.active.value
@@ -98,6 +104,13 @@ class PlayerViewModel(
     private var player: VideoPlayer? = null
     private var reporter: PlaybackReporter? = null
     private var profile: PlaybackProfile? = null
+
+    /** The stream comes in MPEG-TS segments, not fMP4 (G, M2: [PlaybackFallback.wantsTs]). */
+    private var tsSegments = false
+
+    /** The profile sent to the server: in MPEG-TS segments once they are needed. */
+    private val streamProfile: PlaybackProfile?
+        get() = profile?.let { if (tsSegments) PlaybackFallback.tsProfile(it) else it }
     private var stillWatching = StillWatching()
     private var ticker: Job? = null
     private var fellBack = false
@@ -108,17 +121,27 @@ class PlayerViewModel(
     private var infoVisible = false
     private var finished = false
 
+    /** The quality was chosen in the panel: nothing changes it any more (M2). */
+    private var qualityChosen = false
+    private var governor: QualityGovernor? = null
+    private var networkKind: NetworkKind? = network?.state?.value?.kind
+    private var sampledAt = Duration.ZERO
+    private var noticeUntil = Duration.ZERO
+    private var elapsed = Duration.ZERO
+
     init {
         viewModelScope.launch { start(request) }
     }
 
+    @Suppress("CyclomaticComplexMethod") // The steps of a start, the phone's quality among them.
     private suspend fun start(request: PlaybackRequest) {
         val source = source ?: return
         guarded {
             val settings = settingsStore.current()
             val capabilities = readCapabilities()
             val remote = active?.connection?.mode == ConnectionMode.Remote
-            val profile = PlaybackProfiles.build(capabilities, settings.profileOptions(remote))
+            networkKind = network?.state?.value?.kind
+            val profile = PlaybackProfiles.build(capabilities, settings.profileOptions(remote, networkKind))
             this.profile = profile
             stillWatching = StillWatching(settings.stillWatchingAfter).also { it.restoreFrom(stillWatching) }
             val item = if (request.trailer) request.item else source.item(request.item.id)
@@ -135,14 +158,22 @@ class PlayerViewModel(
                     subtitleIndex = selection?.subtitleIndex,
                     duration = item.runtime ?: it.duration,
                     // The default quality of the settings (`SPEC.md` § 4.17), unless one was chosen.
-                    maxBitrate = it.maxBitrate ?: settings.defaultQuality(remote),
+                    maxBitrate = it.maxBitrate ?: settings.defaultQuality(remote, networkKind),
                 )
+            }
+            if (network != null && !qualityChosen && !request.trailer) {
+                governor =
+                    QualityGovernor(
+                        ceiling = settings.defaultQuality(remote, networkKind),
+                        sourceBitrate = item.mediaSources.firstOrNull()?.bitrate,
+                        current = local.value.maxBitrate,
+                    )
             }
             if (!request.trailer) {
                 viewModelScope.launch { loadSegments(source, item) }
                 viewModelScope.launch { loadNeighbours(source, item) }
             }
-            val stream = source.playback.playbackInfo(firstRequest(item, profile, settings, selection, start))
+            val stream = source.firstStream(item, settings, selection, start)
             val player = player ?: players.create(capabilities, settings).also { created -> watch(created) }
             this.player = player
             surfacePlayer.value = player.player
@@ -214,7 +245,13 @@ class PlayerViewModel(
         detail: String,
     ) {
         val stream = local.value.stream ?: return
-        if (!fellBack && PlaybackFallback.next(stream.method, failure) == FallbackAction.Transcode) {
+        val action = PlaybackFallback.next(stream, failure, tsTried = tsSegments)
+        if (action == FallbackAction.TsSegments) {
+            // fMP4 segments the player cannot read (G, M2): the same stream in MPEG-TS segments.
+            tsSegments = true
+            local.update { it.copy(fallback = detail) }
+            reload()
+        } else if (!fellBack && action == FallbackAction.Transcode) {
             fellBack = true
             local.update { it.copy(fallback = detail) }
             reload(allowDirect = false)
@@ -256,6 +293,7 @@ class PlayerViewModel(
         leave()
         val settings = local.value.settings
         fellBack = false
+        tsSegments = false
         lastSkipped = null
         nextDismissed = false
         countdown = Duration.ZERO
@@ -325,6 +363,9 @@ class PlayerViewModel(
                 playing = snapshot.playing,
                 buffering = snapshot.buffering,
                 reconnecting = bufferingFor >= RECONNECTING,
+                margin = snapshot.margin,
+                offline = snapshot.margin?.offline == true,
+                qualityReduced = elapsed < noticeUntil,
                 skip = skip,
                 nextShown = shows && !it.stillWatching,
                 nextCountdown = left?.div(total)?.toFloat(),
@@ -333,6 +374,50 @@ class PlayerViewModel(
             )
         }
         if (left != null && !left.isPositive() && PlaybackRules.countdownStartsNext(state.segments)) autoplay()
+        adaptQuality(snapshot)
+    }
+
+    /**
+     * The phone's quality (M2, `SPEC.md` § 4.27), once a second: the default of the new network when
+     * the phone changes network, one step down when the margin melts, back up when it is full again.
+     * Never when the user chose a quality.
+     */
+    @Suppress("ReturnCount") // Nothing to adapt: on the TV, without a margin, a chosen quality, loading.
+    private fun adaptQuality(snapshot: PlayerSnapshot) {
+        elapsed += TICK
+        val monitor = network ?: return
+        val margin = snapshot.margin ?: return
+        if (qualityChosen || local.value.loading || elapsed - sampledAt < QUALITY_LOOK) return
+        sampledAt = elapsed
+        val kind = monitor.state.value.kind
+        if (kind != networkKind && monitor.state.value.online) {
+            networkKind = kind
+            val remote = active?.connection?.mode == ConnectionMode.Remote
+            val ceiling = local.value.settings.defaultQuality(remote, kind)
+            val current = local.value.maxBitrate
+            governor =
+                QualityGovernor(
+                    ceiling,
+                    local.value.item.mediaSources
+                        .firstOrNull()
+                        ?.bitrate,
+                    current,
+                )
+            if (ceiling != null && (current == null || current > ceiling)) changeQuality(ceiling)
+            return
+        }
+        val change = governor?.sample(elapsed, margin, snapshot.playing, margin.bandwidth) ?: return
+        if (change.down) {
+            noticeUntil = elapsed + NOTICE
+            local.update { it.copy(qualityReduced = true) }
+        }
+        GestureLog.mark("quality ${change.maxBitrate ?: "original"}")
+        changeQuality(change.maxBitrate)
+    }
+
+    private fun changeQuality(maxBitrate: Int?) {
+        if (maxBitrate == local.value.maxBitrate) return
+        reload(maxBitrate = maxBitrate)
     }
 
     /**
@@ -419,7 +504,7 @@ class PlayerViewModel(
         allowDirect: Boolean = !fellBack && local.value.settings.directPlay != DirectPlayMode.Never,
     ) {
         val source = source ?: return
-        val profile = profile ?: return
+        val profile = streamProfile ?: return
         val player = player ?: return
         val state = local.value
         val at = player.snapshot().position.takeIf { it.isPositive() } ?: state.position
@@ -455,7 +540,23 @@ class PlayerViewModel(
         }
     }
 
-    /** What the server is first asked: the choices of the details screen, the settings of the device. */
+    /**
+     * What the server is first asked: the choices of the details screen, the settings of the device. An
+     * H.264 the server would copy into fMP4 segments may start before zero, which Media3 refuses: it is
+     * asked again at once in MPEG-TS segments (G, M2, [PlaybackFallback.wantsTs]).
+     */
+    private suspend fun LibrarySource.firstStream(
+        item: MediaItem,
+        settings: PlayerSettings,
+        selection: TrackSelection?,
+        start: Duration,
+    ): PlaybackStream {
+        val offered = playback.playbackInfo(firstRequest(item, checkNotNull(streamProfile), settings, selection, start))
+        if (tsSegments || !PlaybackFallback.wantsTs(offered)) return offered
+        tsSegments = true
+        return playback.playbackInfo(firstRequest(item, checkNotNull(streamProfile), settings, selection, start))
+    }
+
     private fun firstRequest(
         item: MediaItem,
         profile: PlaybackProfile,
@@ -473,8 +574,6 @@ class PlayerViewModel(
         allowDirect = !fellBack && settings.directPlay != DirectPlayMode.Never,
         forceDirect = !fellBack && settings.directPlay == DirectPlayMode.Forced,
     )
-
-    private fun PlayerSettings.defaultQuality(remote: Boolean): Int? = if (remote) remoteQuality else localQuality
 
     /** What was played and how, for the diagnostic report (`SPEC.md` § 4.19). */
     private fun logDecision(
@@ -625,6 +724,9 @@ class PlayerViewModel(
     }
 
     override fun selectQuality(maxBitrate: Int?) {
+        qualityChosen = true
+        governor = null
+        local.update { it.copy(qualityChosen = true) }
         if (maxBitrate == local.value.maxBitrate) return
         reload(maxBitrate = maxBitrate)
     }
@@ -725,6 +827,10 @@ class PlayerViewModel(
 
     companion object {
         val TICK = 250.milliseconds
+        private val QUALITY_LOOK = 1.seconds
+
+        /** How long « Qualité réduite : réseau faible » stays. */
+        val NOTICE = 5.seconds
         val RECONNECTING = 3.seconds
         val CHAPTER_GRACE = 3.seconds
 

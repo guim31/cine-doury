@@ -78,6 +78,7 @@ object MobileAuthTags {
     const val ENTER_ADDRESS = "auth-enter-address"
     const val ADDRESS = "auth-address"
     const val ADDRESS_SUBMIT = "auth-address-submit"
+    const val ADDRESS_SKIP = "auth-address-skip"
     const val USERNAME = "auth-username"
     const val PASSWORD = "auth-password"
     const val SIGN_IN = "auth-sign-in"
@@ -199,14 +200,19 @@ fun MobileAddressRoute(
     mode: AddressMode,
     onDone: () -> Unit,
     onBack: () -> Unit,
+    onSkip: (() -> Unit)? = null,
     viewModel: AddressViewModel = koinViewModel(key = "address-$mode") { parametersOf(mode) },
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     CollectEvents(viewModel.done) { onDone() }
-    MobileAddressScreen(state, viewModel::edit, viewModel::submit, viewModel::dismissError, onBack)
+    MobileAddressScreen(state, viewModel::edit, viewModel::submit, viewModel::dismissError, onBack, onSkip)
 }
 
-/** An address typed with the keyboard of the phone: `http://` and port 8096 assumed (`SPEC.md` § 4.7). */
+/**
+ * An address typed with the keyboard of the phone: `http://` and port 8096 assumed (`SPEC.md` § 4.7).
+ * With [onSkip] (F, M2), the remote address offered at the end of a first sign-in on the network of the
+ * house: why it helps (watching away from home), and « Plus tard ».
+ */
 @Composable
 fun MobileAddressScreen(
     state: AddressState,
@@ -214,12 +220,14 @@ fun MobileAddressScreen(
     onSubmit: () -> Unit,
     onDismissError: () -> Unit,
     onBack: (() -> Unit)? = null,
+    onSkip: (() -> Unit)? = null,
 ) {
     val (title, subtitle) =
-        when (state.mode) {
-            AddressMode.Add -> R.string.address_title to R.string.address_subtitle
-            AddressMode.EditLocal -> R.string.address_local_title to R.string.address_local_subtitle
-            AddressMode.EditRemote -> R.string.address_remote_title to R.string.address_remote_subtitle
+        when {
+            onSkip != null -> R.string.address_remote_title to R.string.mobile_address_remote_offer
+            state.mode == AddressMode.Add -> R.string.address_title to R.string.address_subtitle
+            state.mode == AddressMode.EditLocal -> R.string.address_local_title to R.string.address_local_subtitle
+            else -> R.string.address_remote_title to R.string.address_remote_subtitle
         }
     MobileFormScreen(
         brand = stringResource(UiR.string.brand_name),
@@ -264,6 +272,13 @@ fun MobileAddressScreen(
             Modifier.fillMaxWidth().testTag(MobileAuthTags.ADDRESS_SUBMIT),
             busy = state.busy,
         )
+        onSkip?.let {
+            MobileTextButton(
+                stringResource(R.string.mobile_address_later),
+                it,
+                Modifier.align(Alignment.CenterHorizontally).testTag(MobileAuthTags.ADDRESS_SKIP),
+            )
+        }
     }
 }
 

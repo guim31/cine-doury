@@ -24,6 +24,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import fr.guim.cinedoury.core.data.ConnectionMode
+import fr.guim.cinedoury.core.data.Reach
 import fr.guim.cinedoury.core.data.SessionManager
 import fr.guim.cinedoury.core.designsystem.component.CineIcons
 import fr.guim.cinedoury.core.designsystem.image.ImageSource
@@ -56,6 +57,8 @@ object MobileProfileTags {
     const val SCREEN = "profile"
     const val CONNECTION = "profile-connection"
     const val CONNECT_DEVICE = "profile-connect-device"
+    const val LOCAL_ADDRESS = "profile-local-address"
+    const val REMOTE_ADDRESS = "profile-remote-address"
     const val SWITCH = "profile-switch"
     const val SIGN_OUT = "profile-sign-out"
     const val CODE = "connect-code"
@@ -71,11 +74,19 @@ data class MobileProfileState(
     val address: String,
     val avatar: ImageSource?,
     val version: String,
+    /** The addresses of the server (F, M2); null when none is known. */
+    val localAddress: String? = null,
+    val remoteAddress: String? = null,
+    /** Whether the server answers at one of them since the last change of network (F, M2). */
+    val reach: Reach = Reach.Answers,
 )
 
 /** Where the profile tab leads. */
 interface MobileProfileNavigation {
     fun connectDevice()
+
+    /** The local or the remote address of the server (F, M2). */
+    fun address(remote: Boolean)
 
     fun profileClosed()
 
@@ -88,10 +99,12 @@ fun MobileProfileRoute(
     version: String,
     viewModel: SettingsViewModel = koinViewModel(),
     sessions: SessionManager = koinInject(),
+    playback: @Composable () -> Unit = {},
 ) {
     val settings by viewModel.state.collectAsStateWithLifecycle()
     // The address follows the network of the phone (SessionManager.followNetwork): read as it changes.
     val connection by sessions.connection.collectAsStateWithLifecycle()
+    val reach by sessions.reach.collectAsStateWithLifecycle()
     CollectEvents(viewModel.events) { event ->
         when (event) {
             SettingsEvent.ProfileClosed -> navigation.profileClosed()
@@ -109,17 +122,23 @@ fun MobileProfileRoute(
                 address = current.address.url,
                 avatar = sessions.avatarSource(session.profile.user),
                 version = version,
+                localAddress = current.server.localAddress?.url,
+                remoteAddress = current.server.remoteAddress?.url,
+                reach = reach,
             ),
         onConnectDevice = navigation::connectDevice,
+        onAddress = navigation::address,
         onSwitchProfile = viewModel::switchProfile,
         onSignOut = viewModel::signOut,
+        playback = playback,
     )
 }
 
 /**
  * The profile tab (M1, `UI.md` § 9): the profile and its server, a discreet line that says which
  * address is in use (the house's, or the public one away from it), « Connecter un appareil », then
- * the profile picker and the sign-out. The other settings come with M3.
+ * the playback settings of the phone ([playback], M2: the margin and the qualities), the profile
+ * picker and the sign-out. The other settings come with M3.
  */
 @Composable
 fun MobileProfileScreen(
@@ -128,6 +147,8 @@ fun MobileProfileScreen(
     onSwitchProfile: () -> Unit,
     onSignOut: () -> Unit,
     modifier: Modifier = Modifier,
+    onAddress: (remote: Boolean) -> Unit = {},
+    playback: @Composable () -> Unit = {},
 ) {
     val colors = CineTheme.colors
     Column(
@@ -170,24 +191,26 @@ fun MobileProfileScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(CineSpacing.xs),
             ) {
+                val silent = state.reach as? Reach.Silent
                 Icon(
-                    if (state.mode == ConnectionMode.Remote) CineIcons.Remote else CineIcons.Home,
+                    when {
+                        silent != null -> CineIcons.Warning
+                        state.mode == ConnectionMode.Remote -> CineIcons.Remote
+                        else -> CineIcons.Home
+                    },
                     contentDescription = null,
-                    tint = colors.text3,
+                    tint = if (silent != null) colors.accent else colors.text3,
                     modifier = Modifier.size(CineSpacing.s),
                 )
                 Text(
-                    stringResource(
-                        if (state.mode ==
-                            ConnectionMode.Remote
-                        ) {
-                            R.string.mobile_connection_remote
-                        } else {
-                            R.string.mobile_connection_local
-                        },
-                    ),
+                    when {
+                        silent?.noRemote == true -> stringResource(R.string.mobile_connection_silent_no_remote)
+                        silent != null -> stringResource(R.string.mobile_connection_silent)
+                        state.mode == ConnectionMode.Remote -> stringResource(R.string.mobile_connection_remote)
+                        else -> stringResource(R.string.mobile_connection_local)
+                    },
                     style = CineTheme.typography.caption,
-                    color = colors.text3,
+                    color = if (silent != null) colors.text else colors.text3,
                 )
             }
             MobileListRow(
@@ -197,6 +220,21 @@ fun MobileProfileScreen(
                 onClick = onConnectDevice,
                 modifier = Modifier.testTag(MobileProfileTags.CONNECT_DEVICE),
             )
+            MobileListRow(
+                title = stringResource(R.string.mobile_local_address),
+                subtitle = state.localAddress ?: stringResource(R.string.mobile_address_none),
+                icon = CineIcons.Home,
+                onClick = { onAddress(false) },
+                modifier = Modifier.testTag(MobileProfileTags.LOCAL_ADDRESS),
+            )
+            MobileListRow(
+                title = stringResource(R.string.mobile_remote_address),
+                subtitle = state.remoteAddress ?: stringResource(R.string.mobile_remote_address_none),
+                icon = CineIcons.Remote,
+                onClick = { onAddress(true) },
+                modifier = Modifier.testTag(MobileProfileTags.REMOTE_ADDRESS),
+            )
+            playback()
             MobileListRow(
                 title = stringResource(R.string.switch_profile),
                 subtitle = stringResource(R.string.mobile_switch_profile_description),

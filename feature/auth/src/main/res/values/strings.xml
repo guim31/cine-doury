@@ -55,4 +55,7 @@
     <string name="mobile_welcome_tagline">Votre bibliothèque Jellyfin, sur votre téléphone et votre tablette.</string>
     <string name="mobile_quick_connect_instruction">Sur un appareil déjà connecté (la télévision, ou l\'interface web de Jellyfin), ouvrez votre profil › Quick Connect, et saisissez ce code.</string>
     <string name="mobile_quick_connect_waiting">En attente de validation sur l\'autre appareil…</string>
+    <!-- F (M2): the remote address offered after a first sign-in on the network of the house. -->
+    <string name="mobile_address_remote_offer">Pour regarder hors de la maison (en voiture, en vacances), indiquez l\'adresse publique du serveur (https://…). Le téléphone l\'utilisera dès qu\'il quittera le Wi-Fi de la maison.</string>
+    <string name="mobile_address_later">Plus tard</string>
 </resources>

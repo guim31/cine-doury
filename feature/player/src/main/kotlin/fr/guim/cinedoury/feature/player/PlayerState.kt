@@ -3,6 +3,7 @@ package fr.guim.cinedoury.feature.player
 import androidx.compose.runtime.Immutable
 import fr.guim.cinedoury.core.model.Chapter
 import fr.guim.cinedoury.core.model.DeviceCapabilities
+import fr.guim.cinedoury.core.model.MarginStatus
 import fr.guim.cinedoury.core.model.MediaItem
 import fr.guim.cinedoury.core.model.MediaSegment
 import fr.guim.cinedoury.core.model.PlayMethod
@@ -44,6 +45,10 @@ sealed interface PlayerError {
  * @param scrub where a search would go, while the user moves through the film.
  * @param info what the player reads, while the information screen is open.
  * @param reconnecting the connection broke and the buffer ran out: the player tries again.
+ * @param margin what a phone has loaded ahead, memory and disk (M2); null on the TV.
+ * @param offline the phone has no network: the film plays on its margin, then waits for it (M2).
+ * @param qualityReduced the quality just went down for a weak network: a discreet notice (M2).
+ * @param qualityChosen the user chose the quality: it no longer follows the network (M2).
  */
 @Immutable
 data class PlayerState(
@@ -57,6 +62,10 @@ data class PlayerState(
     val playing: Boolean = false,
     val buffering: Boolean = false,
     val reconnecting: Boolean = false,
+    val margin: MarginStatus? = null,
+    val offline: Boolean = false,
+    val qualityReduced: Boolean = false,
+    val qualityChosen: Boolean = false,
     val stream: PlaybackStream? = null,
     val fallback: String? = null,
     val audioIndex: Int? = null,

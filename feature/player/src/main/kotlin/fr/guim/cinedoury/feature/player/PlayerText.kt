@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import fr.guim.cinedoury.core.model.AspectMode
 import fr.guim.cinedoury.core.model.ItemKind
+import fr.guim.cinedoury.core.model.MarginStatus
 import fr.guim.cinedoury.core.model.MediaItem
 import fr.guim.cinedoury.core.model.PlayMethod
 import fr.guim.cinedoury.core.model.PlaybackFailure
@@ -24,6 +25,7 @@ import fr.guim.cinedoury.core.ui.screenLocale
 import java.text.NumberFormat
 import java.util.Locale
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
 
 /** « 1:02:03 », « 42:10 »: a position in the film, in tabular figures. */
 fun Duration.toClockText(): String {
@@ -251,6 +253,13 @@ fun PlayerState.infoLines(snapshot: PlayerSnapshot): List<Pair<String, String>> 
                 maximumFractionDigits = 1
             }.format(snapshot.buffered.inWholeMilliseconds / MILLIS)
     lines += stringResource(R.string.info_buffer) to stringResource(R.string.info_seconds, buffer)
+    snapshot.margin?.let { margin ->
+        lines += stringResource(R.string.info_margin) to margin.label()
+        margin.bandwidth?.let {
+            lines += stringResource(R.string.info_margin_bandwidth) to
+                stringResource(R.string.info_mbps, it.toInt().megabits())
+        }
+    }
     lines += stringResource(R.string.info_dropped) to snapshot.droppedFrames.toString()
     capabilities?.let { device ->
         lines += stringResource(R.string.info_device) to "${device.device} · Android ${device.system}"
@@ -266,6 +275,34 @@ fun PlayerState.infoLines(snapshot: PlayerSnapshot): List<Pair<String, String>> 
 }
 
 private const val MILLIS = 1_000.0
+
+/** « 12 min (dont 2 en mémoire) », « 40 s (en mémoire) »; « …, hors réseau » without a network (M2). */
+@Composable
+fun MarginStatus.label(): String {
+    val text =
+        if (ahead < 1.minutes) {
+            stringResource(R.string.info_margin_seconds, ahead.inWholeSeconds.toInt())
+        } else {
+            stringResource(R.string.info_margin_value, ahead.inWholeMinutes.toInt(), inMemory.inWholeMinutes.toInt())
+        }
+    return if (offline) stringResource(R.string.info_margin_offline, text) else text
+}
+
+/** What an hour of the film weighs at [bitrate] bits per second: « Environ 1,8 Go par heure » (M2). */
+@Composable
+fun hourlyEstimate(bitrate: Int): String {
+    val bytes = bitrate.toDouble() * SECONDS_PER_HOUR / BITS_PER_BYTE
+    val format = NumberFormat.getNumberInstance(screenLocale()).apply { maximumFractionDigits = 1 }
+    return if (bytes >= GIGA) {
+        stringResource(R.string.mobile_player_quality_estimate, format.format(bytes / GIGA))
+    } else {
+        stringResource(R.string.mobile_player_quality_estimate_mb, format.format(Math.round(bytes / MEGA_BYTES)))
+    }
+}
+
+private const val BITS_PER_BYTE = 8
+private const val GIGA = 1_000_000_000.0
+private const val MEGA_BYTES = 1_000_000.0
 
 /** The size of the subtitles, « 140 % ». */
 @Composable

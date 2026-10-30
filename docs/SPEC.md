@@ -29,6 +29,7 @@ son domaine :
 | Essai réel 5 (29/10/2026, Shield en 4K et Chromecast, v0.9.1) : banc de mesures réparé (libellés du rail lus par l'accessibilité), compte à rebours qui ne coupe plus la fin des épisodes, épisode précédent / suivant dans le lecteur, menu d'options rapides à l'appui long sur une jaquette, mosaïque « Ce soir » en haut de l'accueil, rangée « Continuer » sous elle, notes de la 1.0.0 | terminé, en revue (§ 4.23 ; captures dans `docs/screenshots/r5/` : `avant-*` / `apres-*` pour A, B, C, D et F) | [#16](https://github.com/guim31/cine-doury/pull/16) |
 | Nouveau logo et retouches de la 1.0.0 (29/10/2026) : un pot de pop-corn sur fond noir pour l'icône et la bannière Android TV ; H, tuiles de la mosaïque « Ce soir » rognées au focus ; I et J, rail qui s'ouvrait seul au lancement et après OK sur une de ses entrées | en revue (§ 4.24 et 4.25 ; captures dans `docs/screenshots/logo/` et `docs/screenshots/r6/`, numéros 230 et 231) | — |
 | M1 — Socle mobile et navigation (appli `:app:mobile` pour téléphone et tablette : jetons partagés, composants Material 3, connexion, « Connecter un appareil », barre des onglets, accueil, bibliothèques, fiches, recherche, lecture simple ; chaque appli choisit son APK dans une release) | en revue (§ 4.26 ; captures dans `docs/screenshots/m1/`, numéros 200 à 229) | [#18](https://github.com/guim31/cine-doury/pull/18) |
+| M2 — Lecteur nomade (marge en mémoire puis sur disque, coupures traversées, bascule d'adresse en lecture, qualité selon le réseau et adaptative, gestes, cadenas, rotation, image dans l'image, focus audio ; la TV ne change pas) ; F, adresse à distance et joignabilité sur le téléphone ; G, remux H.264 en segments TS et erreur de format (les deux applis) | en revue (§ 4.27 ; captures dans `docs/screenshots/m2/`, numéros 240 à 253) | [#19](https://github.com/guim31/cine-doury/pull/19) |
 
 *(Chaque jalon met à jour ce tableau et ajoute ses contrats au § 4.)*
 
@@ -2255,8 +2256,8 @@ maison quitté, retrouvé), après 1,5 s, `SessionManager.followNetwork()` refai
 (locale d'abord, puis distante) et, si l'adresse change, déplace la session ouverte :
 `LibrarySource.moveTo(adresse)` met à jour le client du SDK (`ApiClient.update`), que partagent
 lecture et gestion (leurs URL se lisent à chaque appel) ; les écrans déjà ouverts suivent sans rien
-recharger, les images aussi (`imageUrl` lit la connexion courante). Une lecture en cours garde l'URL
-de son flux (M2). L'onglet Profil dit, d'une ligne discrète, l'adresse utilisée (« Connecté à la
+recharger, les images aussi (`imageUrl` lit la connexion courante). Une lecture en cours suit aussi
+la nouvelle adresse depuis le M2 (§ 4.27). L'onglet Profil dit, d'une ligne discrète, l'adresse utilisée (« Connecté à la
 maison (adresse locale) » ou « à distance (adresse publique) »).
 
 **Connecter un appareil** (`FONCTIONNALITES.md` § 1) : Profil → « Connecter un appareil » ; les six
@@ -2326,6 +2327,181 @@ déplacée). CI rapide : `check` (Lint et tests de `:app:mobile`), APK mobile, c
 émulateur **téléphone API 34** (`PhoneJourneyTest`, `ci/emulator-phone.sh`) : connexion, accueil, fiche,
 « Lire », quelques secondes de lecture, retour.
 
+### 4.27 Lecteur nomade (M2, 30/10/2026)
+
+Le cas qui guide tout : des enfants regardent un film sur une tablette ou un téléphone **en voiture**,
+sur le réseau mobile, à travers des tunnels et des campagnes mal couvertes. La lecture démarre aussi
+vite qu'avant, puis se constitue une **marge** qui grandit pendant la lecture, pour traverser une
+coupure de plusieurs minutes sans s'arrêter. **La TV ne change pas** : `PlayerBuffer.Tv` est le même
+(`PlayerBufferTest`), `ExoVideoPlayer` sans `Nomad` (la TV n'en a pas) se comporte comme avant,
+`PlayerViewModel` sans `NetworkMonitor` (la TV n'en déclare pas) aussi, et aucune capture TV n'a bougé.
+
+**Marge en deux étages** (`Nomad`, `MarginLoader`, `MarginPlan` dans `:core:model`) :
+
+- **Démarrage inchangé** : 1,5 s de tampon, comme sur la TV (`PlayerBuffer.phone`). Rien n'est chargé
+  d'avance avant que la lecture ait commencé (`MarginInputs.started`).
+- **Mémoire** : le tampon d'ExoPlayer, jusqu'à **2 min**, plafonné à **un quart du tas Java** de
+  l'appli, de 32 à 128 Mo (`MarginBudget.memoryBytes`, `memoryClass`) : 64 Mo sur un tas de 256 Mo,
+  soit environ 2 min à 4 Mb/s. 15 min à 4 Mb/s font 450 Mo, qu'aucun tas ne tient ; **pas de
+  `largeHeap`** : le disque porte la marge, la mémoire ne fait que le relais, et un grand tas
+  ralentirait le ramasse-miettes de toute l'appli.
+- **Disque** : un `SimpleCache` de Media3 dans le cache de l'appli (`PlaybackCache`, un par processus),
+  lu par le lecteur à travers un `CacheDataSource` (posé par le `DataSources` du M1 : sans refonte), et
+  rempli **sur un fil à part** par des `CacheWriter`, morceau après morceau, depuis la fin de la mémoire
+  jusqu'à la **marge choisie** (« Marge de lecture » : 5, 15 ou 30 min, 15 par défaut, réglage de
+  l'appareil). Un flux transcodé se charge **segment par segment** (la playlist VOD que Jellyfin publie
+  entière, lue dans le manifeste d'ExoPlayer, segment d'initialisation compris) ; un fichier lu tel quel,
+  **par plages d'octets** (4 Mo au moins, 4 000 plages au plus), dont la part du film se déduit du débit
+  moyen du fichier. Plafond : la moitié de l'espace libre, une fois 1 Go laissé à l'appareil, **4 Go**
+  au plus (`MarginBudget.diskBytes` : 30 min à 16 Mb/s) ; la marge s'arrête avant, sans éviction de ce
+  qui est devant. Ce qui est à plus de 2 min derrière la position est effacé au fil de la lecture ; tout
+  est vidé à la fin de la lecture (chaque lecture écrit sous son préfixe), et à l'ouverture du cache ce
+  qu'une appli tuée aurait laissé. **Choix** : `CacheWriter` plutôt que le `DownloadManager` de Media3,
+  qui suppose un téléchargement entier, persistant et un service ; et lire le manifeste d'ExoPlayer
+  plutôt qu'un second analyseur de playlist.
+- **Le préchargement ne gêne ni le démarrage ni la lecture** (`MarginPlan.next`) : il attend que la
+  lecture ait commencé et que la mémoire ait atteint son seuil bas (30 s) ; il cède la bande passante
+  tant que la mémoire est sous ce seuil et que le disque n'a rien au-delà (le lecteur charge alors du
+  réseau) ; il laisse au lecteur le morceau que celui-ci est en train de charger.
+- **Recherche** (saut, ±10 s, chapitre, glissement) : dans la marge, le lecteur relit le disque ; au-delà,
+  la marge repart **de la nouvelle position** (la fin de la mémoire), pas de l'ancienne fin : aucun trou
+  n'est comblé pour rien ; ce qui est devant et déjà chargé compte dès que la marge l'atteint.
+- **Visible** : la barre du téléphone (`MobileSeekBar`) dessine la marge en gris clair entre la position
+  et la fin de ce qui est chargé, mémoire et disque confondus ; « Informations » ajoute « Marge : 12 min
+  (dont 2 en mémoire) » et « Débit mesuré » (le débit des morceaux chargés, lissé).
+- **Coupure** : une requête qui échoue faute de réseau est réessayée **sans limite** (au plus toutes les
+  3 s, `NomadRetries`), pendant que la marge joue, sans message ; une réponse du serveur en erreur garde
+  les 20 essais de la TV, puis l'écran d'erreur. Le préchargement réessaie de plus en plus tard (1 à 8 s),
+  et **tout de suite** à chaque changement de réseau (`NetworkMonitor`). Marge épuisée : l'écran de
+  chargement habituel, avec « Le réseau est coupé. La lecture reprendra dès son retour. », et la lecture
+  repart seule.
+- **Bascule d'adresse en lecture** (l'écart du M1, réglé) : chaque requête du lecteur et du
+  préchargement passe par un `ResolvingDataSource` qui remplace l'adresse du serveur de l'URL du flux
+  (celle du moment où il a été demandé) par l'adresse **courante** de la session
+  (`SessionManager.connection`, que `followNetwork` déplace). Les clés du cache gardent l'URL d'origine :
+  la marge chargée par le Wi-Fi de la maison sert encore sur le réseau mobile.
+- **Côté serveur — mesuré** contre le Jellyfin 12.3 de test (Docker, 30/10/2026 ; film de 20 min en
+  640 × 360 transcodé, segments de 3 s ; scripts dans la session, pas dans le dépôt) :
+  - **Jellyfin 12.3 désactive le throttling par défaut** (`EnableThrottling: false`, une migration
+    `DisableTranscodingThrottling` l'éteint ; `ThrottleDelaySeconds` vaut 180). Sans throttling, le
+    transcodage court jusqu'à la fin du film (20 min transcodées en 30 s).
+  - **Activé**, le throttling compare la position du transcodage à celle du **dernier segment
+    demandé**, pas à la position de lecture rapportée : avec 60 s, un transcodage qu'on ne lit pas
+    s'arrête environ 3 min devant (58 segments) ; mais en **demandant les segments en avance**, il ne
+    bloque jamais : 20 min de film chargées en 31 s avec `ThrottleDelaySeconds = 60` (et en 32 s à 180),
+    alors que les rapports de progression disaient une position de 0 à 30 s.
+  - Après 150 s sans aucune requête, les segments suivants (et un segment lointain) sont servis : le
+    serveur reprend (ou relance) le transcodage à la demande.
+  - **Donc l'appli obtient la marge sans toucher au serveur**, quel que soit le réglage. **Valeur
+    recommandée** : rien à changer ; `EnableThrottling` désactivé (défaut de la 12.3) et
+    `ThrottleDelaySeconds` laissé à **180** (défaut) si le throttling est un jour activé. L'appli ne
+    modifie jamais la configuration du serveur. `EnableSegmentDeletion` (désactivé par défaut) peut
+    rester ainsi : les segments déjà chargés sont dans la marge du téléphone.
+
+**Qualité sur le réseau mobile** (`QualityGovernor`, `NetworkKind`) :
+
+- Deux qualités par défaut, réglages de l'appareil dans l'onglet Profil : **« Qualité en Wi-Fi »**
+  (`localQuality`, **Automatique**) et **« Qualité sur le réseau mobile »** (`mobileQuality`,
+  **4 Mb/s**). Le réseau mobile est un réseau cellulaire ou facturé à l'usage (`ConnectivityManager`).
+  Sur le téléphone, la qualité suit le **type de réseau**, plus l'adresse : la qualité « distante » de la
+  TV (8 Mb/s) ne sert que sur un Wi-Fi hors de la maison. **Choix de 4 Mb/s** : le serveur n'encode
+  qu'en H.264 aujourd'hui ; 4 Mb/s donnent un **720p** net sur un écran de téléphone ou de tablette,
+  1,8 Go par heure, et laissent du débit pour faire grandir la marge sur un réseau 4G de campagne
+  (souvent 5 à 15 Mb/s) ; un 1080p H.264 propre demande 8 Mb/s, qui ne laisseraient presque rien pour la
+  marge. Changer de réseau en cours de lecture applique la qualité du nouveau réseau si elle est plus
+  basse.
+- **Adaptation** : chaque seconde, si la marge **fond** d'au moins 15 s en une minute alors que le réseau
+  répond (une coupure n'est pas de la lenteur), et qu'elle est sous 3 min, la qualité baisse d'un cran
+  (`Qualities.BITRATES` ; depuis l'original, le premier cran sous le débit du fichier), relancée à la
+  position courante, avec « Qualité réduite : réseau faible » quelques secondes. Elle **remonte** d'un
+  cran après 2 min de marge pleine, si le débit mesuré vaut 1,5 fois le cran au-dessus, jamais au-delà de
+  la qualité par défaut ; 1 min de calme après une baisse, 5 après une hausse. **Rien de tout ça** quand
+  la qualité a été choisie dans le panneau. **Écart** : le changement de qualité repart de la position
+  courante sans garder la marge de l'ancienne qualité (une autre URL, d'autres segments) ; la garder
+  demanderait de jouer l'ancien flux jusqu'au bout de sa marge pendant que le nouveau se charge derrière,
+  puis de passer de l'un à l'autre : plus tard si l'essai en voiture le demande. La baisse n'arrive que
+  marge basse (moins de 3 min), où la perte est faible.
+- Panneau « Qualité » : chaque débit dit ce qu'une heure consomme (« Environ 1,8 Go par heure »).
+
+**Lecteur tactile** (`UI.md` § 9 ; `PlayerGestures`, `MobilePlayerScreen`) :
+
+- **Double appui** sur le tiers gauche ou droit : −10 / +10 s ; chaque appui suivant du même côté
+  (moins de 0,7 s après) ajoute 10 s (« −30 s » après un double appui et un appui), le saut se fait
+  quand les appuis cessent ; le tiers du milieu montre ou cache les commandes.
+- **Glissement vertical** : la luminosité **de la fenêtre** à gauche (rendue à la fermeture, jamais le
+  réglage du système), le volume des médias à droite. **Glissement horizontal** : recherche, toute la
+  largeur valant 5 min, avec la vignette trickplay et le temps visé. **Pincer** : remplir l'écran
+  (`AspectMode.Zoom`) ou revenir au format d'origine.
+- **Cadenas** : plus aucun geste ni bouton (ni « Retour »), un appui montre le cadenas et la phrase
+  « Écran verrouillé. Maintenez le cadenas pour le déverrouiller. » ; un appui long déverrouille.
+- **Rotation** : paysage plein écran par défaut, bouton pour garder le portrait. Les commandes sont
+  dans les marges sûres (encoches, barres) et le temps n'est plus rogné (capture 224).
+- **Image dans l'image** : quitter l'appli pendant la lecture (Android 12 : de lui-même, Android 11 :
+  sur `onUserLeaveHint`) réduit le film dans une petite fenêtre, avec −10 s, lecture/pause, +10 s ;
+  en pause, rien. **Arrière-plan et écran éteint** : pause (sauf en image dans l'image). Pas de lecture
+  audio seule dans ce jalon.
+- **Focus audio** (ExoPlayer) : appel entrant ou autre son, pause puis reprise ; écouteurs ou Bluetooth
+  débranchés, pause. L'écran reste allumé pendant la lecture.
+
+**F — Adresse à distance sur le téléphone** (retour du mainteneur avec la `1.0.1-essai.1`) : Wi-Fi coupé, le
+Profil disait encore « Connecté à la maison », et rien ne se chargeait : aucun écran du téléphone ne permettait
+de saisir l'adresse publique, restée vide après une découverte sur le réseau local.
+- **Profil** : « Adresse locale » et « Adresse à distance » (« Aucune : hors de la maison, le serveur sera
+  injoignable »), sur l'écran d'adresse existant (`EditLocal`, `EditRemote`, vérifiée auprès du serveur).
+- **Première connexion** sur le réseau de la maison (serveur trouvé par la découverte) : l'adresse à distance
+  est proposée aussitôt, avec la raison (« Pour regarder hors de la maison… ») et « Plus tard ».
+- **Joignabilité réelle** : `SessionManager.reach`, mis à jour à chaque changement de réseau
+  (`followNetwork`) ; quand aucune adresse ne répond, la ligne du Profil dit « Serveur injoignable » (et
+  « aucune adresse à distance » le cas échéant) au lieu de l'adresse d'avant. Tests : `SessionManagerTest`,
+  `MobileFlowTest` (local, puis Wi-Fi coupé : « à distance » ; sans adresse à distance : « injoignable »).
+  Captures 226, 252, 253. La TV ne change pas (ses réglages avaient déjà les deux adresses).
+
+**G — Remux HLS en fMP4 illisible** (retour du mainteneur, téléphone Xiaomi sous Android 16, `1.0.1-essai.1`) :
+un MKV H.264 à images B avec du DTS-HD : le téléphone ne lit pas le DTS, Jellyfin copie la vidéo (`-codec:v
+copy -copyts`) dans des segments fMP4 (le profil demande `mp4` dès qu'un décodeur HEVC existe), le premier
+`tfdt` est négatif et Media3 refuse le segment (`IllegalStateException: Top bit not zero`). Deux défauts du
+lecteur **partagé**, corrigés pour les deux applis (exception voulue à « la TV ne bouge pas » ; le Chromecast,
+qui décode le HEVC et pas le DTS, prenait le même chemin ; aucune capture TV ne change) :
+- **Classement** (`PlaybackErrors`) : l'erreur arrivait en code 2000 (entrée/sortie, exception inattendue du
+  chargeur) et s'affichait « La connexion au serveur est perdue », que « Réessayer » rejouait. Une
+  `ParserException` ou une `IllegalStateException` dans les causes est désormais une erreur de **format**, qui
+  déclenche le repli ; le détail (« Plus d'infos ») cite toute la chaîne des causes.
+- **Segments MPEG-TS** (`PlaybackFallback.wantsTs`, `tsProfile`) : **choix** de les demander **d'avance**
+  quand le serveur copierait une vidéo H.264 dans des segments fMP4. On le sait de la réponse de `PlaybackInfo`
+  : un flux direct (remux), ou un transcodage dont aucune raison ne touche la vidéo (`TranscodeReason.encodesVideo` ;
+  mesuré sur la 12.3 : un MKV avec DTS pour le téléphone dit « ContainerNotSupported, AudioCodecNotSupported » et
+  copie la vidéo). Le flux est alors redemandé aussitôt avec un profil `ts`, H.264 seulement (un aller-retour de
+  plus, avant toute image). Le HEVC transcodé reste en fMP4 (Jellyfin ne met pas de HEVC en TS), comme une vidéo
+  encodée de nouveau, qui commence à zéro. **Filet** : une erreur de format sur des segments fMP4, quels qu'ils
+  soient, redemande une fois le même flux en TS à la même position (`FallbackAction.TsSegments`), avant le repli
+  vers le transcodage. Essai : `RemuxOnDeviceTest` sur l'émulateur téléphone de la CI complète (« Bretelle »,
+  H.264 à images B et DTS, ajouté par `ci/emulator-margin.sh`) : le fMP4 proposé doit être reconnu, échouer
+  (s'il échoue) en erreur de format, et le TS doit se lire. Mesuré sur la 12.3 : un MKV avec du DTS (même 5.1,
+  profil sans DTS) est proposé en lecture directe ; le test refuse donc la lecture directe, comme après un repli,
+  et le serveur copie la vidéo (« AudioCodecNotSupported, DirectPlayError »). Le clip généré ne reproduit pas forcément le `tfdt`
+  négatif (mesuré en local : 0) ; le classement est vérifié sur la chaîne de causes réelle (`PlaybackErrorsTest`).
+
+**Tests** : `PlaybackMarginTest` (étage, cession au lecteur, plafonds, recherche hors de la marge),
+`QualityGovernorTest` (baisse, coupure, remontée, plafond, qualité par réseau), `PlayerBufferTest`,
+`PlayerGesturesTest` (double appui cumulé, glissements, pincer, cadenas), `M2PlayerTest` (le modèle de
+vue : 4 Mb/s sur le réseau mobile, baisse avec message, rien en coupure ni après un choix, bascule Wi-Fi
+→ mobile). **Essai réel en CI** (émulateur téléphone de la CI complète, `ci/emulator-margin.sh`,
+`MarginOnDeviceTest`) : un film de 20 min ajouté au Jellyfin de la CI pour ce seul job, le throttling
+**activé à 180 s** ; pour un flux transcodé puis pour le fichier lu tel quel : marge au-delà de **N = 4
+min** (plus que les 3 min du throttling), mode avion pendant **2 min 10 s** (la position doit avancer
+d'au moins 2 min sans un seul état d'attente), puis réseau rendu, et la marge doit regrandir. Le journal
+seconde par seconde (marge, mémoire, débit, état) est l'artefact `emulator-margin.txt` du job. Premier passage (30/10/2026) :
+les deux essais passent ; en lecture directe, coupure à environ 4 min de marge, la position avance de 2 min 10 s
+sans une seule attente (la marge descend de 4 min à 1 min 50 s, la mémoire se recharge depuis le disque), et 2 s
+après le retour du réseau la marge repasse à 3 min 53 s.
+
+**Captures** (`docs/screenshots/m2/`) : barre avec la marge (240), cadenas (241), qualité et consommation
+(242), informations avec la marge (243), « −30 s » (244), recherche par glissement (245), luminosité
+(246), réseau coupé (247), qualité réduite (248), portrait (249), « Marge de lecture » (250), qualité
+sur le réseau mobile (251), serveur injoignable (252), adresse à distance proposée (253) ; le profil (226)
+montre les réglages de lecture et les deux adresses. L'image dans l'image n'est
+pas capturable (fenêtre dessinée par le système).
+
 ## 5. Tests et CI
 
 - GitHub Actions sur `ubuntu-latest` :
@@ -2343,7 +2519,8 @@ déplacée). CI rapide : `check` (Lint et tests de `:app:mobile`), APK mobile, c
   - **contenu de l'APK optimisé** : bibliothèques 32 bits et taille (`ci/check-apk.sh`, § 4.20) ;
   - **20 gestes au canapé** sur l'émulateur API 34 (`ci/couch-gestures.sh`, § 4.20, indicatif) ;
   - **appli téléphone** (M1, § 4.26) : Lint, tests et captures dans la CI rapide ; un émulateur
-    téléphone API 34 dans la CI complète (`ci/emulator-phone.sh`).
+    téléphone API 34 dans la CI complète (`ci/emulator-phone.sh`), puis l'essai de la marge (M2,
+    § 4.27 : `ci/emulator-margin.sh`, coupure du réseau de 2 min 10 s, journal `emulator-margin.txt`).
   - **CI rapide sur une PR** (§ 4.20) : l'émulateur API 34, les gestes, les profils et les mesures
     ne tournent que sur `main`, sur `workflow_dispatch` ou avec `[full-ci]` dans le commit de tête
     (`[record-profiles]` pour les profils).

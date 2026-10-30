@@ -17,6 +17,8 @@ package fr.guim.cinedoury.core.model
  * @param allowDolbyVision Dolby Vision shown as it is; off, its base layer or a tone mapping.
  * @param localQuality the bitrate asked for on the local network; null for the original.
  * @param remoteQuality the bitrate asked for through the remote address; null for the original.
+ * @param mobileQuality the bitrate asked for on a mobile network (a phone, M2); null for the original.
+ * @param marginMinutes how far ahead a phone loads the film, memory and disk (« Marge de lecture », M2).
  * @param bitrateCeiling the most the device asks for, the original included (its network).
  * @param directPlay how the file reaches the player.
  * @param burnInAss ASS subtitles drawn into the picture by the server, styles and all.
@@ -41,6 +43,8 @@ data class PlayerSettings(
     val allowDolbyVision: Boolean = true,
     val localQuality: Int? = null,
     val remoteQuality: Int? = DEFAULT_REMOTE_QUALITY,
+    val mobileQuality: Int? = QualityGovernor.MOBILE_DEFAULT,
+    val marginMinutes: Int = MarginPlan.DEFAULT_MINUTES,
     val bitrateCeiling: Int = ProfileOptions.MAX_BITRATE,
     val directPlay: DirectPlayMode = DirectPlayMode.Auto,
     val burnInAss: Boolean = false,
@@ -55,14 +59,33 @@ data class PlayerSettings(
     val subtitles: SubtitleStyle = SubtitleStyle(),
 ) {
     /** The bitrate to ask for by default, on the local network or through the remote address. */
-    fun quality(remote: Boolean): Int =
-        minOf((if (remote) remoteQuality else localQuality) ?: bitrateCeiling, bitrateCeiling)
+    fun quality(
+        remote: Boolean,
+        network: NetworkKind? = null,
+    ): Int = minOf(defaultQuality(remote, network) ?: bitrateCeiling, bitrateCeiling)
+
+    /**
+     * The quality chosen for this network, null for the original: on a mobile network (a phone, M2)
+     * [mobileQuality], else the local or the remote one.
+     */
+    fun defaultQuality(
+        remote: Boolean,
+        network: NetworkKind? = null,
+    ): Int? =
+        when {
+            network == NetworkKind.Mobile -> mobileQuality
+            remote -> remoteQuality
+            else -> localQuality
+        }
 
     /** What the profile of the device sent to the server allows ([PlaybackProfiles.build]). */
-    fun profileOptions(remote: Boolean = false): ProfileOptions =
+    fun profileOptions(
+        remote: Boolean = false,
+        network: NetworkKind? = null,
+    ): ProfileOptions =
         ProfileOptions(
             passthrough = if (forceStereo) emptySet() else passthrough,
-            maxBitrate = quality(remote),
+            maxBitrate = quality(remote, network),
             burnInAss = burnInAss,
             allowHdr = allowHdr,
             allowDolbyVision = allowDolbyVision,

@@ -27,6 +27,31 @@ le mainteneur l'installe depuis les artefacts de la CI ou du workflow « Release
 - **TV** : rien ne change à l'écran. Pour les versions suivantes, chaque appli ne prendra dans une
   release que son propre fichier.
 
+M2 — le **lecteur nomade** du téléphone, pour regarder en voiture :
+
+- **Marge de lecture** : la lecture démarre aussi vite qu'avant, puis le téléphone charge d'avance,
+  en mémoire (environ 2 min) puis sur son stockage, jusqu'à la marge choisie (Profil → « Marge de
+  lecture » : 5, 15 ou 30 min, 15 par défaut). Un tunnel, une campagne sans réseau : le film continue
+  sur sa marge, sans message ; le chargement reprend seul au retour du réseau, même si l'adresse a
+  changé (Wi-Fi de la maison, réseau mobile). Si la marge s'épuise : « Le réseau est coupé. La
+  lecture reprendra dès son retour. », et le film repart seul. La marge se voit en gris clair sur la
+  barre ; « Informations » dit « Marge : 12 min (dont 2 en mémoire) » et le débit mesuré.
+- **Qualité selon le réseau** : Automatique en Wi-Fi, 4 Mb/s sur le réseau mobile (réglables dans le
+  Profil, avec ce qu'une heure consomme). Si la marge fond, la qualité baisse d'un cran (« Qualité
+  réduite : réseau faible »), puis remonte prudemment ; jamais si vous avez choisi une qualité.
+- **Gestes** : deux appuis à gauche ou à droite pour −10 / +10 s (cumulables : « −30 s »), glisser
+  verticalement pour la luminosité (à gauche) ou le volume (à droite), pincer pour remplir l'écran,
+  glisser sur l'image pour chercher dans le film.
+- **Cadenas** : l'écran ignore les doigts des enfants jusqu'à un appui long sur le cadenas.
+- **Adresse à distance** (Profil) : « Adresse locale » et « Adresse à distance », proposée aussi à la
+  première connexion faite à la maison ; hors de portée, le Profil dit « Serveur injoignable » (et
+  pourquoi) au lieu de « Connecté à la maison ».
+- **Films remuxés** (téléphone et TV) : un film H.264 que le serveur copie sans le réencoder (son DTS
+  converti, par exemple) se lit de nouveau ; et une erreur de lecture du flux n'est plus présentée comme
+  une connexion perdue.
+- **Image dans l'image** en quittant l'appli pendant le film (lecture/pause, ±10 s) ; pause en
+  arrière-plan, écran éteint, écouteurs débranchés ou appel entrant ; portrait possible (bouton).
+
 ## 1.0.1 — 30/10/2026
 
 Notes de version : [`docs/releases/v1.0.1.md`](docs/releases/v1.0.1.md).

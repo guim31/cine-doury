@@ -49,6 +49,19 @@ enum class TranscodeReason {
     /** Whether the reason is about the audio: the video may still be copied. */
     val isAudio: Boolean get() = name.startsWith("Audio") || this == SecondaryAudioNotSupported
 
+    /** Whether the reason makes the server encode the video again (G, M2); the others let it copy it. */
+    val encodesVideo: Boolean
+        get() =
+            name.startsWith("Video") ||
+                this in
+                setOf(
+                    RefFramesNotSupported,
+                    AnamorphicVideoNotSupported,
+                    InterlacedVideoNotSupported,
+                    UnknownVideoStreamInfo,
+                    ContainerBitrateExceedsLimit,
+                )
+
     companion object {
         fun of(name: String): TranscodeReason? = entries.firstOrNull { it.name.equals(name.trim(), ignoreCase = true) }
     }
@@ -154,6 +167,9 @@ enum class FallbackAction {
     /** Ask the server again, without direct play: it transcodes, at the same position. */
     Transcode,
 
+    /** Ask the server again for the same stream in MPEG-TS segments, at the same position (G, M2). */
+    TsSegments,
+
     /** Show the error, with « Réessayer ». */
     ShowError,
 }
@@ -174,4 +190,48 @@ object PlaybackFallback {
         } else {
             FallbackAction.ShowError
         }
+
+    /**
+     * After a failure of [stream] (G, M2): a stream in fMP4 segments that cannot be read is asked again
+     * in MPEG-TS segments first ([tsTried] once), then as [next] says.
+     */
+    fun next(
+        stream: PlaybackStream,
+        failure: PlaybackFailure,
+        tsTried: Boolean,
+    ): FallbackAction =
+        if (!tsTried && failure == PlaybackFailure.Format && stream.fmp4Segments) {
+            FallbackAction.TsSegments
+        } else {
+            next(stream.method, failure)
+        }
+
+    /**
+     * The server copies an H.264 video into fMP4 segments (G, M2): Jellyfin remuxes with `-copyts`, and
+     * a film with B-frames then starts before zero (a negative `tfdt`), which Media3 refuses (« Top bit
+     * not zero »). MPEG-TS segments carry the same copy without the problem; a transcoded HEVC stays in
+     * fMP4 (Jellyfin puts no HEVC in TS), and so does a video encoded again (it starts at zero).
+     */
+    fun wantsTs(stream: PlaybackStream): Boolean {
+        // Measured on Jellyfin 12.3: an MKV with DTS for a phone says « ContainerNotSupported,
+        // AudioCodecNotSupported », and copies the video.
+        val copied =
+            stream.method == PlayMethod.DirectStream ||
+                (stream.method == PlayMethod.Transcode && stream.reasons.none { it.encodesVideo })
+        val h264 =
+            stream.source.video
+                ?.codec
+                .equals("h264", ignoreCase = true)
+        return stream.fmp4Segments && copied && h264
+    }
+
+    /** A profile that asks for MPEG-TS segments, H.264 only (Jellyfin puts no HEVC in TS). */
+    fun tsProfile(profile: PlaybackProfile): PlaybackProfile =
+        profile.copy(transcodeContainer = TS, transcodeVideoCodecs = profile.transcodeVideoCodecs.filter { it == H264 })
+
+    private const val TS = "ts"
+    private const val H264 = "h264"
 }
+
+/** HLS in fMP4 segments (`mp4`), as the server sends a stream to a device that decodes HEVC. */
+val PlaybackStream.fmp4Segments: Boolean get() = isHls && container.equals("mp4", ignoreCase = true)

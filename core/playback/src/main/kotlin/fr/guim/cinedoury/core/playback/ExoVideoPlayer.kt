@@ -5,6 +5,7 @@ import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import androidx.annotation.OptIn
+import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.Format
 import androidx.media3.common.MediaItem
@@ -14,7 +15,9 @@ import androidx.media3.common.Player
 import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DataSpec
 import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.datasource.ResolvingDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
@@ -25,11 +28,13 @@ import androidx.media3.exoplayer.audio.AudioTrackAudioOutputProvider
 import androidx.media3.exoplayer.audio.DefaultAudioSink
 import androidx.media3.exoplayer.audio.ForwardingAudioOutputProvider
 import androidx.media3.exoplayer.audio.ForwardingAudioSink
+import androidx.media3.exoplayer.hls.HlsManifest
 import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.upstream.DefaultLoadErrorHandlingPolicy
 import fr.guim.cinedoury.core.model.DeviceCapabilities
 import fr.guim.cinedoury.core.model.DynamicRange
+import fr.guim.cinedoury.core.model.MarginInputs
 import fr.guim.cinedoury.core.model.PassthroughFormat
 import fr.guim.cinedoury.core.model.PlayMethod
 import fr.guim.cinedoury.core.model.PlaybackFailure
@@ -39,6 +44,7 @@ import fr.guim.cinedoury.core.model.SubtitleMethod
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -64,6 +70,7 @@ class ExoVideoPlayer(
     allowDolbyVision: Boolean = true,
     buffer: PlayerBuffer = PlayerBuffer.Tv,
     dataSources: DataSources = DataSources.Direct,
+    private val nomad: Nomad? = null,
 ) : VideoPlayer {
     private val main = Handler(Looper.getMainLooper())
     private val httpFactory =
@@ -73,13 +80,30 @@ class ExoVideoPlayer(
             .setReadTimeoutMs(READ_TIMEOUT_MS)
             .setAllowCrossProtocolRedirects(true)
 
+    /** The address of the server when the stream was asked for: the phone swaps it for the current one. */
+    private var streamBase: String? = null
+
+    /** The phone's margin (M2), none on the TV. */
+    private val margin: MarginLoader? =
+        nomad?.let { options ->
+            MarginLoader(
+                disk = options.cache,
+                upstream = ResolvingDataSource.Factory(httpFactory) { spec -> spec.withCurrentAddress(options) },
+                network = options.network,
+                target = options.margin,
+                prefix = "p${nextPlayer.incrementAndGet()}|",
+            )
+        }
+
     private val exo: ExoPlayer =
         ExoPlayer
             .Builder(context, Renderers(context, capabilities, allowedPassthrough, audioOffsetMillis, allowDolbyVision))
             .setMediaSourceFactory(
                 DefaultMediaSourceFactory(
-                    dataSources.wrap(httpFactory),
-                ).setLoadErrorHandlingPolicy(DefaultLoadErrorHandlingPolicy(LOAD_RETRIES)),
+                    margin?.dataSources ?: dataSources.wrap(httpFactory),
+                ).setLoadErrorHandlingPolicy(
+                    if (nomad != null) NomadRetries() else DefaultLoadErrorHandlingPolicy(LOAD_RETRIES),
+                ),
             ).setLoadControl(
                 DefaultLoadControl
                     .Builder()
@@ -98,7 +122,33 @@ class ExoVideoPlayer(
                         C.VIDEO_CHANGE_FRAME_RATE_STRATEGY_OFF
                     },
                 )
+                if (nomad != null) {
+                    // A call or another sound pauses, then resumes; headphones unplugged pause (M2).
+                    setAudioAttributes(
+                        AudioAttributes
+                            .Builder()
+                            .setUsage(C.USAGE_MEDIA)
+                            .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
+                            .build(),
+                        true,
+                    )
+                    setHandleAudioBecomingNoisy(true)
+                }
             }
+
+    /** Which stream the margin follows: one more at each [load]. */
+    private var streamId = 0
+
+    /** The film has played since the last [load]: the margin may start. */
+    private var started = false
+    private var segments: MarginLoader.Source? = null
+    private val follow =
+        object : Runnable {
+            override fun run() {
+                followMargin()
+                main.postDelayed(this, MARGIN_LOOK_MS)
+            }
+        }
 
     override val player: Player get() = exo
 
@@ -120,7 +170,7 @@ class ExoVideoPlayer(
         exo.addListener(
             object : Player.Listener {
                 override fun onPlayerError(error: PlaybackException) {
-                    eventFlow.tryEmit(PlayerEvent.Failed(error.toFailure(), "${error.errorCodeName}: ${error.message}"))
+                    eventFlow.tryEmit(PlayerEvent.Failed(error.toFailure(), PlaybackErrors.detail(error)))
                 }
 
                 override fun onPlaybackStateChanged(playbackState: Int) {
@@ -200,6 +250,15 @@ class ExoVideoPlayer(
         audioDecoder = null
         passthrough = false
         httpFactory.setDefaultRequestProperties(stream.headers)
+        streamId++
+        started = false
+        segments = null
+        streamBase = nomad?.address()?.trimEnd('/')?.takeIf { stream.url.startsWith(it) }
+        if (margin != null) {
+            if (streamId > 1) margin.newStream()
+            main.removeCallbacks(follow)
+            main.post(follow)
+        }
         val item =
             MediaItem
                 .Builder()
@@ -380,7 +439,54 @@ class ExoVideoPlayer(
             audio = audio?.let { audioOutput(it) },
             droppedFrames = dropped,
             bandwidth = bandwidth,
+            margin =
+                margin?.status(
+                    exo.currentPosition.coerceAtLeast(0).milliseconds,
+                    exo.bufferedPosition.milliseconds,
+                ),
         )
+    }
+
+    /** Tells the margin what the player plays and where (M2): the segments of the playlist, or the file. */
+    private fun followMargin() {
+        val loader = margin ?: return
+        val current = stream ?: return
+        if (exo.isPlaying) started = true
+        val duration = exo.duration.takeIf { it != C.TIME_UNSET && it > 0 }?.milliseconds
+        val source =
+            if (current.isHls) {
+                segments ?: (exo.currentManifest as? HlsManifest)?.mediaPlaylist?.let { playlist ->
+                    MarginLoader.segments(streamId, playlist).also { segments = it }
+                }
+            } else {
+                val size = current.source.sizeBytes
+                if (duration != null && MarginLoader.hasLength(size)) {
+                    segments ?: MarginLoader.file(streamId, Uri.parse(current.url), checkNotNull(size), duration).also {
+                        segments = it
+                    }
+                } else {
+                    null
+                }
+            }
+        loader.update(
+            source,
+            MarginInputs(
+                position = exo.currentPosition.coerceAtLeast(0).milliseconds,
+                memoryEnd = exo.bufferedPosition.milliseconds,
+                playerLoading = exo.isLoading,
+                started = started,
+            ),
+        )
+    }
+
+    /** The current address of the server in place of the one the stream was asked through. */
+    @Suppress("ReturnCount") // Each case where the address stays.
+    private fun DataSpec.withCurrentAddress(options: Nomad): DataSpec {
+        val from = streamBase ?: return this
+        val to = options.address()?.trimEnd('/') ?: return this
+        val address = uri.toString()
+        if (from == to || !address.startsWith(from)) return this
+        return withUri(Uri.parse(to + address.removePrefix(from)))
     }
 
     private fun videoOutput(format: Format) =
@@ -410,6 +516,7 @@ class ExoVideoPlayer(
 
     override fun release() {
         main.removeCallbacksAndMessages(null)
+        margin?.release()
         exo.release()
     }
 
@@ -417,6 +524,10 @@ class ExoVideoPlayer(
         const val CONNECT_TIMEOUT_MS = 8_000
         const val READ_TIMEOUT_MS = 15_000
         const val SEEK_INCREMENT_MS = 10_000L
+
+        /** How often the margin learns where the player is (M2). */
+        const val MARGIN_LOOK_MS = 500L
+        val nextPlayer = AtomicInteger()
 
         /** Network errors are retried patiently (about 90 s): the buffer keeps playing meanwhile. */
         const val LOAD_RETRIES = 20
@@ -442,21 +553,7 @@ class ExoVideoPlayer(
                 else -> MimeTypes.APPLICATION_SUBRIP
             }
 
-        /** What the error of ExoPlayer means for the next step ([fr.guim.cinedoury.core.model.PlaybackFallback]). */
-        fun PlaybackException.toFailure(): PlaybackFailure =
-            when (errorCode) {
-                PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS -> PlaybackFailure.Server
-                in IO_ERRORS -> PlaybackFailure.Network
-                in PARSING_ERRORS -> PlaybackFailure.Format
-                in DECODING_ERRORS, in AUDIO_TRACK_ERRORS -> PlaybackFailure.Decoder
-                else -> PlaybackFailure.Unknown
-            }
-
-        // The families of error codes of Media3: 2xxx input/output, 3xxx parsing, 4xxx decoding, 5xxx audio track.
-        val IO_ERRORS = 2000..2999
-        val PARSING_ERRORS = 3000..3999
-        val DECODING_ERRORS = 4000..4999
-        val AUDIO_TRACK_ERRORS = 5000..5999
+        fun PlaybackException.toFailure(): PlaybackFailure = PlaybackErrors.failureOf(this)
     }
 
     /**

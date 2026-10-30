@@ -304,4 +304,11 @@
     <string name="mobile_switch_profile_description">Back to “Who\'s watching?”.</string>
     <string name="mobile_sign_out_description">This profile is forgotten on this phone; the others stay signed in.</string>
     <string name="mobile_app_version">Ciné Doury %1$s</string>
+    <!-- F (M2): the addresses of the server, and whether it answers. -->
+    <string name="mobile_connection_silent">Server unreachable. None of its addresses answers on this network.</string>
+    <string name="mobile_connection_silent_no_remote">Server unreachable: no remote address. Enter it to watch away from home.</string>
+    <string name="mobile_local_address">Local address</string>
+    <string name="mobile_remote_address">Remote address</string>
+    <string name="mobile_address_none">None</string>
+    <string name="mobile_remote_address_none">None: away from home, the server will be unreachable</string>
 </resources>
