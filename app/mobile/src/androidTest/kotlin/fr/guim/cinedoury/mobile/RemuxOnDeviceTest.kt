@@ -67,8 +67,14 @@ class RemuxOnDeviceTest {
                     .items
                     .single { it.title == title }
             val device = DeviceCapabilitiesReader(context, allowPassthrough = false).read()
-            // The phone of the maintainer decodes HEVC: its profile asks fMP4 segments.
-            val fmp4 = PlaybackProfiles.build(device).copy(transcodeContainer = "mp4")
+            // The phone of the maintainer decodes HEVC, not DTS: fMP4 segments, and the server must
+            // convert the audio (the emulator's decoders may take DTS: it is taken out).
+            val built = PlaybackProfiles.build(device)
+            val fmp4 =
+                built.copy(
+                    audioCodecs = built.audioCodecs.filterNot { "dts" in it.lowercase() || it.equals("dca", true) },
+                    transcodeContainer = "mp4",
+                )
             val offered = source.playback.playbackInfo(PlaybackInfoRequest(film.id, fmp4))
             Log.i(LOG_TAG, "remux offered ${offered.method} ${offered.container} ${offered.reasons}")
             assertTrue(offered.fmp4Segments, "fMP4 segments: ${offered.container}")

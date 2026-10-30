@@ -2488,7 +2488,10 @@ vue : 4 Mb/s sur le réseau mobile, baisse avec message, rien en coupure ni apr�
 **activé à 180 s** ; pour un flux transcodé puis pour le fichier lu tel quel : marge au-delà de **N = 4
 min** (plus que les 3 min du throttling), mode avion pendant **2 min 10 s** (la position doit avancer
 d'au moins 2 min sans un seul état d'attente), puis réseau rendu, et la marge doit regrandir. Le journal
-seconde par seconde (marge, mémoire, débit, état) est l'artefact `emulator-margin.txt` du job.
+seconde par seconde (marge, mémoire, débit, état) est l'artefact `emulator-margin.txt` du job. Premier passage (30/10/2026) :
+les deux essais passent ; en lecture directe, coupure à environ 4 min de marge, la position avance de 2 min 10 s
+sans une seule attente (la marge descend de 4 min à 1 min 50 s, la mémoire se recharge depuis le disque), et 2 s
+après le retour du réseau la marge repasse à 3 min 53 s.
 
 **Captures** (`docs/screenshots/m2/`) : barre avec la marge (240), cadenas (241), qualité et consommation
 (242), informations avec la marge (243), « −30 s » (244), recherche par glissement (245), luminosité
