@@ -2476,7 +2476,9 @@ qui décode le HEVC et pas le DTS, prenait le même chemin ; aucune capture TV n
   soient, redemande une fois le même flux en TS à la même position (`FallbackAction.TsSegments`), avant le repli
   vers le transcodage. Essai : `RemuxOnDeviceTest` sur l'émulateur téléphone de la CI complète (« Bretelle »,
   H.264 à images B et DTS, ajouté par `ci/emulator-margin.sh`) : le fMP4 proposé doit être reconnu, échouer
-  (s'il échoue) en erreur de format, et le TS doit se lire. Le clip généré ne reproduit pas forcément le `tfdt`
+  (s'il échoue) en erreur de format, et le TS doit se lire. Mesuré sur la 12.3 : un MKV avec du DTS (même 5.1,
+  profil sans DTS) est proposé en lecture directe ; le test refuse donc la lecture directe, comme après un repli,
+  et le serveur copie la vidéo (« AudioCodecNotSupported, DirectPlayError »). Le clip généré ne reproduit pas forcément le `tfdt`
   négatif (mesuré en local : 0) ; le classement est vérifié sur la chaîne de causes réelle (`PlaybackErrorsTest`).
 
 **Tests** : `PlaybackMarginTest` (étage, cession au lecteur, plafonds, recherche hors de la marge),

@@ -75,7 +75,9 @@ class RemuxOnDeviceTest {
                     audioCodecs = built.audioCodecs.filterNot { "dts" in it.lowercase() || it.equals("dca", true) },
                     transcodeContainer = "mp4",
                 )
-            val offered = source.playback.playbackInfo(PlaybackInfoRequest(film.id, fmp4))
+            // Jellyfin 12.3 plays an MKV with DTS as it is when it may (measured): direct play is refused, as after
+            // a fallback, and the server copies the video (« AudioCodecNotSupported, DirectPlayError »).
+            val offered = source.playback.playbackInfo(PlaybackInfoRequest(film.id, fmp4, allowDirect = false))
             Log.i(LOG_TAG, "remux offered ${offered.method} ${offered.container} ${offered.reasons}")
             assertTrue(offered.fmp4Segments, "fMP4 segments: ${offered.container}")
             assertTrue(PlaybackFallback.wantsTs(offered), "a copied H.264 in fMP4 asks TS: ${offered.reasons}")
@@ -83,7 +85,10 @@ class RemuxOnDeviceTest {
             val fmp4Failure = play(offered)
             Log.i(LOG_TAG, "remux fMP4: ${fmp4Failure?.let { "${it.failure} ${it.detail}" } ?: "played"}")
             if (fmp4Failure != null) assertEquals(PlaybackFailure.Format, fmp4Failure.failure, fmp4Failure.detail)
-            val ts = source.playback.playbackInfo(PlaybackInfoRequest(film.id, PlaybackFallback.tsProfile(fmp4)))
+            val ts =
+                source.playback.playbackInfo(
+                    PlaybackInfoRequest(film.id, PlaybackFallback.tsProfile(fmp4), allowDirect = false),
+                )
             assertEquals("ts", ts.container?.lowercase(), "${ts.reasons}")
             val tsFailure = play(ts)
             assertNull(tsFailure, "TS segments failed: ${tsFailure?.detail}")
