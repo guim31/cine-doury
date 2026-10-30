@@ -1,7 +1,9 @@
 package fr.guim.cinedoury.core.playback
 
+import androidx.annotation.OptIn
 import androidx.media3.common.ParserException
 import androidx.media3.common.PlaybackException
+import androidx.media3.common.util.UnstableApi
 import fr.guim.cinedoury.core.model.PlaybackFailure
 
 /**
@@ -13,6 +15,7 @@ import fr.guim.cinedoury.core.model.PlaybackFailure
  * connexion au serveur est perdue », which « Réessayer » replayed. A [ParserException] or an
  * [IllegalStateException] in the causes is a [PlaybackFailure.Format]: the fallback follows.
  */
+@OptIn(UnstableApi::class)
 object PlaybackErrors {
     fun failureOf(error: PlaybackException): PlaybackFailure {
         val causes = generateSequence(error.cause) { it.cause }.take(MAX_CAUSES).toList()
