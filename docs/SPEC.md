@@ -27,6 +27,7 @@ son domaine :
 | Essai réel 3 (27/10/2026, Shield en 4K, v0.7.0) : → depuis le rail ouvert, « Taille de l'interface » (Compacte par défaut), commandes du lecteur plus petites, barre des sous-titres à trois réglages, barre de la bibliothèque, bandeau de l'accueil fixe ; deuxième passage (28/10) : bandeau au-dessus des rangées, tailles Très compacte / Compacte / Normale, 27 icônes de bibliothèque | en cours (§ 4.21 ; captures dans `docs/screenshots/r3/`, numéros 200 à 208, et « avant ») | [#14](https://github.com/guim31/cine-doury/pull/14) |
 | Essai réel 4 (28/10/2026, Shield en 4K, v0.9.0) : « Très compacte » par défaut, bandeau de l'accueil plus bas (une deuxième rangée se voit), titre de rangée immobile, « Retour » qui quitte sans confirmation, versions d'essai signées installables par-dessus une release | terminé, fusionné (§ 4.22 et § 4.18 ; captures dans `docs/screenshots/r4/` : `avant-*` / `apres-*` pour A, B et D) | [#15](https://github.com/guim31/cine-doury/pull/15) |
 | Essai réel 5 (29/10/2026, Shield en 4K et Chromecast, v0.9.1) : banc de mesures réparé (libellés du rail lus par l'accessibilité), compte à rebours qui ne coupe plus la fin des épisodes, épisode précédent / suivant dans le lecteur, menu d'options rapides à l'appui long sur une jaquette, mosaïque « Ce soir » en haut de l'accueil, rangée « Continuer » sous elle, notes de la 1.0.0 | terminé, en revue (§ 4.23 ; captures dans `docs/screenshots/r5/` : `avant-*` / `apres-*` pour A, B, C, D et F) | [#16](https://github.com/guim31/cine-doury/pull/16) |
+| Nouveau logo et retouches de la 1.0.0 (29/10/2026) : un pot de pop-corn sur fond noir pour l'icône et la bannière Android TV ; H, tuiles de la mosaïque « Ce soir » rognées au focus ; I et J, rail qui s'ouvrait seul au lancement et après OK sur une de ses entrées | en revue (§ 4.24 et 4.25 ; captures dans `docs/screenshots/logo/` et `docs/screenshots/r6/`, numéros 230 et 231) | — |
 | M1 — Socle mobile et navigation (appli `:app:mobile` pour téléphone et tablette : jetons partagés, composants Material 3, connexion, « Connecter un appareil », barre des onglets, accueil, bibliothèques, fiches, recherche, lecture simple ; chaque appli choisit son APK dans une release) | en revue (§ 4.26 ; captures dans `docs/screenshots/m1/`, numéros 200 à 228) | [#18](https://github.com/guim31/cine-doury/pull/18) |
 
 *(Chaque jalon met à jour ce tableau et ajoute ses contrats au § 4.)*
@@ -155,6 +156,7 @@ configuration.
 | SDK Android | `compileSdk` / `targetSdk` 37, **`minSdk` 30** (Android 11 : Shield TV ; le Chromecast avec Google TV à jour est en Android 12 ou plus) | — |
 | Interface | Compose (BOM), Compose for TV `tv-material` | BOM 2026.09.00 (ui 1.12.1), 1.1.0 |
 | Police | Inter, fichiers statiques 400/500/600/700, SIL OFL 1.1 (`core/designsystem/INTER-LICENSE.txt`) | 4.1 |
+| Bannière (nom de l'appli) | Lilita One (Google Fonts, SIL OFL 1.1) : seule l'image rendue entre dans le dépôt, jamais la police (§ 4.24) | — |
 | Client Jellyfin | SDK Kotlin officiel `org.jellyfin.sdk:jellyfin-core` (variante JVM, OkHttp) | 1.9.3 |
 | Coroutines | kotlinx.coroutines | 1.11.0 |
 | Tests | JUnit 4, kotlin-test, MockWebServer 3, Robolectric, Roborazzi | 4.13.2, —, 5.5.1, 4.17, 1.77.0 |
@@ -2159,6 +2161,59 @@ et une réparation du banc de mesures, faits dans l'ordre E, A, B, C, D ; puis, 
 - **G. Notes de la 1.0.0** : `docs/releases/v1.0.0.md` (ce qui change depuis la 0.9.1, puis ce qu'est
   la 1.0.0), reprises par `ci/release/package.sh` ; `CHANGELOG.md` : section « 1.0.0 — 29/10/2026 ».
 
+### 4.24 Nouveau logo (29/10/2026)
+
+Choisi par le mainteneur : **un pot de pop-corn** (cinq grains jaunes, pot crème à deux rayures
+rouges), sur fond **noir `#000000`**, sans triangle de lecture. Il remplace le rond jaune au
+triangle, qui n'apparaissait que sur l'icône et la bannière : dans l'appli, le nom reste écrit en
+Inter (`Wordmark`, aucune image de logo), et rien d'autre ne change dans l'interface.
+
+- **Icône** : `ic_launcher_foreground.xml` (vecteur, repère 108 × 108 de l'icône adaptative), le
+  dessin réduit à 88 % autour du centre pour tenir dans le cercle sûr de 66 dp ; fond
+  `@color/launcher_background` = `#000000`. L'appli n'a ni icône ronde ni icône monochrome.
+- **Bannière Android TV** : `drawable-xhdpi/banner.png` (640 × 360) et `drawable-xxhdpi/banner.png`
+  (960 × 540, plus nette sur un lanceur en haute densité) : fond noir, le pot à gauche (150 px de
+  haut sur la 640), le nom sur deux lignes, « Ciné » en `#F4F1EA` et « Doury » en `#F2C14E`.
+- **Police de la bannière : Lilita One** (Google Fonts, SIL Open Font License 1.1). La licence
+  n'impose rien sur une image rendue avec la police ; la police elle-même n'est ni dans le dépôt ni
+  dans l'APK.
+- **Refaire les images** : `ci/brand/popcorn.py LilitaOne-Regular.ttf` (Pillow) dessine les deux
+  bannières et l'aperçu de l'icône (`docs/screenshots/logo/apres-icone.png`) avec les formes du
+  vecteur ; changer l'un, c'est changer l'autre.
+- Aucune capture Roborazzi ne change : l'icône et la bannière n'apparaissent dans aucun écran.
+
+### 4.25 Retouches de la 1.0.0 (29/10/2026, Shield en 4K, « Très compacte »)
+
+- **H. Mosaïque « Ce soir » : tuiles du haut rognées au focus.** La liste de l'accueil coupe ce qui
+  dépasse de sa marge du haut (`padding`, pour ne laisser aucune bande de la mosaïque défilée), et
+  les tuiles de la première ligne y touchaient : focalisées, elles grandissent (`CineScale.TILE`,
+  `TILE_LARGE`) et dessinent contour et halo au-dessus d'elles, coupés. La mosaïque porte désormais,
+  dans la liste, une marge interne `mosaicFocusRoom` : `CineSizes.focusRoom` plus l'agrandissement
+  de la grande tuile, la plus haute (environ 23 dp). Ses tuiles descendent d'autant et sa hauteur
+  diminue d'autant : les rangées, et ce qu'elles montrent sous elle, ne bougent pas. Sur les côtés,
+  la marge de la mosaïque (`ContentStart`, `safeHorizontal`) suffisait. Test :
+  `R5Home1080pTest`/`R5Home4kTest.aFocusedTileIsNeverCut` (chaque tuile focalisée tour à tour, dans
+  les trois tailles, en 1080p et en 4K : agrandie, avec contour et halo, elle reste dans la liste et
+  l'écran, et aucune tuile ne bouge). Captures 230 (chaque tuile, 1080p) et 231 (4K, chaque taille) ;
+  avant / après dans `docs/screenshots/r6/`.
+- **I et J. Le rail s'ouvrait tout seul.** Chaque écran a son rail, qui s'ouvrait dès qu'il avait le
+  focus. Un écran qui charge (l'accueil au lancement, une bibliothèque après OK sur son entrée) n'a
+  encore rien d'autre de focalisable : le focus retombait sur son rail, qui s'ouvrait, puis
+  `InitialFocus` le posait sur le contenu arrivé et le rail se refermait. Vu dans le journal
+  (`GestureLog`, lignes `rail open` / `rail closed` ajoutées par `AppRail`) et reproduit par le test
+  ci-dessous avant le correctif. **Le rail ne s'ouvre plus que sur un geste** : `UserGestures`
+  (design system, fourni par `CineApp` en `LocalUserGestures`) est marqué à chaque touche par la
+  racine de l'appli et le reste jusqu'à la fin de son traitement (`postAtFrontOfQueue` : aucune image,
+  qui composerait l'écran suivant, ne passe avant). Le rail s'ouvre si le focus lui arrive pendant
+  une touche (← depuis le contenu ; « Retour » sur l'accueil, qui marque lui-même le geste, car il
+  peut arriver par le répartiteur de « Retour » plutôt que par les touches), ou à la première touche
+  qu'il reçoit (↑, ↓, OK sur un rail resté fermé). Un focus rendu par l'appli le laisse fermé.
+  Sans `LocalUserGestures` (aperçus, écrans testés seuls), il s'ouvre sur tout focus, comme avant.
+  Règles gardées : → depuis le rail ouvert ramène où l'on était (`onContentFocus`), pas de
+  `focusRestorer` sur tout un écran. Test : `J8FocusTest.theRailOpensOnlyOnAGesture` (appli entière :
+  rien au lancement ; ← l'ouvre une fois ; ↓ puis OK sur « Films » : la bibliothèque, le rail jamais
+  rouvert, au plus un changement).
+
 ### 4.26 Mobile (M1, 30/10/2026)
 
 Première étape de l'appli **téléphone et tablette** (`FONCTIONNALITES.md`, lignes [P1] ; appareils
@@ -2172,6 +2227,8 @@ navigation complète, lecture simple. La TV ne change pas : aucune capture TV r�
   (`versionCodeOf`) et mêmes clés que la TV : version et signature passent par `versionAndSigning`
   (`build-logic`, `AppRelease.kt`), partagé par les deux applis ; la clé de débogage reste
   `app/tv/debug.keystore`. Manifeste sans `leanback`, orientation libre, `minSdk` 30 comme la TV.
+  Icône : celle de la TV, le pot de pop-corn sur fond noir (§ 4.24), recopiée telle quelle
+  (`ic_launcher_foreground.xml`, `launcher_background`).
 - **Partagé, jamais dupliqué** : modèles de vue, dépôts, source Jellyfin, lecteur. Seuls les écrans
   changent, dans un paquet **`mobile`** de chaque module de fonctionnalité (plutôt que des modules
   `:feature:*-mobile` : les écrans tactiles lisent les mêmes états et les mêmes textes `internal`

@@ -58,12 +58,16 @@ data class TonightState(
  * held opens the menu of the tile. Each tile reads its own focus: a step of the focus recomposes the
  * two tiles concerned, nothing else.
  *
+ * @param height of the tiles.
+ * @param room above the tiles, inside the list that clips them: their outline, halo and growth with
+ * the focus ([mosaicFocusRoom]).
  * @param main attached to the large tile: the first focus of the home.
  */
 @Composable
 internal fun TonightMosaic(
     state: TonightState,
     height: Dp,
+    room: Dp,
     sources: ImageSources,
     menu: QuickMenuState,
     navigation: HomeNavigation,
@@ -78,6 +82,7 @@ internal fun TonightMosaic(
         modifier =
             modifier
                 .fillMaxWidth()
+                .padding(top = room)
                 .height(height)
                 .padding(start = ContentStart, end = CineSpacing.safeHorizontal)
                 .testTag(HomePreview.TONIGHT),

@@ -40,7 +40,9 @@ import fr.guim.cinedoury.core.data.SessionManager
 import fr.guim.cinedoury.core.data.StartupTarget
 import fr.guim.cinedoury.core.data.quick.QuickActions
 import fr.guim.cinedoury.core.designsystem.component.LocalSharedElements
+import fr.guim.cinedoury.core.designsystem.component.LocalUserGestures
 import fr.guim.cinedoury.core.designsystem.component.SharedElements
+import fr.guim.cinedoury.core.designsystem.component.UserGestures
 import fr.guim.cinedoury.core.designsystem.component.Wordmark
 import fr.guim.cinedoury.core.designsystem.theme.CineMotion
 import fr.guim.cinedoury.core.designsystem.theme.CineSpacing
@@ -110,6 +112,8 @@ fun CineApp(
     sessions: SessionManager = koinInject(),
 ) {
     val voiceRequests = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
+    // Each key, for the rail to tell a gesture from a focus given back (1.0.0, I and J).
+    val gestures = remember { UserGestures() }
     val onSearchKey: (SearchKey) -> Unit = { key ->
         val route = navigator.current.route
         val allowed =
@@ -138,6 +142,7 @@ fun CineApp(
     // The « Recherche » keys of the remote, from any screen (`SPEC.md` § 4.12): no screen uses them.
     SharedTransitionLayout(
         Modifier.onPreviewKeyEvent { event ->
+            gestures.mark()
             // Each key of the remote, for `ci/couch-gestures.sh` (silent in normal use, `GestureLog`).
             if (event.type == KeyEventType.KeyDown && event.nativeKeyEvent.repeatCount == 0) {
                 GestureLog.mark("key ${NativeKeyEvent.keyCodeToString(event.nativeKeyEvent.keyCode)}")
@@ -162,6 +167,7 @@ fun CineApp(
         ) { entry ->
             CompositionLocalProvider(
                 LocalViewModelStoreOwner provides entry,
+                LocalUserGestures provides gestures,
                 // « Vu » and favourites from the menu of a card (essai réel 5).
                 LocalQuickActions provides quickActions,
                 // Kept for the screen: it remembers which of its cards had the focus last.

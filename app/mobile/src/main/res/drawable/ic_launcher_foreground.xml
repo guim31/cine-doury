@@ -1,13 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- A pot of popcorn. Same shapes as ci/brand/popcorn.py (banner): change both together.
+     Scaled to 88 % around the centre to stay in the 66 dp safe circle of an adaptive icon. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path
-        android:fillColor="#F2C14E"
-        android:pathData="M54,28a26,26 0,1 1,0 52a26,26 0,1 1,0 -52z" />
-    <path
-        android:fillColor="#14120B"
-        android:pathData="M47,42L67,54L47,66Z" />
+    <group
+        android:pivotX="54"
+        android:pivotY="54"
+        android:scaleX="0.88"
+        android:scaleY="0.88">
+        <path
+            android:fillColor="#F2C14E"
+            android:pathData="M40,29a9,9 0,1 1,0 18a9,9 0,1 1,0 -18z" />
+        <path
+            android:fillColor="#FFE08A"
+            android:pathData="M54,22a10,10 0,1 1,0 20a10,10 0,1 1,0 -20z" />
+        <path
+            android:fillColor="#F2C14E"
+            android:pathData="M68,29a9,9 0,1 1,0 18a9,9 0,1 1,0 -18z" />
+        <path
+            android:fillColor="#FFE08A"
+            android:pathData="M47,34a8,8 0,1 1,0 16a8,8 0,1 1,0 -16z" />
+        <path
+            android:fillColor="#FFE08A"
+            android:pathData="M61,34a8,8 0,1 1,0 16a8,8 0,1 1,0 -16z" />
+        <path
+            android:fillColor="#F4F1EA"
+            android:pathData="M31,44H77L71,84H37Z"
+            android:strokeColor="#F4F1EA"
+            android:strokeLineJoin="round"
+            android:strokeWidth="3" />
+        <path
+            android:fillColor="#E5484D"
+            android:pathData="M39,44H47L46,84H41Z" />
+        <path
+            android:fillColor="#E5484D"
+            android:pathData="M61,44H69L67,84H62Z" />
+    </group>
 </vector>

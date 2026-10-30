@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.tv.material3.Text
 import fr.guim.cinedoury.core.designsystem.theme.CineScale
 import fr.guim.cinedoury.core.designsystem.theme.CineSizes
@@ -116,6 +117,13 @@ fun MosaicTile(
         if (progress != null) CardProgressBar(progress, Modifier.align(Alignment.BottomStart))
     }
 }
+
+/**
+ * The room a clipping container leaves above a mosaic [height] high: the outline and halo of a focused
+ * tile ([CineSizes.focusRoom]) and how much the large tile, the tallest, grows with the focus. Without
+ * it, the top of a focused tile went out of the list (1.0.0, Shield in 4K).
+ */
+fun mosaicFocusRoom(height: Dp): Dp = CineSizes.focusRoom + height * ((CineScale.TILE_LARGE - 1f) / 2f)
 
 /** Why the tile is there: a small pill, in the accent for the large tile. */
 @Composable
