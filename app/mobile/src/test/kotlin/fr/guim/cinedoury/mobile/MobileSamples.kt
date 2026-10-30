@@ -34,6 +34,7 @@ import fr.guim.cinedoury.core.model.SeriesStatus
 import fr.guim.cinedoury.core.model.SmartPlay
 import fr.guim.cinedoury.core.model.StreamType
 import fr.guim.cinedoury.core.model.TechBadge
+import fr.guim.cinedoury.core.model.TrackSelection
 import fr.guim.cinedoury.core.model.User
 import fr.guim.cinedoury.core.model.UserData
 import fr.guim.cinedoury.core.model.UserId
@@ -43,7 +44,6 @@ import fr.guim.cinedoury.core.source.Session
 import fr.guim.cinedoury.core.source.fake.InMemorySource
 import fr.guim.cinedoury.core.ui.RailState
 import fr.guim.cinedoury.feature.details.DetailsState
-import fr.guim.cinedoury.core.model.TrackSelection
 import fr.guim.cinedoury.feature.home.HomeRow
 import fr.guim.cinedoury.feature.home.HomeState
 import fr.guim.cinedoury.feature.home.TonightState
@@ -151,7 +151,14 @@ internal object MobileSamples {
                         backdrops = listOf(art(film.title, ImageType.Backdrop)),
                         logo = art(film.title, ImageType.Logo).takeIf { index == 0 },
                     ),
-                userData = UserData(film.watched, film.position.minutes, if (film.watched) 1 else 0, isFavorite = index == 2),
+                userData =
+                    UserData(
+                        film.watched,
+                        film.position.minutes,
+                        if (film.watched) 1 else 0,
+                        isFavorite =
+                            index == 2,
+                    ),
                 people =
                     listOf(
                         Credit(ItemId("p1"), "Inès Garnier", CreditType.Actor, role = "Marthe"),
@@ -189,7 +196,11 @@ internal object MobileSamples {
             seriesStatus = SeriesStatus.Ended,
             childCount = 2,
             overview = "Une famille de pêcheurs, deux saisons de tempêtes et de secrets.",
-            images = ItemImages(primary = art("Les Marées", ImageType.Primary), backdrops = listOf(art("Les Marées", ImageType.Backdrop))),
+            images =
+                ItemImages(
+                    primary = art("Les Marées", ImageType.Primary),
+                    backdrops = listOf(art("Les Marées", ImageType.Backdrop)),
+                ),
             userData = UserData(false, 0.minutes, 0, false, unplayedCount = 5),
         )
 
@@ -204,13 +215,33 @@ internal object MobileSamples {
             MediaItem(
                 id = ItemId("episode-$index"),
                 kind = ItemKind.Episode,
-                title = listOf("La grande marée", "Mortes-eaux", "Dernier jour", "Le retour", "Brume", "Le large")[index - 1],
+                title =
+                    listOf("La grande marée", "Mortes-eaux", "Dernier jour", "Le retour", "Brume", "Le large")[
+                        index -
+                            1,
+                    ],
                 runtime = 42.minutes,
                 premiereDate = LocalDate.of(2015, 3, 2).plusWeeks(index.toLong()),
                 overview = "Un épisode des Marées, où la mer monte plus haut que prévu.",
                 episode = EpisodeInfo(show.id, show.title, ItemId("season-$season"), season, (index - 1) % 3 + 1),
-                images = ItemImages(primary = art("Les Marées $index", ImageType.Backdrop), seriesPrimary = show.images.primary),
-                userData = UserData(index == 1, if (index == 2) 20.minutes else 0.minutes, if (index == 1) 1 else 0, false),
+                images =
+                    ItemImages(
+                        primary = art("Les Marées $index", ImageType.Backdrop),
+                        seriesPrimary = show.images.primary,
+                    ),
+                userData =
+                    UserData(
+                        index == 1,
+                        if (index ==
+                            2
+                        ) {
+                            20.minutes
+                        } else {
+                            0.minutes
+                        },
+                        if (index == 1) 1 else 0,
+                        false,
+                    ),
             )
         }
 
@@ -258,7 +289,16 @@ internal object MobileSamples {
             rail = rail,
             browse = LibraryState(),
             items = PagedItems(total = movies.size, pages = mapOf(0 to movies.sortedBy { it.title })),
-            options = FilterOptions(genres = movies.flatMap { it.genres }.distinct().sorted(), years = movies.mapNotNull { it.year }),
+            options =
+                FilterOptions(
+                    genres =
+                        movies
+                            .flatMap {
+                                it.genres
+                            }.distinct()
+                            .sorted(),
+                    years = movies.mapNotNull { it.year },
+                ),
             restored = true,
         )
 

@@ -27,6 +27,7 @@ son domaine :
 | Essai réel 3 (27/10/2026, Shield en 4K, v0.7.0) : → depuis le rail ouvert, « Taille de l'interface » (Compacte par défaut), commandes du lecteur plus petites, barre des sous-titres à trois réglages, barre de la bibliothèque, bandeau de l'accueil fixe ; deuxième passage (28/10) : bandeau au-dessus des rangées, tailles Très compacte / Compacte / Normale, 27 icônes de bibliothèque | en cours (§ 4.21 ; captures dans `docs/screenshots/r3/`, numéros 200 à 208, et « avant ») | [#14](https://github.com/guim31/cine-doury/pull/14) |
 | Essai réel 4 (28/10/2026, Shield en 4K, v0.9.0) : « Très compacte » par défaut, bandeau de l'accueil plus bas (une deuxième rangée se voit), titre de rangée immobile, « Retour » qui quitte sans confirmation, versions d'essai signées installables par-dessus une release | terminé, fusionné (§ 4.22 et § 4.18 ; captures dans `docs/screenshots/r4/` : `avant-*` / `apres-*` pour A, B et D) | [#15](https://github.com/guim31/cine-doury/pull/15) |
 | Essai réel 5 (29/10/2026, Shield en 4K et Chromecast, v0.9.1) : banc de mesures réparé (libellés du rail lus par l'accessibilité), compte à rebours qui ne coupe plus la fin des épisodes, épisode précédent / suivant dans le lecteur, menu d'options rapides à l'appui long sur une jaquette, mosaïque « Ce soir » en haut de l'accueil, rangée « Continuer » sous elle, notes de la 1.0.0 | terminé, en revue (§ 4.23 ; captures dans `docs/screenshots/r5/` : `avant-*` / `apres-*` pour A, B, C, D et F) | [#16](https://github.com/guim31/cine-doury/pull/16) |
+| M1 — Socle mobile et navigation (appli `:app:mobile` pour téléphone et tablette : jetons partagés, composants Material 3, connexion, « Connecter un appareil », barre des onglets, accueil, bibliothèques, fiches, recherche, lecture simple ; chaque appli choisit son APK dans une release) | en revue (§ 4.26 ; captures dans `docs/screenshots/m1/`, numéros 200 à 228) | [#18](https://github.com/guim31/cine-doury/pull/18) |
 
 *(Chaque jalon met à jour ce tableau et ajoute ses contrats au § 4.)*
 
@@ -43,7 +44,7 @@ son domaine :
 ## 2. Décisions (25/10/2026)
 
 - Nom **Ciné Doury** ; dépôt public `guim31/cine-doury`, licence MIT.
-- Paquet et `applicationId` : `fr.guim.cinedoury` (le module mobile, plus tard : même identifiant de base, variantes à définir au J9).
+- Paquet et `applicationId` : `fr.guim.cinedoury` ; l'appli téléphone et tablette : `fr.guim.cinedoury.mobile` (M1, § 4.26).
 - **Serveur visé : Jellyfin 12.3** (`jellyfin/jellyfin:12.3.20261023-013714`), version minimale acceptée 12.3. Une montée de version du serveur passe d'abord par la CI de ce dépôt.
 - Côté serveur sont installés : Intro Skipper (segments intro/générique par analyse audio), Chapter Segments Provider, Playback Reporting (statistiques), TMDb Box Sets (collections), AniDB, Fanart. L'appli lit ces données par l'API standard (`/MediaSegments`, etc.) et **ne dépend d'aucun plugin pour fonctionner** : sans eux, la fonction concernée se masque.
 - Couleur d'accent : **jaune projecteur `#F2C14E`** (`UI.md` § 4.1).
@@ -66,6 +67,7 @@ Modules (noms indicatifs, le J0 les fixe au § 4) :
 | `:core:designsystem` | jetons de `UI.md` (couleurs, typographie, espacements, durées), composants TV et mobile | oui |
 | `:feature:*` | écrans : `auth`, `home`, `library`, `details`, `player`, `search`, `manage`, `settings` | oui |
 | `:app:tv` | l'appli Android TV / Google TV | oui |
+| `:app:mobile` | l'appli téléphone et tablette (M1, § 4.26) | oui |
 | `:benchmark` | Macrobenchmark et Baseline Profile | oui |
 
 Pile visée, chaque choix étant à confirmer par le J0 avec la version exacte :
@@ -122,6 +124,14 @@ gestion depuis l'appli ; `ManageSource` dans `:core:source`, `ManageRepository` 
 Ajoutés au J7 (§ 4.18) : `:core:update` (`cinedoury.jvm.library`, OkHttp et kotlinx.serialization
 JSON déjà présents) — versions, client des releases GitHub, SHA-256, journal des changements — et
 `:feature:update` (`.compose`) — le dépôt de la mise à jour, `PackageInstaller`, l'écran.
+
+Ajouté au M1 (§ 4.26) : `:app:mobile` (`cinedoury.android.application` + `.compose`, `applicationId`
+`fr.guim.cinedoury.mobile`), l'appli téléphone et tablette. Aucun module de fonctionnalité nouveau :
+ses écrans vivent dans un paquet `mobile` de chaque module (`feature.home.mobile`, `feature.auth.mobile`…),
+à côté des écrans TV et sur les mêmes modèles de vue ; ses composants dans le paquet `mobile` de
+`:core:designsystem` (Material 3) et de `:core:ui`. Ajoutés aux modules partagés :
+`LibrariesViewModel` (`:feature:library`), `ConnectDeviceViewModel` (`:feature:settings`),
+`AppTarget` (`:core:update`), `PlayerBuffer` et `DataSources` (`:core:playback`).
 
 `:core:ui` n'était pas prévu au § 3 : les messages d'erreur servent à tous les écrans, mais
 `:core:designsystem` ne doit pas connaître `:core:source`. Le design system reste sans dépendance
@@ -2149,6 +2159,116 @@ et une réparation du banc de mesures, faits dans l'ordre E, A, B, C, D ; puis, 
 - **G. Notes de la 1.0.0** : `docs/releases/v1.0.0.md` (ce qui change depuis la 0.9.1, puis ce qu'est
   la 1.0.0), reprises par `ci/release/package.sh` ; `CHANGELOG.md` : section « 1.0.0 — 29/10/2026 ».
 
+### 4.26 Mobile (M1, 30/10/2026)
+
+Première étape de l'appli **téléphone et tablette** (`FONCTIONNALITES.md`, lignes [P1] ; appareils
+visés : un téléphone récent sous Android 15, une tablette Android de 11 pouces) : socle, connexion,
+navigation complète, lecture simple. La TV ne change pas : aucune capture TV réenregistrée.
+
+**Architecture**
+
+- **`:app:mobile`**, `applicationId` **`fr.guim.cinedoury.mobile`** : distinct de la TV, les deux
+  vivent sur un même appareil et chacune met à jour la sienne. Même `versionName`, même `versionCode`
+  (`versionCodeOf`) et mêmes clés que la TV : version et signature passent par `versionAndSigning`
+  (`build-logic`, `AppRelease.kt`), partagé par les deux applis ; la clé de débogage reste
+  `app/tv/debug.keystore`. Manifeste sans `leanback`, orientation libre, `minSdk` 30 comme la TV.
+- **Partagé, jamais dupliqué** : modèles de vue, dépôts, source Jellyfin, lecteur. Seuls les écrans
+  changent, dans un paquet **`mobile`** de chaque module de fonctionnalité (plutôt que des modules
+  `:feature:*-mobile` : les écrans tactiles lisent les mêmes états et les mêmes textes `internal`
+  — `playLabel`, `eyebrow`, `detailRows`… — sans les rendre publics, et aucun module de plus à
+  configurer). Aucun modèle de vue ne supposait la télécommande au point de devoir être séparé :
+  `LibraryActions.onFocused` sert au téléphone de mémoire de position (le premier élément visible),
+  le menu d'une carte partage sa logique (`runQuickOption`, `:core:ui`), seul son dessin diffère.
+- **Design system** : les jetons (`CineColors`, `CineSpacing`, `CineMotion`, `CardPreferences`) sont
+  la source unique des deux applis (`ProvideCineTokens`). La TV garde `androidx.tv:tv-material` et sa
+  densité de 960 × 540 dp ; le téléphone a son échelle de texte (`MobileCineTypography`) et ses tailles
+  (`MobileSizes` : cibles de 48 dp, gouttières, affiches), et ses composants sur
+  **`androidx.compose.material3`** (`CineMobileTheme`, paquet `designsystem.mobile` : boutons, cartes à
+  appui long, feuilles du bas, champ de saisie, barre des onglets, pavé du PIN, messages). R8 les
+  laisse hors de l'APK TV. **Aucun écran mobile n'importe `androidx.tv`** (`MobileArchitectureTest`).
+- Navigation : une pile maison comme sur la TV (`Navigator`), l'accueil toujours en bas, chaque onglet
+  par-dessus : « Retour » (touche ou geste du système, rappel prédictif activé) revient à l'accueil
+  puis quitte. L'activité gère sa rotation (`configChanges`) : rien n'est recréé, aucun état perdu, le
+  lecteur continue. Bord à bord (`enableEdgeToEdge`), marges du système prises par chaque écran.
+
+**Connexion** : le parcours de la TV au toucher (serveurs du réseau, saisie d'adresse avec le clavier
+du téléphone, profils, Quick Connect ou mot de passe, PIN). **Bascule d'adresse en marche** :
+`NetworkWatcher` suit le réseau par défaut (`ConnectivityManager`) ; à chaque changement (Wi-Fi de la
+maison quitté, retrouvé), après 1,5 s, `SessionManager.followNetwork()` refait le choix du démarrage
+(locale d'abord, puis distante) et, si l'adresse change, déplace la session ouverte :
+`LibrarySource.moveTo(adresse)` met à jour le client du SDK (`ApiClient.update`), que partagent
+lecture et gestion (leurs URL se lisent à chaque appel) ; les écrans déjà ouverts suivent sans rien
+recharger, les images aussi (`imageUrl` lit la connexion courante). Une lecture en cours garde l'URL
+de son flux (M2). L'onglet Profil dit, d'une ligne discrète, l'adresse utilisée (« Connecté à la
+maison (adresse locale) » ou « à distance (adresse publique) »).
+
+**Connecter un appareil** (`FONCTIONNALITES.md` § 1) : Profil → « Connecter un appareil » ; les six
+chiffres que montre la TV, saisis au clavier numérique, sont validés par
+`POST /QuickConnect/Authorize?code=…&userId=…` (OpenAPI 12.3 : `AuthorizeQuickConnect`, réponse
+booléenne, 403 « Unknown user id »), au nom du profil ouvert (`LibrarySource.authorizeQuickConnect`,
+`ConnectDeviceViewModel`). Un code inconnu ou expiré (404, ou `false`) : « Ce code n'est pas
+reconnu. » ; Quick Connect coupé (401) : le message de la TV. Testé de bout en bout contre le Jellyfin
+de la CI (`JellyfinIntegrationTest` : un second client, la « TV », demande un code ; le téléphone le
+valide ; la TV se connecte en administrateur).
+
+**Navigation** (`UI.md` § 9) : barre du bas Accueil, Recherche, Bibliothèques, Profil
+(« Téléchargements » au M5, pas d'onglet vide).
+- **Accueil** : la mosaïque « Ce soir », puis les rangées de la TV (mêmes règles de remplissage,
+  § 4.23, même personnalisation, celle du profil). **Choix** : en portrait, la grande tuile en
+  travers, les quatre petites en grille de deux colonnes dessous, toutes visibles à la fois (un
+  carrousel cacherait quatre titres sur cinq derrière un geste) ; plus large (paysage, tablette), la
+  disposition de la TV, grande tuile à gauche, petites en deux lignes à droite. Un appui lit ce qui
+  est en cours ou à suivre, ouvre la fiche des autres ; la grande tuile a son bouton « Reprendre » ou
+  « Lire ».
+- **Bibliothèques** : la liste des bibliothèques (`LibrariesViewModel`, l'ordre et les masquages du
+  rail), puis une grille adaptée à la largeur (`GridCells.Adaptive`), onglets, tri et filtres
+  (statut, favoris, genres, décennies) en feuilles du bas, barre A–Z le long de la grille (appui ou
+  glissement), collections, « À suivre ». L'état est celui de la TV (même modèle de vue, gardé par
+  profil).
+- **Fiches** (film, série, saison, épisode, personne, collection) : le fond en haut (au plus 40 % de
+  la hauteur en paysage), titre, ligne de métadonnées et badges, puis les actions **sans défiler**
+  (« Lire »/« Reprendre », depuis le début, bande-annonce, pistes en feuille, vu, favori, série) ;
+  synopsis, saisons en pastilles et épisodes en liste, rangées.
+- **Recherche** : le champ prend le clavier du téléphone à l'ouverture, résultats à chaque lettre
+  (index local, puis le serveur, § 4.12), micro de la reconnaissance du système (`rememberVoiceSearch`
+  partagé), Seerr en feuille.
+- **Appui long** sur une carte : le menu d'options rapides de la TV (§ 4.23 C) en feuille du bas
+  (`MobileQuickMenuHost`, mêmes options, mêmes actions).
+- États de chargement en squelettes, vides et erreurs en deux phrases (`UI.md` § 10).
+
+**Lecture simple** : le lecteur partagé (`PlayerViewModel`, `:core:playback`), même décision direct /
+remux / transcodage. Profil d'appareil mesuré comme sur la TV, **sans passthrough**
+(`DeviceCapabilitiesReader(allowPassthrough = false)`, lecteur sans format passé). Plein écran en
+paysage (orientation du capteur, barres du système cachées, rendues à la fermeture). Appui pour
+afficher ou masquer, lecture/pause, −10 s / +10 s, barre glissable, pistes en feuille, épisode
+suivant, « Passer l'intro », « Vous êtes toujours là ? ». Rapports et reprise : ceux de la TV.
+**Tampon inchangé** : `ExoVideoPlayer` prend un `PlayerBuffer` (`PlayerBuffer.Tv`, les valeurs de
+toujours ; `PlayerBuffer.Phone` = les mêmes jusqu'au M2, `PlayerBufferTest`) et un `DataSources`
+qui enveloppe la source HTTP (aucun sur la TV) : le M2 y posera un `CacheDataSource` sans refonte.
+
+**Mise à jour et publication** : `ReleaseClient` ne prend plus le premier `.apk` d'une release mais
+**celui de son appli, par nom** (`AppTarget`) : la TV `cine-doury-X.Y.Z.apk` (le nom de toutes les
+releases, gardé) ou `cine-doury-tv-X.Y.Z.apk`, le téléphone `cine-doury-mobile-X.Y.Z.apk`, chacun avec
+son seul SHA-256 (`ReleaseAssetsTest`, deux APK dans les deux ordres). **Les TV en 1.0.0** prennent le
+premier `.apk` dans l'ordre de l'API GitHub, qui suit l'ordre de téléversement mais **ne le garantit
+pas** dans sa documentation (et `gh release create` téléverse en parallèle). D'où la règle :
+**l'APK mobile n'entre dans aucune release au M1** ; `release.yml` le construit, le signe, le vérifie
+(`package.sh`, `APP=mobile` : nom, version, paquet) et le dépose en artefact
+(`release-mobile-X.Y.Z`, version normale et version d'essai), et un test lit `release.yml` pour s'en
+assurer. **Proposition pour le M3** : publier l'APK mobile sous une étiquette à part
+(`mobile-vX.Y.Z`), que `AppVersion.parse` des TV en 1.0.0 écarte quel que soit l'ordre des fichiers,
+ou attendre que toutes les TV soient en 1.1 ; à défaut, téléverser l'APK TV seul à la création, puis
+le mobile par un second `gh release upload`.
+
+**Tests** : `MobileScreenshotTest` (captures 200 à 228, sombre et noir OLED, téléphone en portrait,
+en paysage et tablette 11 pouces), `MobileFlowTest` (appli réelle sur une source en mémoire : premier
+lancement par Quick Connect, carte → fiche → « Lire » → « Retour », onglets, TV validée depuis le
+profil), `NavigatorTest`, `MobileArchitectureTest`, `SessionManagerTest` (bascule et retour, validation
+d'un code), `ReleaseAssetsTest`, `PlayerBufferTest`, `JellyfinIntegrationTest` (validation réelle, session
+déplacée). CI rapide : `check` (Lint et tests de `:app:mobile`), APK mobile, captures. CI complète :
+émulateur **téléphone API 34** (`PhoneJourneyTest`, `ci/emulator-phone.sh`) : connexion, accueil, fiche,
+« Lire », quelques secondes de lecture, retour.
+
 ## 5. Tests et CI
 
 - GitHub Actions sur `ubuntu-latest` :
@@ -2164,7 +2284,9 @@ et une réparation du banc de mesures, faits dans l'ordre E, A, B, C, D ; puis, 
   - **profils et mesures** (émulateur API 34) : Baseline et Startup Profiles (`[record-profiles]`),
     Macrobenchmark de l'appli avant et après (§ 4.16, § 4.20) ; artefact `cine-doury-release-apk` ;
   - **contenu de l'APK optimisé** : bibliothèques 32 bits et taille (`ci/check-apk.sh`, § 4.20) ;
-  - **20 gestes au canapé** sur l'émulateur API 34 (`ci/couch-gestures.sh`, § 4.20, indicatif).
+  - **20 gestes au canapé** sur l'émulateur API 34 (`ci/couch-gestures.sh`, § 4.20, indicatif) ;
+  - **appli téléphone** (M1, § 4.26) : Lint, tests et captures dans la CI rapide ; un émulateur
+    téléphone API 34 dans la CI complète (`ci/emulator-phone.sh`).
   - **CI rapide sur une PR** (§ 4.20) : l'émulateur API 34, les gestes, les profils et les mesures
     ne tournent que sur `main`, sur `workflow_dispatch` ou avec `[full-ci]` dans le commit de tête
     (`[record-profiles]` pour les profils).
@@ -2234,9 +2356,21 @@ Pages de réglages P0 (`FONCTIONNALITES.md` § 12) ; mise à jour proposée depu
 Baseline Profile et Macrobenchmark ; accessibilité ; captures 1080p et 4K, sombre et OLED ;
 CHANGELOG ; version 1.0.0 prête à étiqueter (l'étiquette est posée par le mainteneur).
 
+### Mobile et tablette (P1)
+Branches `feat/m<N>-<sujet>`, une PR chacune, dans cet ordre :
+- **M1 — Socle mobile et navigation** : `:app:mobile`, design system partagé, connexion (et
+  « Connecter un appareil »), navigation complète (accueil, bibliothèques, fiches, recherche, menu
+  d'une carte), lecture simple ; chaque appli choisit son APK dans une release (§ 4.26).
+- **M2 — Lecteur nomade** : gestes (double appui ±10 s, luminosité, volume, pincer), image dans
+  l'image, tampon progressif sur disque contre les zones mal couvertes, qualité sur données mobiles.
+- **M3 — Tablette, réglages, gestion, publication** : deux volets au-delà de 840 dp, réglages, gestion,
+  mise à jour par l'appli et première publication de l'APK mobile.
+- **M4 — Le téléphone pilote la TV** : « Lire sur… », télécommande complète, reprise d'un appareil à
+  l'autre.
+- **M5 — Téléchargements hors ligne** (en dernier).
+
 ### Après la 1.0
-Mobile et tablette, hors ligne, télécommande et multi-appareils, statistiques, gestion P1, mpv,
-rangées intelligentes ; puis le web et la TV en direct (P2).
+Statistiques, gestion P1, mpv, rangées intelligentes ; puis le web et la TV en direct (P2).
 
 ## 7. Hors périmètre
 

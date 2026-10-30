@@ -15,8 +15,8 @@ permissions:
 
 jobs:
   # A pull request runs the fast CI: build and analysis, screenshots, integration and the API 30
-  # emulator. The API 34 emulator (and the couch gestures), the profiles and the benchmarks run on a
-  # push to main, on workflow_dispatch, or when the head commit of the PR says [full-ci];
+  # emulator. The API 34 emulator (and the couch gestures), the phone emulator (M1), the profiles and
+  # the benchmarks run on a push to main, on workflow_dispatch, or when the head commit of the PR says [full-ci];
   # [record-profiles] runs the job of the profiles too (CLAUDE.md).
   mode:
     name: What this run covers
@@ -25,6 +25,7 @@ jobs:
     outputs:
       api-levels: ${{ steps.mode.outputs.api-levels }}
       profiles: ${{ steps.mode.outputs.profiles }}
+      full: ${{ steps.mode.outputs.full }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -45,6 +46,7 @@ jobs:
             echo "api-levels=[30]" >> "$GITHUB_OUTPUT"
           fi
           echo "profiles=$profiles" >> "$GITHUB_OUTPUT"
+          echo "full=$full" >> "$GITHUB_OUTPUT"
           echo "Full CI: $full, profiles and benchmarks: $profiles"
 
   build:
@@ -67,10 +69,12 @@ jobs:
         with:
           path: ~/.m2/repository/org/robolectric
           key: robolectric-${{ hashFiles('gradle/libs.versions.toml') }}
+      # `check` covers :app:mobile too (M1): its Lint and its tests, Robolectric included.
       - name: Spotless, Detekt, Android Lint, unit tests, debug and optimised APKs
         run: |
           set -o pipefail
           ./gradlew check :app:tv:assembleDebug :app:tv:assembleRelease :benchmark:assembleBenchmarkRelease \
+            :app:mobile:assembleDebug :app:mobile:assembleRelease :app:mobile:assembleDebugAndroidTest \
             --continue 2>&1 | tee gradle.log
       - name: What the optimised APK holds (32-bit libraries for the Chromecast, size)
         run: ci/check-apk.sh app/tv/build/outputs/apk/release/*.apk
@@ -105,6 +109,21 @@ jobs:
         with:
           name: benchmark-apk
           path: benchmark/build/outputs/apk/benchmarkRelease/*.apk
+          if-no-files-found: error
+      # The app for phones and tablets (M1): its debug APK, its optimised APK and its instrumented tests.
+      - name: Phone APKs
+        uses: actions/upload-artifact@v7
+        with:
+          name: cine-doury-mobile-apk
+          path: |
+            app/mobile/build/outputs/apk/debug/*.apk
+            app/mobile/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+      - name: Phone instrumented tests APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: cine-doury-mobile-test-apk
+          path: app/mobile/build/outputs/apk/androidTest/debug/*.apk
           if-no-files-found: error
       - name: Reports
         if: failure()
@@ -154,12 +173,12 @@ jobs:
         if: steps.mode.outputs.record != 'true'
         run: |
           set -o pipefail
-          ./gradlew :app:tv:verifyRoborazziDebug 2>&1 | tee gradle.log
+          ./gradlew :app:tv:verifyRoborazziDebug :app:mobile:verifyRoborazziDebug --continue 2>&1 | tee gradle.log
       - name: Record the references
         if: steps.mode.outputs.record == 'true'
         run: |
           set -o pipefail
-          ./gradlew :app:tv:recordRoborazziDebug 2>&1 | tee gradle.log
+          ./gradlew :app:tv:recordRoborazziDebug :app:mobile:recordRoborazziDebug --continue 2>&1 | tee gradle.log
       - name: Commit the references
         if: steps.mode.outputs.record == 'true'
         env:
@@ -168,9 +187,12 @@ jobs:
           mkdir -p docs/screenshots/j8
           # The screens of J8 (180 to 198): the key screens in 4K, then with the largest text.
           cp app/tv/src/test/screenshots/1[89][0-9]-*.png docs/screenshots/j8/
+          # The phone and the tablet (M1, from 200).
+          mkdir -p docs/screenshots/m1
+          cp app/mobile/src/test/screenshots/*.png docs/screenshots/m1/
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add app/tv/src/test/screenshots docs/screenshots/j8
+          git add app/tv/src/test/screenshots docs/screenshots/j8 app/mobile/src/test/screenshots docs/screenshots/m1
           if git diff --cached --quiet; then
             echo "Screenshots unchanged."
           else
@@ -188,6 +210,8 @@ jobs:
           path: |
             app/tv/src/test/screenshots/
             app/tv/build/outputs/roborazzi/
+            app/mobile/src/test/screenshots/
+            app/mobile/build/outputs/roborazzi/
           if-no-files-found: ignore
 
   integration:
@@ -340,6 +364,64 @@ jobs:
             emulator-release-logcat.txt
             couch-gestures.md
             couch-gestures.md.logcat.txt
+          if-no-files-found: ignore
+
+  phone-emulator:
+    name: Sign in, browse and play on an API 34 phone emulator (M1)
+    needs: [build, mode]
+    if: needs.mode.outputs.full == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    services:
+      jellyfin:
+        image: jellyfin/jellyfin:12.3.20261023-013714
+        ports:
+          - 8096:8096
+        volumes:
+          - /tmp/cine-doury-media:/media
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: cine-doury-mobile-apk
+          path: mobile-apk
+      - uses: actions/download-artifact@v8
+        with:
+          name: cine-doury-mobile-test-apk
+          path: mobile-test-apk
+      - name: ffmpeg
+        run: ci/install-ffmpeg.sh
+      - name: Generate the test media
+        run: |
+          sudo chown -R "$(id -u):$(id -g)" /tmp/cine-doury-media
+          ci/jellyfin/generate-media.sh /tmp/cine-doury-media
+      - name: Bootstrap Jellyfin
+        run: ci/jellyfin/bootstrap.sh http://localhost:8096
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: The journey of the phone
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          # The emulator reaches the Jellyfin of the host at 10.0.2.2.
+          script: ci/emulator-phone.sh mobile-apk/debug mobile-test-apk http://10.0.2.2:8096
+      - name: Emulator screenshot
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: emulator-phone-api34
+          path: |
+            emulator-phone.txt
+            emulator-phone.png
+            emulator-phone-logcat.txt
           if-no-files-found: ignore
 
   profiles:
