@@ -54,13 +54,27 @@ internal class MarginLoader(
      */
     val keys = CacheKeyFactory { spec -> "$prefix$generation|" + (spec.key ?: spec.uri.toString()) }
 
-    /** What the player reads through: the disk first, then the network, written to the disk. */
+    /** What the fetch writes through: the network, written to the disk. */
+    private val writers: CacheDataSource.Factory =
+        CacheDataSource
+            .Factory()
+            .setCache(disk.cache)
+            .setUpstreamDataSourceFactory(upstream)
+            .setCacheKeyFactory(keys)
+
+    /**
+     * What the player reads through: the disk where the margin is, else the network. The player never
+     * writes: a file played as it is keeps its connection open while its memory is full, and would hold
+     * the lock of the rest of the file against the fetch. What it loads is in its memory anyway, and the
+     * margin starts where the memory ends.
+     */
     val dataSources: CacheDataSource.Factory =
         CacheDataSource
             .Factory()
             .setCache(disk.cache)
             .setUpstreamDataSourceFactory(upstream)
             .setCacheKeyFactory(keys)
+            .setCacheWriteDataSinkFactory(null)
 
     /** The chunks of the stream played, with what to fetch for each. */
     class Source(
@@ -210,6 +224,8 @@ internal class MarginLoader(
         try {
             current.init?.let { init -> if (!cachedSpec(init, segment = true)) write(init) { written += it } }
             write(current.specs[index]) { written += it }
+            // Written whole, or someone else held it: then it is tried again later, as a failure.
+            if (!cachedSpec(current.specs[index], current.segments)) throw IOException("Chunk $index not cached")
             if (source?.id == current.id) known += index
             failures = 0
             val millis = (System.nanoTime() - started) / NANOS_PER_MILLI
@@ -233,7 +249,7 @@ internal class MarginLoader(
         progress: (Long) -> Unit,
     ) {
         val cacheWriter =
-            CacheWriter(dataSources.createDataSource(), spec, null) { _, _, newBytes -> progress(newBytes) }
+            CacheWriter(writers.createDataSource(), spec, null) { _, _, newBytes -> progress(newBytes) }
         writer = cacheWriter
         try {
             if (running) cacheWriter.cache()
