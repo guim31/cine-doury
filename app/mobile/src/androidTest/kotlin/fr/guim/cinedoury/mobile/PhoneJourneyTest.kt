@@ -104,12 +104,18 @@ class PhoneJourneyTest {
             "the player shows an error",
         )
 
-        // « Retour » closes the controls, then the player: back to the details.
-        compose.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
-        compose.waitForIdle()
-        compose.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
+        // « Retour » closes what is over the picture (the controls, « Épisode suivant » near the end of a
+        // short test episode), then the player: one press at a time until the details come back.
+        repeat(MAX_BACKS) {
+            if (shown(tagged(MobileDetailsTags.PLAY))) return@repeat
+            compose.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
+            runCatching { compose.waitUntil(BACK_WAIT) { shown(tagged(MobileDetailsTags.PLAY)) } }
+        }
         waitFor(tagged(MobileDetailsTags.PLAY))
     }
+
+    private fun shown(matcher: SemanticsMatcher) =
+        compose.onAllNodes(matcher, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
 
     /** The position the controls show, in seconds: a tap on the picture shows them if they are hidden. */
     private fun position(): Long {
@@ -136,5 +142,7 @@ class PhoneJourneyTest {
         const val LONG_TIMEOUT = 60_000L
         const val PLAY_MILLIS = 6_000L
         const val SIXTY = 60
+        const val MAX_BACKS = 5
+        const val BACK_WAIT = 3_000L
     }
 }
