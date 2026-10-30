@@ -80,12 +80,7 @@ private fun CineThemeContent(
             error = colors.danger,
             border = colors.focus,
         )
-    CompositionLocalProvider(
-        LocalCineColors provides colors,
-        LocalCineTypography provides typography,
-        LocalReducedMotion provides reducedMotion,
-        LocalCardPreferences provides cards,
-    ) {
+    ProvideCineTokens(colors, typography, reducedMotion, cards) {
         MaterialTheme(colorScheme = scheme) {
             CompositionLocalProvider(
                 LocalContentColor provides colors.text,
@@ -94,6 +89,27 @@ private fun CineThemeContent(
             )
         }
     }
+}
+
+/**
+ * The tokens every screen reads through [CineTheme], on the TV and on the phone (M1): one source for
+ * both apps, each with its own Material theme around them.
+ */
+@Composable
+fun ProvideCineTokens(
+    colors: CineColors,
+    typography: CineTypography,
+    reducedMotion: Boolean,
+    cards: CardPreferences,
+    content: @Composable () -> Unit,
+) {
+    CompositionLocalProvider(
+        LocalCineColors provides colors,
+        LocalCineTypography provides typography,
+        LocalReducedMotion provides reducedMotion,
+        LocalCardPreferences provides cards,
+        content = content,
+    )
 }
 
 object CineTheme {

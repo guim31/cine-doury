@@ -108,6 +108,19 @@ class InMemorySource(
         pending[secret] = username
     }
 
+    /** The codes approved from this device (« Connecter un appareil », M1), with the user who did. */
+    val authorizedCodes: MutableMap<String, String> = mutableMapOf()
+
+    /** Every address a session was moved to ([LibrarySource.moveTo], M1), in order. */
+    val moves: MutableList<ServerAddress> = mutableListOf()
+
+    /** Simulates another device (a TV) that shows a Quick Connect code: the code to approve. */
+    fun requestFromOtherDevice(): String {
+        val code = (nextCode++).toString()
+        pending["secret-$code"] = null
+        return code
+    }
+
     /** Simulates the server forgetting every pending Quick Connect request. */
     fun expireQuickConnect() {
         pending.clear()
@@ -427,6 +440,25 @@ class InMemorySource(
             checkSession()
             count("setPlaybackPreferences")
             this@InMemorySource.preferences = preferences
+        }
+
+        /** Where the calls of this session go: [moveTo] follows the network (M1). */
+        var address: ServerAddress = session.server
+            private set
+
+        override fun moveTo(address: ServerAddress) {
+            this.address = address
+            moves += address
+        }
+
+        override suspend fun authorizeQuickConnect(code: String) {
+            checkSession()
+            check(address)
+            if (!quickConnectEnabled) throw SourceException.QuickConnectDisabled()
+            val secret = "secret-$code"
+            if (secret !in pending) throw SourceException.QuickConnectExpired()
+            pending[secret] = session.user.name
+            authorizedCodes[code] = session.user.name
         }
 
         override suspend fun sendDiagnostic(report: String): String {

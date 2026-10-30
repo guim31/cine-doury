@@ -1,6 +1,7 @@
 package fr.guim.cinedoury.core.designsystem.component
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
@@ -54,6 +55,9 @@ object CineIcons {
     val Star: ImageVector get() = Icons.Filled.Star
     val Edit: ImageVector get() = Icons.Filled.Edit
     val Exit: ImageVector get() = Icons.AutoMirrored.Filled.ExitToApp
+
+    /** The arrow of the bar at the top of a screen of the phone (M1). */
+    val Back: ImageVector get() = Icons.AutoMirrored.Filled.ArrowBack
 
     val Filter: ImageVector by lazy { icon("Filter", "M10,18h4v-2h-4v2zM3,6v2h18V6H3zm3,7h12v-2H6v2z") }
 

@@ -73,4 +73,6 @@
     <string name="seerr_error_not_seerr">This is not a Seerr server. Check the address, without an extra path.</string>
     <string name="seerr_error_other">Seerr answered with an error. Try again in a moment.</string>
     <string name="seerr_error_empty">Enter the address and the API key.</string>
+    <!-- The phone and the tablet (M1). -->
+    <string name="mobile_voice_denied">The microphone is not allowed. Allow it in the settings of the phone.</string>
 </resources>

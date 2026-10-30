@@ -149,4 +149,8 @@
     <string name="device_direct_audio">Lecture directe : audio</string>
     <string name="device_transcode">Transcodage demandé</string>
     <string name="device_subtitle_rules">Sous-titres envoyés</string>
+    <!-- The phone and the tablet (M1). -->
+    <string name="mobile_player_back_10">Reculer de 10 secondes</string>
+    <string name="mobile_player_forward_10">Avancer de 10 secondes</string>
+    <string name="mobile_player_still_message">Plusieurs épisodes se sont enchaînés sans que vous touchiez l\'écran. La lecture attend votre accord pour continuer.</string>
 </resources>

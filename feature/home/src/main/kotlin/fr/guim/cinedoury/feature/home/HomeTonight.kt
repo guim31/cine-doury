@@ -157,16 +157,16 @@ private fun Tile(
 }
 
 /** « Retirer de Continuer » takes a playback in progress out of the mosaic. */
-private val TonightTile.continueRow: String?
+internal val TonightTile.continueRow: String?
     get() = HomeRows.TonightKeys.RESUME.takeIf { kind == TonightKind.Resume }
 
 /** « S01 · E08 — titre » for an episode, else the year, the length and the rating. */
 @Composable
-private fun MediaItem.tonightLine(): String? = if (kind == ItemKind.Episode) cardSubtitle() else metadataLine()
+internal fun MediaItem.tonightLine(): String? = if (kind == ItemKind.Episode) cardSubtitle() else metadataLine()
 
 /** Why the tile is there, in capitals: « REPRENDRE · RESTE 14 MIN », « AJOUTÉ HIER ». */
 @Composable
-private fun TonightTile.eyebrow(): String {
+internal fun TonightTile.eyebrow(): String {
     val locale = LocalConfiguration.current.locales[0]
     val now = LocalClock.current.instant()
     val text =

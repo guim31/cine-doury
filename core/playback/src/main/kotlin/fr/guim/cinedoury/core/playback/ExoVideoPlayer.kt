@@ -62,6 +62,8 @@ class ExoVideoPlayer(
     matchFrameRate: Boolean,
     audioOffsetMillis: Int = 0,
     allowDolbyVision: Boolean = true,
+    buffer: PlayerBuffer = PlayerBuffer.Tv,
+    dataSources: DataSources = DataSources.Direct,
 ) : VideoPlayer {
     private val main = Handler(Looper.getMainLooper())
     private val httpFactory =
@@ -76,13 +78,13 @@ class ExoVideoPlayer(
             .Builder(context, Renderers(context, capabilities, allowedPassthrough, audioOffsetMillis, allowDolbyVision))
             .setMediaSourceFactory(
                 DefaultMediaSourceFactory(
-                    httpFactory,
+                    dataSources.wrap(httpFactory),
                 ).setLoadErrorHandlingPolicy(DefaultLoadErrorHandlingPolicy(LOAD_RETRIES)),
             ).setLoadControl(
                 DefaultLoadControl
                     .Builder()
-                    .setBufferDurationsMs(MIN_BUFFER_MS, MAX_BUFFER_MS, START_BUFFER_MS, REBUFFER_MS)
-                    .setTargetBufferBytes(TARGET_BUFFER_BYTES)
+                    .setBufferDurationsMs(buffer.minMillis, buffer.maxMillis, buffer.startMillis, buffer.rebufferMillis)
+                    .setTargetBufferBytes(buffer.targetBytes)
                     .setPrioritizeTimeOverSizeThresholds(false)
                     .build(),
             ).setSeekBackIncrementMs(SEEK_INCREMENT_MS)
@@ -414,11 +416,6 @@ class ExoVideoPlayer(
     private companion object {
         const val CONNECT_TIMEOUT_MS = 8_000
         const val READ_TIMEOUT_MS = 15_000
-        const val MIN_BUFFER_MS = 30_000
-        const val MAX_BUFFER_MS = 90_000
-        const val START_BUFFER_MS = 1_500
-        const val REBUFFER_MS = 4_000
-        const val TARGET_BUFFER_BYTES = 192 * 1024 * 1024
         const val SEEK_INCREMENT_MS = 10_000L
 
         /** Network errors are retried patiently (about 90 s): the buffer keeps playing meanwhile. */

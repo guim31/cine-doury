@@ -19,11 +19,14 @@ import fr.guim.cinedoury.core.source.LibrarySource
 import fr.guim.cinedoury.core.source.LoggingManageSource
 import fr.guim.cinedoury.core.source.ManageSource
 import fr.guim.cinedoury.core.source.PlaybackSource
+import fr.guim.cinedoury.core.source.ServerAddress
 import fr.guim.cinedoury.core.source.Session
+import fr.guim.cinedoury.core.source.SourceException
 import fr.guim.cinedoury.core.source.SourceLog
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import org.jellyfin.sdk.api.client.ApiClient
+import org.jellyfin.sdk.api.client.extensions.authenticationApi
 import org.jellyfin.sdk.api.client.extensions.filterApi
 import org.jellyfin.sdk.api.client.extensions.libraryApi
 import org.jellyfin.sdk.api.client.extensions.personApi
@@ -450,6 +453,26 @@ internal class JellyfinLibrarySource(
                 .logFile(report)
                 .content.fileName
         }
+
+    override suspend fun authorizeQuickConnect(code: String) {
+        val approved =
+            try {
+                jellyfinCall(onUnauthorized = { SourceException.QuickConnectDisabled() }, what = "Quick Connect") {
+                    api.authenticationApi
+                        .authorizeQuickConnect(
+                            code = code.filter(Char::isDigit),
+                            userId = userId,
+                        ).content
+                }
+            } catch (_: SourceException.NotFound) {
+                // « Unknown secret »: a code mistyped, or forgotten by the server (10 minutes).
+                throw SourceException.QuickConnectExpired()
+            }
+        if (!approved) throw SourceException.QuickConnectExpired()
+    }
+
+    // The client of every call of this session (playback and management included): its address moves.
+    override fun moveTo(address: ServerAddress) = api.update(baseUrl = address.url)
 
     override suspend fun technicalItems(
         library: LibraryId,

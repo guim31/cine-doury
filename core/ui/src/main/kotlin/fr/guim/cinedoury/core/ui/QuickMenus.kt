@@ -155,47 +155,35 @@ fun QuickMenuHost(
             options.map { option ->
                 QuickMenuLine(labels.getValue(option), option.icon, "quick-${option.name}") {
                     menu.close()
-                    when (option) {
-                        QuickOption.Resume -> {
-                            navigation.play(PlaybackRequest(item, resume = true))
-                        }
-
-                        QuickOption.Play, QuickOption.PlayFromStart -> {
-                            navigation.play(
-                                PlaybackRequest(item, resume = false),
-                            )
-                        }
-
-                        QuickOption.OpenDetails -> {
-                            navigation.open(item)
-                        }
-
-                        QuickOption.GoToSeries -> {
-                            item.seriesCard()?.let { navigation.openSeries(it) }
-                        }
-
-                        QuickOption.GoToSeason -> {
-                            item.seriesCard()?.let {
-                                navigation.openSeries(
-                                    it,
-                                    item.episode?.seasonId,
-                                )
-                            }
-                        }
-
-                        QuickOption.Select -> {
-                            onSelect?.invoke(item)
-                        }
-
-                        else -> {
-                            actions?.apply(item, option, continueRow)
-                        }
-                    }
+                    runQuickOption(option, item, navigation, actions, continueRow, onSelect)
                 }
             },
         onDismiss = menu::close,
         previewFocusedIndex = previewFocusedIndex,
     )
+}
+
+/**
+ * Does what [option] of the menu of [item] says (essai réel 5): plays, opens, or changes the item
+ * through [actions]. The same on the TV and on the phone (M1), whatever draws the menu.
+ */
+fun runQuickOption(
+    option: QuickOption,
+    item: MediaItem,
+    navigation: QuickMenuNavigation,
+    actions: QuickActions?,
+    continueRow: String?,
+    onSelect: ((MediaItem) -> Unit)?,
+) {
+    when (option) {
+        QuickOption.Resume -> navigation.play(PlaybackRequest(item, resume = true))
+        QuickOption.Play, QuickOption.PlayFromStart -> navigation.play(PlaybackRequest(item, resume = false))
+        QuickOption.OpenDetails -> navigation.open(item)
+        QuickOption.GoToSeries -> item.seriesCard()?.let { navigation.openSeries(it) }
+        QuickOption.GoToSeason -> item.seriesCard()?.let { navigation.openSeries(it, item.episode?.seasonId) }
+        QuickOption.Select -> onSelect?.invoke(item)
+        else -> actions?.apply(item, option, continueRow)
+    }
 }
 
 /** The series of an episode, as a card: its details screen reads the rest. */
@@ -216,7 +204,7 @@ private fun MediaItem.seriesCard(): MediaItem? {
 }
 
 @Composable
-private fun QuickOption.label(): String =
+internal fun QuickOption.label(): String =
     stringResource(
         when (this) {
             QuickOption.Resume -> R.string.quick_resume
@@ -234,7 +222,7 @@ private fun QuickOption.label(): String =
         },
     )
 
-private val QuickOption.icon: ImageVector
+internal val QuickOption.icon: ImageVector
     get() =
         when (this) {
             QuickOption.Resume, QuickOption.Play -> CineIcons.Play

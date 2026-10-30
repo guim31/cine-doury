@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Edge to edge (M1): Compose draws behind the bars of the system and keeps their insets. -->
+    <style name="Theme.CineDoury.Mobile" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/window_background</item>
+        <item name="android:colorBackground">@color/window_background</item>
+    </style>
+</resources>

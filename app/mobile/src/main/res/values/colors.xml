@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Window and launcher colours, before Compose draws: `fond` of docs/UI.md § 4. -->
+    <color name="window_background">#FF0B0C0F</color>
+    <color name="launcher_background">#FF0B0C0F</color>
+</resources>

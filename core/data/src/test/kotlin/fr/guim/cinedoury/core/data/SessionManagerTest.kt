@@ -6,6 +6,9 @@ import fr.guim.cinedoury.core.data.db.CineDatabase
 import fr.guim.cinedoury.core.data.prefs.AppPreferences
 import fr.guim.cinedoury.core.data.security.TokenCipher
 import fr.guim.cinedoury.core.data.server.AddressResolver
+import fr.guim.cinedoury.core.model.ImageRef
+import fr.guim.cinedoury.core.model.ImageType
+import fr.guim.cinedoury.core.model.ItemId
 import fr.guim.cinedoury.core.model.ServerInfo
 import fr.guim.cinedoury.core.source.Credentials
 import fr.guim.cinedoury.core.source.FailureLog
@@ -251,4 +254,60 @@ class SessionManagerTest {
                     ?.name,
             )
         }
+
+    @Test
+    fun `leaving the Wi-Fi moves the open profile to the remote address, and back`() =
+        runTest {
+            sessions.addServer(address)
+            val remote = ServerAddress.of("https://example.com")
+            sessions.setAddresses(address, remote)
+            sessions.signIn(Credentials.Password("admin", "secret"))
+            val library = checkNotNull(sessions.active.value).library
+
+            // The phone goes out: the local address is silent, the remote one answers.
+            source.unreachable += address
+            assertEquals(ConnectionMode.Remote, sessions.followNetwork()?.mode)
+            assertEquals(
+                ConnectionMode.Remote,
+                sessions.active.value
+                    ?.connection
+                    ?.mode,
+            )
+            // The source of the screens already open follows (the same object, moved).
+            assertEquals(library, sessions.active.value?.library)
+            assertEquals(listOf(remote), source.moves)
+            assertEquals("https://example.com/image/x/Primary?w=1&h=1&tag=t", imageUrl())
+
+            // Back home.
+            source.unreachable -= address
+            assertEquals(ConnectionMode.Local, sessions.followNetwork()?.mode)
+            assertEquals(address, sessions.connection.value?.address)
+            assertEquals(listOf(remote, address), source.moves)
+        }
+
+    @Test
+    fun `no network at all keeps the connection as it was`() =
+        runTest {
+            sessions.addServer(address)
+            source.unreachable += address
+            assertEquals(address, sessions.followNetwork()?.address)
+        }
+
+    @Test
+    fun `the phone approves the code of a TV for its profile`() =
+        runTest {
+            sessions.addServer(address)
+            sessions.signIn(Credentials.Password("enfant", ""))
+            val code = source.requestFromOtherDevice()
+            sessions.authorizeQuickConnect(code)
+            assertEquals("enfant", source.authorizedCodes[code])
+            assertFailsWith<SourceException.QuickConnectExpired> { sessions.authorizeQuickConnect("999999") }
+        }
+
+    private fun imageUrl() =
+        sessions.imageUrl(
+            ImageRef(ItemId("x"), ImageType.Primary, "t"),
+            1,
+            1,
+        )
 }

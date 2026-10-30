@@ -286,4 +286,22 @@
     <string name="report_no_server">No server open: the report cannot be sent.</string>
     <string name="browsing_tonight">“Tonight” mosaic</string>
     <string name="browsing_tonight_description">Instead of the banner: what you are watching, next episodes, latest additions.</string>
+    <!-- The phone and the tablet (M1). -->
+    <string name="mobile_profile_tab">Profile</string>
+    <string name="mobile_connection_local">Connected at home (local address)</string>
+    <string name="mobile_connection_remote">Connected remotely (public address)</string>
+    <string name="mobile_server_line">Server: %1$s</string>
+    <string name="mobile_connect_device">Connect a device</string>
+    <string name="mobile_connect_device_description">Approve the six-digit code the TV shows.</string>
+    <string name="mobile_connect_device_instruction">On the TV, choose your profile or “Other account”: a six-digit code shows. Enter it here to connect the TV to your profile, without a password.</string>
+    <string name="mobile_connect_device_code">Device code</string>
+    <string name="mobile_connect_device_approve">Approve</string>
+    <string name="mobile_connect_device_done_title">Device connected</string>
+    <string name="mobile_connect_device_done_message">The device that showed the code %1$s is signing in to your profile.</string>
+    <string name="mobile_connect_device_again">Connect another device</string>
+    <string name="mobile_code_unknown_title">This code is not recognised.</string>
+    <string name="mobile_code_unknown_message">Check the code shown on the other device, or ask for a new one, then try again.</string>
+    <string name="mobile_switch_profile_description">Back to “Who\'s watching?”.</string>
+    <string name="mobile_sign_out_description">This profile is forgotten on this phone; the others stay signed in.</string>
+    <string name="mobile_app_version">Ciné Doury %1$s</string>
 </resources>

@@ -65,6 +65,8 @@ compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
 compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
 compose-foundation = { module = "androidx.compose.foundation:foundation" }
 compose-material-icons-core = { module = "androidx.compose.material:material-icons-core", version.ref = "materialIconsCore" }
+# The touch components of the phone and the tablet (M1), from the Compose BOM.
+compose-material3 = { module = "androidx.compose.material3:material3" }
 tv-material = { module = "androidx.tv:tv-material", version.ref = "tvMaterial" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }

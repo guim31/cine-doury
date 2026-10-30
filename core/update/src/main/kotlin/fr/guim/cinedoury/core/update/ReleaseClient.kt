@@ -21,13 +21,15 @@ import java.util.concurrent.TimeUnit
 /**
  * The releases of the app on GitHub (`SPEC.md` § 4.18): `GET /repos/{repo}/releases`, without a
  * token (60 requests an hour per address, plenty for a check a day). Drafts, prereleases, tags that
- * are not `vX.Y.Z` and releases without an APK are left out. Only the TV talks to GitHub for this,
- * and only to read: nothing about the household is sent.
+ * are not `vX.Y.Z` and releases without an APK for [app] are left out (M1: each app takes its own
+ * APK by name, [AppTarget.apkOf]). The app talks to GitHub only to read: nothing about the household
+ * is sent.
  */
 class ReleaseClient(
     private val http: OkHttpClient = defaultClient(),
     private val api: String = GITHUB_API,
     private val repository: String = REPOSITORY,
+    private val app: AppTarget = AppTarget.Tv,
 ) {
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -126,8 +128,8 @@ class ReleaseClient(
         // A trial build is never published; a release tagged like one is not offered either.
         val version = AppVersion.parse(tag)?.takeUnless { it.isTrial }
         val assets = (this["assets"] as? JsonArray).orEmpty().mapNotNull { (it as? JsonObject)?.toAsset() }
-        val apk = assets.firstOrNull { it.name.endsWith(".apk") }
-        if (tag == null || version == null || apk == null) return null
+        if (tag == null || version == null) return null
+        val apk = app.apkOf(assets, version) ?: return null
         return Release(
             version = version,
             tag = tag,
@@ -135,9 +137,8 @@ class ReleaseClient(
             publishedAt = string("published_at")?.let(::instantOrNull),
             notes = string("body").orEmpty(),
             apk = apk,
-            checksum =
-                assets.firstOrNull { it.name == "${apk.name}.sha256" }
-                    ?: assets.firstOrNull { it.name.endsWith(".sha256") },
+            // Its own SHA-256 only: with two APKs in a release, another file would never match.
+            checksum = assets.firstOrNull { it.name == "${apk.name}.sha256" },
             page = string("html_url"),
         )
     }

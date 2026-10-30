@@ -19,6 +19,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlin.coroutines.cancellation.CancellationException
 
 /** Where the app opens (`SPEC.md` § 4.7). */
@@ -282,6 +284,42 @@ class SessionManager(
         val server = requireConnection().server
         val info = connector.serverInfo(address)
         if (info.id != server.id) throw SourceException.NotAServer("Another server (${info.name}) answers at $address")
+    }
+
+    private val following = Mutex()
+
+    /**
+     * The device changed networks (M1, `SPEC.md` § 4.26: the phone left the Wi-Fi of the house for the
+     * mobile network, or came back): the address that answers now, the local one first, as at start.
+     * When it is another one, the open profile follows it, the screens already open included
+     * ([LibrarySource.moveTo]). When none answers, nothing changes: the next call of a screen says so.
+     */
+    suspend fun followNetwork(): Connection? =
+        following.withLock {
+            val connection = currentConnection.value ?: return null
+            val found =
+                try {
+                    resolver.resolve(connection.server, preferences.networkMode.first())
+                } catch (_: SourceException) {
+                    return connection
+                }
+            if (found.address == connection.address) return connection
+            FailureLog.warn("Network changed: ${connection.mode} to ${found.mode}")
+            currentConnection.value = found
+            currentSession.value?.let { active ->
+                active.library.moveTo(found.address)
+                currentSession.value = active.copy(connection = found)
+            }
+            found
+        }
+
+    /**
+     * Approves the Quick Connect code another device shows, as the open profile (« Connecter un
+     * appareil », M1): that device signs in as this user.
+     */
+    suspend fun authorizeQuickConnect(code: String) {
+        val active = checkNotNull(currentSession.value) { "No open profile" }
+        active.library.authorizeQuickConnect(code)
     }
 
     private fun requireConnection(): Connection = checkNotNull(currentConnection.value) { "No server in use" }

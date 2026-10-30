@@ -61,7 +61,8 @@ internal class JellyfinManageSource(
     private val api: ApiClient,
     private val userId: UUID,
 ) : ManageSource {
-    private val base = api.baseUrl.orEmpty().trimEnd('/')
+    // Read at each call: the address follows the network of the phone (LibrarySource.moveTo, M1).
+    private val base get() = api.baseUrl.orEmpty().trimEnd('/')
 
     private val authorization =
         AuthorizationHeaderBuilder.buildHeader(
