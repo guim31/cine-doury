@@ -17,4 +17,6 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.kotlin.test)
     testImplementation(libs.kotlinx.coroutines.test)
+    // ExoPlaybackException reads the clock of Android: PlaybackErrorsTest runs on Robolectric (G, M2).
+    testImplementation(libs.robolectric)
 }

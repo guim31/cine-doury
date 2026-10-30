@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# The margin of the phone on the phone emulator of the full CI (M2, SPEC.md § 4.27):
+# The margin of the phone on the phone emulator of the full CI (M2, SPEC.md § 4.27), and G (a copied
+# H.264 with B-frames, in TS segments: RemuxOnDeviceTest):
 # app/mobile/src/androidTest, MarginOnDeviceTest. A film of 20 min with a moving pattern (« Autoroute »,
 # only on this job: the integration tests count the films of the catalogue) is added to the test
 # Jellyfin, whose throttling is turned on at its default (ThrottleDelaySeconds = 180); the test then
@@ -29,6 +30,20 @@ if [ ! -f "$dir/$title (2026).mkv" ]; then
     "$title" > "$dir/movie.nfo"
 fi
 
+# G (M2): « Bretelle », H.264 with B-frames and DTS, which the phone does not decode: the server copies
+# the video and encodes the audio (RemuxOnDeviceTest).
+remux="Bretelle"
+rdir="$media/films/$remux (2026)"
+if [ ! -f "$rdir/$remux (2026).mkv" ]; then
+  log "H.264 with B-frames and DTS, 60 s"
+  mkdir -p "$rdir"
+  ffmpeg -loglevel error -y -f lavfi -i "testsrc2=size=1280x720:rate=24:duration=60" \
+    -f lavfi -i "sine=frequency=550:duration=60:sample_rate=48000" -c:v libx264 -preset veryfast -bf 2 -g 48 \
+    -pix_fmt yuv420p -c:a dca -strict -2 -ac 2 -metadata:s:a:0 language=fra "$rdir/$remux (2026).mkv"
+  printf '<?xml version="1.0" encoding="utf-8" standalone="yes"?>\n<movie>\n  <title>%s</title>\n  <year>2026</year>\n</movie>\n' \
+    "$remux" > "$rdir/movie.nfo"
+fi
+
 token="$(curl -fsS -X POST "$server/Users/AuthenticateByName" -H "Authorization: $auth" \
   -H 'Content-Type: application/json' -d '{"Username":"admin","Pw":"cinedoury-test"}' | jq -r .AccessToken)"
 api() { curl -fsS -X "$1" "$server$2" -H "Authorization: $auth, Token=\"$token\"" -H 'Content-Type: application/json' ${3:+--data "$3"}; }
@@ -42,7 +57,8 @@ log "throttling: $(api GET /System/Configuration/encoding | jq -c '{EnableThrott
 api POST /Library/Refresh > /dev/null
 for _ in $(seq 1 60); do
   found="$(api GET "/Items?recursive=true&includeItemTypes=Movie&searchTerm=$title" | jq '.TotalRecordCount')"
-  [ "$found" -ge 1 ] && break
+  other="$(api GET "/Items?recursive=true&includeItemTypes=Movie&searchTerm=$remux" | jq '.TotalRecordCount')"
+  [ "$found" -ge 1 ] && [ "$other" -ge 1 ] && break
   sleep 3
 done
 log "« $title » in the library: $found"
@@ -50,13 +66,13 @@ log "« $title » in the library: $found"
 adb logcat -c || true
 set +e
 # Bounded: two passes of about 4 min each, and a test stuck on the device must not hold the job.
-timeout 1200 adb shell am instrument -w -r -e jellyfinUrl "$url" -e marginFilm "$title" \
-  -e class "$package.MarginOnDeviceTest" \
+timeout 1200 adb shell am instrument -w -r -e jellyfinUrl "$url" -e marginFilm "$title" -e remuxFilm "$remux" \
+  -e class "$package.MarginOnDeviceTest,$package.RemuxOnDeviceTest" \
   "$package.test/androidx.test.runner.AndroidJUnitRunner" 2>&1 | tee emulator-margin-run.txt
 set -e
 adb shell cmd connectivity airplane-mode disable || true
 adb logcat -d -s CineDoury:V AndroidRuntime:E > emulator-margin-logcat.txt || true
-grep "margin " emulator-margin-logcat.txt | sed 's/^.*CineDoury[^:]*: //' > emulator-margin.txt || true
+grep -E "margin |remux " emulator-margin-logcat.txt | sed 's/^.*CineDoury[^:]*: //' > emulator-margin.txt || true
 {
   echo "### Margin on the phone emulator (M2)"
   echo
@@ -65,7 +81,7 @@ grep "margin " emulator-margin-logcat.txt | sed 's/^.*CineDoury[^:]*: //' > emul
   echo '```'
 } >> "${GITHUB_STEP_SUMMARY:-/dev/null}" || true
 if grep -q -E "FAILURES!!!|INSTRUMENTATION_FAILED|Process crashed" emulator-margin-run.txt \
-  || ! grep -q "OK (2 tests)" emulator-margin-run.txt; then
+  || ! grep -q "OK (3 tests)" emulator-margin-run.txt; then
   adb logcat -d -b crash || true
   tail -n 60 emulator-margin.txt || true
   echo "::error::the margin of the phone on the emulator failed"

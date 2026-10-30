@@ -170,7 +170,7 @@ class ExoVideoPlayer(
         exo.addListener(
             object : Player.Listener {
                 override fun onPlayerError(error: PlaybackException) {
-                    eventFlow.tryEmit(PlayerEvent.Failed(error.toFailure(), "${error.errorCodeName}: ${error.message}"))
+                    eventFlow.tryEmit(PlayerEvent.Failed(error.toFailure(), PlaybackErrors.detail(error)))
                 }
 
                 override fun onPlaybackStateChanged(playbackState: Int) {
@@ -553,21 +553,7 @@ class ExoVideoPlayer(
                 else -> MimeTypes.APPLICATION_SUBRIP
             }
 
-        /** What the error of ExoPlayer means for the next step ([fr.guim.cinedoury.core.model.PlaybackFallback]). */
-        fun PlaybackException.toFailure(): PlaybackFailure =
-            when (errorCode) {
-                PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS -> PlaybackFailure.Server
-                in IO_ERRORS -> PlaybackFailure.Network
-                in PARSING_ERRORS -> PlaybackFailure.Format
-                in DECODING_ERRORS, in AUDIO_TRACK_ERRORS -> PlaybackFailure.Decoder
-                else -> PlaybackFailure.Unknown
-            }
-
-        // The families of error codes of Media3: 2xxx input/output, 3xxx parsing, 4xxx decoding, 5xxx audio track.
-        val IO_ERRORS = 2000..2999
-        val PARSING_ERRORS = 3000..3999
-        val DECODING_ERRORS = 4000..4999
-        val AUDIO_TRACK_ERRORS = 5000..5999
+        fun PlaybackException.toFailure(): PlaybackFailure = PlaybackErrors.failureOf(this)
     }
 
     /**

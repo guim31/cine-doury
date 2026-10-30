@@ -2443,6 +2443,29 @@ coupure de plusieurs minutes sans s'arrêter. **La TV ne change pas** : `PlayerB
 - **Focus audio** (ExoPlayer) : appel entrant ou autre son, pause puis reprise ; écouteurs ou Bluetooth
   débranchés, pause. L'écran reste allumé pendant la lecture.
 
+**G — Remux HLS en fMP4 illisible** (retour du mainteneur, téléphone Xiaomi sous Android 16, `1.0.1-essai.1`) :
+un MKV H.264 à images B avec du DTS-HD : le téléphone ne lit pas le DTS, Jellyfin copie la vidéo (`-codec:v
+copy -copyts`) dans des segments fMP4 (le profil demande `mp4` dès qu'un décodeur HEVC existe), le premier
+`tfdt` est négatif et Media3 refuse le segment (`IllegalStateException: Top bit not zero`). Deux défauts du
+lecteur **partagé**, corrigés pour les deux applis (exception voulue à « la TV ne bouge pas » ; le Chromecast,
+qui décode le HEVC et pas le DTS, prenait le même chemin ; aucune capture TV ne change) :
+- **Classement** (`PlaybackErrors`) : l'erreur arrivait en code 2000 (entrée/sortie, exception inattendue du
+  chargeur) et s'affichait « La connexion au serveur est perdue », que « Réessayer » rejouait. Une
+  `ParserException` ou une `IllegalStateException` dans les causes est désormais une erreur de **format**, qui
+  déclenche le repli ; le détail (« Plus d'infos ») cite toute la chaîne des causes.
+- **Segments MPEG-TS** (`PlaybackFallback.wantsTs`, `tsProfile`) : **choix** de les demander **d'avance**
+  quand le serveur copierait une vidéo H.264 dans des segments fMP4. On le sait de la réponse de `PlaybackInfo`
+  : un flux direct (remux), ou un transcodage dont aucune raison ne touche la vidéo (`TranscodeReason.encodesVideo` ;
+  mesuré sur la 12.3 : un MKV avec DTS pour le téléphone dit « ContainerNotSupported, AudioCodecNotSupported » et
+  copie la vidéo). Le flux est alors redemandé aussitôt avec un profil `ts`, H.264 seulement (un aller-retour de
+  plus, avant toute image). Le HEVC transcodé reste en fMP4 (Jellyfin ne met pas de HEVC en TS), comme une vidéo
+  encodée de nouveau, qui commence à zéro. **Filet** : une erreur de format sur des segments fMP4, quels qu'ils
+  soient, redemande une fois le même flux en TS à la même position (`FallbackAction.TsSegments`), avant le repli
+  vers le transcodage. Essai : `RemuxOnDeviceTest` sur l'émulateur téléphone de la CI complète (« Bretelle »,
+  H.264 à images B et DTS, ajouté par `ci/emulator-margin.sh`) : le fMP4 proposé doit être reconnu, échouer
+  (s'il échoue) en erreur de format, et le TS doit se lire. Le clip généré ne reproduit pas forcément le `tfdt`
+  négatif (mesuré en local : 0) ; le classement est vérifié sur la chaîne de causes réelle (`PlaybackErrorsTest`).
+
 **Tests** : `PlaybackMarginTest` (étage, cession au lecteur, plafonds, recherche hors de la marge),
 `QualityGovernorTest` (baisse, coupure, remontée, plafond, qualité par réseau), `PlayerBufferTest`,
 `PlayerGesturesTest` (double appui cumulé, glissements, pincer, cadenas), `M2PlayerTest` (le modèle de
