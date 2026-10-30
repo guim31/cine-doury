@@ -5,7 +5,10 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ComposeTimeoutException
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.isEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
@@ -86,7 +89,9 @@ class PhoneJourneyTest {
         // The home, then the first card of a row: its details.
         waitFor(tagged(MobileHomeTags.SCREEN), LONG_TIMEOUT)
         waitFor(tagStartsWith("card-"), LONG_TIMEOUT).performClick()
-        tap(MobileDetailsTags.PLAY)
+        // « Lire » is disabled until the details know what to play (the next episode of a series).
+        val play = tagged(MobileDetailsTags.PLAY) or hasAnyAncestor(tagged(MobileDetailsTags.PLAY))
+        waitFor(play and hasClickAction() and isEnabled(), LONG_TIMEOUT).performClick()
 
         // A few seconds of playback: the position moves, no error.
         waitFor(tagged(MobilePlayerTags.SCREEN))

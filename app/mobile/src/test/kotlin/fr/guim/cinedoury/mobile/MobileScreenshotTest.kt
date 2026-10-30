@@ -4,6 +4,7 @@ import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -22,6 +23,7 @@ import fr.guim.cinedoury.core.model.PlayerSettings
 import fr.guim.cinedoury.core.model.RequestCandidate
 import fr.guim.cinedoury.core.model.SortField
 import fr.guim.cinedoury.core.source.SourceException
+import fr.guim.cinedoury.core.ui.LocalClock
 import fr.guim.cinedoury.core.ui.RailTarget
 import fr.guim.cinedoury.core.ui.mobile.MobileQuickMenu
 import fr.guim.cinedoury.feature.auth.AddressMode
@@ -67,6 +69,9 @@ import org.junit.runner.RunWith
 import org.robolectric.ParameterizedRobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import java.time.Clock
+import java.time.Instant
+import java.time.ZoneId
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 
@@ -302,7 +307,10 @@ class MobileScreenshotTest(
         content: @Composable () -> Unit,
     ) {
         compose.setContent {
-            CineMobileTheme(variant = variant) { SampleArt.Provide(content) }
+            // A fixed clock: « se termine à » on the details does not follow the day of the run.
+            CompositionLocalProvider(LocalClock provides SCREENSHOT_CLOCK) {
+                CineMobileTheme(variant = variant) { SampleArt.Provide(content) }
+            }
         }
         compose.waitForIdle()
         // The whole screen: a sheet from the bottom is a window of its own.
@@ -310,6 +318,9 @@ class MobileScreenshotTest(
     }
 
     companion object {
+        private val SCREENSHOT_CLOCK: Clock =
+            Clock.fixed(Instant.parse("2026-10-25T19:58:10Z"), ZoneId.of("Europe/Paris"))
+
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0}")
         fun variants(): List<Array<Any>> = ThemeVariant.entries.map { arrayOf(it) }
