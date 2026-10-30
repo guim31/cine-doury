@@ -136,12 +136,20 @@ class MobileFlowTest {
         compose.setContent { CineMobileTheme { MobileApp(version = "1.1.0") } }
     }
 
-    private fun signedIn() =
+    /**
+     * The app of a profile already signed in: it opens on « Qui regarde ? » (the default « Au
+     * démarrage »), where the profile opens at once.
+     */
+    private fun signedInApp() {
         runBlocking {
             val sessions = GlobalContext.get().get<SessionManager>()
             sessions.addServer(MobileSamples.local)
             sessions.signIn(Credentials.Password("admin", "secret"))
         }
+        app()
+        tap(MobileAuthTags.profile("admin"))
+        waitFor(hasTestTag(MobileHomeTags.SCREEN))
+    }
 
     @Test
     fun `from the first launch to the home, by Quick Connect`() {
@@ -160,9 +168,7 @@ class MobileFlowTest {
 
     @Test
     fun `a card, its details, « Lire », then « Retour » back to the details`() {
-        signedIn()
-        app()
-        waitFor(hasTestTag(MobileHomeTags.SCREEN))
+        signedInApp()
         tap(MobileAppTags.tab(Tab.Libraries))
         tap(MobileLibraryTags.library(MobileSamples.films.id.value))
         tap(MobileLibraryTags.card(0))
@@ -180,9 +186,7 @@ class MobileFlowTest {
 
     @Test
     fun `« Retour » from another tab goes home, then a tab goes back to its first screen`() {
-        signedIn()
-        app()
-        waitFor(hasTestTag(MobileHomeTags.SCREEN))
+        signedInApp()
         tap(MobileAppTags.tab(Tab.Libraries))
         tap(MobileLibraryTags.library(MobileSamples.films.id.value))
         waitFor(hasTestTag(MobileLibraryTags.GRID))
@@ -194,8 +198,7 @@ class MobileFlowTest {
 
     @Test
     fun `the phone approves the code a TV shows`() {
-        signedIn()
-        app()
+        signedInApp()
         tap(MobileAppTags.tab(Tab.Profile))
         waitFor(hasText("Connecté à la maison (adresse locale)"))
         tap(MobileProfileTags.CONNECT_DEVICE)
