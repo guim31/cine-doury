@@ -6,6 +6,10 @@ technique est dans [`docs/SPEC.md`](docs/SPEC.md) ; les notes de chaque version 
 
 ## Non publié
 
+## 1.0.1 — 30/10/2026
+
+Notes de version : [`docs/releases/v1.0.1.md`](docs/releases/v1.0.1.md).
+
 - **Nouveau logo** : un pot de pop-corn, sur l'icône de l'appli et sur la bannière de l'écran
   d'accueil d'Android TV (« Ciné Doury » à côté du pot).
 - **Mosaïque « Ce soir »** : une tuile du haut focalisée n'est plus rognée ; son contour et son halo
