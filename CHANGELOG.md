@@ -43,6 +43,12 @@ M2 — le **lecteur nomade** du téléphone, pour regarder en voiture :
   verticalement pour la luminosité (à gauche) ou le volume (à droite), pincer pour remplir l'écran,
   glisser sur l'image pour chercher dans le film.
 - **Cadenas** : l'écran ignore les doigts des enfants jusqu'à un appui long sur le cadenas.
+- **Adresse à distance** (Profil) : « Adresse locale » et « Adresse à distance », proposée aussi à la
+  première connexion faite à la maison ; hors de portée, le Profil dit « Serveur injoignable » (et
+  pourquoi) au lieu de « Connecté à la maison ».
+- **Films remuxés** (téléphone et TV) : un film H.264 que le serveur copie sans le réencoder (son DTS
+  converti, par exemple) se lit de nouveau ; et une erreur de lecture du flux n'est plus présentée comme
+  une connexion perdue.
 - **Image dans l'image** en quittant l'appli pendant le film (lecture/pause, ±10 s) ; pause en
   arrière-plan, écran éteint, écouteurs débranchés ou appel entrant ; portrait possible (bouton).
 

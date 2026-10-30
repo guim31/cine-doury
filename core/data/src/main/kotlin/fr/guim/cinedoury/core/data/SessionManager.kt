@@ -69,6 +69,14 @@ class SessionManager(
     /** The open profile. */
     val active: StateFlow<ActiveSession?> = currentSession.asStateFlow()
 
+    private val currentReach = MutableStateFlow<Reach>(Reach.Answers)
+
+    /**
+     * Whether the server answers since the last change of network (F, M2): the phone's profile tab says
+     * « Serveur injoignable » rather than the address it can no longer reach.
+     */
+    val reach: StateFlow<Reach> = currentReach.asStateFlow()
+
     val startupMode: Flow<StartupMode> get() = preferences.startupMode
 
     suspend fun setStartupMode(mode: StartupMode) = preferences.setStartupMode(mode)
@@ -292,7 +300,8 @@ class SessionManager(
      * The device changed networks (M1, `SPEC.md` § 4.26: the phone left the Wi-Fi of the house for the
      * mobile network, or came back): the address that answers now, the local one first, as at start.
      * When it is another one, the open profile follows it, the screens already open included
-     * ([LibrarySource.moveTo]). When none answers, nothing changes: the next call of a screen says so.
+     * ([LibrarySource.moveTo]). When none answers, nothing changes but [reach] (F, M2): the next call of
+     * a screen says so.
      */
     suspend fun followNetwork(): Connection? =
         following.withLock {
@@ -301,8 +310,10 @@ class SessionManager(
                 try {
                     resolver.resolve(connection.server, preferences.networkMode.first())
                 } catch (_: SourceException) {
+                    currentReach.value = Reach.Silent(noRemote = connection.server.remoteAddress == null)
                     return connection
                 }
+            currentReach.value = Reach.Answers
             if (found.address == connection.address) return connection
             FailureLog.warn("Network changed: ${connection.mode} to ${found.mode}")
             currentConnection.value = found
@@ -323,4 +334,14 @@ class SessionManager(
     }
 
     private fun requireConnection(): Connection = checkNotNull(currentConnection.value) { "No server in use" }
+}
+
+/** Whether the server answers at one of its addresses (F, M2). */
+sealed interface Reach {
+    data object Answers : Reach
+
+    /** Neither address answers; [noRemote]: the server has no remote address to try away from home. */
+    data class Silent(
+        val noRemote: Boolean,
+    ) : Reach
 }

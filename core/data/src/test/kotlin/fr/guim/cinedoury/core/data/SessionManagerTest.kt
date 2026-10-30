@@ -286,11 +286,26 @@ class SessionManagerTest {
         }
 
     @Test
-    fun `no network at all keeps the connection as it was`() =
+    fun `no network at all keeps the connection as it was, and says the server is silent`() =
         runTest {
             sessions.addServer(address)
             source.unreachable += address
             assertEquals(address, sessions.followNetwork()?.address)
+            // F (M2): without a remote address, nothing to try away from home.
+            assertEquals(Reach.Silent(noRemote = true), sessions.reach.value)
+            source.unreachable -= address
+            sessions.followNetwork()
+            assertEquals(Reach.Answers, sessions.reach.value)
+        }
+
+    @Test
+    fun `away from home with a remote address, the server still answers`() =
+        runTest {
+            sessions.addServer(address)
+            sessions.setAddresses(address, ServerAddress.of("https://example.com"))
+            source.unreachable += address
+            assertEquals(ConnectionMode.Remote, sessions.followNetwork()?.mode)
+            assertEquals(Reach.Answers, sessions.reach.value)
         }
 
     @Test

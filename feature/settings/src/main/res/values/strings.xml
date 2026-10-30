@@ -322,4 +322,11 @@
     <string name="mobile_switch_profile_description">Revenir à « Qui regarde ? ».</string>
     <string name="mobile_sign_out_description">Ce profil est oublié sur ce téléphone ; les autres restent connectés.</string>
     <string name="mobile_app_version">Ciné Doury %1$s</string>
+    <!-- F (M2): the addresses of the server, and whether it answers. -->
+    <string name="mobile_connection_silent">Serveur injoignable. Aucune de ses adresses ne répond sur ce réseau.</string>
+    <string name="mobile_connection_silent_no_remote">Serveur injoignable\u00A0: aucune adresse à distance. Indiquez-la pour regarder hors de la maison.</string>
+    <string name="mobile_local_address">Adresse locale</string>
+    <string name="mobile_remote_address">Adresse à distance</string>
+    <string name="mobile_address_none">Aucune</string>
+    <string name="mobile_remote_address_none">Aucune\u00A0: hors de la maison, le serveur sera injoignable</string>
 </resources>

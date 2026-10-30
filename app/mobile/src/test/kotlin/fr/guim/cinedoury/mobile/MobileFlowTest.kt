@@ -19,6 +19,7 @@ import fr.guim.cinedoury.core.playback.VideoPlayerFactory
 import fr.guim.cinedoury.core.playback.playbackModule
 import fr.guim.cinedoury.core.source.Credentials
 import fr.guim.cinedoury.core.source.DiscoveredServer
+import fr.guim.cinedoury.core.source.ServerAddress
 import fr.guim.cinedoury.core.source.ServerDiscovery
 import fr.guim.cinedoury.core.source.SourceConnector
 import fr.guim.cinedoury.core.source.fake.InMemorySource
@@ -156,6 +157,8 @@ class MobileFlowTest {
         app()
         tap(MobileAuthTags.START)
         tap(MobileAuthTags.server(0))
+        // Found on the network of the house: the remote address is offered, « Plus tard » (F, M2).
+        tap(MobileAuthTags.ADDRESS_SKIP)
         tap(MobileAuthTags.profile("enfant"))
         // The code of the in-memory server, approved from another device.
         waitFor(hasTestTag(MobileAuthTags.CODE))
@@ -207,6 +210,26 @@ class MobileFlowTest {
         tap(MobileProfileTags.APPROVE)
         waitFor(hasTestTag(MobileProfileTags.DONE))
         assertEquals("admin", source.authorizedCodes[code])
+    }
+
+    @Test
+    fun `out of the Wi-Fi, the profile says the remote address, or that the server is unreachable`() {
+        signedInApp()
+        val sessions = GlobalContext.get().get<SessionManager>()
+        runBlocking { sessions.setAddresses(MobileSamples.local, ServerAddress.of("https://example.com")) }
+        tap(MobileAppTags.tab(Tab.Profile))
+        waitFor(hasText("Connecté à la maison (adresse locale)"))
+        waitFor(hasText("https://example.com"))
+        // The Wi-Fi of the house is left: the local address is silent, the remote one answers (F, M2).
+        source.unreachable += MobileSamples.local
+        runBlocking { sessions.followNetwork() }
+        waitFor(hasText("Connecté à distance (adresse publique)"))
+        // No network that reaches it, and no remote address: « Serveur injoignable », and why.
+        runBlocking { sessions.setAddresses(MobileSamples.local, null) }
+        source.unreachable += ServerAddress.of("https://example.com")
+        runBlocking { sessions.followNetwork() }
+        waitFor(hasText("Serveur injoignable", substring = true))
+        waitFor(hasText("aucune adresse à distance", substring = true))
     }
 
     private companion object {

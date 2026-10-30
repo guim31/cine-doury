@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import com.github.takahirom.roborazzi.captureScreenRoboImage
 import fr.guim.cinedoury.core.data.ConnectionMode
+import fr.guim.cinedoury.core.data.Reach
 import fr.guim.cinedoury.core.data.library.LibraryTab
 import fr.guim.cinedoury.core.data.library.LibraryView
 import fr.guim.cinedoury.core.designsystem.mobile.CineMobileTheme
@@ -259,7 +260,16 @@ class MobileScreenshotTest(
     fun profile() =
         shoot("226-profil") {
             MobileProfileScreen(
-                MobileProfileState("Camille", "Maison", ConnectionMode.Remote, "https://example.com", null, "1.1.0"),
+                MobileProfileState(
+                    "Camille",
+                    "Maison",
+                    ConnectionMode.Remote,
+                    "https://example.com",
+                    null,
+                    "1.1.0",
+                    localAddress = "http://192.0.2.10:8096",
+                    remoteAddress = "https://example.com",
+                ),
                 {},
                 {},
                 {},
@@ -315,6 +325,32 @@ class MobileScreenshotTest(
     fun playerPortrait() =
         shoot("249-lecteur-portrait") {
             MobilePlayerScreen(nomadState(), NoPlayer, {}, portrait = true, preview = MobilePlayerPreview.Controls)
+        }
+
+    @Test
+    fun profileUnreachable() =
+        shoot("252-profil-serveur-injoignable") {
+            MobileProfileScreen(
+                MobileProfileState(
+                    "Camille",
+                    "Maison",
+                    ConnectionMode.Local,
+                    "http://192.0.2.10:8096",
+                    null,
+                    "1.1.0",
+                    localAddress = "http://192.0.2.10:8096",
+                    reach = Reach.Silent(noRemote = true),
+                ),
+                {},
+                {},
+                {},
+            )
+        }
+
+    @Test
+    fun remoteAddressOffer() =
+        shoot("253-adresse-a-distance-proposee") {
+            MobileAddressScreen(AddressState(AddressMode.EditRemote), {}, {}, {}, onSkip = {})
         }
 
     @Test

@@ -151,7 +151,8 @@ private fun Screen(
 
         Route.ServerSearch -> {
             MobileServerSearchRoute(
-                onConnected = { navigator.push(Route.Profiles) },
+                // Found on the network of the house: the remote address is offered first (F, M2).
+                onConnected = { navigator.push(Route.Address(AddressMode.EditRemote, offer = true)) },
                 onEnterAddress = { navigator.push(Route.Address(AddressMode.Add)) },
                 onBack = back,
             )
@@ -161,15 +162,14 @@ private fun Screen(
             MobileAddressRoute(
                 mode = route.mode,
                 onDone = {
-                    if (route.mode ==
-                        AddressMode.Add
-                    ) {
+                    if (route.mode == AddressMode.Add || route.offer) {
                         navigator.replaceTop(Route.Profiles)
                     } else {
                         navigator.pop()
                     }
                 },
                 onBack = back,
+                onSkip = if (route.offer) ({ navigator.replaceTop(Route.Profiles) }) else null,
             )
         }
 
@@ -275,6 +275,9 @@ private fun SessionScreen(
                 navigation =
                     object : MobileProfileNavigation {
                         override fun connectDevice() = navigator.push(Route.ConnectDevice)
+
+                        override fun address(remote: Boolean) =
+                            navigator.push(Route.Address(if (remote) AddressMode.EditRemote else AddressMode.EditLocal))
 
                         override fun profileClosed() = navigator.replaceAll(Route.Profiles)
 

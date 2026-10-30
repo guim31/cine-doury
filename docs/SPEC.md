@@ -29,7 +29,7 @@ son domaine :
 | Essai réel 5 (29/10/2026, Shield en 4K et Chromecast, v0.9.1) : banc de mesures réparé (libellés du rail lus par l'accessibilité), compte à rebours qui ne coupe plus la fin des épisodes, épisode précédent / suivant dans le lecteur, menu d'options rapides à l'appui long sur une jaquette, mosaïque « Ce soir » en haut de l'accueil, rangée « Continuer » sous elle, notes de la 1.0.0 | terminé, en revue (§ 4.23 ; captures dans `docs/screenshots/r5/` : `avant-*` / `apres-*` pour A, B, C, D et F) | [#16](https://github.com/guim31/cine-doury/pull/16) |
 | Nouveau logo et retouches de la 1.0.0 (29/10/2026) : un pot de pop-corn sur fond noir pour l'icône et la bannière Android TV ; H, tuiles de la mosaïque « Ce soir » rognées au focus ; I et J, rail qui s'ouvrait seul au lancement et après OK sur une de ses entrées | en revue (§ 4.24 et 4.25 ; captures dans `docs/screenshots/logo/` et `docs/screenshots/r6/`, numéros 230 et 231) | — |
 | M1 — Socle mobile et navigation (appli `:app:mobile` pour téléphone et tablette : jetons partagés, composants Material 3, connexion, « Connecter un appareil », barre des onglets, accueil, bibliothèques, fiches, recherche, lecture simple ; chaque appli choisit son APK dans une release) | en revue (§ 4.26 ; captures dans `docs/screenshots/m1/`, numéros 200 à 229) | [#18](https://github.com/guim31/cine-doury/pull/18) |
-| M2 — Lecteur nomade (marge en mémoire puis sur disque, coupures traversées, bascule d'adresse en lecture, qualité selon le réseau et adaptative, gestes, cadenas, rotation, image dans l'image, focus audio ; la TV ne change pas) | en revue (§ 4.27 ; captures dans `docs/screenshots/m2/`, numéros 240 à 251) | [#19](https://github.com/guim31/cine-doury/pull/19) |
+| M2 — Lecteur nomade (marge en mémoire puis sur disque, coupures traversées, bascule d'adresse en lecture, qualité selon le réseau et adaptative, gestes, cadenas, rotation, image dans l'image, focus audio ; la TV ne change pas) ; F, adresse à distance et joignabilité sur le téléphone ; G, remux H.264 en segments TS et erreur de format (les deux applis) | en revue (§ 4.27 ; captures dans `docs/screenshots/m2/`, numéros 240 à 253) | [#19](https://github.com/guim31/cine-doury/pull/19) |
 
 *(Chaque jalon met à jour ce tableau et ajoute ses contrats au § 4.)*
 
@@ -2443,6 +2443,19 @@ coupure de plusieurs minutes sans s'arrêter. **La TV ne change pas** : `PlayerB
 - **Focus audio** (ExoPlayer) : appel entrant ou autre son, pause puis reprise ; écouteurs ou Bluetooth
   débranchés, pause. L'écran reste allumé pendant la lecture.
 
+**F — Adresse à distance sur le téléphone** (retour du mainteneur avec la `1.0.1-essai.1`) : Wi-Fi coupé, le
+Profil disait encore « Connecté à la maison », et rien ne se chargeait : aucun écran du téléphone ne permettait
+de saisir l'adresse publique, restée vide après une découverte sur le réseau local.
+- **Profil** : « Adresse locale » et « Adresse à distance » (« Aucune : hors de la maison, le serveur sera
+  injoignable »), sur l'écran d'adresse existant (`EditLocal`, `EditRemote`, vérifiée auprès du serveur).
+- **Première connexion** sur le réseau de la maison (serveur trouvé par la découverte) : l'adresse à distance
+  est proposée aussitôt, avec la raison (« Pour regarder hors de la maison… ») et « Plus tard ».
+- **Joignabilité réelle** : `SessionManager.reach`, mis à jour à chaque changement de réseau
+  (`followNetwork`) ; quand aucune adresse ne répond, la ligne du Profil dit « Serveur injoignable » (et
+  « aucune adresse à distance » le cas échéant) au lieu de l'adresse d'avant. Tests : `SessionManagerTest`,
+  `MobileFlowTest` (local, puis Wi-Fi coupé : « à distance » ; sans adresse à distance : « injoignable »).
+  Captures 226, 252, 253. La TV ne change pas (ses réglages avaient déjà les deux adresses).
+
 **G — Remux HLS en fMP4 illisible** (retour du mainteneur, téléphone Xiaomi sous Android 16, `1.0.1-essai.1`) :
 un MKV H.264 à images B avec du DTS-HD : le téléphone ne lit pas le DTS, Jellyfin copie la vidéo (`-codec:v
 copy -copyts`) dans des segments fMP4 (le profil demande `mp4` dès qu'un décodeur HEVC existe), le premier
@@ -2480,7 +2493,8 @@ seconde par seconde (marge, mémoire, débit, état) est l'artefact `emulator-ma
 **Captures** (`docs/screenshots/m2/`) : barre avec la marge (240), cadenas (241), qualité et consommation
 (242), informations avec la marge (243), « −30 s » (244), recherche par glissement (245), luminosité
 (246), réseau coupé (247), qualité réduite (248), portrait (249), « Marge de lecture » (250), qualité
-sur le réseau mobile (251) ; le profil (226) montre les réglages de lecture. L'image dans l'image n'est
+sur le réseau mobile (251), serveur injoignable (252), adresse à distance proposée (253) ; le profil (226)
+montre les réglages de lecture et les deux adresses. L'image dans l'image n'est
 pas capturable (fenêtre dessinée par le système).
 
 ## 5. Tests et CI
