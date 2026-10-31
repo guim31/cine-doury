@@ -14,6 +14,7 @@ import androidx.media3.exoplayer.trackselection.ExoTrackSelection
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -24,6 +25,7 @@ import kotlin.test.assertTrue
  * its cap: loading stops, playback starts.
  */
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [35])
 @OptIn(UnstableApi::class)
 class PlayerBufferTest {
     @Test
