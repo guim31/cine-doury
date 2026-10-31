@@ -6,6 +6,10 @@ technique est dans [`docs/SPEC.md`](docs/SPEC.md) ; les notes de chaque version 
 
 ## Non publié
 
+## 1.0.2 — 31/10/2026
+
+Notes de version : [`docs/releases/v1.0.2.md`](docs/releases/v1.0.2.md).
+
 M1 — l'appli **téléphone et tablette** (Android), première étape ; pas encore dans les releases :
 le mainteneur l'installe depuis les artefacts de la CI ou du workflow « Release ».
 
