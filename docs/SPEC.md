@@ -2673,6 +2673,11 @@ E-AC3 vers l'ampli) en lecture directe démarre, se fige, repart, puis l'appli s
   son plafond, ne jamais le dépasser de plus de 2 Mo, garder le tas sous 85 % de sa limite et jouer une minute ;
   une ligne toutes les 5 s dans `emulator-bitrate-logcat.txt` (position, tampon, tas). `PlayerSnapshot.bufferBytes`
   dit ce que le tampon occupe sur le tas.
+- **Mesuré** (émulateur TV API 30 de la CI, 31/10/2026 ; `dalvik.vm.heapgrowthlimit` 192m comme la Shield) :
+  plafond de **76,8 Mo** atteint en moins de 5 s (15 s d'avance à 40 Mb/s), jamais dépassé (77 Mo arrondis),
+  tas utilisé de 86 à 93 Mo sur 192 pendant la minute de lecture, sans attente après le démarrage. C'est le
+  processus de test (lecteur seul, sans l'interface de l'appli) : l'appli entière ajoute ses écrans et ses
+  caches, que les 115 Mo restants couvrent.
 
 ## 5. Tests et CI
 
