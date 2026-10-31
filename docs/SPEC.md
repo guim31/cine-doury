@@ -31,7 +31,7 @@ son domaine :
 | M1 — Socle mobile et navigation (appli `:app:mobile` pour téléphone et tablette : jetons partagés, composants Material 3, connexion, « Connecter un appareil », barre des onglets, accueil, bibliothèques, fiches, recherche, lecture simple ; chaque appli choisit son APK dans une release) | en revue (§ 4.26 ; captures dans `docs/screenshots/m1/`, numéros 200 à 229) | [#18](https://github.com/guim31/cine-doury/pull/18) |
 | M2 — Lecteur nomade (marge en mémoire puis sur disque, coupures traversées, bascule d'adresse en lecture, qualité selon le réseau et adaptative, gestes, cadenas, rotation, image dans l'image, focus audio ; la TV ne change pas) ; F, adresse à distance et joignabilité sur le téléphone ; G, remux H.264 en segments TS et erreur de format (les deux applis) | en revue (§ 4.27 ; captures dans `docs/screenshots/m2/`, numéros 240 à 253) | [#19](https://github.com/guim31/cine-doury/pull/19) |
 | Fausse erreur de lecture (31/10/2026, Chromecast en 1.0.1 et téléphone) : un transcodage au son copié (AVI en MPEG-4 et MP3) n'affiche plus d'erreur au lancement ; une erreur affichée arrête le lecteur ; AVI de test sur l'émulateur | en revue (§ 4.28) | — |
-| Transcodage à la taille de l'écran (31/10/2026, Chromecast en 1.0.2 sur télé 1080p SDR) : N, bandeau « Connexion perdue » seulement sur des chargements en échec ; O, réencodage jamais plus grand que l'écran, débit plafonné en « Automatique », H.264 High ; P, HDR lu sur le mode courant de l'écran (API 34), tone mapping direct sur écran SDR ; Q, une lecture figée 30 s finit sur une erreur | en revue (§ 4.29) | — |
+| Transcodage à la taille de l'écran (31/10/2026, Chromecast en 1.0.2 sur télé 1080p SDR) : N, bandeau « Connexion perdue » seulement sur des chargements en échec ; O, réencodage jamais plus grand que l'écran, débit plafonné en « Automatique », H.264 High ; P, HDR lu sur le mode courant de l'écran (API 34), tone mapping direct sur écran SDR ; Q, une lecture figée 30 s finit sur une erreur ; R, tampon de la TV borné à 40 % du tas (la Shield se fermait par manque de mémoire en lecture directe 4K) | en revue (§ 4.29) | — |
 
 *(Chaque jalon met à jour ce tableau et ajoute ses contrats au § 4.)*
 
@@ -776,7 +776,7 @@ une lecture directe ou un remux redemande le flux au serveur, sans lecture direc
 position**, sans écran d'erreur, une fois ; l'écran d'informations dit « Lecture directe impossible,
 transcodage : <erreur> ». Toute autre erreur, ou un transcodage qui échoue, montre l'erreur (deux
 phrases, « Réessayer » qui repart de la position). **Réseau** : les chargements sont réessayés
-(20 fois, jusqu'à 5 s d'écart, ≈ 90 s) pendant que la mémoire tampon (30 à 90 s, 192 Mo) joue ;
+(20 fois, jusqu'à 5 s d'écart, ≈ 90 s) pendant que la mémoire tampon (30 à 90 s, au plus 40 % du tas de l'appli : R, § 4.29) joue ;
 après 3 s d'attente **avec des chargements en échec**, « Connexion au serveur perdue. Nouvel essai en
 cours… » s'affiche (§ 4.29) ; une lecture qui n'avance plus s'arrête sur une erreur au bout
 de 30 s (§ 4.29).
@@ -2306,7 +2306,7 @@ paysage (orientation du capteur, barres du système cachées, rendues à la ferm
 afficher ou masquer, lecture/pause, −10 s / +10 s, barre glissable, pistes en feuille, épisode
 suivant, « Passer l'intro », « Vous êtes toujours là ? ». Rapports et reprise : ceux de la TV.
 **Tampon inchangé** : `ExoVideoPlayer` prend un `PlayerBuffer` (`PlayerBuffer.Tv`, les valeurs de
-toujours ; `PlayerBuffer.Phone` = les mêmes jusqu'au M2, `PlayerBufferTest`) et un `DataSources`
+toujours, bornées par le tas depuis R, § 4.29 ; `PlayerBuffer.Phone` = les mêmes jusqu'au M2, `PlayerBufferTest`) et un `DataSources`
 qui enveloppe la source HTTP (aucun sur la TV) : le M2 y posera un `CacheDataSource` sans refonte.
 
 **Mise à jour et publication** : `ReleaseClient` ne prend plus le premier `.apk` d'une release mais
@@ -2337,7 +2337,7 @@ déplacée). CI rapide : `check` (Lint et tests de `:app:mobile`), APK mobile, c
 Le cas qui guide tout : des enfants regardent un film sur une tablette ou un téléphone **en voiture**,
 sur le réseau mobile, à travers des tunnels et des campagnes mal couvertes. La lecture démarre aussi
 vite qu'avant, puis se constitue une **marge** qui grandit pendant la lecture, pour traverser une
-coupure de plusieurs minutes sans s'arrêter. **La TV ne change pas** : `PlayerBuffer.Tv` est le même
+coupure de plusieurs minutes sans s'arrêter. **La TV ne change pas** (jusqu'à R, § 4.29, qui borne son tampon par le tas) : `PlayerBuffer.Tv` est le même
 (`PlayerBufferTest`), `ExoVideoPlayer` sans `Nomad` (la TV n'en a pas) se comporte comme avant,
 `PlayerViewModel` sans `NetworkMonitor` (la TV n'en déclare pas) aussi, et aucune capture TV n'a bougé.
 
@@ -2630,6 +2630,49 @@ lecture directe).
 **Hors de ce correctif** : relire côté client un fMP4 HEVC à `tfdt` négatif (copie d'un HEVC avec un
 audio non décodé) ; aujourd'hui un HEVC SDR avec un audio que l'appareil ne décode pas passe encore par
 un remux qui échoue (environ 2 s) avant le réencodage.
+
+**R — La Shield fermée par manque de mémoire** (`1.0.2-essai.91`, NVIDIA Shield sous Android 11, 3 Go de
+RAM ; défaut présent depuis le J4, sans rapport avec N, O, P, Q). Un film 4K HEVC à 25,5 Mb/s (MKV de 19,7 Go,
+E-AC3 vers l'ampli) en lecture directe démarre, se fige, repart, puis l'appli se ferme :
+`java.lang.OutOfMemoryError: OutOfMemoryError thrown while trying to throw an exception`, 16 s après le début.
+- **Établi** : `dalvik.vm.heapgrowthlimit` de la Shield vaut **192m** (sans `largeHeap`), et le tampon de la TV
+  visait **192 Mo** (`PlayerBuffer.Tv.targetBytes`). Lu dans Media3 1.11.1 : `DefaultAllocator` garde le
+  tampon dans des `byte[]` du **tas Java** (blocs de 64 Ko, gardés pour être réutilisés), et avec
+  `prioritizeTimeOverSize` faux seul ce plafond d'octets arrête le chargement (90 s à 25,5 Mb/s font 287 Mo).
+  Le tampon pouvait donc prendre tout le tas à lui seul : à 25,5 Mb/s, 192 Mo font 60 s de film, chargées en
+  quelques secondes sur le réseau local ; avec le reste de l'appli, le tas déborde. Le tampon par défaut de
+  Media3 (128 Mo de vidéo et 12,5 Mo d'audio) aurait lui aussi pris les deux tiers de ce tas.
+- **Hypothèse** : le figement d'avant la fermeture, un ramasse-miettes qui tourne à vide près de la limite.
+- **Planches du trickplay** : 10 × 10 images de 320 × 132, soit 3200 × 1320 : 16,9 Mo en bitmap matérielle
+  (mémoire graphique, le choix de Coil quand il le peut), 8,4 Mo en RGB 565 sinon. **Jamais sur le tas
+  Java** : les pixels d'une bitmap sont hors du tas depuis Android 8 (`minSdk` 30) ; le décodage ne passe par
+  le tas que le flux du JPEG. L'hypothèse de la goutte d'eau ne tient donc pas pour le tas Java ; les planches
+  restent bornées : jamais dans le cache mémoire de Coil (`CachePolicy.DISABLED`, seule celle de l'écran est
+  en mémoire, le cache disque la redonne), RGB 565 quand Coil n'en fait pas une bitmap matérielle.
+- **Règle** (`PlayerBuffer.tv`) : le tampon de la TV garde ses durées (30 à 90 s, démarrage à 1,5 s, reprise
+  à 4 s) et prend au plus **40 % du tas** du processus (`Runtime.maxMemory()`, lu à chaque lecteur), entre
+  32 et 192 Mo : **76,8 Mo** sur la Shield (24 s à 25,5 Mb/s, 15 s à 40 Mb/s, 7,7 s à 80 Mb/s). Les 60 %
+  restants sont à l'appli (Compose, caches, SDK, index) ; le téléphone en prend un quart (M2), parce que son
+  disque porte la marge. La valeur du Chromecast se lit sur l'appareil (le rapport de diagnostic donne
+  « heap … MB ») ; le banc de l'émulateur imprime la sienne. **Pourquoi 40 %** : moins de la moitié du tas, qui
+  laisse à l'appli plus que le tampon ; et au moins 15 s d'avance jusqu'à 40 Mb/s sur un tas de 192 Mo.
+  **Non mesuré** sur la Shield : ce que l'appli occupe d'elle-même pendant une lecture ; le rapport de
+  diagnostic et le banc de l'émulateur (tas utilisé, toutes les 5 s) permettront de corriger la part.
+- **Débit très élevé** (lu dans Media3 1.11.1, vérifié par `PlayerBufferTest` sur le vrai `DefaultLoadControl`) :
+  le plafond atteint arrête le chargement même sous les 30 s minimales (`shouldContinueLoading`), et la
+  lecture démarre ou repart dès qu'il est atteint, même avant 1,5 s ou 4 s de film
+  (`shouldStartPlayback`) : un remux 4K à 80 Mb/s sur un tampon de 32 Mo (3,4 s) ne bloque ni le démarrage
+  ni la reprise.
+- **`largeHeap`** : pas proposé. Sur la Shield il porterait le tas à 512 Mo, mais ne fait que reculer la
+  limite (le tampon visait une taille fixe) ; un tas plus grand allonge les pauses du ramasse-miettes, et les
+  3 Go se partagent avec les décodeurs et la mémoire graphique.
+- **Preuve** : `PlayerBufferTest` (40 % de 192, 256 Mo ; 32 et 192 Mo aux bornes ; le `DefaultLoadControl` au
+  plafond) ; et sur l'émulateur TV de la CI (API 30 et 34, `ci/emulator-bitrate.sh`, `HighBitrateOnDeviceTest`) :
+  « Déferlante », 75 s à **40 Mb/s** constants (une couleur fixe que x264 complète de remplissage : de vrais
+  octets, rien à décoder), en lecture directe avec le tampon par défaut de `ExoVideoPlayer`, doit atteindre
+  son plafond, ne jamais le dépasser de plus de 2 Mo, garder le tas sous 85 % de sa limite et jouer une minute ;
+  une ligne toutes les 5 s dans `emulator-bitrate-logcat.txt` (position, tampon, tas). `PlayerSnapshot.bufferBytes`
+  dit ce que le tampon occupe sur le tas.
 
 ## 5. Tests et CI
 

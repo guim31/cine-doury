@@ -18,7 +18,6 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DataSpec
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.datasource.ResolvingDataSource
-import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.analytics.AnalyticsListener
@@ -71,7 +70,7 @@ class ExoVideoPlayer(
     matchFrameRate: Boolean,
     audioOffsetMillis: Int = 0,
     allowDolbyVision: Boolean = true,
-    buffer: PlayerBuffer = PlayerBuffer.Tv,
+    buffer: PlayerBuffer = PlayerBuffer.tv(Runtime.getRuntime().maxMemory()),
     dataSources: DataSources = DataSources.Direct,
     private val nomad: Nomad? = null,
 ) : VideoPlayer {
@@ -98,6 +97,10 @@ class ExoVideoPlayer(
             )
         }
 
+    /** The bytes of the buffer, on the Java heap (R, [PlayerSnapshot.bufferBytes]). */
+    private val allocator = buffer.allocator()
+    private val loadControl = buffer.loadControl(allocator)
+
     private val exo: ExoPlayer =
         ExoPlayer
             .Builder(context, Renderers(context, capabilities, allowedPassthrough, audioOffsetMillis, allowDolbyVision))
@@ -107,14 +110,8 @@ class ExoVideoPlayer(
                 ).setLoadErrorHandlingPolicy(
                     if (nomad != null) NomadRetries() else DefaultLoadErrorHandlingPolicy(LOAD_RETRIES),
                 ),
-            ).setLoadControl(
-                DefaultLoadControl
-                    .Builder()
-                    .setBufferDurationsMs(buffer.minMillis, buffer.maxMillis, buffer.startMillis, buffer.rebufferMillis)
-                    .setTargetBufferBytes(buffer.targetBytes)
-                    .setPrioritizeTimeOverSizeThresholds(false)
-                    .build(),
-            ).setSeekBackIncrementMs(SEEK_INCREMENT_MS)
+            ).setLoadControl(loadControl)
+            .setSeekBackIncrementMs(SEEK_INCREMENT_MS)
             .setSeekForwardIncrementMs(SEEK_INCREMENT_MS)
             .build()
             .apply {
@@ -466,6 +463,8 @@ class ExoVideoPlayer(
             droppedFrames = dropped,
             bandwidth = bandwidth,
             playWhenReady = exo.playWhenReady,
+            // In use, and kept for later: both are on the heap.
+            bufferBytes = allocator.totalBytesAllocated.toLong() + allocator.unusedBytesAllocated.toLong(),
             loadsCompleted = loadsCompleted,
             failingLoads = failingLoads,
             lastLoadError = lastLoadError,

@@ -343,6 +343,7 @@ jobs:
             ci/emulator-release.sh http://10.0.2.2:8096
             [ "${{ matrix.api-level }}" != 34 ] || ci/couch-gestures.sh "$(adb get-serialno)" --out couch-gestures.md
             ci/emulator-avi.sh http://localhost:8096 /tmp/cine-doury-media http://10.0.2.2:8096
+            ci/emulator-bitrate.sh http://localhost:8096 /tmp/cine-doury-media http://10.0.2.2:8096
       - name: Couch gestures (indicative on an emulator)
         if: always() && hashFiles('couch-gestures.md') != ''
         run: cat couch-gestures.md >> "$GITHUB_STEP_SUMMARY"
@@ -368,6 +369,8 @@ jobs:
             couch-gestures.md.logcat.txt
             emulator-avi.txt
             emulator-avi-logcat.txt
+            emulator-bitrate.txt
+            emulator-bitrate-logcat.txt
           if-no-files-found: ignore
 
   phone-emulator:

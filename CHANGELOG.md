@@ -14,6 +14,8 @@ Transcodage à la taille de l'écran (Chromecast sur une télé 1080p SDR, les d
   long sur un téléphone), à un débit raisonnable en « Automatique » (20 Mb/s en 1080p) et en H.264
   « High » ; une qualité choisie est respectée ; un film lisible tel quel reste lu tel quel.
 - **Écran sans HDR** : un film HDR est converti tout de suite, couleurs adaptées, sans essai raté.
+- **La Shield ne se ferme plus** pendant un film 4K à haut débit lu tel quel : le lecteur ne garde
+  d'avance que ce que la mémoire de l'appareil permet (environ 25 secondes à 25 Mb/s sur une Shield).
 - **Une lecture figée** finit, au bout de 30 secondes, sur un message avec « Réessayer » et le détail dans
   « Plus d'infos », au lieu d'attendre sans fin.
 
