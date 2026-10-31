@@ -297,6 +297,13 @@ class ExoVideoPlayer(
 
     override fun pause() = exo.pause()
 
+    /** The error screen is shown: Media3 lets go of the stream, and the margin fetches nothing more. */
+    override fun stop() {
+        stream = null
+        margin?.newStream()
+        exo.stop()
+    }
+
     override fun seekTo(position: Duration) = exo.seekTo(position.inWholeMilliseconds.coerceAtLeast(0))
 
     override fun selectAudio(index: Int): Boolean {

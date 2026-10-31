@@ -24,6 +24,9 @@ class FakeVideoPlayer : VideoPlayer {
     var playing = false
     var released = false
 
+    /** How many times the player was stopped (an error shown). */
+    var stops = 0
+
     /** Whether the tracks asked for are in the stream (direct play), or need another stream. */
     var tracksInStream = true
 
@@ -46,6 +49,11 @@ class FakeVideoPlayer : VideoPlayer {
     }
 
     override fun pause() {
+        playing = false
+    }
+
+    override fun stop() {
+        stops++
         playing = false
     }
 
