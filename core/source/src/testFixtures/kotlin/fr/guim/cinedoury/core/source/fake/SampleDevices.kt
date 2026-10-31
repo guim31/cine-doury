@@ -144,6 +144,27 @@ object SampleDevices {
                 ),
         )
 
+    /**
+     * Chromecast with Google TV under Android 14 on a 1080p SDR television (P, `SPEC.md` § 4.29): the
+     * same decoders, no E-AC3 decoder, nothing to an amplifier; Android announces HDR10
+     * ([DisplayCapabilities.announcedHdr]) that the mode of the screen does not list.
+     */
+    val chromecastSdr =
+        chromecast.copy(
+            system = "14 (API 34)",
+            audioDecoders = PLATFORM_AUDIO,
+            passthrough = emptySet(),
+            maxPcmChannels = 2,
+            display =
+                DisplayCapabilities(
+                    1920,
+                    1080,
+                    listOf(50f, 60f),
+                    hdr = emptySet(),
+                    announcedHdr = setOf(DynamicRange.Hdr10),
+                ),
+        )
+
     /** An old SD box: H.264 up to 720p, stereo, no HDR. */
     val standard =
         DeviceCapabilities(

@@ -125,4 +125,13 @@ class PlaybackProfilesTest {
             PlaybackProfiles.build(SampleDevices.shield, settings.profileOptions(remote = true)).maxBitrate,
         )
     }
+
+    @Test
+    fun `a Chromecast on an SDR screen takes no HDR as it is - the server tone maps it`() {
+        val profile = PlaybackProfiles.build(SampleDevices.chromecastSdr)
+        val hevc = profile.video.single { it.codec == "hevc" }
+        assertEquals(listOf(RangeType.Sdr, RangeType.DolbyVisionWithSdr), hevc.ranges)
+        assertFalse(RangeType.Hdr10 in profile.video.single { it.codec == "av1" }.ranges)
+        assertFalse("eac3" in profile.audioCodecs)
+    }
 }

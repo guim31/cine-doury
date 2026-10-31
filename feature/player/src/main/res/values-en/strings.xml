@@ -84,6 +84,7 @@
     <string name="info_dropped">Dropped frames</string>
     <string name="info_device">Device</string>
     <string name="info_screen">Screen</string>
+    <string name="info_screen_ignored_hdr">HDR announced by Android, not in the screen mode (ignored)</string>
     <string name="info_profile">Profile</string>
     <string name="mode_direct">Direct play</string>
     <string name="mode_remux">Direct stream (remux)</string>

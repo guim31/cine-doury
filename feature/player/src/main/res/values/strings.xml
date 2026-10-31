@@ -85,6 +85,7 @@
     <string name="info_dropped">Images perdues</string>
     <string name="info_device">Appareil</string>
     <string name="info_screen">Écran</string>
+    <string name="info_screen_ignored_hdr">HDR annoncé par Android, absent du mode de l\'écran (ignoré)</string>
     <string name="info_profile">Profil</string>
     <string name="info_engine_value" translatable="false">ExoPlayer (Media3 1.11.1)</string>
     <string name="mode_direct">Lecture directe</string>
