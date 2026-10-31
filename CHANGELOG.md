@@ -52,6 +52,14 @@ M2 — le **lecteur nomade** du téléphone, pour regarder en voiture :
 - **Image dans l'image** en quittant l'appli pendant le film (lecture/pause, ±10 s) ; pause en
   arrière-plan, écran éteint, écouteurs débranchés ou appel entrant ; portrait possible (bouton).
 
+Fausse erreur de lecture (les deux applis) :
+
+- Un film ou un épisode **transcodé dont le son est copié tel quel** (un AVI en MPEG-4 et MP3, par
+  exemple) n'affiche plus « La lecture s'est arrêtée » au lancement, alors que la vidéo se lançait
+  derrière le message.
+- Quand une erreur s'affiche vraiment, la lecture s'arrête : plus de son ni d'image derrière le
+  message. « Réessayer » reprend où elle s'était arrêtée.
+
 ## 1.0.1 — 30/10/2026
 
 Notes de version : [`docs/releases/v1.0.1.md`](docs/releases/v1.0.1.md).
