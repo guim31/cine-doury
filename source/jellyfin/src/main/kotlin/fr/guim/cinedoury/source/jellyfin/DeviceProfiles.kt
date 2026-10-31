@@ -21,8 +21,14 @@ import org.jellyfin.sdk.model.api.TranscodingProfile
  * The Jellyfin form of a [PlaybackProfile] (`SPEC.md` § 4.11): one direct play profile (containers,
  * video and audio codecs), one HLS transcoding profile, one codec profile per video codec (profiles,
  * level, size, bit depth, dynamic ranges) and one for the audio channels, the subtitle methods.
+ *
+ * The conditions of the transcoding profile (O, `SPEC.md` § 4.29) bound what the server **encodes**:
+ * never larger than the screen, and, with the quality « Automatique » ([automatic]), never above
+ * [PlaybackProfile.transcodeAutoBitrate]. Measured on Jellyfin 12.3: they become `MaxWidth`,
+ * `MaxHeight` and `VideoBitrate` of the transcoding only when the video is encoded again; a copied
+ * video (remux) keeps its size and bitrate, and direct play follows `MaxStreamingBitrate` alone.
  */
-internal fun PlaybackProfile.toDeviceProfile(): DeviceProfile =
+internal fun PlaybackProfile.toDeviceProfile(automatic: Boolean = true): DeviceProfile =
     DeviceProfile(
         name = name,
         maxStreamingBitrate = maxBitrate,
@@ -47,7 +53,13 @@ internal fun PlaybackProfile.toDeviceProfile(): DeviceProfile =
                     context = EncodingContext.STREAMING,
                     maxAudioChannels = maxAudioChannels.toString(),
                     minSegments = 1,
-                    conditions = emptyList(),
+                    conditions =
+                        listOfNotNull(
+                            condition(ProfileConditionValue.WIDTH, LESS, transcodeMaxWidth.toString()),
+                            condition(ProfileConditionValue.HEIGHT, LESS, transcodeMaxHeight.toString()),
+                            condition(ProfileConditionValue.VIDEO_BITRATE, LESS, transcodeAutoBitrate.toString())
+                                .takeIf { automatic },
+                        ),
                 ),
             ),
         containerProfiles = emptyList(),

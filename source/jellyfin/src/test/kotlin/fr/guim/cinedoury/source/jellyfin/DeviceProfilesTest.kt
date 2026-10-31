@@ -41,4 +41,26 @@ class DeviceProfilesTest {
         assertTrue(profile.subtitleProfiles.any { it.format == "pgssub" && it.method == SubtitleDeliveryMethod.EMBED })
         assertTrue(profile.subtitleProfiles.any { it.format == "srt" && it.method == SubtitleDeliveryMethod.EXTERNAL })
     }
+
+    @Test
+    fun `the transcoding is bounded by the screen, and by a bitrate only with the quality Automatique`() {
+        val profile = PlaybackProfiles.build(SampleDevices.chromecastSdr)
+
+        fun conditions(automatic: Boolean) =
+            profile
+                .toDeviceProfile(automatic)
+                .transcodingProfiles
+                .single()
+                .conditions
+                .associate { it.property to it.value }
+        val auto = conditions(automatic = true)
+        assertEquals("1920", auto[ProfileConditionValue.WIDTH])
+        assertEquals("1080", auto[ProfileConditionValue.HEIGHT])
+        assertEquals("20000000", auto[ProfileConditionValue.VIDEO_BITRATE])
+        val chosen = conditions(automatic = false)
+        assertEquals("1920", chosen[ProfileConditionValue.WIDTH])
+        assertEquals(null, chosen[ProfileConditionValue.VIDEO_BITRATE])
+        // Direct play keeps the ceiling of the profile.
+        assertEquals(profile.maxBitrate, profile.toDeviceProfile().maxStreamingBitrate)
+    }
 }

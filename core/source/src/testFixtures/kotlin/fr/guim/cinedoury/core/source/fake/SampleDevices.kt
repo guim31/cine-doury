@@ -165,6 +165,16 @@ object SampleDevices {
                 ),
         )
 
+    /** A phone held upright: its screen is read in its own orientation, 1080 × 2400. */
+    val phone =
+        chromecast.copy(
+            device = "Phone",
+            system = "16 (API 36)",
+            passthrough = emptySet(),
+            maxPcmChannels = 2,
+            display = DisplayCapabilities(1080, 2400, listOf(60f, 120f), setOf(DynamicRange.Hdr10)),
+        )
+
     /** An old SD box: H.264 up to 720p, stereo, no HDR. */
     val standard =
         DeviceCapabilities(
