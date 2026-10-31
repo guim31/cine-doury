@@ -28,6 +28,8 @@ import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.net.HttpURLConnection
+import java.net.URL
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -69,7 +71,10 @@ class AviOnDeviceTest {
             assertTrue("mp3" in audio, "the emulator decodes MP3: $audio")
             val stream = source.playback.playbackInfo(PlaybackInfoRequest(film.id, profile))
             assertEquals(PlayMethod.Transcode, stream.method, "${stream.reasons}")
-            assertTrue(stream.reasons.none { it.isAudio }, "the MP3 is copied: ${stream.reasons}")
+            // The case of the defect: the MP3 copied, announced as « mp4a.40.34 » by the playlist. The
+            // reasons do not say it (AudioCodecNotSupported only tells that no direct play fits).
+            val master = withContext(Dispatchers.IO) { read(stream.url, stream.headers) }
+            assertTrue("mp4a.40.34" in master, "the MP3 is copied (${stream.reasons}):\n$master")
             val reached =
                 withContext(Dispatchers.Main) {
                     val player = ExoVideoPlayer(context, device, emptySet(), matchFrameRate = false)
@@ -96,6 +101,19 @@ class AviOnDeviceTest {
                 }
             assertTrue(reached != null && reached >= TARGET, "$TITLE reached $reached")
         }
+
+    private fun read(
+        url: String,
+        headers: Map<String, String>,
+    ): String {
+        val connection = URL(url).openConnection() as HttpURLConnection
+        headers.forEach { (name, value) -> connection.setRequestProperty(name, value) }
+        return try {
+            connection.inputStream.bufferedReader().use { it.readText() }
+        } finally {
+            connection.disconnect()
+        }
+    }
 
     private companion object {
         const val TITLE = "Magnétoscope"

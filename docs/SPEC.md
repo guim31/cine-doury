@@ -2532,7 +2532,8 @@ vrai MP3 (`exceedRendererCapabilitiesIfNecessary`).
 - **Banc** : `ci/emulator-avi.sh`, dans le job « Emulator » (API 30 et 34), après les autres scripts,
   ajoute au Jellyfin « Magnétoscope » (AVI Xvid et MP3, 60 s ; seulement dans ce job, les tests
   d'intégration comptent les films) et lance `AviOnDeviceTest` : profil d'un Chromecast (H.264 en
-  fMP4, MP3 copié), la position doit passer 3 s sans aucun `PlayerEvent.Failed`.
+  fMP4, MP3 copié : la liste maîtresse doit annoncer `mp4a.40.34` ; les raisons de Jellyfin, elles, citent
+  `AudioCodecNotSupported` dès qu'aucune lecture directe ne convient), la position doit passer 3 s sans aucun `PlayerEvent.Failed`.
 
 ## 5. Tests et CI
 
