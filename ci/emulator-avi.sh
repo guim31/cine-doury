@@ -42,6 +42,14 @@ for _ in $(seq 1 60); do
 done
 log "« $title » in the library: $found"
 
+# The debug APK and its instrumented tests: emulator-release.sh, before, left the optimised APK
+# installed, which the instrumented tests cannot drive (R8 removed what they call).
+app="$(find apk -name '*.apk' | head -n 1)"
+tests="$(find app/tv/build/outputs/apk/androidTest/debug -name '*.apk' | head -n 1)"
+adb uninstall fr.guim.cinedoury > /dev/null 2>&1 || true
+adb install -r "$app"
+adb install -r -t "$tests"
+
 adb logcat -c || true
 set +e
 # Bounded: a test stuck on the device must not hold the job.
