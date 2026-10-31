@@ -31,6 +31,8 @@ import androidx.media3.exoplayer.audio.ForwardingAudioSink
 import androidx.media3.exoplayer.hls.HlsManifest
 import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.exoplayer.source.LoadEventInfo
+import androidx.media3.exoplayer.source.MediaLoadData
 import androidx.media3.exoplayer.upstream.DefaultLoadErrorHandlingPolicy
 import fr.guim.cinedoury.core.model.DeviceCapabilities
 import fr.guim.cinedoury.core.model.DynamicRange
@@ -44,6 +46,7 @@ import fr.guim.cinedoury.core.model.SubtitleMethod
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import java.io.IOException
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -166,6 +169,11 @@ class ExoVideoPlayer(
     private var dropped = 0
     private var bandwidth: Long? = null
 
+    /** The loads of this stream that succeeded, and those that failed since (N, `SPEC.md` § 4.29). */
+    private var loadsCompleted = 0
+    private var failingLoads = 0
+    private var lastLoadError: String? = null
+
     init {
         exo.addListener(
             object : Player.Listener {
@@ -232,6 +240,27 @@ class ExoVideoPlayer(
                 ) {
                     bandwidth = bitrateEstimate
                 }
+
+                override fun onLoadCompleted(
+                    eventTime: AnalyticsListener.EventTime,
+                    loadEventInfo: LoadEventInfo,
+                    mediaLoadData: MediaLoadData,
+                ) {
+                    loadsCompleted++
+                    failingLoads = 0
+                    lastLoadError = null
+                }
+
+                override fun onLoadError(
+                    eventTime: AnalyticsListener.EventTime,
+                    loadEventInfo: LoadEventInfo,
+                    mediaLoadData: MediaLoadData,
+                    error: IOException,
+                    wasCanceled: Boolean,
+                ) {
+                    failingLoads++
+                    lastLoadError = PlaybackErrors.causes(error)
+                }
             },
         )
     }
@@ -249,6 +278,9 @@ class ExoVideoPlayer(
         videoDecoder = null
         audioDecoder = null
         passthrough = false
+        loadsCompleted = 0
+        failingLoads = 0
+        lastLoadError = null
         httpFactory.setDefaultRequestProperties(stream.headers)
         streamId++
         started = false
@@ -433,6 +465,10 @@ class ExoVideoPlayer(
             audio = audio?.let { audioOutput(it) },
             droppedFrames = dropped,
             bandwidth = bandwidth,
+            playWhenReady = exo.playWhenReady,
+            loadsCompleted = loadsCompleted,
+            failingLoads = failingLoads,
+            lastLoadError = lastLoadError,
             margin =
                 margin?.status(
                     exo.currentPosition.coerceAtLeast(0).milliseconds,

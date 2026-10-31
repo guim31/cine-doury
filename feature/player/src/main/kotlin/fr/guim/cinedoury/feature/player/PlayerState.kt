@@ -44,7 +44,8 @@ sealed interface PlayerError {
  * to 0 (null without autoplay).
  * @param scrub where a search would go, while the user moves through the film.
  * @param info what the player reads, while the information screen is open.
- * @param reconnecting the connection broke and the buffer ran out: the player tries again.
+ * @param reconnecting loads of the stream fail and the buffer ran out: the player tries again (N,
+ * `SPEC.md` § 4.29); never for a mere wait.
  * @param margin what a phone has loaded ahead, memory and disk (M2); null on the TV.
  * @param offline the phone has no network: the film plays on its margin, then waits for it (M2).
  * @param qualityReduced the quality just went down for a weak network: a discreet notice (M2).

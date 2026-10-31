@@ -40,6 +40,7 @@ import org.robolectric.annotation.Config
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
@@ -205,6 +206,41 @@ class PlaybackFailureTest {
                 .last()
                 .allowDirect,
         )
+    }
+
+    @Test
+    fun aStartOfTenSecondsWithoutAFailedLoadShowsNoBanner() {
+        play(episodes[0])
+        // The server prepares the stream: the player waits, no load fails.
+        fake.buffering = true
+        repeat(40) {
+            advance(TICK)
+            assertFalse(model.state.value.reconnecting, "« Connexion au serveur perdue » after ${it + 1} steps")
+        }
+        assertTrue(model.state.value.buffering)
+        assertEquals(null, model.state.value.error)
+        // A slow server is a wait too: loads succeed, one now and then.
+        repeat(6) {
+            fake.loadsCompleted++
+            advance(5.seconds)
+            assertFalse(model.state.value.reconnecting)
+        }
+        assertEquals(null, model.state.value.error)
+    }
+
+    @Test
+    fun loadsThatFailShowTheBannerUntilOneSucceeds() {
+        play(episodes[0])
+        fake.buffering = true
+        fake.failingLoads = 2
+        advance(2.seconds)
+        assertFalse(model.state.value.reconnecting, "not for a single moment")
+        advance(2.seconds)
+        assertTrue(model.state.value.reconnecting)
+        fake.failingLoads = 0
+        fake.loadsCompleted++
+        advance(TICK)
+        assertFalse(model.state.value.reconnecting)
     }
 
     private companion object {
