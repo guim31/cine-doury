@@ -102,6 +102,10 @@ object DiagnosticReport {
         val device = input.capabilities ?: return
         val display = device.display
         line("Screen: ${display.width} × ${display.height}, ${display.hdr.joinToString { it.name }.ifEmpty { "SDR" }}")
+        (display.announcedHdr - display.hdr).takeIf { it.isNotEmpty() }?.let { ignored ->
+            // P (`SPEC.md` § 4.29): announced by the display, not by its current mode.
+            line("HDR announced but not in the screen's mode (ignored): ${ignored.joinToString { it.name }}")
+        }
         line("Refresh rates: ${display.refreshRates.joinToString { "%.3f".format(Locale.ROOT, it) }}")
         device.videoDecoders.forEach { decoder ->
             val kind = if (decoder.hardware) "hardware" else "software"

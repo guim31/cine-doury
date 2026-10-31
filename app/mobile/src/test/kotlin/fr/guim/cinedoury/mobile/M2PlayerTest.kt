@@ -185,6 +185,26 @@ class M2PlayerTest {
     }
 
     @Test
+    fun `without a network, a spent margin waits as long as it takes, without an error nor the TV's banner`() {
+        start()
+        // The margin is spent and every load fails: the film waits for the network (M2), not 30 s.
+        fake.buffering = true
+        fake.failingLoads = 3
+        fake.margin = margin(Duration.ZERO, offline = true)
+        advance(2.minutes)
+        assertEquals(null, model.state.value.error)
+        assertTrue(model.state.value.offline, "« Le réseau est coupé… »")
+        assertTrue(model.state.value.buffering)
+        assertEquals(0, fake.stops, "the player is not stopped")
+        // Even when the margin cannot tell yet: the network itself says it is down.
+        fake.failingLoads = 0
+        fake.margin = margin(Duration.ZERO, offline = false)
+        network.state.value = NetworkState(online = false, kind = NetworkKind.Mobile)
+        advance(2.minutes)
+        assertEquals(null, model.state.value.error)
+    }
+
+    @Test
     fun `a quality chosen by the user is never changed`() {
         start()
         model.selectQuality(8_000_000)
