@@ -134,7 +134,10 @@ class PlayerViewModel(
     }
 
     @Suppress("CyclomaticComplexMethod") // The steps of a start, the phone's quality among them.
-    private suspend fun start(request: PlaybackRequest) {
+    private suspend fun start(
+        request: PlaybackRequest,
+        at: Duration? = null,
+    ) {
         val source = source ?: return
         guarded {
             val settings = settingsStore.current()
@@ -147,7 +150,8 @@ class PlayerViewModel(
             val item = if (request.trailer) request.item else source.item(request.item.id)
             val selection = selection(source, request, item)
             val start =
-                item.userData?.playbackPosition?.takeIf { request.resume && item.progress != null } ?: Duration.ZERO
+                at ?: item.userData?.playbackPosition?.takeIf { request.resume && item.progress != null }
+                    ?: Duration.ZERO
             local.update {
                 it.copy(
                     item = item,
@@ -256,10 +260,20 @@ class PlayerViewModel(
             local.update { it.copy(fallback = detail) }
             reload(allowDirect = false)
         } else {
+            // No sound nor image behind the message: the player stops where it stands, which
+            // « Réessayer » starts from again.
+            val position = player?.snapshot()?.position?.takeIf { it.isPositive() }
             reporter?.stop(report(failed = true))
             reporter = null
             ticker?.cancel()
-            local.update { it.copy(error = PlayerError.Playback(failure, detail), playing = false) }
+            player?.stop()
+            local.update {
+                it.copy(
+                    error = PlayerError.Playback(failure, detail),
+                    playing = false,
+                    position = position ?: it.position,
+                )
+            }
         }
     }
 
@@ -745,8 +759,11 @@ class PlayerViewModel(
         fellBack = false
         local.update { it.copy(error = null, loading = true) }
         viewModelScope.launch {
+            // Where the player stopped: the server may not have learnt it (the stopped report fails
+            // with the network), and the item it gives may say an older position.
             start(
                 request.copy(resume = true, item = local.value.item.withPosition(local.value.position)),
+                at = local.value.position.takeIf { it.isPositive() },
             )
         }
     }

@@ -30,6 +30,7 @@ son domaine :
 | Nouveau logo et retouches de la 1.0.0 (29/10/2026) : un pot de pop-corn sur fond noir pour l'icône et la bannière Android TV ; H, tuiles de la mosaïque « Ce soir » rognées au focus ; I et J, rail qui s'ouvrait seul au lancement et après OK sur une de ses entrées | en revue (§ 4.24 et 4.25 ; captures dans `docs/screenshots/logo/` et `docs/screenshots/r6/`, numéros 230 et 231) | — |
 | M1 — Socle mobile et navigation (appli `:app:mobile` pour téléphone et tablette : jetons partagés, composants Material 3, connexion, « Connecter un appareil », barre des onglets, accueil, bibliothèques, fiches, recherche, lecture simple ; chaque appli choisit son APK dans une release) | en revue (§ 4.26 ; captures dans `docs/screenshots/m1/`, numéros 200 à 229) | [#18](https://github.com/guim31/cine-doury/pull/18) |
 | M2 — Lecteur nomade (marge en mémoire puis sur disque, coupures traversées, bascule d'adresse en lecture, qualité selon le réseau et adaptative, gestes, cadenas, rotation, image dans l'image, focus audio ; la TV ne change pas) ; F, adresse à distance et joignabilité sur le téléphone ; G, remux H.264 en segments TS et erreur de format (les deux applis) | en revue (§ 4.27 ; captures dans `docs/screenshots/m2/`, numéros 240 à 253) | [#19](https://github.com/guim31/cine-doury/pull/19) |
+| Fausse erreur de lecture (31/10/2026, Chromecast en 1.0.1 et téléphone) : un transcodage au son copié (AVI en MPEG-4 et MP3) n'affiche plus d'erreur au lancement ; une erreur affichée arrête le lecteur ; AVI de test sur l'émulateur | en revue (§ 4.28) | — |
 
 *(Chaque jalon met à jour ce tableau et ajoute ses contrats au § 4.)*
 
@@ -2501,6 +2502,38 @@ après le retour du réseau la marge repasse à 3 min 53 s.
 sur le réseau mobile (251), serveur injoignable (252), adresse à distance proposée (253) ; le profil (226)
 montre les réglages de lecture et les deux adresses. L'image dans l'image n'est
 pas capturable (fenêtre dessinée par le système).
+
+### 4.28 Fausse erreur de lecture (31/10/2026)
+
+**Défaut** (Chromecast en 1.0.1, téléphone en 1.0.1-essai.87) : un épisode en AVI (MPEG-4 Part 2 et MP3,
+640 × 480) affichait « La lecture s'est arrêtée » presque aussitôt, alors que la vidéo se lançait derrière
+le message. Jellyfin transcode la vidéo en H.264 et **copie le MP3** dans des segments fMP4 ; son
+`master.m3u8` annonce `CODECS="avc1.424029,mp4a.40.34"`.
+
+**Cause** (lue dans les sources de Media3 1.11.1) : avec la préparation sans segment de HLS, les pistes
+viennent des `CODECS` de la liste. `mp4a.40.34` a l'objet `0x40` (MPEG-4 Audio), donc
+`audio/mp4a-latm` ; le type d'objet audio 34 (MPEG-1 couche 3) n'est pas dans la table des profils AAC
+(`CodecSpecificDataUtil.getAacCodecProfileAndLevel` : `UNSUPPORTABLE`), et le décodeur AAC répond
+`FORMAT_EXCEEDS_CAPABILITIES`. `checkDecoders` lisait `Tracks.Group.isSupported()`, qui refuse les
+pistes au-delà des capacités : « No decoder for audio audio/mp4a-latm », écran d'erreur, rapport
+« stopped » à 0 ms (avant même que ffmpeg parte). Le lecteur, lui, n'était pas arrêté et lisait le
+vrai MP3 (`exceedRendererCapabilitiesIfNecessary`).
+
+**Contrats** :
+
+- **Seule l'absence de décodeur est une panne** (`DecoderCheck`, `:core:playback`) :
+  `isSupported(allowExceedsCapabilities = true)`, et une piste sans type MIME (seulement déclarée) n'est
+  pas jugée. Un décodeur qui échoue vraiment passe par `onPlayerError`, et le repli vers le transcodage
+  (§ 4.11) reste en place (`DecoderCheckTest`, `PlaybackFailureTest`).
+- **Une erreur affichée arrête le lecteur** : la dernière branche de `PlayerViewModel.failed` appelle
+  `VideoPlayer.stop()` (Media3 lâche le flux, la marge du M2 ne charge plus rien) après le rapport, et
+  garde la position ; « Réessayer » relance à cette position, sans dépendre de ce que le serveur a
+  retenu.
+- **Banc** : `ci/emulator-avi.sh`, dans le job « Emulator » (API 30 et 34), après les autres scripts,
+  ajoute au Jellyfin « Magnétoscope » (AVI Xvid et MP3, 60 s ; seulement dans ce job, les tests
+  d'intégration comptent les films) et lance `AviOnDeviceTest` : profil d'un Chromecast (H.264 en
+  fMP4, MP3 copié : la liste maîtresse doit annoncer `mp4a.40.34` ; les raisons de Jellyfin, elles, citent
+  `AudioCodecNotSupported` dès qu'aucune lecture directe ne convient), la position doit passer 3 s sans aucun `PlayerEvent.Failed`.
 
 ## 5. Tests et CI
 

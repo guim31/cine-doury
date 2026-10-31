@@ -36,6 +36,12 @@ interface VideoPlayer {
 
     fun seekTo(position: Duration)
 
+    /**
+     * Stops reading the stream, where it stands: no more sound nor image, nothing more asked of the
+     * server, the position kept. A [load] starts again.
+     */
+    fun stop() = pause()
+
     /** Chooses an audio track within the stream; false when the stream does not carry it. */
     fun selectAudio(index: Int): Boolean
 

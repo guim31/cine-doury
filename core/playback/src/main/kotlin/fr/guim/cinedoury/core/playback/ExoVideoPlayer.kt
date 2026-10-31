@@ -297,6 +297,13 @@ class ExoVideoPlayer(
 
     override fun pause() = exo.pause()
 
+    /** The error screen is shown: Media3 lets go of the stream, and the margin fetches nothing more. */
+    override fun stop() {
+        stream = null
+        margin?.newStream()
+        exo.stop()
+    }
+
     override fun seekTo(position: Duration) = exo.seekTo(position.inWholeMilliseconds.coerceAtLeast(0))
 
     override fun selectAudio(index: Int): Boolean {
@@ -403,23 +410,10 @@ class ExoVideoPlayer(
         }
     }
 
-    /** No decoder for the video (or for every audio track): the server must transcode. */
+    /** No decoder for the video (or for every audio track): the server must transcode ([DecoderCheck]). */
     private fun checkDecoders(tracks: Tracks) {
-        val video = tracks.groups.filter { it.type == C.TRACK_TYPE_VIDEO }
-        val audio = tracks.groups.filter { it.type == C.TRACK_TYPE_AUDIO }
-        val missing =
-            when {
-                video.isNotEmpty() && video.none { it.isSupported } -> "video ${video.first().getTrackFormat(0).codecs}"
-
-                audio.isNotEmpty() && audio.none { it.isSupported } -> "audio ${audio.first().getTrackFormat(
-                    0,
-                ).sampleMimeType}"
-
-                else -> null
-            }
-        if (missing != null) {
-            main.post { eventFlow.tryEmit(PlayerEvent.Failed(PlaybackFailure.Decoder, "No decoder for $missing")) }
-        }
+        val missing = DecoderCheck.missing(tracks) ?: return
+        main.post { eventFlow.tryEmit(PlayerEvent.Failed(PlaybackFailure.Decoder, "No decoder for $missing")) }
     }
 
     override fun snapshot(): PlayerSnapshot {
