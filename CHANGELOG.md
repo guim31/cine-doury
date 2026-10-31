@@ -6,6 +6,17 @@ technique est dans [`docs/SPEC.md`](docs/SPEC.md) ; les notes de chaque version 
 
 ## Non publié
 
+Transcodage à la taille de l'écran (Chromecast sur une télé 1080p SDR, les deux applis) :
+
+- **« Connexion au serveur perdue »** ne s'affiche plus au démarrage d'un film transcodé ni quand le
+  serveur est lent : seulement quand des chargements échouent vraiment.
+- **Un film 4K converti par le serveur** l'est à la taille de l'écran (1080p sur une télé 1080p, le côté
+  long sur un téléphone), à un débit raisonnable en « Automatique » (20 Mb/s en 1080p) et en H.264
+  « High » ; une qualité choisie est respectée ; un film lisible tel quel reste lu tel quel.
+- **Écran sans HDR** : un film HDR est converti tout de suite, couleurs adaptées, sans essai raté.
+- **Une lecture figée** finit, au bout de 30 secondes, sur un message avec « Réessayer » et le détail dans
+  « Plus d'infos », au lieu d'attendre sans fin.
+
 ## 1.0.2 — 31/10/2026
 
 Notes de version : [`docs/releases/v1.0.2.md`](docs/releases/v1.0.2.md).

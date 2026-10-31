@@ -65,6 +65,7 @@
     <string name="player_error_decoder">L\'appareil ne sait pas lire ce fichier, et sa conversion par le serveur a échoué. Réessayez, ou choisissez une autre version dans la fiche.</string>
     <string name="player_error_network">La connexion au serveur est perdue. Vérifiez le réseau, puis réessayez.</string>
     <string name="player_error_server">Le serveur a refusé de transmettre le fichier. Réessayez dans un instant.</string>
+    <string name="player_error_stalled">La lecture n\'avance plus depuis 30\u00A0secondes, sans erreur du réseau ni du serveur. Réessayez, ou choisissez une qualité plus basse.</string>
     <string name="player_retry">Réessayer</string>
     <string name="player_back">Retour</string>
     <string name="info_title">Informations sur la lecture</string>

@@ -119,7 +119,7 @@ class PlayerViewModel(
     private var nextDismissed = false
     private var countdown = Duration.ZERO
 
-    /** The lost connection (N, `SPEC.md` § 4.29). */
+    /** The lost connection (N) and the playback that no longer moves (Q), `SPEC.md` § 4.29. */
     private val watch = PlaybackWatch()
     private var infoVisible = false
     private var finished = false
@@ -393,6 +393,7 @@ class PlayerViewModel(
         }
         if (left != null && !left.isPositive() && PlaybackRules.countdownStartsNext(state.segments)) autoplay()
         adaptQuality(snapshot)
+        if (verdict.stalled && state.error == null) stalled(snapshot, verdict)
     }
 
     /** One step of [watch]: a phone without a network waits for it on purpose (M2). */
@@ -419,6 +420,33 @@ class PlayerViewModel(
                         ),
             ),
         )
+
+    /**
+     * Nothing has moved for [PlaybackWatch.STALL] (Q, `SPEC.md` § 4.29): the error screen, with
+     * « Réessayer », and what the player saw in « Plus d'infos ». Loads that kept failing are a lost
+     * connection ([PlaybackFailure.Network]); else the player stood still without an error
+     * ([PlaybackFailure.Stalled]).
+     */
+    private fun stalled(
+        snapshot: PlayerSnapshot,
+        verdict: PlaybackWatch.Verdict,
+    ) {
+        val stream = local.value.stream
+        val video = snapshot.video
+        val detail =
+            listOfNotNull(
+                "Playback stalled: no progress for ${verdict.stalledFor.inWholeSeconds} s at ${snapshot.position}",
+                "buffering, ${snapshot.buffered} buffered",
+                "${snapshot.loadsCompleted} loads completed" +
+                    (verdict.sinceLastLoad?.let { ", the last ${it.inWholeSeconds} s ago" } ?: ", none"),
+                stream?.let { "${it.method} in ${it.container}, ${it.maxBitrate ?: "auto"} b/s" },
+                video?.let { "video ${it.codec} ${it.width}×${it.height}, decoder ${it.decoder}" },
+                stream?.reasons?.takeIf { it.isNotEmpty() }?.joinToString(prefix = "reasons ") { it.name },
+                snapshot.lastLoadError?.let { "${snapshot.failingLoads} loads failed, the last: $it" },
+            ).joinToString(" · ")
+        GestureLog.mark("stalled")
+        failed(if (verdict.failing) PlaybackFailure.Network else PlaybackFailure.Stalled, detail)
+    }
 
     /**
      * The phone's quality (M2, `SPEC.md` § 4.27), once a second: the default of the new network when

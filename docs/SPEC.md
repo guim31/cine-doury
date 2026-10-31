@@ -31,6 +31,7 @@ son domaine :
 | M1 — Socle mobile et navigation (appli `:app:mobile` pour téléphone et tablette : jetons partagés, composants Material 3, connexion, « Connecter un appareil », barre des onglets, accueil, bibliothèques, fiches, recherche, lecture simple ; chaque appli choisit son APK dans une release) | en revue (§ 4.26 ; captures dans `docs/screenshots/m1/`, numéros 200 à 229) | [#18](https://github.com/guim31/cine-doury/pull/18) |
 | M2 — Lecteur nomade (marge en mémoire puis sur disque, coupures traversées, bascule d'adresse en lecture, qualité selon le réseau et adaptative, gestes, cadenas, rotation, image dans l'image, focus audio ; la TV ne change pas) ; F, adresse à distance et joignabilité sur le téléphone ; G, remux H.264 en segments TS et erreur de format (les deux applis) | en revue (§ 4.27 ; captures dans `docs/screenshots/m2/`, numéros 240 à 253) | [#19](https://github.com/guim31/cine-doury/pull/19) |
 | Fausse erreur de lecture (31/10/2026, Chromecast en 1.0.1 et téléphone) : un transcodage au son copié (AVI en MPEG-4 et MP3) n'affiche plus d'erreur au lancement ; une erreur affichée arrête le lecteur ; AVI de test sur l'émulateur | en revue (§ 4.28) | — |
+| Transcodage à la taille de l'écran (31/10/2026, Chromecast en 1.0.2 sur télé 1080p SDR) : N, bandeau « Connexion perdue » seulement sur des chargements en échec ; O, réencodage jamais plus grand que l'écran, débit plafonné en « Automatique », H.264 High ; P, HDR lu sur le mode courant de l'écran (API 34), tone mapping direct sur écran SDR ; Q, une lecture figée 30 s finit sur une erreur | en revue (§ 4.29) | — |
 
 *(Chaque jalon met à jour ce tableau et ajoute ses contrats au § 4.)*
 
@@ -754,7 +755,8 @@ Ce qui est envoyé (`PlaybackProfiles.build`, puis `toDeviceProfile` dans `:sour
   décodeur HEVC (Media3 sait la lire ; sans écran Dolby Vision, le sélecteur de décodeurs écarte le
   décodeur Dolby Vision pour que la base soit lue en HDR10, HLG ou SDR) ;
 - **transcodage** : HLS ; HEVC puis H.264 en fMP4 (`mp4`) quand un décodeur HEVC Main 10 matériel
-  existe, sinon H.264 en MPEG-TS ; audio AC3 d'abord quand l'appareil ou l'ampli prend du 5.1,
+  existe, sinon H.264 en MPEG-TS ; jamais plus grand que l'écran, et en « Automatique » à un débit plafonné par
+  la définition (§ 4.29) ; audio AC3 d'abord quand l'appareil ou l'ampli prend du 5.1,
   sinon AAC ; `MaxAudioChannels` ;
 - **sous-titres** : `Embed` pour tout format dessiné, `External` pour les formats texte ; le reste
   (PGS, VobSub en transcodage) est incrusté par le serveur (`Encode`). L'option « ASS incrustés par
@@ -775,7 +777,9 @@ position**, sans écran d'erreur, une fois ; l'écran d'informations dit « Lect
 transcodage : <erreur> ». Toute autre erreur, ou un transcodage qui échoue, montre l'erreur (deux
 phrases, « Réessayer » qui repart de la position). **Réseau** : les chargements sont réessayés
 (20 fois, jusqu'à 5 s d'écart, ≈ 90 s) pendant que la mémoire tampon (30 à 90 s, 192 Mo) joue ;
-après 3 s d'attente, « Connexion au serveur perdue. Nouvel essai en cours… » s'affiche.
+après 3 s d'attente **avec des chargements en échec**, « Connexion au serveur perdue. Nouvel essai en
+cours… » s'affiche (§ 4.29) ; une lecture qui n'avance plus s'arrête sur une erreur au bout
+de 30 s (§ 4.29).
 
 **Rapports** (`PlaybackReporter`) : « démarré » une fois par flux ; « progression » toutes les
 10 s, à chaque pause ou reprise, après chaque saut (les 10 s repartent de là) et à chaque
@@ -2534,6 +2538,98 @@ vrai MP3 (`exceedRendererCapabilitiesIfNecessary`).
   d'intégration comptent les films) et lance `AviOnDeviceTest` : profil d'un Chromecast (H.264 en
   fMP4, MP3 copié : la liste maîtresse doit annoncer `mp4a.40.34` ; les raisons de Jellyfin, elles, citent
   `AudioCodecNotSupported` dès qu'aucune lecture directe ne convient), la position doit passer 3 s sans aucun `PlayerEvent.Failed`.
+
+### 4.29 Transcodage à la taille de l'écran, bandeau et gel (31/10/2026)
+
+**Défauts** (Chromecast avec Google TV en 1.0.2, Android 14, télé **1080p SDR**). Un film 4K HDR10 (HEVC
+10 bits, 3840 × 1608, E-AC3 5.1, MKV) : le serveur copie le HDR10 en fMP4 (pas de décodeur E-AC3), Media3
+refuse le segment (`tfdt` négatif, le G du M2, ici en HEVC), le filet redemande en TS, H.264 seul, et le
+serveur **réencode le 4K en H.264 Baseline à 42 Mb/s** pour une télé 1080p ; la lecture démarre, se fige à
+2,85 s, sans erreur, sous « Connexion au serveur perdue ». Et un épisode AVI transcodé, qui se lit bien,
+affichait ce bandeau au démarrage.
+
+**N — Le bandeau ne ment plus** (`PlaybackWatch`, `:core:model`). « Connexion au serveur perdue. Nouvel
+essai en cours… » ne s'affiche que si le lecteur attend (3 s au moins) **et** que les derniers chargements
+ont échoué : `ExoVideoPlayer` compte les chargements réussis et ceux qui échouent depuis
+(`AnalyticsListener.onLoadCompleted` / `onLoadError`, `PlayerSnapshot.loadsCompleted` / `failingLoads`).
+Préparation d'un flux, serveur lent, playlist en préparation : une attente, sans bandeau. Le téléphone
+garde son message de coupure (« Le réseau est coupé… », M2), qui ne dépend pas de ce bandeau.
+
+**O — Le serveur ne produit jamais plus grand que l'écran.** Le profil de transcodage porte des conditions
+(`PlaybackProfile.transcodeMaxWidth` / `transcodeMaxHeight`) : le côté long de l'écran en largeur, le côté
+court en hauteur (1920 × 1080 sur la télé 1080p ; 2400 × 1080 sur un téléphone de 1080 × 2400, quelle que
+soit sa tenue). **Mesuré sur la 12.3** : ces conditions deviennent `MaxWidth`, `MaxHeight` (et
+`VideoBitrate`) du transcodage **seulement quand la vidéo est réencodée** (`scale` dans la commande
+ffmpeg) ; une vidéo copiée garde sa taille (`MaxWidth=3840`, `-codec:v copy`), et la lecture directe ne
+suit que `MaxStreamingBitrate`, inchangé. Un 4K lisible reste donc lu tel quel ; l'appareil le réduit.
+- **Débit du réencodage en « Automatique »** (`TranscodeBitrates`), selon la hauteur de l'écran et le
+  codec : H.264 8 Mb/s jusqu'au 720p, **20 Mb/s en 1080p**, 30 en 1440p, 40 au-delà ; HEVC environ 60 %
+  (5, 12, 18, 25 Mb/s). Le serveur choisit seul entre HEVC et H.264 (le HEVC seulement s'il a le droit
+  d'en encoder) : le plafond est celui du codec le moins efficace de la liste, donc H.264 aujourd'hui.
+  Jamais au-dessus du plafond de débit de l'appareil. Condition `VideoBitrate` du profil de transcodage,
+  **seulement en « Automatique »** (`PlaybackInfoRequest.maxBitrate` nul) : une qualité choisie, à la main
+  ou par défaut, est respectée telle quelle (`MaxStreamingBitrate`).
+- **H.264 High, pas Baseline** : Jellyfin encode avec le **premier** profil de la liste du `CodecProfile`
+  (mesuré : `-profile:v:0 baseline` avec « baseline, constrained baseline, high, main », l'ordre
+  alphabétique d'avant). La liste commence maintenant par « high », « main ».
+
+**P — Écran SDR : pas de copie du HDR.** **Établi** : sur la 12.3, un profil HEVC dont les plages sont
+« SDR, DOVIWithSDR » fait réencoder un HDR10 avec tone mapping (`VideoRangeTypeNotSupported`, `tonemapx`) ;
+avec HDR10 dans les plages, le serveur copie. Le premier choix du Chromecast (copie) prouve donc que le
+profil envoyé contenait HDR10, que `PlaybackProfiles` n'ajoute que si l'écran le déclare. Or `dumpsys
+display` donne des modes 1080p à `supportedHdrTypes=[]` : c'est `Display.getHdrCapabilities()` (dépréciée en
+API 34) qui l'a annoncé. **Non établi** : pourquoi Android 14 l'annonce sur cet appareil (conversion HDR du
+système, liste du récepteur HDMI ?) ; pas d'appareil pour le vérifier. **Règle** (`ScreenHdr`,
+`DeviceCapabilitiesReader`) : à partir de l'API 34, un type HDR ne compte que si le **mode courant** de
+l'écran le liste aussi (`Display.Mode.getSupportedHdrTypes`) ; avant l'API 34 (la Shield, Android 11), la
+liste de l'écran reste seule. Le cas Dolby Vision suit la même lecture (profil 5 et sélecteur de décodeurs).
+Ce qu'Android annonce en plus est gardé (`DisplayCapabilities.announcedHdr`) et montré dans « Profil de
+l'appareil » et le rapport de diagnostic. **Attendu sur écran SDR** : réencodage avec tone mapping tout de
+suite, en H.264 fMP4 (la vidéo est réencodée : rien à redemander en TS), sans l'essai raté du remux.
+**Risque** : un appareil Android 14 sur écran HDR dont les modes ne listeraient pas leurs types perdrait
+la lecture directe du HDR (tone mapping par le serveur) ; la ligne « HDR annoncé par Android, absent du
+mode » du profil de l'appareil le dirait.
+
+**Q — Le gel sans erreur.** **Établi** : le flux figé était le H.264 **Baseline**, niveau 5.1, 3840 × 1608
+à 42 Mb/s en TS, avec tone mapping, que O et P ne produisent plus pour cet écran (ils donnent 1080p, High,
+20 Mb/s au plus, en fMP4, sans passer par la copie) ; ExoPlayer est resté en attente (`STATE_BUFFERING`,
+d'où le bandeau) sans `PlaybackException`. **Écarté** : le `tfdt`/`-copyts` (le TS n'a pas de `tfdt`, et la
+vidéo y était réencodée) ; le plafond d'octets du `LoadControl` de la TV (192 Mo, `prioritizeTimeOverSize`
+faux) : à 42 Mb/s il vaut environ 36 s de film, plus que les 30 s de tampon minimal, il n'est pas atteint
+à 2,85 s, et une fois atteint `DefaultLoadControl.shouldStartPlayback` relance quand même la lecture (lu
+dans les sources de Media3 1.11.1). **Lu dans Media3 1.11.1** : le lecteur lève de lui-même une erreur
+(`StuckPlayerException.STUCK_BUFFERING_NOT_LOADING`) après 4 s d'attente **tampon vide** (moins de 0,5 s)
+quand plus rien ne se charge ; sa détection « attente sans progrès de chargement » n'arrive qu'après
+**10 min**. L'absence d'erreur dit donc : soit le tampon n'était pas vide et le rendu vidéo n'était jamais
+prêt, soit un chargement était en cours. **Hypothèses** (non vérifiées, pas d'appareil) : (1) le décodeur
+matériel (`c2.amlogic.avc.decoder`) ne rend plus d'images sur ce 4K Baseline (« no present fence for
+frame 2 » juste après le début) ; (2) un segment qui ne vient pas : chaque requête pend jusqu'au délai de
+lecture du lecteur (15 s) puis recommence sur une nouvelle connexion, ce que les deux `tagSocket` espacés
+de 16 s évoquent ; 20 essais ainsi dureraient plusieurs minutes. Le `PesReader: Unexpected start code
+prefix` du début (un PES coupé au premier segment) est une piste plus faible. **Dans tous les cas, une
+lecture figée le dit** (`PlaybackWatch.STALL`, **30 s**) : le lecteur veut jouer et attend, la position ne
+bouge pas et **aucun chargement ne réussit** : écran d'erreur, « Réessayer » qui repart de la position,
+et « Plus d'infos » (position, tampon, chargements réussis et le dernier, méthode, conteneur, débit,
+codec, taille et décodeur de l'image, raisons, dernier chargement en échec). Des chargements en échec
+pendant ces 30 s : « La connexion au serveur est perdue » (`PlaybackFailure.Network`) ; aucun :
+`PlaybackFailure.Stalled` (« La lecture n'avance plus depuis 30 secondes… »). Sur la TV, une coupure
+réseau finit donc sur l'erreur 30 s après que le tampon (30 à 90 s) est vide, au lieu des 20 essais.
+**Jamais sur le téléphone** quand le réseau manque (`MarginStatus.offline`, réseau coupé, ou des
+chargements en échec : `NomadRetries` les réessaie sans limite) : l'attente y est voulue (M2).
+
+**Tests** : `PlaybackWatchTest` (`:core:model`) ; `PlaybackFailureTest` (TV : 10 s de démarrage sans
+bandeau, chargements en échec puis connexion perdue à 30 s, gel à 30 s puis « Réessayer », pause et
+lenteur sans gel) ; `M2PlayerTest`
+(téléphone sans réseau ni marge, chargements en échec, 4 min sans erreur) ; `PlaybackProfilesTest` (Chromecast SDR, Shield, téléphone,
+plafonds, ordre des profils H.264) ; `DeviceProfilesTest` ; `ScreenHdrTest` ;
+`JellyfinTranscodeIntegrationTest` contre la 12.3 (film « Banquise » fait pour le test, 3840 × 1608 HEVC
+HDR10 et E-AC3 5.1, effacé à la fin : écran SDR réencodé tout de suite, tone mapping, `scale` à 1920 ×
+1080, `-maxrate 20000000`, High ; qualité choisie non plafonnée ; écran HDR10 : copie en 4K ; Shield :
+lecture directe).
+
+**Hors de ce correctif** : relire côté client un fMP4 HEVC à `tfdt` négatif (copie d'un HEVC avec un
+audio non décodé) ; aujourd'hui un HEVC SDR avec un audio que l'appareil ne décode pas passe encore par
+un remux qui échoue (environ 2 s) avant le réencodage.
 
 ## 5. Tests et CI
 

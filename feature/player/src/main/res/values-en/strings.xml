@@ -64,6 +64,7 @@
     <string name="player_error_decoder">This device cannot read the file, and the server could not convert it. Try again, or choose another version on the details screen.</string>
     <string name="player_error_network">The connection to the server is lost. Check the network, then try again.</string>
     <string name="player_error_server">The server refused to send the file. Try again in a moment.</string>
+    <string name="player_error_stalled">Playback has not moved for 30\u00A0seconds, with no network or server error. Try again, or choose a lower quality.</string>
     <string name="player_retry">Try again</string>
     <string name="player_back">Back</string>
     <string name="info_title">Playback information</string>
