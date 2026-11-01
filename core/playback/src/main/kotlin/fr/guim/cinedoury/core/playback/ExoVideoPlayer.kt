@@ -18,7 +18,6 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DataSpec
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.datasource.ResolvingDataSource
-import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.analytics.AnalyticsListener
@@ -31,6 +30,8 @@ import androidx.media3.exoplayer.audio.ForwardingAudioSink
 import androidx.media3.exoplayer.hls.HlsManifest
 import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.exoplayer.source.LoadEventInfo
+import androidx.media3.exoplayer.source.MediaLoadData
 import androidx.media3.exoplayer.upstream.DefaultLoadErrorHandlingPolicy
 import fr.guim.cinedoury.core.model.DeviceCapabilities
 import fr.guim.cinedoury.core.model.DynamicRange
@@ -44,6 +45,7 @@ import fr.guim.cinedoury.core.model.SubtitleMethod
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import java.io.IOException
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -68,7 +70,7 @@ class ExoVideoPlayer(
     matchFrameRate: Boolean,
     audioOffsetMillis: Int = 0,
     allowDolbyVision: Boolean = true,
-    buffer: PlayerBuffer = PlayerBuffer.Tv,
+    buffer: PlayerBuffer = PlayerBuffer.tv(Runtime.getRuntime().maxMemory()),
     dataSources: DataSources = DataSources.Direct,
     private val nomad: Nomad? = null,
 ) : VideoPlayer {
@@ -95,6 +97,10 @@ class ExoVideoPlayer(
             )
         }
 
+    /** The bytes of the buffer, on the Java heap (R, [PlayerSnapshot.bufferBytes]). */
+    private val allocator = buffer.allocator()
+    private val loadControl = buffer.loadControl(allocator)
+
     private val exo: ExoPlayer =
         ExoPlayer
             .Builder(context, Renderers(context, capabilities, allowedPassthrough, audioOffsetMillis, allowDolbyVision))
@@ -104,14 +110,8 @@ class ExoVideoPlayer(
                 ).setLoadErrorHandlingPolicy(
                     if (nomad != null) NomadRetries() else DefaultLoadErrorHandlingPolicy(LOAD_RETRIES),
                 ),
-            ).setLoadControl(
-                DefaultLoadControl
-                    .Builder()
-                    .setBufferDurationsMs(buffer.minMillis, buffer.maxMillis, buffer.startMillis, buffer.rebufferMillis)
-                    .setTargetBufferBytes(buffer.targetBytes)
-                    .setPrioritizeTimeOverSizeThresholds(false)
-                    .build(),
-            ).setSeekBackIncrementMs(SEEK_INCREMENT_MS)
+            ).setLoadControl(loadControl)
+            .setSeekBackIncrementMs(SEEK_INCREMENT_MS)
             .setSeekForwardIncrementMs(SEEK_INCREMENT_MS)
             .build()
             .apply {
@@ -165,6 +165,11 @@ class ExoVideoPlayer(
     private var passthrough = false
     private var dropped = 0
     private var bandwidth: Long? = null
+
+    /** The loads of this stream that succeeded, and those that failed since (N, `SPEC.md` § 4.29). */
+    private var loadsCompleted = 0
+    private var failingLoads = 0
+    private var lastLoadError: String? = null
 
     init {
         exo.addListener(
@@ -232,6 +237,27 @@ class ExoVideoPlayer(
                 ) {
                     bandwidth = bitrateEstimate
                 }
+
+                override fun onLoadCompleted(
+                    eventTime: AnalyticsListener.EventTime,
+                    loadEventInfo: LoadEventInfo,
+                    mediaLoadData: MediaLoadData,
+                ) {
+                    loadsCompleted++
+                    failingLoads = 0
+                    lastLoadError = null
+                }
+
+                override fun onLoadError(
+                    eventTime: AnalyticsListener.EventTime,
+                    loadEventInfo: LoadEventInfo,
+                    mediaLoadData: MediaLoadData,
+                    error: IOException,
+                    wasCanceled: Boolean,
+                ) {
+                    failingLoads++
+                    lastLoadError = PlaybackErrors.causes(error)
+                }
             },
         )
     }
@@ -249,6 +275,9 @@ class ExoVideoPlayer(
         videoDecoder = null
         audioDecoder = null
         passthrough = false
+        loadsCompleted = 0
+        failingLoads = 0
+        lastLoadError = null
         httpFactory.setDefaultRequestProperties(stream.headers)
         streamId++
         started = false
@@ -433,6 +462,12 @@ class ExoVideoPlayer(
             audio = audio?.let { audioOutput(it) },
             droppedFrames = dropped,
             bandwidth = bandwidth,
+            playWhenReady = exo.playWhenReady,
+            // In use, and kept for later: both are on the heap.
+            bufferBytes = allocator.totalBytesAllocated.toLong() + allocator.unusedBytesAllocated.toLong(),
+            loadsCompleted = loadsCompleted,
+            failingLoads = failingLoads,
+            lastLoadError = lastLoadError,
             margin =
                 margin?.status(
                     exo.currentPosition.coerceAtLeast(0).milliseconds,

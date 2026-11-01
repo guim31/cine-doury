@@ -1,10 +1,12 @@
 package fr.guim.cinedoury.core.source
 
 import fr.guim.cinedoury.core.model.PassthroughFormat
+import fr.guim.cinedoury.core.model.PlaybackFallback
 import fr.guim.cinedoury.core.model.PlaybackProfiles
 import fr.guim.cinedoury.core.model.ProfileOptions
 import fr.guim.cinedoury.core.model.RangeType
 import fr.guim.cinedoury.core.model.SubtitleMethod
+import fr.guim.cinedoury.core.model.TranscodeBitrates
 import fr.guim.cinedoury.core.source.fake.SampleDevices
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -124,5 +126,46 @@ class PlaybackProfilesTest {
             8_000_000,
             PlaybackProfiles.build(SampleDevices.shield, settings.profileOptions(remote = true)).maxBitrate,
         )
+    }
+
+    @Test
+    fun `a Chromecast on an SDR screen takes no HDR as it is - the server tone maps it`() {
+        val profile = PlaybackProfiles.build(SampleDevices.chromecastSdr)
+        val hevc = profile.video.single { it.codec == "hevc" }
+        assertEquals(listOf(RangeType.Sdr, RangeType.DolbyVisionWithSdr), hevc.ranges)
+        assertFalse(RangeType.Hdr10 in profile.video.single { it.codec == "av1" }.ranges)
+        assertFalse("eac3" in profile.audioCodecs)
+    }
+
+    @Test
+    fun `the server encodes no larger than the screen, its long side first`() {
+        val tv = PlaybackProfiles.build(SampleDevices.chromecastSdr)
+        assertEquals(1920 to 1080, tv.transcodeMaxWidth to tv.transcodeMaxHeight)
+        val shield = PlaybackProfiles.build(SampleDevices.shield)
+        assertEquals(3840 to 2160, shield.transcodeMaxWidth to shield.transcodeMaxHeight)
+        val phone = PlaybackProfiles.build(SampleDevices.phone)
+        assertEquals(2400 to 1080, phone.transcodeMaxWidth to phone.transcodeMaxHeight)
+        // What the device plays directly does not shrink: the 4K decoder rule stays.
+        assertEquals(3840, tv.video.single { it.codec == "hevc" }.maxWidth)
+    }
+
+    @Test
+    fun `Automatique caps what the server encodes by the screen and the codec`() {
+        assertEquals(20_000_000, PlaybackProfiles.build(SampleDevices.chromecastSdr).transcodeAutoBitrate)
+        assertEquals(40_000_000, PlaybackProfiles.build(SampleDevices.shield).transcodeAutoBitrate)
+        assertEquals(8_000_000, PlaybackProfiles.build(SampleDevices.standard).transcodeAutoBitrate)
+        // In MPEG-TS segments, H.264 alone: the same cap.
+        val ts = PlaybackFallback.tsProfile(PlaybackProfiles.build(SampleDevices.chromecastSdr))
+        assertEquals(20_000_000, ts.transcodeAutoBitrate)
+        // HEVC alone (never sent today) would need less; never above the bitrate of the profile.
+        assertEquals(12_000_000, TranscodeBitrates.cap(listOf("hevc"), 1080))
+        val ceiling = PlaybackProfiles.build(SampleDevices.shield, ProfileOptions(maxBitrate = 10_000_000))
+        assertEquals(10_000_000, ceiling.transcodeAutoBitrate)
+    }
+
+    @Test
+    fun `the server encodes H264 in High, not Baseline`() {
+        val h264 = PlaybackProfiles.build(SampleDevices.chromecastSdr).video.single { it.codec == "h264" }
+        assertEquals(listOf("high", "main", "baseline", "constrained baseline"), h264.profiles)
     }
 }

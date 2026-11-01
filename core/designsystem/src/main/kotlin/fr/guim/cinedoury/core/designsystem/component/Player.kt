@@ -42,7 +42,9 @@ import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
 import coil3.network.NetworkHeaders
 import coil3.network.httpHeaders
+import coil3.request.CachePolicy
 import coil3.request.ImageRequest
+import coil3.request.allowRgb565
 import fr.guim.cinedoury.core.designsystem.theme.CineScale
 import fr.guim.cinedoury.core.designsystem.theme.CineSizes
 import fr.guim.cinedoury.core.designsystem.theme.CineSpacing
@@ -140,6 +142,12 @@ fun TrickplayPreview(
                         .Builder(context)
                         .data(url)
                         .httpHeaders(NetworkHeaders.Builder().apply { headers.forEach { (k, v) -> set(k, v) } }.build())
+                        // A tile of 10 × 10 pictures of 320 × 132 is 3200 × 1320: 16.9 MB as a hardware
+                        // bitmap (graphics memory), else 8.4 MB in RGB 565 (a JPEG has no alpha), never on
+                        // the Java heap (pixels are native since Android 8). Never kept in the memory cache:
+                        // the only one in memory is the one on screen (R, `SPEC.md` § 4.29).
+                        .allowRgb565(true)
+                        .memoryCachePolicy(CachePolicy.DISABLED)
                         .build()
                 AsyncImage(
                     model = request,

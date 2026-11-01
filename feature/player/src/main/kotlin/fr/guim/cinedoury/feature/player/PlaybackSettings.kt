@@ -173,6 +173,10 @@ private fun deviceProfileLines(
                 ) { it.name }.ifEmpty { "SDR" }} · " +
                 display.refreshRates.joinToString(", ") { "%.3f".format(java.util.Locale.ROOT, it) },
         )
+        val ignored = display.announcedHdr - display.hdr
+        if (ignored.isNotEmpty()) {
+            add(stringResource(R.string.info_screen_ignored_hdr) to ignored.joinToString(", ") { it.name })
+        }
         device.videoDecoders.forEach { decoder ->
             add(
                 "${decoder.codec.name} · ${decoder.name}" to

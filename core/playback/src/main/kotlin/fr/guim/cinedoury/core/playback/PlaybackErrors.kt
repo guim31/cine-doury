@@ -38,6 +38,12 @@ object PlaybackErrors {
         ).joinToString(" ← ")
     }
 
+    /** « HttpDataSourceException: … ← SocketTimeoutException: … »: a failed load, for « Plus d'infos » (N). */
+    fun causes(error: Throwable): String =
+        generateSequence(error) { it.cause }
+            .take(MAX_CAUSES)
+            .joinToString(" ← ") { "${it.javaClass.simpleName}: ${it.message}" }
+
     private fun Throwable.isParsing(): Boolean = this is ParserException || this is IllegalStateException
 
     private const val MAX_CAUSES = 8

@@ -103,7 +103,9 @@ class DeviceCapabilitiesReader(
         val mode = display.mode
 
         @Suppress("DEPRECATION") // Display.Mode.getSupportedHdrTypes is API 34; the Shield is on API 30.
-        val types = display.hdrCapabilities?.supportedHdrTypes ?: IntArray(0)
+        val announced = display.hdrCapabilities?.supportedHdrTypes
+        val ofMode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) mode.supportedHdrTypes else null
+        val types = ScreenHdr.types(announced, ofMode)
         return DisplayCapabilities(
             width = mode.physicalWidth,
             height = mode.physicalHeight,
@@ -113,7 +115,8 @@ class DeviceCapabilitiesReader(
                     .map { it.refreshRate }
                     .distinct()
                     .sorted(),
-            hdr = types.toList().mapNotNull { HDR_TYPES[it] }.toSet(),
+            hdr = types.mapNotNull { HDR_TYPES[it] }.toSet(),
+            announcedHdr = (announced ?: IntArray(0)).toList().mapNotNull { HDR_TYPES[it] }.toSet(),
         )
     }
 
@@ -170,6 +173,24 @@ class DeviceCapabilitiesReader(
 
         /** What Media3 draws itself: SubRip, SSA/ASS, WebVTT, TTML, PGS, VobSub, DVB. */
         val SUBTITLE_FORMATS = SubtitleFormat.entries.toSet()
+    }
+}
+
+/**
+ * The HDR the screen shows (P, `SPEC.md` § 4.29). A Chromecast with Google TV under Android 14, on a
+ * 1080p SDR television, had its modes say `supportedHdrTypes=[]` (`dumpsys display`) while the profile
+ * it sent let the server copy HDR10, which only `Display.getHdrCapabilities()` can have put there. From
+ * API 34, a type counts only if the current mode lists it too ([ofMode], `Display.Mode.getSupportedHdrTypes`,
+ * which replaces the deprecated list of the display); before, the list of the display stays (the Shield,
+ * API 30, has nothing else).
+ */
+internal object ScreenHdr {
+    fun types(
+        announced: IntArray?,
+        ofMode: IntArray?,
+    ): Set<Int> {
+        val display = announced?.toSet().orEmpty()
+        return if (ofMode == null) display else display intersect ofMode.toSet()
     }
 }
 

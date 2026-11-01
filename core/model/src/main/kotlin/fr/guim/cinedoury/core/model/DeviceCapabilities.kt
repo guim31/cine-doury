@@ -62,6 +62,11 @@ data class DisplayCapabilities(
     val height: Int,
     val refreshRates: List<Float> = emptyList(),
     val hdr: Set<DynamicRange> = emptySet(),
+    /**
+     * What `Display.getHdrCapabilities()` announced, for the device profile and the report (P, `SPEC.md`
+     * § 4.29): more than [hdr] when the current mode of the screen does not list it.
+     */
+    val announcedHdr: Set<DynamicRange> = hdr,
 )
 
 /** An audio format, named as ffmpeg and the server name it. */

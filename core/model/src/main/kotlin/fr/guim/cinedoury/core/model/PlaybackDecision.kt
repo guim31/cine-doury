@@ -159,6 +159,9 @@ enum class PlaybackFailure {
     /** The server refused or failed (4xx, 5xx). */
     Server,
 
+    /** Nothing moves, without an error: no progress and no load for [PlaybackWatch.STALL] (Q). */
+    Stalled,
+
     Unknown,
 }
 

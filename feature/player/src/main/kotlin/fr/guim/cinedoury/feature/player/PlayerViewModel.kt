@@ -26,6 +26,7 @@ import fr.guim.cinedoury.core.model.PlaybackReport
 import fr.guim.cinedoury.core.model.PlaybackRequest
 import fr.guim.cinedoury.core.model.PlaybackRules
 import fr.guim.cinedoury.core.model.PlaybackStream
+import fr.guim.cinedoury.core.model.PlaybackWatch
 import fr.guim.cinedoury.core.model.PlayerSettings
 import fr.guim.cinedoury.core.model.QualityGovernor
 import fr.guim.cinedoury.core.model.SegmentAction
@@ -117,7 +118,9 @@ class PlayerViewModel(
     private var lastSkipped: Int? = null
     private var nextDismissed = false
     private var countdown = Duration.ZERO
-    private var bufferingFor = Duration.ZERO
+
+    /** The lost connection (N) and the playback that no longer moves (Q), `SPEC.md` § 4.29. */
+    private val watch = PlaybackWatch()
     private var infoVisible = false
     private var finished = false
 
@@ -182,6 +185,7 @@ class PlayerViewModel(
             this.player = player
             surfacePlayer.value = player.player
             local.update { it.copy(stream = stream, loading = false, error = null) }
+            watch.reset()
             logDecision(item, stream, fallback = false, settings.directPlay == DirectPlayMode.Forced)
             player.load(stream, start, selection?.audioIndex, selection?.subtitleIndex)
             if (!request.trailer) {
@@ -362,7 +366,7 @@ class PlayerViewModel(
         val duration = snapshot.duration.takeIf { it.isPositive() } ?: state.duration
         val position = snapshot.position
         announce(snapshot)
-        bufferingFor = if (snapshot.buffering && state.stream != null) bufferingFor + TICK else Duration.ZERO
+        val verdict = look(snapshot, state)
         val skip = segmentButton(player, state, position)
         val shows = showsNext(state, position, duration)
         if (shows && snapshot.playing) countdown += TICK
@@ -376,7 +380,7 @@ class PlayerViewModel(
                 buffered = snapshot.buffered,
                 playing = snapshot.playing,
                 buffering = snapshot.buffering,
-                reconnecting = bufferingFor >= RECONNECTING,
+                reconnecting = verdict.reconnecting,
                 margin = snapshot.margin,
                 offline = snapshot.margin?.offline == true,
                 qualityReduced = elapsed < noticeUntil,
@@ -389,6 +393,59 @@ class PlayerViewModel(
         }
         if (left != null && !left.isPositive() && PlaybackRules.countdownStartsNext(state.segments)) autoplay()
         adaptQuality(snapshot)
+        if (verdict.stalled && state.error == null) stalled(snapshot, verdict)
+    }
+
+    /** One step of [watch]: a phone without a network waits for it on purpose (M2). */
+    private fun look(
+        snapshot: PlayerSnapshot,
+        state: PlayerState,
+    ): PlaybackWatch.Verdict =
+        watch.sample(
+            TICK,
+            PlaybackWatch.Sample(
+                position = snapshot.position,
+                buffering = snapshot.buffering && state.stream != null,
+                playWhenReady = snapshot.playWhenReady,
+                loadsCompleted = snapshot.loadsCompleted,
+                failingLoads = snapshot.failingLoads,
+                // On the phone, loads that fail are the network, waited for without a limit (M2).
+                offline =
+                    network != null &&
+                        (
+                            snapshot.margin?.offline == true ||
+                                network.state.value.online
+                                    .not() ||
+                                snapshot.failingLoads > 0
+                        ),
+            ),
+        )
+
+    /**
+     * Nothing has moved for [PlaybackWatch.STALL] (Q, `SPEC.md` § 4.29): the error screen, with
+     * « Réessayer », and what the player saw in « Plus d'infos ». Loads that kept failing are a lost
+     * connection ([PlaybackFailure.Network]); else the player stood still without an error
+     * ([PlaybackFailure.Stalled]).
+     */
+    private fun stalled(
+        snapshot: PlayerSnapshot,
+        verdict: PlaybackWatch.Verdict,
+    ) {
+        val stream = local.value.stream
+        val video = snapshot.video
+        val detail =
+            listOfNotNull(
+                "Playback stalled: no progress for ${verdict.stalledFor.inWholeSeconds} s at ${snapshot.position}",
+                "buffering, ${snapshot.buffered} buffered",
+                "${snapshot.loadsCompleted} loads completed" +
+                    (verdict.sinceLastLoad?.let { ", the last ${it.inWholeSeconds} s ago" } ?: ", none"),
+                stream?.let { "${it.method} in ${it.container}, ${it.maxBitrate ?: "auto"} b/s" },
+                video?.let { "video ${it.codec} ${it.width}×${it.height}, decoder ${it.decoder}" },
+                stream?.reasons?.takeIf { it.isNotEmpty() }?.joinToString(prefix = "reasons ") { it.name },
+                snapshot.lastLoadError?.let { "${snapshot.failingLoads} loads failed, the last: $it" },
+            ).joinToString(" · ")
+        GestureLog.mark("stalled")
+        failed(if (verdict.failing) PlaybackFailure.Network else PlaybackFailure.Stalled, detail)
     }
 
     /**
@@ -548,6 +605,7 @@ class PlayerViewModel(
                         maxBitrate = maxBitrate,
                     )
                 }
+                watch.reset()
                 player.load(stream, at, audioIndex, subtitleIndex)
                 reporter?.start()
             }
@@ -848,7 +906,6 @@ class PlayerViewModel(
 
         /** How long « Qualité réduite : réseau faible » stays. */
         val NOTICE = 5.seconds
-        val RECONNECTING = 3.seconds
         val CHAPTER_GRACE = 3.seconds
 
         /** The steps of a search, each held for [SCRUB_SPEED_UP] repeats of the key. */

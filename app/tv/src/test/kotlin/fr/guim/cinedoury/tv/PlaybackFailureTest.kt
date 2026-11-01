@@ -40,6 +40,7 @@ import org.robolectric.annotation.Config
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
@@ -205,6 +206,104 @@ class PlaybackFailureTest {
                 .last()
                 .allowDirect,
         )
+    }
+
+    @Test
+    fun aStartOfTenSecondsWithoutAFailedLoadShowsNoBanner() {
+        play(episodes[0])
+        // The server prepares the stream: the player waits, no load fails.
+        fake.buffering = true
+        repeat(40) {
+            advance(TICK)
+            assertFalse(model.state.value.reconnecting, "« Connexion au serveur perdue » after ${it + 1} steps")
+        }
+        assertTrue(model.state.value.buffering)
+        assertEquals(null, model.state.value.error)
+        // A slow server is a wait too: loads succeed, one now and then.
+        repeat(6) {
+            fake.loadsCompleted++
+            advance(5.seconds)
+            assertFalse(model.state.value.reconnecting)
+        }
+        assertEquals(null, model.state.value.error)
+    }
+
+    @Test
+    fun loadsThatFailShowTheBannerUntilOneSucceeds() {
+        play(episodes[0])
+        fake.buffering = true
+        fake.failingLoads = 2
+        advance(2.seconds)
+        assertFalse(model.state.value.reconnecting, "not for a single moment")
+        advance(2.seconds)
+        assertTrue(model.state.value.reconnecting)
+        fake.failingLoads = 0
+        fake.loadsCompleted++
+        advance(TICK)
+        assertFalse(model.state.value.reconnecting)
+        // Then each load hangs until its timeout and fails, for 30 s: the connection is lost, and said so.
+        fake.failingLoads = 1
+        fake.lastLoadError = "HttpDataSourceException: SocketTimeoutException: timeout"
+        advance(29.seconds)
+        assertTrue(model.state.value.reconnecting)
+        assertEquals(null, model.state.value.error)
+        advance(2.seconds)
+        val error = assertIs<PlayerError.Playback>(model.state.value.error)
+        assertEquals(PlaybackFailure.Network, error.failure)
+        assertTrue("SocketTimeoutException" in error.detail, error.detail)
+    }
+
+    @Test
+    fun aPlaybackThatNoLongerMovesEndsOnAnErrorWithRetry() {
+        val episode = episodes[0]
+        play(episode)
+        fake.position = 2.seconds
+        fake.loadsCompleted = 4
+        advance(TICK)
+        fake.buffering = true
+        advance(29.seconds)
+        assertEquals(null, model.state.value.error, "not before 30 s")
+        advance(2.seconds)
+        val error = assertIs<PlayerError.Playback>(model.state.value.error)
+        assertEquals(PlaybackFailure.Stalled, error.failure)
+        assertTrue("no progress for 30 s" in error.detail, error.detail)
+        assertTrue("4 loads completed" in error.detail, error.detail)
+        assertEquals(1, fake.stops, "the player stops behind the error")
+        assertEquals(
+            "stopped",
+            source.playback.reports
+                .last()
+                .first,
+        )
+        // « Réessayer »: from where it stood.
+        val loads = fake.loads.size
+        fake.buffering = false
+        model.retry()
+        waitUntil("a new load") { fake.loads.size > loads && model.state.value.error == null }
+        assertEquals(2.seconds, fake.loads.last().start)
+    }
+
+    @Test
+    fun aPausedSlowOrMovingPlaybackIsNeverStalled() {
+        play(episodes[0])
+        fake.buffering = true
+        // Paused while it loads: nothing is expected to move.
+        model.pause()
+        advance(1.minutes)
+        assertEquals(null, model.state.value.error)
+        model.play()
+        // Loads that succeed now and then: the stream comes, slowly.
+        repeat(8) {
+            fake.loadsCompleted++
+            advance(20.seconds)
+        }
+        assertEquals(null, model.state.value.error)
+        // The position moves while the player loads.
+        repeat(80) {
+            fake.position += 1.seconds
+            advance(1.seconds)
+        }
+        assertEquals(null, model.state.value.error)
     }
 
     private companion object {

@@ -78,6 +78,16 @@ data class PlayerSnapshot(
     val bandwidth: Long? = null,
     /** The margin of the phone (M2, `SPEC.md` § 4.27); null on the TV. */
     val margin: MarginStatus? = null,
+    /** What the buffer holds on the Java heap, in bytes (R, `SPEC.md` § 4.29); 0 in tests. */
+    val bufferBytes: Long = 0,
+    /** The player means to play: not paused by the user, nor stopped (`SPEC.md` § 4.29). */
+    val playWhenReady: Boolean = true,
+    /** The loads of the stream that succeeded since [VideoPlayer.load] (segments, playlists, file). */
+    val loadsCompleted: Int = 0,
+    /** The loads that failed since the last one that succeeded: the connection is really lost (N). */
+    val failingLoads: Int = 0,
+    /** Why the last load failed, for « Plus d'infos »; null while loads succeed. */
+    val lastLoadError: String? = null,
 )
 
 /**

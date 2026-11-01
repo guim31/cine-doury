@@ -116,6 +116,7 @@ fun PlaybackFailure.message(): String =
         when (this) {
             PlaybackFailure.Network -> R.string.player_error_network
             PlaybackFailure.Server -> R.string.player_error_server
+            PlaybackFailure.Stalled -> R.string.player_error_stalled
             else -> R.string.player_error_decoder
         },
     )

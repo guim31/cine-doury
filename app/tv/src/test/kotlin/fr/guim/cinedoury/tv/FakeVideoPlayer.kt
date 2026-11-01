@@ -24,6 +24,13 @@ class FakeVideoPlayer : VideoPlayer {
     var playing = false
     var released = false
 
+    /** The player waits for its stream, the loads that succeeded, and those failing since (N, Q). */
+    var buffering = false
+    var loadsCompleted = 0
+    var failingLoads = 0
+    var playWhenReady = true
+    var lastLoadError: String? = null
+
     /** How many times the player was stopped (an error shown). */
     var stops = 0
 
@@ -42,14 +49,17 @@ class FakeVideoPlayer : VideoPlayer {
         loads += Load(stream, start, audioIndex, subtitleIndex)
         position = start
         playing = true
+        playWhenReady = true
     }
 
     override fun play() {
         playing = true
+        playWhenReady = true
     }
 
     override fun pause() {
         playing = false
+        playWhenReady = false
     }
 
     override fun stop() {
@@ -65,7 +75,17 @@ class FakeVideoPlayer : VideoPlayer {
 
     override fun selectSubtitles(index: Int?): Boolean = tracksInStream
 
-    override fun snapshot() = PlayerSnapshot(position = position, duration = duration, playing = playing)
+    override fun snapshot() =
+        PlayerSnapshot(
+            position = position,
+            duration = duration,
+            playing = playing,
+            buffering = buffering,
+            playWhenReady = playWhenReady,
+            loadsCompleted = loadsCompleted,
+            failingLoads = failingLoads,
+            lastLoadError = lastLoadError,
+        )
 
     override fun release() {
         released = true

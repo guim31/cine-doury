@@ -16,6 +16,9 @@ package fr.guim.cinedoury.core.model
  * HEVC is allowed, `ts` otherwise.
  * @param subtitles how each subtitle format reaches the player; the others are drawn into the
  * picture by the server.
+ * @param transcodeMaxWidth the widest picture the server encodes: the long side of the screen (O,
+ * `SPEC.md` § 4.29). A picture played directly or copied keeps its size: the device scales it.
+ * @param transcodeMaxHeight the tallest: the short side of the screen.
  */
 data class PlaybackProfile(
     val name: String,
@@ -28,7 +31,52 @@ data class PlaybackProfile(
     val transcodeAudioCodecs: List<String>,
     val transcodeContainer: String,
     val subtitles: List<SubtitleRule>,
-)
+    val transcodeMaxWidth: Int = TranscodeBitrates.UHD_WIDTH,
+    val transcodeMaxHeight: Int = TranscodeBitrates.UHD_HEIGHT,
+) {
+    /**
+     * The most the server encodes at with the quality « Automatique » (O, `SPEC.md` § 4.29): by the
+     * size of the screen, for the least efficient codec the server may choose; never more than
+     * [maxBitrate]. A quality chosen by the user is not capped (the source leaves it out).
+     */
+    val transcodeAutoBitrate: Int
+        get() = minOf(TranscodeBitrates.cap(transcodeVideoCodecs, transcodeMaxHeight), maxBitrate)
+}
+
+/**
+ * The bitrate of a picture the server encodes again, with the quality « Automatique » (O, `SPEC.md`
+ * § 4.29), by the height of the screen (the short side) and the codec. Jellyfin otherwise follows the
+ * file: a 4K HEVC encoded again into H.264 came at 42 Mb/s for a 1080p screen. H.264 1080p at
+ * 20 Mb/s is a clean Blu-ray-like picture; HEVC needs about 60 % of that.
+ */
+object TranscodeBitrates {
+    const val UHD_WIDTH = 3840
+    const val UHD_HEIGHT = 2160
+    private const val HD = 720
+    private const val FULL_HD = 1080
+    private const val QHD = 1440
+
+    /** Height of the screen → (H.264, HEVC). */
+    private val STEPS =
+        listOf(
+            HD to (8_000_000 to 5_000_000),
+            FULL_HD to (20_000_000 to 12_000_000),
+            QHD to (30_000_000 to 18_000_000),
+            Int.MAX_VALUE to (40_000_000 to 25_000_000),
+        )
+
+    /**
+     * The cap for a screen [height] pixels tall, when the server encodes to one of [codecs]: the server
+     * chooses among them (HEVC only if it may encode it), so the least efficient one sets the cap.
+     */
+    fun cap(
+        codecs: List<String>,
+        height: Int,
+    ): Int {
+        val (h264, hevc) = STEPS.first { height <= it.first }.second
+        return if (codecs.isEmpty() || codecs.any { !it.equals("hevc", ignoreCase = true) }) h264 else hevc
+    }
+}
 
 /**
  * A video codec played directly, within limits: the server transcodes what goes beyond them.
@@ -141,6 +189,9 @@ object PlaybackProfiles {
     private const val DOLBY_VISION_SINGLE_LAYER = 5
     private const val DOLBY_VISION_COMPATIBLE = 8
 
+    /** The profiles the server should encode with first, the best compressed. */
+    private val ENCODED_FIRST = listOf("high", "main")
+
     private val SOFTWARE_LIMITED = setOf(VideoCodec.Hevc, VideoCodec.Av1, VideoCodec.Vp9)
     private val CODEC_NAMES =
         mapOf(
@@ -193,6 +244,8 @@ object PlaybackProfiles {
             transcodeAudioCodecs = transcodeAudio,
             transcodeContainer = if (hevc != null) "mp4" else "ts",
             subtitles = subtitleRules(device.subtitleFormats, options.burnInAss),
+            transcodeMaxWidth = maxOf(device.display.width, device.display.height),
+            transcodeMaxHeight = minOf(device.display.width, device.display.height),
         )
     }
 
@@ -221,11 +274,13 @@ object PlaybackProfiles {
         return VideoRule(
             codec = name,
             // A decoder of the Baseline profile reads its constrained subset, which the server names apart.
+            // The first is the one Jellyfin encodes with: « high » before « baseline » (O, `SPEC.md`
+            // § 4.29; the Chromecast had a 4K film encoded again in Baseline).
             profiles =
                 (
                     decoder.profiles +
                         if ("baseline" in decoder.profiles) setOf("constrained baseline") else emptySet()
-                ).sorted(),
+                ).sortedWith(compareBy({ encodeRank(it) }, { it })),
             maxLevel = decoder.maxLevel,
             maxWidth = if (limited) minOf(decoder.maxWidth, SOFTWARE_MAX_WIDTH) else decoder.maxWidth,
             maxHeight = if (limited) minOf(decoder.maxHeight, SOFTWARE_MAX_HEIGHT) else decoder.maxHeight,
@@ -233,6 +288,9 @@ object PlaybackProfiles {
             ranges = ranges(device, decoder.codec, tenBit),
         )
     }
+
+    private fun encodeRank(profile: String): Int =
+        ENCODED_FIRST.indexOf(profile).takeIf { it >= 0 } ?: ENCODED_FIRST.size
 
     private fun ranges(
         device: DeviceCapabilities,

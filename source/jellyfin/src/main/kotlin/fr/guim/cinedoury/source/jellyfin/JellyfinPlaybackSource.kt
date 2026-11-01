@@ -77,7 +77,8 @@ internal class JellyfinPlaybackSource(
                             subtitleStreamIndex = request.subtitleIndex ?: NO_SUBTITLES,
                             maxAudioChannels = request.profile.maxAudioChannels,
                             mediaSourceId = request.sourceId,
-                            deviceProfile = request.profile.toDeviceProfile(),
+                            // No cap on a quality the user chose (O, `SPEC.md` § 4.29).
+                            deviceProfile = request.profile.toDeviceProfile(automatic = request.maxBitrate == null),
                             enableDirectPlay = request.allowDirect,
                             enableDirectStream = request.allowDirect,
                             enableTranscoding = true,
