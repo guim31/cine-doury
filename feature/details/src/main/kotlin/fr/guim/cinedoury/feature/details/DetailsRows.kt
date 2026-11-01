@@ -32,6 +32,7 @@ import fr.guim.cinedoury.core.designsystem.component.RowTitle
 import fr.guim.cinedoury.core.designsystem.component.SecondaryButton
 import fr.guim.cinedoury.core.designsystem.component.rememberCineFocus
 import fr.guim.cinedoury.core.designsystem.theme.CineSpacing
+import fr.guim.cinedoury.core.model.Credit
 import fr.guim.cinedoury.core.model.CreditType
 import fr.guim.cinedoury.core.model.ItemImages
 import fr.guim.cinedoury.core.model.ItemKind
@@ -79,21 +80,34 @@ private const val ROW_SIMILAR = "similar"
 private const val ROW_MOVIES = "movies"
 private const val ROW_SERIES = "series"
 
+/**
+ * The cast as cards, one per person. The server gives one credit per role, with the same person id
+ * (an actor who plays three characters comes three times): the cards of a row are keyed by that id,
+ * so a person keeps one card, where they first appear, with their roles joined by [separator],
+ * each once. A blank role adds nothing.
+ */
+internal fun List<Credit>.castCards(separator: String): List<MediaItem> =
+    filter { it.type == CreditType.Actor || it.type == CreditType.GuestStar }
+        .groupBy { it.id }
+        .map { (id, credits) ->
+            MediaItem(
+                id = id,
+                kind = ItemKind.Person,
+                title = credits.first().name,
+                overview =
+                    credits
+                        .mapNotNull { it.role?.trim()?.ifEmpty { null } }
+                        .distinct()
+                        .joinToString(separator)
+                        .ifEmpty { null },
+                images = ItemImages(primary = credits.firstNotNullOfOrNull { it.image }),
+            )
+        }
+
 /** The rows of a details screen: cast, saga, similar titles, the works of a person. */
 @Composable
 internal fun DetailsState.detailRows(): List<DetailsRow> {
-    val cast =
-        item.people
-            .filter { it.type == CreditType.Actor || it.type == CreditType.GuestStar }
-            .map { credit ->
-                MediaItem(
-                    id = credit.id,
-                    kind = ItemKind.Person,
-                    title = credit.name,
-                    overview = credit.role,
-                    images = ItemImages(primary = credit.image),
-                )
-            }
+    val cast = item.people.castCards(stringResource(R.string.roles_separator))
     return listOfNotNull(
         DetailsRow(ROW_MOVIES, stringResource(R.string.row_movies), filmography.filter { it.kind == ItemKind.Movie }),
         DetailsRow(ROW_SERIES, stringResource(R.string.row_series), filmography.filter { it.kind == ItemKind.Series }),
