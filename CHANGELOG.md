@@ -6,6 +6,13 @@ technique est dans [`docs/SPEC.md`](docs/SPEC.md) ; les notes de chaque version 
 
 ## Non publié
 
+## 1.0.4 — 01/11/2026
+
+Notes de version : [`docs/releases/v1.0.4.md`](docs/releases/v1.0.4.md).
+
+Une fiche où un même acteur tient plusieurs rôles ne ferme plus l'appli : une seule carte par personne,
+avec ses rôles réunis.
+
 ## 1.0.3 — 01/11/2026
 
 Notes de version : [`docs/releases/v1.0.3.md`](docs/releases/v1.0.3.md).
