@@ -36,6 +36,7 @@ class MobileDetailsCastTest {
     @Test
     fun `an actor with three roles has one card on the details screen`() {
         val samples = MobileSamples
+
         fun actor(role: String?) = Credit(ItemId("p1"), "Inès Garnier", CreditType.Actor, role = role)
         val film =
             samples.film.item.copy(

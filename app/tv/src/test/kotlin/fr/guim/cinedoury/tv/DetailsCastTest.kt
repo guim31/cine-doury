@@ -57,7 +57,8 @@ class DetailsCastTest {
         }
         assertEquals(1, compose.onAllNodesWithText(actor.name).fetchSemanticsNodes().size)
         // The second card is the second person.
-        compose.onNode(hasText(people[1].name) and hasAnyAncestor(hasTestTag(DetailsPreview.card("cast", 1))))
+        compose
+            .onNode(hasText(people[1].name) and hasAnyAncestor(hasTestTag(DetailsPreview.card("cast", 1))))
             .assertExists()
     }
 
