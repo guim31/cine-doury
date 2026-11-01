@@ -32,6 +32,8 @@
     <string name="row_movies">Films</string>
     <string name="row_series">Séries</string>
     <string name="row_cast">Distribution</string>
+    <!-- Between the roles of an actor who plays several (« Rôle A, Rôle B »). -->
+    <string name="roles_separator">", "</string>
     <string name="row_collection">Dans la saga</string>
     <string name="row_similar">Titres similaires</string>
     <string name="row_episodes">Épisodes</string>
