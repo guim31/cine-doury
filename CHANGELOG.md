@@ -6,6 +6,10 @@ technique est dans [`docs/SPEC.md`](docs/SPEC.md) ; les notes de chaque version 
 
 ## Non publié
 
+## 1.0.3 — 01/11/2026
+
+Notes de version : [`docs/releases/v1.0.3.md`](docs/releases/v1.0.3.md).
+
 Transcodage à la taille de l'écran (Chromecast sur une télé 1080p SDR, les deux applis) :
 
 - **« Connexion au serveur perdue »** ne s'affiche plus au démarrage d'un film transcodé ni quand le
