@@ -55,4 +55,21 @@
     <string name="file_added">Ajouté le %1$s</string>
     <string name="file_no_ids">Aucun identifiant de fournisseur</string>
     <string name="file_id">%1$s\u00A0: %2$s</string>
+    <!-- Fiches vides: a folder, an item with nothing to play. -->
+    <string name="row_folder">Dans ce dossier</string>
+    <string name="nothing_to_play">Rien à lire ici pour le moment</string>
+    <string name="kind_movie">Film</string>
+    <string name="kind_series">Série</string>
+    <string name="kind_season">Saison</string>
+    <string name="kind_episode">Épisode</string>
+    <string name="kind_collection">Saga</string>
+    <string name="kind_person">Personne</string>
+    <string name="kind_video">Vidéo</string>
+    <string name="kind_folder">Dossier</string>
+    <string name="kind_other">Élément d\'un autre type</string>
+    <plurals name="children_count">
+        <item quantity="one">%1$d élément</item>
+        <item quantity="many">%1$d éléments</item>
+        <item quantity="other">%1$d éléments</item>
+    </plurals>
 </resources>

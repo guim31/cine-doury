@@ -239,6 +239,7 @@ fun DetailsScreen(
                         )
                     }
                     episodes(state, sources, actions, open, requesters) { focused = it }
+                    children(state, sources, open, requesters) { focused = it }
                     rows(state, sources, open, requesters) { focused = it }
                 }
             }
