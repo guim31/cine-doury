@@ -17,7 +17,9 @@ import fr.guim.cinedoury.core.data.di.dataModule
 import fr.guim.cinedoury.core.data.security.TokenCipher
 import fr.guim.cinedoury.core.designsystem.theme.CineTheme
 import fr.guim.cinedoury.core.designsystem.theme.ThemeVariant
+import fr.guim.cinedoury.core.model.ImageType
 import fr.guim.cinedoury.core.model.ItemId
+import fr.guim.cinedoury.core.model.ItemImages
 import fr.guim.cinedoury.core.model.ItemKind
 import fr.guim.cinedoury.core.model.Library
 import fr.guim.cinedoury.core.model.LibraryId
@@ -249,13 +251,20 @@ internal object EmptyDetailsSamples {
             kind = ItemKind.Video,
             title = title,
             people = emptyList(),
+            images = ItemImages(primary = SampleArt.image(title, ImageType.Primary)),
             mediaSources = J3Samples.phare.mediaSources.map { it.copy(id = "src-$title") },
         )
 
     private fun folder(
         title: String,
         count: Int,
-    ) = MediaItem(id = ItemId("folder-$title"), kind = ItemKind.Folder, title = title, childCount = count)
+    ) = MediaItem(
+        id = ItemId("folder-$title"),
+        kind = ItemKind.Folder,
+        title = title,
+        childCount = count,
+        images = ItemImages(primary = SampleArt.image(title, ImageType.Primary)),
+    )
 
     val alone = video("Anniversaire")
     val many = listOf(video("Plage, matin"), video("Plage, soir"), video("Plage, nuit"))

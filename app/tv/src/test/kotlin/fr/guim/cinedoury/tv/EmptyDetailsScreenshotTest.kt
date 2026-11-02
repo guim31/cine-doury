@@ -67,7 +67,7 @@ class EmptyDetailsScreenshotTest {
             Details(J3Samples.series.copy(season = ItemId("Les Marées-s2")))
         }
 
-    private val folder = EmptyDetailsSamples.manyFolder.copy(images = J3Samples.phare.images.copy(logo = null))
+    private val folder = EmptyDetailsSamples.manyFolder
 
     /** T, before: a folder of home videos, nothing under its title. */
     @Test

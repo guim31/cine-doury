@@ -250,9 +250,9 @@ private fun moreLines(
             add(
                 PanelLine.Choice(
                     "why",
-                    stringResource(R.string.nothing_to_play),
+                    why,
                     {},
-                    description = why,
+                    description = stringResource(R.string.nothing_to_play),
                     icon = CineIcons.Info,
                 ),
             )

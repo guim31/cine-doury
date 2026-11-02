@@ -98,8 +98,8 @@ class MobileEmptyDetailsTest {
                 ),
             extras =
                 MobileSamples.episodes +
-                    MobileSamples.seasons.mapIndexed { index, it ->
-                        it.copy(
+                    MobileSamples.seasons.mapIndexed { index, season ->
+                        season.copy(
                             episode =
                                 EpisodeInfo(
                                     MobileSamples.show.id,
