@@ -216,8 +216,15 @@ class LibraryViewModel(
         val kinds =
             when {
                 browse.tab == LibraryTab.Collections -> setOf(ItemKind.Collection)
+
                 kind() == LibraryKind.Movies -> setOf(ItemKind.Movie)
+
                 kind() == LibraryKind.Shows -> setOf(ItemKind.Series)
+
+                // A library of home videos lists its folders (fiches vides); its filters look at the
+                // videos inside them, which the folders do not carry (genres, the local index).
+                !browse.filters.isEmpty -> FILTERED_KINDS
+
                 else -> emptySet()
             }
         val collections = browse.tab == LibraryTab.All && kind() == LibraryKind.Movies && browse.groupCollections
@@ -462,6 +469,9 @@ class LibraryViewModel(
         const val DIGITS = "#"
         val LETTERS = listOf(DIGITS) + ('A'..'Z').map { it.toString() }
         private const val NEXT_UP_LIMIT = 100
+
+        /** What the filters of a library of home videos, or of any folders, search the whole library for. */
+        private val FILTERED_KINDS = setOf(ItemKind.Movie, ItemKind.Series, ItemKind.Video)
         private const val SAVE_DELAY_MILLIS = 500L
         private const val SCAN_POLL_MILLIS = 1_000L
         private const val NOTICE_MILLIS = 4_000L

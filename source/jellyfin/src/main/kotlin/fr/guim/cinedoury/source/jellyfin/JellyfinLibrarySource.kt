@@ -313,6 +313,27 @@ internal class JellyfinLibrarySource(
                 .map { it.toMediaItem() }
         }
 
+    override suspend fun children(
+        folder: ItemId,
+        limit: Int,
+    ): List<MediaItem> =
+        jellyfinCall(what = "children of ${folder.value}") {
+            api.libraryApi
+                .getItems(
+                    userId = userId,
+                    parentId = folder.value.toJellyfinUuid(),
+                    sortBy = listOf(ItemSortBy.IS_FOLDER, ItemSortBy.SORT_NAME),
+                    sortOrder = listOf(SortOrder.ASCENDING),
+                    limit = limit,
+                    fields = LIST_FIELDS,
+                    enableUserData = true,
+                    enableImageTypes = IMAGE_TYPES,
+                    imageTypeLimit = 1,
+                    enableTotalRecordCount = false,
+                ).content.items
+                .map { it.toMediaItem() }
+        }
+
     override suspend fun filmography(person: ItemId): List<MediaItem> =
         jellyfinCall(what = "filmography of ${person.value}") {
             api.libraryApi
@@ -486,7 +507,8 @@ internal class JellyfinLibrarySource(
                         userId = userId,
                         parentId = library.value.toJellyfinUuid(),
                         recursive = true,
-                        includeItemTypes = listOf(BaseItemKind.MOVIE, BaseItemKind.EPISODE),
+                        // The videos of a library of home videos too, for its filters (fiches vides).
+                        includeItemTypes = listOf(BaseItemKind.MOVIE, BaseItemKind.EPISODE, BaseItemKind.VIDEO),
                         // Within one sort title, the date the item was added: a stable order for paging.
                         sortBy = listOf(ItemSortBy.SORT_NAME, ItemSortBy.DATE_CREATED),
                         sortOrder = listOf(SortOrder.ASCENDING),

@@ -91,6 +91,7 @@ import fr.guim.cinedoury.feature.details.detailRows
 import fr.guim.cinedoury.feature.details.detailsLine
 import fr.guim.cinedoury.feature.details.episodeLine
 import fr.guim.cinedoury.feature.details.hasMainButton
+import fr.guim.cinedoury.feature.details.nothingCause
 import fr.guim.cinedoury.feature.details.numberedTitle
 import fr.guim.cinedoury.feature.details.playLabel
 import org.koin.androidx.compose.koinViewModel
@@ -109,6 +110,10 @@ object MobileDetailsTags {
     const val FAVORITE = "details-favorite"
     const val SERIES = "details-series"
     const val OVERVIEW = "details-overview"
+    const val NOTHING = "details-nothing"
+    const val CHILDREN = "details-children"
+
+    fun child(index: Int) = "details-child-$index"
 
     fun season(index: Int) = "details-season-$index"
 
@@ -171,6 +176,12 @@ fun MobileDetailsScreen(
             }
             if (item.kind == ItemKind.Series || item.kind == ItemKind.Season) {
                 episodes(state, sources, actions, navigation, menu, gutter)
+            }
+            if (state.nothingToPlay) {
+                item(key = "nothing", contentType = "nothing") { NothingToPlay(state, gutter) }
+            }
+            if (!state.children.isNullOrEmpty()) {
+                item(key = "children", contentType = "children") { Children(state, sources, navigation, menu, gutter) }
             }
             item(key = "rows", contentType = "rows") {
                 Rows(state, sources, navigation, menu, gutter)
@@ -523,6 +534,56 @@ private fun Rows(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+/**
+ * « Rien à lire ici pour le moment », and why under it (fiches vides): the phone has no « ⋯ » panel,
+ * the cause shows in place.
+ */
+@Composable
+private fun NothingToPlay(
+    state: DetailsState,
+    gutter: Dp,
+) {
+    Column(
+        Modifier.padding(horizontal = gutter).testTag(MobileDetailsTags.NOTHING),
+        verticalArrangement = Arrangement.spacedBy(CineSpacing.xs),
+    ) {
+        Text(
+            stringResource(R.string.nothing_to_play),
+            style = CineTheme.typography.body,
+            color = CineTheme.colors.text,
+        )
+        Text(state.nothingCause(), style = CineTheme.typography.caption, color = CineTheme.colors.text2)
+    }
+}
+
+/** What a folder holds, in a grid of cards (fiches vides): each opens its own details. */
+@Composable
+private fun Children(
+    state: DetailsState,
+    sources: ImageSources,
+    navigation: DetailsNavigation,
+    menu: MobileQuickMenu,
+    gutter: Dp,
+) {
+    Column(Modifier.padding(horizontal = gutter).testTag(MobileDetailsTags.CHILDREN)) {
+        MobileRowTitle(stringResource(R.string.row_folder))
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(CineSpacing.s),
+            verticalArrangement = Arrangement.spacedBy(CineSpacing.s),
+        ) {
+            state.children.orEmpty().forEachIndexed { index, card ->
+                MobileItemCard(
+                    card,
+                    sources,
+                    { navigation.open(card) },
+                    menu = menu,
+                    tag = MobileDetailsTags.child(index),
+                )
             }
         }
     }

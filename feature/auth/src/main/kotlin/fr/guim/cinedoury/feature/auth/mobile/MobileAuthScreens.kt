@@ -86,6 +86,9 @@ object MobileAuthTags {
     const val CODE = "auth-code"
     const val OTHER_ACCOUNT = "auth-other-account"
 
+    /** « Ajouter une adresse à distance » on the failure at start (V). */
+    const val REMOTE_ADDRESS = "auth-remote-address"
+
     fun server(index: Int) = "auth-server-$index"
 
     fun profile(name: String) = "auth-profile-$name"
@@ -282,21 +285,44 @@ fun MobileAddressScreen(
     }
 }
 
-/** At start, the saved server did not answer at either address: what happened, and what to do. */
+/**
+ * At start, the saved server did not answer at either address: what happened, and what to do. Away
+ * from home a phone needs the remote address of the server (V): without one, the message says so and
+ * « Ajouter une adresse à distance » opens the address screen; with one, both addresses were tried, and
+ * « Modifier l'adresse à distance » corrects it. The TV keeps its own screen and words.
+ */
 @Composable
 fun MobileUnreachableScreen(
     serverName: String,
     error: SourceException,
     onRetry: () -> Unit,
     onChangeServer: () -> Unit,
+    hasRemote: Boolean = false,
+    onRemoteAddress: (() -> Unit)? = null,
 ) {
     MobileFormScreen(brand = stringResource(UiR.string.brand_name), title = serverName) {
+        val message =
+            if (error is SourceException.Unreachable) {
+                stringResource(
+                    if (hasRemote) R.string.mobile_unreachable_both else R.string.mobile_unreachable_no_remote,
+                )
+            } else {
+                null
+            }
         MobileSourceError(
             error = error,
             onRetry = onRetry,
             secondaryLabel = stringResource(R.string.change_server),
             onSecondary = onChangeServer,
+            message = message,
         )
+        onRemoteAddress?.let {
+            MobileSecondaryButton(
+                stringResource(if (hasRemote) R.string.mobile_edit_remote else R.string.mobile_add_remote),
+                it,
+                Modifier.fillMaxWidth().testTag(MobileAuthTags.REMOTE_ADDRESS),
+            )
+        }
     }
 }
 

@@ -3,6 +3,7 @@ package fr.guim.cinedoury.feature.details
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
@@ -69,6 +70,10 @@ internal fun DetailsState.firstRowKey(): String? =
             ROW_SAGA.takeIf { sagaItems.isNotEmpty() }
         }
 
+        ItemKind.Folder, ItemKind.Other -> {
+            ROW_CHILDREN.takeIf { !children.isNullOrEmpty() }
+        }
+
         else -> {
             null
         }
@@ -79,6 +84,7 @@ private const val ROW_SAGA = "saga"
 private const val ROW_SIMILAR = "similar"
 private const val ROW_MOVIES = "movies"
 private const val ROW_SERIES = "series"
+internal const val ROW_CHILDREN = "children"
 
 /**
  * The cast as cards, one per person. The server gives one credit per role, with the same person id
@@ -319,6 +325,61 @@ private fun Seasons(
                 focus = rememberCineFocus(DetailsPreview.SEASON_WATCHED),
                 modifier = Modifier.padding(start = CineSpacing.m).testTag(DetailsPreview.SEASON_WATCHED),
             )
+        }
+    }
+}
+
+/**
+ * What a folder holds, in a grid of cards (fiches vides, T): its videos and its folders, each opening
+ * its own details. The card that had the focus gets it back, as in a row.
+ */
+internal fun LazyListScope.children(
+    state: DetailsState,
+    sources: ImageSources,
+    onOpen: (MediaItem) -> Unit,
+    requesters: FocusRequesters,
+    onFocused: (String) -> Unit,
+) {
+    val items = state.children.orEmpty()
+    if (items.isEmpty()) return
+    item(key = ROW_CHILDREN, contentType = ROW_CHILDREN) {
+        var last by rememberSaveable(ROW_CHILDREN) { mutableIntStateOf(0) }
+        val key = rowKey(ROW_CHILDREN)
+        val restore = requesters[key]
+        Column(
+            verticalArrangement = Arrangement.spacedBy(CineSpacing.rowTitleGap),
+            modifier = Modifier.padding(horizontal = CineSpacing.safeHorizontal).testTag(key),
+        ) {
+            RowTitle(stringResource(R.string.row_folder))
+            FlowRow(
+                modifier = Modifier.focusRestorer(restore).focusGroup(),
+                horizontalArrangement = Arrangement.spacedBy(CineSpacing.m),
+                verticalArrangement = Arrangement.spacedBy(CineSpacing.m),
+            ) {
+                items.forEachIndexed { index, item ->
+                    val tag = DetailsPreview.card(ROW_CHILDREN, index)
+                    PosterCard(
+                        title = item.cardTitle,
+                        subtitle = item.cardSubtitle(),
+                        progress = item.progress,
+                        unwatched = item.isUnwatched,
+                        onClick = { onOpen(item) },
+                        focusRequester = restore.takeIf { index == last.coerceAtMost(items.lastIndex) },
+                        focus = rememberCineFocus(tag),
+                        image = rememberArt(item.posterImage, sources),
+                        modifier =
+                            Modifier
+                                .testTag(tag)
+                                .quickMenu(item, anchor = "$ROW_CHILDREN/${item.id.value}")
+                                .onFocusChanged {
+                                    if (it.hasFocus) {
+                                        last = index
+                                        onFocused(key)
+                                    }
+                                },
+                    )
+                }
+            }
         }
     }
 }

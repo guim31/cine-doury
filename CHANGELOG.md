@@ -6,6 +6,20 @@ technique est dans [`docs/SPEC.md`](docs/SPEC.md) ; les notes de chaque version 
 
 ## Non publié
 
+Fiches vides (les deux applis) :
+
+- **Une saison des nouveautés** (« Saison 3 » d'une série où plusieurs épisodes sont arrivés) ouvre la
+  fiche de la série sur cette saison, avec ses épisodes et « Reprendre » ; sa carte porte le nom de la série.
+- **Un dossier de vidéos perso** qui ne contient qu'une vidéo ouvre la fiche de cette vidéo, prête à lire ;
+  un dossier qui en contient plusieurs les montre en grille. Les filtres d'une bibliothèque de vidéos perso
+  cherchent dans ses dossiers.
+- **Une fiche sans rien à lire** le dit (« Rien à lire ici pour le moment »), et pourquoi dans « ⋯ ».
+
+Téléphone hors de la maison : quand le serveur ne répond pas au démarrage et qu'il n'a pas d'adresse à
+distance, l'écran le dit et propose « Ajouter une adresse à distance » ; le profil s'ouvre ensuite sans
+nouvelle connexion. Avec une adresse à distance, il dit qu'aucune des deux ne répond et propose de la
+modifier.
+
 ## 1.0.4 — 01/11/2026
 
 Notes de version : [`docs/releases/v1.0.4.md`](docs/releases/v1.0.4.md).

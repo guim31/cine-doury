@@ -32,6 +32,7 @@ son domaine :
 | M2 — Lecteur nomade (marge en mémoire puis sur disque, coupures traversées, bascule d'adresse en lecture, qualité selon le réseau et adaptative, gestes, cadenas, rotation, image dans l'image, focus audio ; la TV ne change pas) ; F, adresse à distance et joignabilité sur le téléphone ; G, remux H.264 en segments TS et erreur de format (les deux applis) | en revue (§ 4.27 ; captures dans `docs/screenshots/m2/`, numéros 240 à 253) | [#19](https://github.com/guim31/cine-doury/pull/19) |
 | Fausse erreur de lecture (31/10/2026, Chromecast en 1.0.1 et téléphone) : un transcodage au son copié (AVI en MPEG-4 et MP3) n'affiche plus d'erreur au lancement ; une erreur affichée arrête le lecteur ; AVI de test sur l'émulateur | en revue (§ 4.28) | — |
 | Transcodage à la taille de l'écran (31/10/2026, Chromecast en 1.0.2 sur télé 1080p SDR) : N, bandeau « Connexion perdue » seulement sur des chargements en échec ; O, réencodage jamais plus grand que l'écran, débit plafonné en « Automatique », H.264 High ; P, HDR lu sur le mode courant de l'écran (API 34), tone mapping direct sur écran SDR ; Q, une lecture figée 30 s finit sur une erreur ; R, tampon de la TV borné à 40 % du tas (la Shield se fermait par manque de mémoire en lecture directe 4K) | en revue (§ 4.29) | — |
+| Fiches vides (02/11/2026, téléphone en essai, logique partagée avec la TV) : S, une saison d'« Ajouts récents » ouvre la fiche de sa série sur elle ; T, un dossier à une vidéo ouvre cette vidéo, un dossier à plusieurs montre son contenu en grille, filtres et index local des vidéos perso ; U, une fiche sans rien à lire le dit, et pourquoi dans « ⋯ » ; V, téléphone hors de la maison : adresse à distance ajoutée depuis l'écran « Le serveur ne répond pas » | en revue (§ 4.30 et 4.31 ; captures dans `docs/screenshots/fiches-vides/`) | — |
 
 *(Chaque jalon met à jour ce tableau et ajoute ses contrats au § 4.)*
 
@@ -2678,6 +2679,78 @@ E-AC3 vers l'ampli) en lecture directe démarre, se fige, repart, puis l'appli s
   tas utilisé de 86 à 93 Mo sur 192 pendant la minute de lecture, sans attente après le démarrage. C'est le
   processus de test (lecteur seul, sans l'interface de l'appli) : l'appli entière ajoute ses écrans et ses
   caches, que les 115 Mo restants couvrent.
+
+### 4.30 Fiches vides (02/11/2026)
+
+Le mainteneur ouvrait des fiches sans « Lire », sans saisons ni épisodes : affiche, titre, cœur et coche.
+Deux causes, établies sur le vrai serveur (Jellyfin 12.3), aucune dans les fichiers.
+
+- **S. Saison.** `GET /Items/Latest` (`groupItems=true`) regroupe les nouveaux épisodes **en saisons** :
+  une bibliothèque de séries rend des `Season` parmi ses `Series`. La fiche d'une saison n'avait rien
+  (`DetailsViewModel.loadAround` ne la traitait pas). Une saison ouvre désormais **la fiche de sa série,
+  sur elle** (onglet choisi, épisodes de la saison, « Reprendre » de la série). Fait **dans le
+  `DetailsViewModel`** (la carte de la série tirée de la saison, `MediaItem.seriesCard()` de
+  `:core:model`, partagé avec « Aller à la série ») plutôt que dans les navigations : une seule place
+  pour la TV et le téléphone et pour toutes les entrées (cartes, mosaïque « Ce soir », menu de l'appui
+  long, recherche), et « Retour » ne quitte qu'un écran. Les cartes d'une saison portent le nom de la
+  série, « Saison 3 » dessous (`cardTitle`, `cardSubtitle`, ligne de la mosaïque). Le menu de l'appui
+  long propose « Ouvrir la fiche » sur une saison, sauf sur la fiche de sa série, où elle est un onglet
+  (`QuickOptions.of(seasonsOpen = false)`). Une saison sans série connue reste possible : U.
+- **T. Dossier.** Une bibliothèque `homevideos` (`/perso/<Titre>/<Titre>.mp4`) montre à sa racine des
+  `Folder` d'une seule `Video`. Le dossier reste dans la grille de la bibliothèque (le remplacer par sa
+  vidéo demanderait une requête par dossier) ; **à l'ouverture**, le `DetailsViewModel` lit son contenu
+  (`LibrarySource.children`, `/Items?parentId=`, vidéos puis dossiers, 200 au plus) : **une seule vidéo**
+  (film, épisode ou vidéo), et la fiche est celle de cette vidéo, lisible ; sinon le contenu s'affiche en
+  **grille** sous le titre (« Dans ce dossier »), chaque carte ouvrant sa fiche, le focus rendu à la carte
+  au retour. `ItemKind.Other` (types que l'appli ne connaît pas) suit la même voie.
+  **Filtres** : sans kinds, la requête d'une bibliothèque liste ses enfants directs (des dossiers, sans
+  genres ni pistes) ; un filtre actif sur une bibliothèque qui n'est ni de films ni de séries cherche donc
+  dans toute la bibliothèque les films, séries et vidéos (`LibraryViewModel`, `FILTERED_KINDS`).
+  **Index local** : `technicalItems` lit aussi les `Video` (HDR, audio, codec des vidéos perso) ; une
+  installation existante se met à jour seule, le compte du serveur ne correspondant plus à celui de
+  l'index (relecture entière, § 4.10).
+- **U. Plus jamais de fiche muette.** `DetailsState.nothingToPlay` : chargée, et un dossier vide, une
+  série sans épisode, une saga vide ou une saison sans série. La fiche dit « Rien à lire ici pour le
+  moment » sous le titre ; « ⋯ » apparaît et commence par la cause : type de l'élément et nombre
+  d'enfants (« Dossier · 0 élément », ce qui a été lu, sinon `ChildCount` du serveur). Le téléphone, sans
+  panneau « ⋯ », écrit la cause sous le message.
+- **Preuve** : `EmptyDetailsFlowTest` (TV) et `MobileEmptyDetailsTest` (téléphone), par l'appli réelle sur
+  la source en mémoire (dossiers décrits par `InMemorySource(folders = …)`) : saison → épisodes de la
+  saison et « Reprendre », « Retour » d'un seul écran ; dossier à une vidéo → « Lire » envoie cette vidéo au
+  lecteur ; dossier à plusieurs → grille, OK sur la deuxième carte, retour sur elle ; dossier vide →
+  message, cause dans « ⋯ ». `QuickOptionsTest` pour l'appui long. Le banc Jellyfin n'a pas de bibliothèque
+  `homevideos` (en ajouter une changerait les comptes des tests d'intégration) :
+  `JellyfinBrowseIntegrationTest` vérifie à la place que `children` d'une série rend ses saisons, et
+  qu'une saison de `/Items/Latest` (s'il en rend) nomme sa série.
+
+### 4.31 Le téléphone hors de la maison, sans adresse à distance (V, 02/11/2026)
+
+Le mainteneur, hors de la maison avec la `1.0.4-essai.2`, restait bloqué sur « Le serveur ne répond pas ».
+Serveur et adresse publique répondaient ; le journal du proxy public n'avait **aucune** requête du
+téléphone. Cause probable, lue dans le code : le serveur enregistré n'a pas d'adresse distante (une
+installation antérieure à F n'a jamais vu l'écran qui la propose), et `AddressResolver` n'essaie alors
+que l'adresse locale. **Hypothèse non vérifiée sur l'appareil** ; autre cause possible du même effet :
+« Basculement automatique » réglé sur « Réseau local seulement » (§ 4.17). Or l'écran d'échec ne
+proposait que « Réessayer » et « Changer de serveur », et l'adresse distante se règle dans le Profil,
+hors d'atteinte tant qu'aucun profil n'est ouvert.
+
+- **Sur le téléphone**, l'écran d'échec au démarrage (`MobileUnreachableScreen`) dit ce qui manque.
+  Sans adresse distante, il dit qu'hors de la maison il en faut une et propose « Ajouter une adresse
+  à distance ». Avec une adresse distante, il dit qu'aucune des deux adresses ne répond et propose
+  « Modifier l'adresse à distance ». Le message général (`error_unreachable_message`, qui parle de la
+  télévision) reste celui de la TV, dont l'écran ne change pas.
+- Le bouton ouvre l'écran d'adresse existant (`AddressMode.EditRemote`). Sans connexion, le
+  `SessionManager` retient le serveur resté muet au démarrage (`unreachable`) ;
+  `setUnreachableRemote` vérifie que **le même serveur** répond à l'adresse saisie (même identifiant,
+  comme `AddressResolver` ; un autre serveur est refusé, `NotAServer`, rien n'est gardé), puis
+  l'enregistre. Profils et sessions ne sont pas touchés ; l'appli redémarre (`Route.Startup`) et ouvre
+  le profil comme d'habitude. Un démarrage en échec n'a plus de serveur « en cours » (`connection` nulle).
+- **Preuve** : `SessionManagerTest` (sans adresse distante : échec, adresse d'un autre serveur refusée,
+  adresse ajoutée, redémarrage en `Remote` sur le profil ouvert) ; `MobileRemoteAddressTest` par l'appli
+  réelle (message, bouton, saisie, « Qui regarde ? » puis l'accueil sans reconnexion ; adresse d'un autre
+  serveur refusée ; avec une adresse distante, l'autre message et « Modifier l'adresse à distance ») ;
+  captures 207 du téléphone (dans `docs/screenshots/fiches-vides/`, avec l'avant). La TV n'a ni nouveau code ni nouvelle chaîne sur cet écran ; ses tests et
+  captures restent identiques.
 
 ## 5. Tests et CI
 

@@ -21,9 +21,12 @@ fun Duration.toDurationText(): String {
 
 private const val MINUTES_PER_HOUR = 60L
 
-/** The title a card shows: the series of an episode, the item otherwise. */
+/**
+ * The title a card shows: the series of an episode or a season (« Ajouts récents » groups new
+ * episodes into their season: « Saison 3 » alone says nothing), the item otherwise.
+ */
 val MediaItem.cardTitle: String
-    get() = if (kind == ItemKind.Episode) episode?.seriesTitle ?: title else title
+    get() = if (kind == ItemKind.Episode || kind == ItemKind.Season) episode?.seriesTitle ?: title else title
 
 /** « S02 · E05 », or null when the numbers are unknown. */
 @Composable
@@ -34,8 +37,8 @@ fun MediaItem.episodeCode(): String? {
 }
 
 /**
- * The line under a card: « S02 · E05 — titre » for an episode, « Reprendre à 42 min » for a film
- * started, the year otherwise.
+ * The line under a card: « S02 · E05 — titre » for an episode, « Saison 3 » for a season under the
+ * title of its series, « Reprendre à 42 min » for a film started, the year otherwise.
  */
 @Composable
 fun MediaItem.cardSubtitle(): String? {
@@ -43,6 +46,7 @@ fun MediaItem.cardSubtitle(): String? {
     val position = userData?.playbackPosition?.takeIf { progress != null }
     return when {
         kind == ItemKind.Episode -> code?.let { stringResource(R.string.episode_line, it, title) } ?: title
+        kind == ItemKind.Season && episode?.seriesTitle != null -> title
         position != null -> stringResource(R.string.resume_at, position.toDurationText())
         else -> year?.toString()
     }

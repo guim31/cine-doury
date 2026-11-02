@@ -58,6 +58,8 @@ class InMemorySource(
     private val collections: Map<ItemId, List<ItemId>> = emptyMap(),
     private val similar: Map<ItemId, List<ItemId>> = emptyMap(),
     private val trailers: Map<ItemId, List<ItemId>> = emptyMap(),
+    /** What each folder holds (fiches vides): its videos and its folders, by id. */
+    private val folders: Map<ItemId, List<ItemId>> = emptyMap(),
     var preferences: PlaybackPreferences = PlaybackPreferences(),
     /** Playback, shared by every session. */
     val playback: InMemoryPlayback = InMemoryPlayback(),
@@ -67,6 +69,8 @@ class InMemorySource(
     /** The libraries, in the order of the profile (J7: [LibrarySource.setLibraryOrder]). */
     var libraries: List<Library> = libraries
         private set
+
+    private val inFolders: Set<ItemId> = folders.values.flatten().toSet()
 
     private val all: Map<ItemId, MediaItem> = (contents.values.flatten() + extras).associateBy { it.id }
 
@@ -258,7 +262,8 @@ class InMemorySource(
             val matching =
                 pool(query.library)
                     .map { it.current() }
-                    .filter { query.kinds.isEmpty() || it.kind in query.kinds }
+                    // Without kinds, the direct children of the library: not what a folder holds.
+                    .filter { if (query.kinds.isEmpty()) it.id !in inFolders else it.kind in query.kinds }
                     .filter { InMemoryQueries.matches(it, query.filters) }
                     .filter { item ->
                         query.releasedBefore?.let { (item.premiereDate ?: return@filter false) <= it }
@@ -368,6 +373,14 @@ class InMemorySource(
                 .orEmpty()
                 .mapNotNull { items[it]?.current() }
                 .sortedWith(compareBy({ it.premiereDate ?: LocalDate.MAX }, { it.year }))
+        }
+
+        override suspend fun children(
+            folder: ItemId,
+            limit: Int,
+        ): List<MediaItem> {
+            count("children")
+            return folders[folder].orEmpty().mapNotNull { items[it]?.current() }.take(limit)
         }
 
         override suspend fun filmography(person: ItemId): List<MediaItem> {

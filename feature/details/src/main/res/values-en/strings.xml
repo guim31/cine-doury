@@ -51,4 +51,20 @@
     <string name="file_added">Added on %1$s</string>
     <string name="file_no_ids">No provider id</string>
     <string name="file_id">%1$s: %2$s</string>
+    <!-- Fiches vides: a folder, an item with nothing to play. -->
+    <string name="row_folder">In this folder</string>
+    <string name="nothing_to_play">Nothing to play here yet</string>
+    <string name="kind_movie">Film</string>
+    <string name="kind_series">Series</string>
+    <string name="kind_season">Season</string>
+    <string name="kind_episode">Episode</string>
+    <string name="kind_collection">Collection</string>
+    <string name="kind_person">Person</string>
+    <string name="kind_video">Video</string>
+    <string name="kind_folder">Folder</string>
+    <string name="kind_other">Item of another kind</string>
+    <plurals name="children_count">
+        <item quantity="one">%1$d item</item>
+        <item quantity="other">%1$d items</item>
+    </plurals>
 </resources>

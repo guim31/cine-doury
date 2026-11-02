@@ -62,7 +62,7 @@ fun MobileQuickMenuHost(
     val labels = options.associateWith { it.label() }
     MobileSheet(
         title = item.cardTitle,
-        subtitle = item.cardSubtitle().takeIf { item.kind == ItemKind.Episode },
+        subtitle = item.cardSubtitle().takeIf { item.kind == ItemKind.Episode || item.kind == ItemKind.Season },
         onDismiss = menu::close,
     ) {
         MobileSheetLines(

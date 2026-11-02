@@ -24,6 +24,7 @@ import fr.guim.cinedoury.core.model.TechnicalSummary
 import fr.guim.cinedoury.core.model.TrackPreselection
 import fr.guim.cinedoury.core.model.TrackSelection
 import fr.guim.cinedoury.core.model.UserData
+import fr.guim.cinedoury.core.model.seriesCard
 import fr.guim.cinedoury.core.source.LibrarySource
 import fr.guim.cinedoury.core.source.SourceException
 import fr.guim.cinedoury.core.ui.Events
@@ -64,6 +65,7 @@ sealed interface Trailer {
  * @param season the season shown; null for a series flattened to its single season.
  * @param series the series of an episode, for « Aller à la série ».
  * @param saga the collection of a film and its films in release order; for a collection, itself.
+ * @param children what a folder holds, once read (fiches vides); null for anything else.
  * @param selection the version and tracks chosen for playback, preset from the profile.
  * @param rights what the profile may manage: the entries of « Gestion » in « ⋯ » (J6).
  * @param deletion the confirmation of a deletion on screen.
@@ -82,6 +84,7 @@ data class DetailsState(
     val series: MediaItem? = null,
     val saga: MediaItem? = null,
     val sagaItems: List<MediaItem> = emptyList(),
+    val children: List<MediaItem>? = null,
     val similar: List<MediaItem> = emptyList(),
     val filmography: List<MediaItem> = emptyList(),
     val trailer: Trailer? = null,
@@ -107,7 +110,31 @@ data class DetailsState(
     val shownEpisodes: List<MediaItem>
         get() = episodes.orEmpty().filter { flattened || it.episode?.seasonId == season }
 
-    val playable: Boolean get() = item.kind in setOf(ItemKind.Movie, ItemKind.Episode, ItemKind.Video)
+    val playable: Boolean get() = item.kind in PLAYABLE
+
+    /**
+     * Nothing to play nor to open (fiches vides, U): an empty folder, a series without episodes, an
+     * empty collection, a season whose series is unknown. The screen says so, never stays silent, and
+     * tells why in « Plus d'infos »: the kind of the item and [childTotal].
+     */
+    val nothingToPlay: Boolean
+        get() =
+            loaded &&
+                when (item.kind) {
+                    ItemKind.Movie, ItemKind.Episode, ItemKind.Video, ItemKind.Person -> false
+                    ItemKind.Series -> episodes?.isEmpty() == true
+                    ItemKind.Collection -> saga != null && sagaItems.isEmpty()
+                    ItemKind.Folder, ItemKind.Other -> children?.isEmpty() == true
+                    ItemKind.Season -> true
+                }
+
+    /** How many items the item holds: what was read of a folder, else what the server says. */
+    val childTotal: Int get() = children?.size ?: item.childCount ?: 0
+
+    companion object {
+        /** What plays at once: a film, an episode, a video. */
+        val PLAYABLE: Set<ItemKind> = setOf(ItemKind.Movie, ItemKind.Episode, ItemKind.Video)
+    }
 }
 
 /** What the details screen asks its view model; a no-op for screenshots. */
@@ -163,9 +190,23 @@ class DetailsViewModel(
     DetailsActions {
     private val active: ActiveSession? = sessions.active.value
 
+    /**
+     * A season has no details of its own: it opens its series, on it (fiches vides, S). « Ajouts
+     * récents » groups new episodes into their season, so the home has season cards. Done here, not
+     * in each navigation of the TV and the phone: every way in (cards, mosaic, menu of a card, search)
+     * comes through, and « Retour » leaves one screen.
+     */
+    private val opened: MediaItem = initial.seriesCard()?.takeIf { initial.kind == ItemKind.Season } ?: initial
+
     // A series opened on one of its seasons (« Aller à la saison », essai réel 5): kept once they load.
     private val local =
-        MutableStateFlow(DetailsState(initial, rights = manager?.cachedRights ?: ManageRights.NONE, season = season))
+        MutableStateFlow(
+            DetailsState(
+                opened,
+                rights = manager?.cachedRights ?: ManageRights.NONE,
+                season = if (opened !== initial) initial.id else season,
+            ),
+        )
     private var preferences = PlaybackPreferences()
 
     val state: StateFlow<DetailsState> = local.asStateFlow()
@@ -181,7 +222,7 @@ class DetailsViewModel(
     init {
         viewModelScope.launch {
             val serverId = active?.profile?.serverId ?: return@launch
-            val summary = index.summary(serverId, initial) ?: return@launch
+            val summary = index.summary(serverId, opened) ?: return@launch
             local.update { if (it.badges.isEmpty()) it.copy(badges = summary.badges(language())) else it }
         }
         load()
@@ -226,7 +267,7 @@ class DetailsViewModel(
                     val details = async { source.item(local.value.item.id) }
                     val preferences = async { source.playbackPreferences() }
                     this@DetailsViewModel.preferences = preferences.await()
-                    val item = details.await()
+                    val item = unfolded(source, details.await())
                     local.update { state ->
                         state.copy(
                             item = item,
@@ -251,6 +292,23 @@ class DetailsViewModel(
                 }
             }
         }
+    }
+
+    /**
+     * A folder that holds one video is that video (fiches vides, T): a library of home videos puts
+     * each in its own folder, and the folder alone has nothing to play. Any other folder stays, what
+     * it holds in [DetailsState.children], read before the screen counts as loaded.
+     */
+    private suspend fun unfolded(
+        source: LibrarySource,
+        item: MediaItem,
+    ): MediaItem {
+        if (item.kind != ItemKind.Folder && item.kind != ItemKind.Other) return item
+        val children = source.children(item.id, CHILDREN)
+        val video = children.singleOrNull()?.takeIf { it.kind in DetailsState.PLAYABLE }
+        if (video != null) return source.item(video.id)
+        local.update { it.copy(children = children) }
+        return item
     }
 
     /** What surrounds the item: by kind, its episodes, saga, similar titles, trailer, series, works. */
@@ -290,6 +348,9 @@ class DetailsViewModel(
                     }
                 }
             }
+
+            // What a folder holds came with it; a season without its series has nothing around.
+            ItemKind.Folder, ItemKind.Other, ItemKind.Season -> {}
 
             else -> {
                 launch { saga(source, item) }
@@ -436,6 +497,7 @@ class DetailsViewModel(
                             },
                         seasons = it.seasons.filterNot { s -> s.id in change },
                         sagaItems = it.sagaItems.filterNot { i -> i.id in change },
+                        children = it.children?.filterNot { i -> i.id in change },
                         similar = it.similar.filterNot { i -> i.id in change },
                         filmography = it.filmography.filterNot { i -> i.id in change },
                     )
@@ -553,6 +615,9 @@ class DetailsViewModel(
 
     private companion object {
         const val SIMILAR = 12
+
+        /** The most a folder shows: a screen of cards, not a library. */
+        const val CHILDREN = 200
         const val NOTICE_MILLIS = 4_000L
 
         /** How long the server usually takes to refresh one item before it is read again. */

@@ -35,16 +35,20 @@ object QuickOptions {
      *
      * @param inContinue the card is a playback in progress on the home: « Retirer de Continuer ».
      * @param canSelect the card is in a library and the profile manages it.
+     * @param seasonsOpen false on the details of a series, where a season is a tab: it opens nothing
+     *   more. Elsewhere (« Ajouts récents »), a season opens the details of its series, on it.
      */
     fun of(
         item: MediaItem,
         inContinue: Boolean = false,
         canSelect: Boolean = false,
+        seasonsOpen: Boolean = true,
     ): List<QuickOption> =
         buildList {
             addAll(play(item))
-            // A season is a tab of the details of its series: it opens nothing more.
-            if (item.kind != ItemKind.Season) add(QuickOption.OpenDetails)
+            val opens =
+                item.kind != ItemKind.Season || (seasonsOpen && item.seriesCard() != null)
+            if (opens) add(QuickOption.OpenDetails)
             addAll(series(item))
             if (item.kind in WATCHABLE) {
                 add(if (item.userData?.played == true) QuickOption.MarkUnwatched else QuickOption.MarkWatched)

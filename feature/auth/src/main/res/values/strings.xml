@@ -58,4 +58,9 @@
     <!-- F (M2): the remote address offered after a first sign-in on the network of the house. -->
     <string name="mobile_address_remote_offer">Pour regarder hors de la maison (en voiture, en vacances), indiquez l\'adresse publique du serveur (https://…). Le téléphone l\'utilisera dès qu\'il quittera le Wi-Fi de la maison.</string>
     <string name="mobile_address_later">Plus tard</string>
+    <!-- The phone away from home, the server silent at start (V). -->
+    <string name="mobile_unreachable_no_remote">Hors de la maison, Ciné Doury a besoin de l\'adresse à distance de votre serveur. Ajoutez-la, ou réessayez une fois chez vous.</string>
+    <string name="mobile_unreachable_both">Le serveur ne répond ni à son adresse de la maison, ni à son adresse à distance. Vérifiez votre connexion et l\'adresse à distance, puis réessayez.</string>
+    <string name="mobile_add_remote">Ajouter une adresse à distance</string>
+    <string name="mobile_edit_remote">Modifier l\'adresse à distance</string>
 </resources>

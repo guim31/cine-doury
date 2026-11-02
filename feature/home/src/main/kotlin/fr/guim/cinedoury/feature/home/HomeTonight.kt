@@ -167,7 +167,8 @@ internal val TonightTile.continueRow: String?
 
 /** « S01 · E08 — titre » for an episode, else the year, the length and the rating. */
 @Composable
-internal fun MediaItem.tonightLine(): String? = if (kind == ItemKind.Episode) cardSubtitle() else metadataLine()
+internal fun MediaItem.tonightLine(): String? =
+    if (kind == ItemKind.Episode || kind == ItemKind.Season) cardSubtitle() else metadataLine()
 
 /** Why the tile is there, in capitals: « REPRENDRE · RESTE 14 MIN », « AJOUTÉ HIER ». */
 @Composable

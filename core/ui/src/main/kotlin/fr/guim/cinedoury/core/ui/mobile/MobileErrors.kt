@@ -31,8 +31,10 @@ fun MobileSourceError(
     modifier: Modifier = Modifier,
     secondaryLabel: String? = null,
     onSecondary: (() -> Unit)? = null,
+    /** What to do, in place of the usual sentence for [error] (the phone away from home, V). */
+    message: String? = null,
 ) {
-    val text = error.toErrorText()
+    val text = error.toErrorText().let { if (message != null) it.copy(message = message) else it }
     var details by rememberSaveable { mutableStateOf(false) }
     MobileMessage(
         title = text.title,

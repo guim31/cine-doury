@@ -86,6 +86,15 @@ interface LibrarySource {
     /** The items of a collection, in release order. */
     suspend fun collectionItems(collection: ItemId): List<MediaItem>
 
+    /**
+     * What a folder holds, directly, in title order, at most [limit] (fiches vides): the videos and
+     * the folders of a library of home videos.
+     */
+    suspend fun children(
+        folder: ItemId,
+        limit: Int,
+    ): List<MediaItem>
+
     /** The films and series of the libraries where [person] appears, the newest first. */
     suspend fun filmography(person: ItemId): List<MediaItem>
 

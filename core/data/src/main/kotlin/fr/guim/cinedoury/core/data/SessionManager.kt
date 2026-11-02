@@ -71,6 +71,14 @@ class SessionManager(
 
     private val currentReach = MutableStateFlow<Reach>(Reach.Answers)
 
+    private val unreachableServer = MutableStateFlow<SavedServer?>(null)
+
+    /**
+     * The saved server when it answered at none of its addresses at start (V): its remote address can
+     * still be added or corrected ([setUnreachableRemote]), without a connection, before trying again.
+     */
+    val unreachable: StateFlow<SavedServer?> = unreachableServer.asStateFlow()
+
     /**
      * Whether the server answers since the last change of network (F, M2): the phone's profile tab says
      * « Serveur injoignable » rather than the address it can no longer reach.
@@ -88,8 +96,12 @@ class SessionManager(
             try {
                 resolver.resolve(server, preferences.networkMode.first())
             } catch (error: SourceException) {
+                // No server in use until it answers: its addresses change through [setUnreachableRemote].
+                currentConnection.value = null
+                unreachableServer.value = server
                 return StartupTarget.Unreachable(server, error)
             }
+        unreachableServer.value = null
         currentConnection.value = connection
         val last =
             if (preferences.startupMode.first() == StartupMode.LastProfile) {
@@ -292,6 +304,25 @@ class SessionManager(
         val server = requireConnection().server
         val info = connector.serverInfo(address)
         if (info.id != server.id) throw SourceException.NotAServer("Another server (${info.name}) answers at $address")
+    }
+
+    /**
+     * Sets the remote address of the server that did not answer at start (V, the phone away from home):
+     * checked first (the saved server must answer there, as [AddressResolver] demands), then kept; its
+     * profiles and their sessions stay as they are. Null removes it. The next [start] tries it.
+     */
+    suspend fun setUnreachableRemote(remote: ServerAddress?) {
+        val server = checkNotNull(unreachableServer.value) { "No server left unreachable at start" }
+        if (remote != null) {
+            val info = connector.serverInfo(remote)
+            if (info.id != server.id) {
+                throw SourceException.NotAServer("Another server (${info.name}) answers at $remote")
+            }
+        }
+        local("Server: the remote address could not be saved") {
+            servers.setAddresses(server.id, server.localAddress, remote)
+        }
+        unreachableServer.value = server.copy(remoteAddress = remote)
     }
 
     private val following = Mutex()

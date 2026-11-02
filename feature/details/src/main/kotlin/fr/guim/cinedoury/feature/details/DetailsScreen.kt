@@ -138,6 +138,9 @@ object DetailsPreview {
     const val OVERVIEW = "details-overview"
     const val SEASON_WATCHED = "details-season-watched"
 
+    /** « Rien à lire ici pour le moment » (fiches vides). */
+    const val NOTHING = "details-nothing"
+
     fun season(index: Int) = "season-$index"
 
     fun episode(index: Int) = "episode-$index"
@@ -239,6 +242,7 @@ fun DetailsScreen(
                         )
                     }
                     episodes(state, sources, actions, open, requesters) { focused = it }
+                    children(state, sources, open, requesters) { focused = it }
                     rows(state, sources, open, requesters) { focused = it }
                 }
             }
@@ -255,7 +259,8 @@ fun DetailsScreen(
             onIdentify = { navigation.identify(item) },
             onImages = { navigation.images(item) },
         )
-        QuickMenuHost(menu, navigation)
+        // On a series, a season is a tab of the screen: its menu opens nothing more.
+        QuickMenuHost(menu, navigation, seasonsOpen = item.kind != ItemKind.Series)
         ManageNoticePill(state.notice)
         // A dialog that closes gives the focus back to the element it came from, as a panel does:
         // the focus never falls out of the screen. Its buttons do it at once (`ConfirmDialog` lets
@@ -414,6 +419,14 @@ private fun Hero(
         if (error != null && !state.loaded) {
             SourceErrorPanel(error = error, onRetry = actions::retry, retryFocusRequester = requesters[KEY_PLAY])
         } else {
+            if (state.nothingToPlay) {
+                Text(
+                    text = stringResource(R.string.nothing_to_play),
+                    style = typography.body,
+                    color = colors.text,
+                    modifier = Modifier.padding(top = CineSpacing.s).testTag(DetailsPreview.NOTHING),
+                )
+            }
             Buttons(state, actions, onPlay, onRestart, onTrailer, onPanel, onSeries, requesters, onFocused)
         }
     }
@@ -593,7 +606,8 @@ private fun Buttons(
                 onFocused,
             )
         }
-        if (state.playable || state.rights.canManage) {
+        // An item with nothing to play says why in « ⋯ » (fiches vides).
+        if (state.playable || state.rights.canManage || state.nothingToPlay) {
             Round(CineIcons.More, stringResource(R.string.action_more), {
                 onPanel(DetailsPanel.More)
             }, DetailsPreview.MORE, requesters, onFocused)

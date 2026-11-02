@@ -9,6 +9,7 @@ import fr.guim.cinedoury.core.model.PageRequest
 import fr.guim.cinedoury.core.model.Resolution
 import fr.guim.cinedoury.core.model.SortField
 import fr.guim.cinedoury.core.model.WatchStatus
+import fr.guim.cinedoury.core.model.seriesCard
 import fr.guim.cinedoury.core.source.Credentials
 import fr.guim.cinedoury.core.source.LibrarySource
 import fr.guim.cinedoury.core.source.ServerAddress
@@ -279,6 +280,26 @@ class JellyfinBrowseIntegrationTest {
                     ).items
             assertEquals(3, series.single { it.title == "Les Marées" }.unwatchedEpisodes)
             assertEquals(2, series.single { it.title == "Brume" }.unwatchedEpisodes)
+        }
+
+    /**
+     * What a parent holds (fiches vides): a series holds its seasons. The test server has no library
+     * of home videos, and its « Ajouts récents » groups no season; each season names its series,
+     * as a season of `/Items/Latest` does (the same mapping), so that it opens the series.
+     */
+    @Test
+    fun `a parent lists what it holds, and a season names its series`() =
+        runTest {
+            val source = source()
+            val marees =
+                source
+                    .items(ItemQuery(source.library("Séries").id, setOf(ItemKind.Series)), PageRequest())
+                    .items
+                    .single { it.title == "Les Marées" }
+            val children = source.children(marees.id, limit = 10)
+            assertTrue(children.isNotEmpty() && children.all { it.kind == ItemKind.Season }, children.toString())
+            assertEquals(source.seasons(marees.id).map { it.id }.toSet(), children.map { it.id }.toSet())
+            children.forEach { season -> assertEquals(marees.id, season.seriesCard()?.id, season.toString()) }
         }
 
     private companion object {

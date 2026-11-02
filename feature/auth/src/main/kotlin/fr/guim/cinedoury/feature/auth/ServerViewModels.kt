@@ -104,7 +104,8 @@ class AddressViewModel(
     val done = Events<Unit>()
 
     private fun initialText(mode: AddressMode): String {
-        val server = sessions.connection.value?.server
+        // Away from home, the server that did not answer at start (V): no connection yet.
+        val server = sessions.connection.value?.server ?: sessions.unreachable.value
         return when (mode) {
             AddressMode.Add -> ""
             AddressMode.EditLocal -> server?.localAddress?.url.orEmpty()
@@ -147,8 +148,13 @@ class AddressViewModel(
                     }
 
                     AddressMode.EditRemote -> {
-                        address?.let { sessions.checkAddress(it) }
-                        sessions.setAddresses(checkNotNull(server).localAddress, address)
+                        if (server == null) {
+                            // The server did not answer at start (V): its remote address, then a new start.
+                            sessions.setUnreachableRemote(address)
+                        } else {
+                            address?.let { sessions.checkAddress(it) }
+                            sessions.setAddresses(server.localAddress, address)
+                        }
                     }
                 }
                 mutableState.update { it.copy(busy = false) }

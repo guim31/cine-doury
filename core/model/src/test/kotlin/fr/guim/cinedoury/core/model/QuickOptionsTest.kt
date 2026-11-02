@@ -76,6 +76,11 @@ class QuickOptionsTest {
         assertEquals(listOf(OpenDetails, MarkWatched, AddFavorite), QuickOptions.of(series))
         val season = MediaItem(ItemId("s"), ItemKind.Season, "Saison 1", userData = data(played = true))
         assertEquals(listOf(MarkUnwatched, AddFavorite), QuickOptions.of(season))
+        // A season of « Ajouts récents » (fiches vides): its series named, it opens it, on itself;
+        // not from the details of that series, where it is a tab.
+        val latest = season.copy(episode = EpisodeInfo(series.id, series.title, null, 1, null))
+        assertEquals(listOf(OpenDetails, MarkUnwatched, AddFavorite), QuickOptions.of(latest))
+        assertEquals(listOf(MarkUnwatched, AddFavorite), QuickOptions.of(latest, seasonsOpen = false))
         val person = MediaItem(ItemId("p"), ItemKind.Person, "Inès Garnier")
         assertEquals(listOf(OpenDetails, AddFavorite), QuickOptions.of(person))
     }
