@@ -21,12 +21,12 @@ import fr.guim.cinedoury.core.designsystem.component.QuickMenu
 import fr.guim.cinedoury.core.designsystem.component.QuickMenuLine
 import fr.guim.cinedoury.core.designsystem.component.onLongPress
 import fr.guim.cinedoury.core.model.ItemId
-import fr.guim.cinedoury.core.model.ItemImages
 import fr.guim.cinedoury.core.model.ItemKind
 import fr.guim.cinedoury.core.model.MediaItem
 import fr.guim.cinedoury.core.model.PlaybackRequest
 import fr.guim.cinedoury.core.model.QuickOption
 import fr.guim.cinedoury.core.model.QuickOptions
+import fr.guim.cinedoury.core.model.seriesCard
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -140,17 +140,19 @@ fun QuickMenuHost(
     navigation: QuickMenuNavigation,
     onSelect: ((MediaItem) -> Unit)? = null,
     previewFocusedIndex: Int? = null,
+    seasonsOpen: Boolean = true,
 ) {
     val shown = menu.item ?: return
     val actions = LocalQuickActions.current
     val item = actions?.current(shown) ?: shown
     val continueRow = menu.continueRow
     BackHandler { menu.close() }
-    val options = QuickOptions.of(item, inContinue = continueRow != null, canSelect = onSelect != null)
+    val options =
+        QuickOptions.of(item, inContinue = continueRow != null, canSelect = onSelect != null, seasonsOpen = seasonsOpen)
     val labels = options.associateWith { option -> option.label() }
     QuickMenu(
         title = item.cardTitle,
-        subtitle = item.cardSubtitle().takeIf { item.kind == ItemKind.Episode },
+        subtitle = item.cardSubtitle().takeIf { item.kind == ItemKind.Episode || item.kind == ItemKind.Season },
         lines =
             options.map { option ->
                 QuickMenuLine(labels.getValue(option), option.icon, "quick-${option.name}") {
@@ -184,23 +186,6 @@ fun runQuickOption(
         QuickOption.Select -> onSelect?.invoke(item)
         else -> actions?.apply(item, option, continueRow)
     }
-}
-
-/** The series of an episode, as a card: its details screen reads the rest. */
-private fun MediaItem.seriesCard(): MediaItem? {
-    val series = episode?.seriesId ?: return null
-    return MediaItem(
-        id = series,
-        kind = ItemKind.Series,
-        title = episode?.seriesTitle.orEmpty(),
-        images =
-            ItemImages(
-                primary = images.seriesPrimary,
-                backdrops = listOfNotNull(images.parentBackdrop),
-                logo = images.parentLogo,
-                thumb = images.parentThumb,
-            ),
-    )
 }
 
 @Composable

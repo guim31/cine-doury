@@ -85,6 +85,27 @@ data class MediaItem(
     val unwatchedEpisodes: Int? get() = userData?.unplayedCount?.takeIf { kind == ItemKind.Series }
 }
 
+/**
+ * The series of an episode or a season, as a card: its details screen reads the rest. Null for
+ * anything else, or when the server did not name the series.
+ */
+fun MediaItem.seriesCard(): MediaItem? {
+    if (kind != ItemKind.Episode && kind != ItemKind.Season) return null
+    val series = episode?.seriesId ?: return null
+    return MediaItem(
+        id = series,
+        kind = ItemKind.Series,
+        title = episode.seriesTitle.orEmpty(),
+        images =
+            ItemImages(
+                primary = images.seriesPrimary,
+                backdrops = listOfNotNull(images.parentBackdrop),
+                logo = images.parentLogo,
+                thumb = images.parentThumb,
+            ),
+    )
+}
+
 /** Where an episode or a season sits in its series. */
 data class EpisodeInfo(
     val seriesId: ItemId?,

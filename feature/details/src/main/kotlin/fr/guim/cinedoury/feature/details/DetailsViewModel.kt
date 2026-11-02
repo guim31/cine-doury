@@ -24,6 +24,7 @@ import fr.guim.cinedoury.core.model.TechnicalSummary
 import fr.guim.cinedoury.core.model.TrackPreselection
 import fr.guim.cinedoury.core.model.TrackSelection
 import fr.guim.cinedoury.core.model.UserData
+import fr.guim.cinedoury.core.model.seriesCard
 import fr.guim.cinedoury.core.source.LibrarySource
 import fr.guim.cinedoury.core.source.SourceException
 import fr.guim.cinedoury.core.ui.Events
@@ -163,9 +164,23 @@ class DetailsViewModel(
     DetailsActions {
     private val active: ActiveSession? = sessions.active.value
 
+    /**
+     * A season has no details of its own: it opens its series, on it (fiches vides, S). « Ajouts
+     * récents » groups new episodes into their season, so the home has season cards. Done here, not
+     * in each navigation of the TV and the phone: every way in (cards, mosaic, menu of a card, search)
+     * comes through, and « Retour » leaves one screen.
+     */
+    private val opened: MediaItem = initial.seriesCard()?.takeIf { initial.kind == ItemKind.Season } ?: initial
+
     // A series opened on one of its seasons (« Aller à la saison », essai réel 5): kept once they load.
     private val local =
-        MutableStateFlow(DetailsState(initial, rights = manager?.cachedRights ?: ManageRights.NONE, season = season))
+        MutableStateFlow(
+            DetailsState(
+                opened,
+                rights = manager?.cachedRights ?: ManageRights.NONE,
+                season = if (opened !== initial) initial.id else season,
+            ),
+        )
     private var preferences = PlaybackPreferences()
 
     val state: StateFlow<DetailsState> = local.asStateFlow()
@@ -181,7 +196,7 @@ class DetailsViewModel(
     init {
         viewModelScope.launch {
             val serverId = active?.profile?.serverId ?: return@launch
-            val summary = index.summary(serverId, initial) ?: return@launch
+            val summary = index.summary(serverId, opened) ?: return@launch
             local.update { if (it.badges.isEmpty()) it.copy(badges = summary.badges(language())) else it }
         }
         load()

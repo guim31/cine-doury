@@ -255,7 +255,8 @@ fun DetailsScreen(
             onIdentify = { navigation.identify(item) },
             onImages = { navigation.images(item) },
         )
-        QuickMenuHost(menu, navigation)
+        // On a series, a season is a tab of the screen: its menu opens nothing more.
+        QuickMenuHost(menu, navigation, seasonsOpen = item.kind != ItemKind.Series)
         ManageNoticePill(state.notice)
         // A dialog that closes gives the focus back to the element it came from, as a panel does:
         // the focus never falls out of the screen. Its buttons do it at once (`ConfirmDialog` lets
