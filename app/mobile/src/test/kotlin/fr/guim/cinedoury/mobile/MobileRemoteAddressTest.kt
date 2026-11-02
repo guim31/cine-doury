@@ -185,7 +185,7 @@ class MobileRemoteAddressTest {
     }
 
     @Test
-    fun `with a remote address already saved, neither answers: the screen says so and offers to change it`() {
+    fun `with a remote address already saved and neither answering, the screen says so and offers to change it`() {
         runBlocking { sessions.setAddresses(MobileSamples.local, remote) }
         source.unreachable += remote
         compose.setContent { CineMobileTheme { MobileApp(version = "1.1.0") } }
