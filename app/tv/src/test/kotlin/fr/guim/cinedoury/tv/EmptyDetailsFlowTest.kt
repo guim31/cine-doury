@@ -39,7 +39,6 @@ import fr.guim.cinedoury.feature.home.homeModule
 import fr.guim.cinedoury.feature.library.libraryModule
 import fr.guim.cinedoury.feature.manage.manageModule
 import fr.guim.cinedoury.feature.player.playerModule
-import fr.guim.cinedoury.feature.search.searchModule
 import fr.guim.cinedoury.feature.settings.settingsModule
 import fr.guim.cinedoury.feature.update.updateModule
 import kotlinx.coroutines.flow.emptyFlow
@@ -115,7 +114,6 @@ class EmptyDetailsFlowTest {
                 detailsModule,
                 playbackModule,
                 playerModule,
-                searchModule,
                 module { single<VideoPlayerFactory> { players } },
                 settingsModule,
                 updateModule,
@@ -150,9 +148,9 @@ class EmptyDetailsFlowTest {
             compose.onAllNodes(matcher).fetchSemanticsNodes().isNotEmpty()
         }
 
-    /** The app on the search, then the details of [item] over it, as a card opens them. */
+    /** The app on a library, then the details of [item] over it, as a card opens them. */
     private fun open(item: MediaItem): Navigator {
-        val navigator = Navigator(Route.Search())
+        val navigator = Navigator(Route.Library(J2Samples.series.id))
         navigator.push(Route.Details(item))
         compose.setTvContent {
             CineTheme(ThemeVariant.Dark) {
@@ -179,7 +177,7 @@ class EmptyDetailsFlowTest {
         press(Key.DirectionUp, times = 2)
         compose.pressBack()
         compose.waitForIdle()
-        assertIs<Route.Search>(navigator.current.route)
+        assertIs<Route.Library>(navigator.current.route)
     }
 
     @Test
