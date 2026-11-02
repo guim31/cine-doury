@@ -171,3 +171,23 @@ internal fun MediaItem.episodeLine(): String? {
 @Composable
 internal fun MediaItem.numberedTitle(): String =
     episode?.episodeNumber?.let { stringResource(R.string.episode_numbered, it, title) } ?: title
+
+/** « Dossier · 0 élément »: why an item has nothing to play (fiches vides), for « ⋯ ». */
+@Composable
+internal fun DetailsState.nothingCause(): String {
+    val kind =
+        stringResource(
+            when (item.kind) {
+                ItemKind.Movie -> R.string.kind_movie
+                ItemKind.Series -> R.string.kind_series
+                ItemKind.Season -> R.string.kind_season
+                ItemKind.Episode -> R.string.kind_episode
+                ItemKind.Collection -> R.string.kind_collection
+                ItemKind.Person -> R.string.kind_person
+                ItemKind.Video -> R.string.kind_video
+                ItemKind.Folder -> R.string.kind_folder
+                ItemKind.Other -> R.string.kind_other
+            },
+        )
+    return kind + SEPARATOR + pluralStringResource(R.plurals.children_count, childTotal, childTotal)
+}

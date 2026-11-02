@@ -243,7 +243,20 @@ private fun moreLines(
     val item = state.item
     val watched = item.userData?.played == true
     val close = { onPanel(null) }
+    val why = if (state.nothingToPlay) state.nothingCause() else null
     return buildList {
+        // Why the screen has nothing to play: the kind of the item, what it holds (fiches vides).
+        if (why != null) {
+            add(
+                PanelLine.Choice(
+                    "why",
+                    stringResource(R.string.nothing_to_play),
+                    {},
+                    description = why,
+                    icon = CineIcons.Info,
+                ),
+            )
+        }
         if (item.kind != ItemKind.Collection) {
             add(
                 PanelLine.Choice(

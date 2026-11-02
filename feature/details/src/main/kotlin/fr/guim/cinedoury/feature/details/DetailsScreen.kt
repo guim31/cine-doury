@@ -138,6 +138,9 @@ object DetailsPreview {
     const val OVERVIEW = "details-overview"
     const val SEASON_WATCHED = "details-season-watched"
 
+    /** « Rien à lire ici pour le moment » (fiches vides). */
+    const val NOTHING = "details-nothing"
+
     fun season(index: Int) = "season-$index"
 
     fun episode(index: Int) = "episode-$index"
@@ -416,6 +419,14 @@ private fun Hero(
         if (error != null && !state.loaded) {
             SourceErrorPanel(error = error, onRetry = actions::retry, retryFocusRequester = requesters[KEY_PLAY])
         } else {
+            if (state.nothingToPlay) {
+                Text(
+                    text = stringResource(R.string.nothing_to_play),
+                    style = typography.body,
+                    color = colors.text,
+                    modifier = Modifier.padding(top = CineSpacing.s).testTag(DetailsPreview.NOTHING),
+                )
+            }
             Buttons(state, actions, onPlay, onRestart, onTrailer, onPanel, onSeries, requesters, onFocused)
         }
     }
@@ -595,7 +606,8 @@ private fun Buttons(
                 onFocused,
             )
         }
-        if (state.playable || state.rights.canManage) {
+        // An item with nothing to play says why in « ⋯ » (fiches vides).
+        if (state.playable || state.rights.canManage || state.nothingToPlay) {
             Round(CineIcons.More, stringResource(R.string.action_more), {
                 onPanel(DetailsPanel.More)
             }, DetailsPreview.MORE, requesters, onFocused)

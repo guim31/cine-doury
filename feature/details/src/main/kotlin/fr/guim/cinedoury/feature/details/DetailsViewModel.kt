@@ -112,6 +112,25 @@ data class DetailsState(
 
     val playable: Boolean get() = item.kind in PLAYABLE
 
+    /**
+     * Nothing to play nor to open (fiches vides, U): an empty folder, a series without episodes, an
+     * empty collection, a season whose series is unknown. The screen says so, never stays silent, and
+     * tells why in « Plus d'infos »: the kind of the item and [childTotal].
+     */
+    val nothingToPlay: Boolean
+        get() =
+            loaded &&
+                when (item.kind) {
+                    ItemKind.Movie, ItemKind.Episode, ItemKind.Video, ItemKind.Person -> false
+                    ItemKind.Series -> episodes?.isEmpty() == true
+                    ItemKind.Collection -> saga != null && sagaItems.isEmpty()
+                    ItemKind.Folder, ItemKind.Other -> children?.isEmpty() == true
+                    ItemKind.Season -> true
+                }
+
+    /** How many items the item holds: what was read of a folder, else what the server says. */
+    val childTotal: Int get() = children?.size ?: item.childCount ?: 0
+
     companion object {
         /** What plays at once: a film, an episode, a video. */
         val PLAYABLE: Set<ItemKind> = setOf(ItemKind.Movie, ItemKind.Episode, ItemKind.Video)
