@@ -6,6 +6,10 @@ technique est dans [`docs/SPEC.md`](docs/SPEC.md) ; les notes de chaque version 
 
 ## Non publié
 
+## 1.0.5 — 02/11/2026
+
+Notes de version : [`docs/releases/v1.0.5.md`](docs/releases/v1.0.5.md).
+
 Fiches vides (les deux applis) :
 
 - **Une saison des nouveautés** (« Saison 3 » d'une série où plusieurs épisodes sont arrivés) ouvre la
