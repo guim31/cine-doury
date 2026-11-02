@@ -24,10 +24,14 @@ sealed interface Route {
 
     data object ServerSearch : Route
 
-    /** [offer]: the remote address offered after a first sign-in on the network of the house (F, M2). */
+    /**
+     * [offer]: the remote address offered after a first sign-in on the network of the house (F, M2).
+     * [restart]: added from the failure at start (V); once kept, the app starts again with it.
+     */
     data class Address(
         val mode: AddressMode,
         val offer: Boolean = false,
+        val restart: Boolean = false,
     ) : Route
 
     data class Unreachable(

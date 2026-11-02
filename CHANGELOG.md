@@ -15,6 +15,11 @@ Fiches vides (les deux applis) :
   cherchent dans ses dossiers.
 - **Une fiche sans rien à lire** le dit (« Rien à lire ici pour le moment »), et pourquoi dans « ⋯ ».
 
+Téléphone hors de la maison : quand le serveur ne répond pas au démarrage et qu'il n'a pas d'adresse à
+distance, l'écran le dit et propose « Ajouter une adresse à distance » ; le profil s'ouvre ensuite sans
+nouvelle connexion. Avec une adresse à distance, il dit qu'aucune des deux ne répond et propose de la
+modifier.
+
 ## 1.0.4 — 01/11/2026
 
 Notes de version : [`docs/releases/v1.0.4.md`](docs/releases/v1.0.4.md).

@@ -53,11 +53,24 @@ class SessionManagerTest {
     }
 
     private val address = ServerAddress.of("http://192.0.2.10:8096")
+    private val home = ServerInfo(id = "home", name = "Maison", version = "12.3.0")
+
+    /** Another Jellyfin, at an address of its own (V: a remote address that leads elsewhere). */
+    private val elsewhere = ServerAddress.of("https://other.example.com")
     private val source =
         InMemorySource(
-            server = ServerInfo(id = "home", name = "Maison", version = "12.3.0"),
+            server = home,
             accounts = mapOf("admin" to "secret", "enfant" to "", "invite" to "x"),
             hiddenUsers = setOf("invite"),
+            serverAt = {
+                if (it ==
+                    elsewhere
+                ) {
+                    ServerInfo(id = "other", name = "Voisins", version = "12.3.0")
+                } else {
+                    home
+                }
+            },
         )
     private val database =
         Room.inMemoryDatabaseBuilder(RuntimeEnvironment.getApplication(), CineDatabase::class.java).build()
@@ -232,6 +245,40 @@ class SessionManagerTest {
             source.unreachable += remote
             val target = assertIs<StartupTarget.Unreachable>(manager().start())
             assertIs<SourceException.Unreachable>(target.error)
+        }
+
+    @Test
+    fun `silent at start without a remote address, one is added and the profile opens with it`() =
+        runTest {
+            sessions.addServer(address)
+            sessions.signIn(Credentials.Password("admin", "secret"))
+            sessions.setStartupMode(StartupMode.LastProfile)
+            // Away from home: the local address is silent, and there is no remote one (V).
+            source.unreachable += address
+            val away = manager()
+            assertIs<StartupTarget.Unreachable>(away.start())
+            assertNull(away.unreachable.value?.remoteAddress)
+
+            // Another server at the address typed: refused, nothing kept.
+            assertFailsWith<SourceException.NotAServer> { away.setUnreachableRemote(elsewhere) }
+            assertNull(database.servers().get("home")?.remoteAddress)
+
+            val remote = ServerAddress.of("https://example.com")
+            away.setUnreachableRemote(remote)
+            assertEquals(remote, away.unreachable.value?.remoteAddress)
+
+            // The next start reaches it, and the profile opens: its session was kept.
+            val restarted = manager()
+            assertEquals(StartupTarget.Home, restarted.start())
+            assertEquals(ConnectionMode.Remote, restarted.connection.value?.mode)
+            assertEquals(
+                "admin",
+                restarted.active.value
+                    ?.profile
+                    ?.user
+                    ?.name,
+            )
+            assertNull(restarted.unreachable.value)
         }
 
     @Test

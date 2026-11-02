@@ -162,7 +162,10 @@ private fun Screen(
             MobileAddressRoute(
                 mode = route.mode,
                 onDone = {
-                    if (route.mode == AddressMode.Add || route.offer) {
+                    if (route.restart) {
+                        // The remote address of the server silent at start (V): its profile opens with it.
+                        navigator.replaceAll(Route.Startup)
+                    } else if (route.mode == AddressMode.Add || route.offer) {
                         navigator.replaceTop(Route.Profiles)
                     } else {
                         navigator.pop()
@@ -179,6 +182,8 @@ private fun Screen(
                 error = route.error,
                 onRetry = { navigator.replaceAll(Route.Startup) },
                 onChangeServer = { navigator.replaceAll(Route.ServerSearch) },
+                hasRemote = route.server.remoteAddress != null,
+                onRemoteAddress = { navigator.push(Route.Address(AddressMode.EditRemote, restart = true)) },
             )
         }
 

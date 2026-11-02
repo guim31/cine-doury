@@ -146,11 +146,28 @@ class MobileScreenshotTest(
             "206-code-pin",
         ) { MobilePinScreen(PinState(PinPurpose.Unlock, samples.profiles.first(), digits = "25"), {}, {}) }
 
+    /** Away from home, no remote address (V): what is needed, and « Ajouter une adresse à distance ». */
     @Test
     fun unreachable() =
         shoot(
             "207-erreur-serveur-injoignable",
-        ) { MobileUnreachableScreen("Maison", SourceException.Unreachable(), {}, {}) }
+        ) { MobileUnreachableScreen("Maison", SourceException.Unreachable(), {}, {}, onRemoteAddress = {}) }
+
+    /** Both addresses tried in vain (V): « Modifier l'adresse à distance ». */
+    @Test
+    fun unreachableWithRemote() =
+        shoot(
+            "207-erreur-serveur-injoignable-adresse-distante",
+        ) {
+            MobileUnreachableScreen(
+                "Maison",
+                SourceException.Unreachable(),
+                {},
+                {},
+                hasRemote = true,
+                onRemoteAddress = {},
+            )
+        }
 
     @Test
     fun home() = shoot("208-accueil") { Home(samples.home) }

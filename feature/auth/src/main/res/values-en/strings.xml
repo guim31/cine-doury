@@ -56,4 +56,9 @@
     <!-- F (M2): the remote address offered after a first sign-in on the network of the house. -->
     <string name="mobile_address_remote_offer">To watch away from home (in the car, on holiday), enter the public address of the server (https://…). The phone will use it as soon as it leaves the Wi-Fi of the house.</string>
     <string name="mobile_address_later">Later</string>
+    <!-- The phone away from home, the server silent at start (V). -->
+    <string name="mobile_unreachable_no_remote">Away from home, Ciné Doury needs the remote address of your server. Add it, or try again once at home.</string>
+    <string name="mobile_unreachable_both">The server answers neither at its home address nor at its remote address. Check your connection and the remote address, then try again.</string>
+    <string name="mobile_add_remote">Add a remote address</string>
+    <string name="mobile_edit_remote">Change the remote address</string>
 </resources>

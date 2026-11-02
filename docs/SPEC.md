@@ -32,7 +32,7 @@ son domaine :
 | M2 — Lecteur nomade (marge en mémoire puis sur disque, coupures traversées, bascule d'adresse en lecture, qualité selon le réseau et adaptative, gestes, cadenas, rotation, image dans l'image, focus audio ; la TV ne change pas) ; F, adresse à distance et joignabilité sur le téléphone ; G, remux H.264 en segments TS et erreur de format (les deux applis) | en revue (§ 4.27 ; captures dans `docs/screenshots/m2/`, numéros 240 à 253) | [#19](https://github.com/guim31/cine-doury/pull/19) |
 | Fausse erreur de lecture (31/10/2026, Chromecast en 1.0.1 et téléphone) : un transcodage au son copié (AVI en MPEG-4 et MP3) n'affiche plus d'erreur au lancement ; une erreur affichée arrête le lecteur ; AVI de test sur l'émulateur | en revue (§ 4.28) | — |
 | Transcodage à la taille de l'écran (31/10/2026, Chromecast en 1.0.2 sur télé 1080p SDR) : N, bandeau « Connexion perdue » seulement sur des chargements en échec ; O, réencodage jamais plus grand que l'écran, débit plafonné en « Automatique », H.264 High ; P, HDR lu sur le mode courant de l'écran (API 34), tone mapping direct sur écran SDR ; Q, une lecture figée 30 s finit sur une erreur ; R, tampon de la TV borné à 40 % du tas (la Shield se fermait par manque de mémoire en lecture directe 4K) | en revue (§ 4.29) | — |
-| Fiches vides (02/11/2026, téléphone en essai, logique partagée avec la TV) : S, une saison d'« Ajouts récents » ouvre la fiche de sa série sur elle ; T, un dossier à une vidéo ouvre cette vidéo, un dossier à plusieurs montre son contenu en grille, filtres et index local des vidéos perso ; U, une fiche sans rien à lire le dit, et pourquoi dans « ⋯ » | en revue (§ 4.30 ; captures dans `docs/screenshots/fiches-vides/`) | — |
+| Fiches vides (02/11/2026, téléphone en essai, logique partagée avec la TV) : S, une saison d'« Ajouts récents » ouvre la fiche de sa série sur elle ; T, un dossier à une vidéo ouvre cette vidéo, un dossier à plusieurs montre son contenu en grille, filtres et index local des vidéos perso ; U, une fiche sans rien à lire le dit, et pourquoi dans « ⋯ » ; V, téléphone hors de la maison : adresse à distance ajoutée depuis l'écran « Le serveur ne répond pas » | en revue (§ 4.30 et 4.31 ; captures dans `docs/screenshots/fiches-vides/`) | — |
 
 *(Chaque jalon met à jour ce tableau et ajoute ses contrats au § 4.)*
 
@@ -2722,6 +2722,35 @@ Deux causes, établies sur le vrai serveur (Jellyfin 12.3), aucune dans les fich
   `homevideos` (en ajouter une changerait les comptes des tests d'intégration) :
   `JellyfinBrowseIntegrationTest` vérifie à la place que `children` d'une série rend ses saisons, et
   qu'une saison de `/Items/Latest` (s'il en rend) nomme sa série.
+
+### 4.31 Le téléphone hors de la maison, sans adresse à distance (V, 02/11/2026)
+
+Le mainteneur, hors de la maison avec la `1.0.4-essai.2`, restait bloqué sur « Le serveur ne répond pas ».
+Serveur et adresse publique répondaient ; le journal du proxy public n'avait **aucune** requête du
+téléphone. Cause probable, lue dans le code : le serveur enregistré n'a pas d'adresse distante (une
+installation antérieure à F n'a jamais vu l'écran qui la propose), et `AddressResolver` n'essaie alors
+que l'adresse locale. **Hypothèse non vérifiée sur l'appareil** ; autre cause possible du même effet :
+« Basculement automatique » réglé sur « Réseau local seulement » (§ 4.17). Or l'écran d'échec ne
+proposait que « Réessayer » et « Changer de serveur », et l'adresse distante se règle dans le Profil,
+hors d'atteinte tant qu'aucun profil n'est ouvert.
+
+- **Sur le téléphone**, l'écran d'échec au démarrage (`MobileUnreachableScreen`) dit ce qui manque.
+  Sans adresse distante, il dit qu'hors de la maison il en faut une et propose « Ajouter une adresse
+  à distance ». Avec une adresse distante, il dit qu'aucune des deux adresses ne répond et propose
+  « Modifier l'adresse à distance ». Le message général (`error_unreachable_message`, qui parle de la
+  télévision) reste celui de la TV, dont l'écran ne change pas.
+- Le bouton ouvre l'écran d'adresse existant (`AddressMode.EditRemote`). Sans connexion, le
+  `SessionManager` retient le serveur resté muet au démarrage (`unreachable`) ;
+  `setUnreachableRemote` vérifie que **le même serveur** répond à l'adresse saisie (même identifiant,
+  comme `AddressResolver` ; un autre serveur est refusé, `NotAServer`, rien n'est gardé), puis
+  l'enregistre. Profils et sessions ne sont pas touchés ; l'appli redémarre (`Route.Startup`) et ouvre
+  le profil comme d'habitude. Un démarrage en échec n'a plus de serveur « en cours » (`connection` nulle).
+- **Preuve** : `SessionManagerTest` (sans adresse distante : échec, adresse d'un autre serveur refusée,
+  adresse ajoutée, redémarrage en `Remote` sur le profil ouvert) ; `MobileRemoteAddressTest` par l'appli
+  réelle (message, bouton, saisie, « Qui regarde ? » puis l'accueil sans reconnexion ; adresse d'un autre
+  serveur refusée ; avec une adresse distante, l'autre message et « Modifier l'adresse à distance ») ;
+  captures 207 du téléphone. La TV n'a ni nouveau code ni nouvelle chaîne sur cet écran ; ses tests et
+  captures restent identiques.
 
 ## 5. Tests et CI
 
