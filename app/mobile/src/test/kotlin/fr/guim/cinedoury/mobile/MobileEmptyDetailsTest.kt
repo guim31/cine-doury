@@ -3,11 +3,13 @@ package fr.guim.cinedoury.mobile
 import android.os.Looper
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.hasScrollToNodeAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
 import fr.guim.cinedoury.core.data.SessionManager
 import fr.guim.cinedoury.core.data.di.dataModule
 import fr.guim.cinedoury.core.data.security.TokenCipher
@@ -94,9 +96,20 @@ class MobileEmptyDetailsTest {
                     MobileSamples.series.id to listOf(MobileSamples.show),
                     homeVideos.id to listOf(oneFolder, manyFolder, emptyFolder, alone) + many,
                 ),
-            extras = MobileSamples.episodes + MobileSamples.seasons.mapIndexed { index, it ->
-                    it.copy(episode = EpisodeInfo(MobileSamples.show.id, MobileSamples.show.title, null, index + 1, null))
-                },
+            extras =
+                MobileSamples.episodes +
+                    MobileSamples.seasons.mapIndexed { index, it ->
+                        it.copy(
+                            episode =
+                                EpisodeInfo(
+                                    MobileSamples.show.id,
+                                    MobileSamples.show.title,
+                                    null,
+                                    index + 1,
+                                    null,
+                                ),
+                        )
+                    },
             folders =
                 mapOf(
                     oneFolder.id to listOf(alone.id),
@@ -184,10 +197,15 @@ class MobileEmptyDetailsTest {
     @Test
     fun `a season opens its series on it, and Back leaves at once`() {
         val navigator = open(season)
-        // The episodes of season 2, not those of season 1; « Reprendre » of the series.
-        waitFor(hasText("Brume"))
-        assertEquals(0, count(hasText("La grande marée")))
+        // « Reprendre » of the series, then, down the page, the episodes of season 2, not those of season 1.
         waitFor(hasTestTag(MobileDetailsTags.PLAY))
+        compose.waitUntil(TIMEOUT) {
+            shadowOf(Looper.getMainLooper()).idle()
+            runCatching {
+                compose.onAllNodes(hasScrollToNodeAction())[0].performScrollToNode(hasText("Brume"))
+            }.isSuccess
+        }
+        assertEquals(0, count(hasText("La grande marée")))
         assertEquals(0, count(hasTestTag(MobileDetailsTags.NOTHING)))
         back()
         assertIs<Route.Libraries>(navigator.current.route)
@@ -196,7 +214,6 @@ class MobileEmptyDetailsTest {
     @Test
     fun `a folder of one video opens that video, ready to play`() {
         open(oneFolder)
-        waitFor(hasText(alone.title))
         tap(MobileDetailsTags.PLAY)
         waitFor(hasTestTag(MobilePlayerTags.SCREEN))
         compose.waitUntil(TIMEOUT) {

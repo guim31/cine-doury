@@ -164,14 +164,17 @@ class EmptyDetailsFlowTest {
     fun `a season of the new additions opens its series on it, and Back leaves at once`() {
         // As `/Items/Latest` gives it: the season, its series named, no episodes of its own.
         val navigator = open(J3Samples.mareesSeasons[1])
-        // The episodes of season 2, under the tabs of the series.
-        waitFor(hasText("Le chenal"))
-        waitFor(hasTestTag(DetailsPreview.season(1)))
-        assertEquals(0, compose.onAllNodes(hasText("Grande marée")).fetchSemanticsNodes().size)
         // « Reprendre » of the series: its episode in progress, in season 1.
-        waitFor(hasTestTag(DetailsPreview.PLAY))
+        waitFor(hasTestTag(DetailsPreview.season(1)))
         focusable(DetailsPreview.PLAY).assertIsFocused()
         assertEquals(0, compose.onAllNodes(hasTestTag(DetailsPreview.NOTHING)).fetchSemanticsNodes().size)
+        // Down lands on the tab shown, season 2, then on its first episode.
+        press(Key.DirectionDown)
+        focusable(DetailsPreview.season(1)).assertIsFocused()
+        press(Key.DirectionDown)
+        waitFor(hasText("Le retour"))
+        assertEquals(0, compose.onAllNodes(hasText("Grande marée")).fetchSemanticsNodes().size)
+        press(Key.DirectionUp, times = 2)
         compose.pressBack()
         compose.waitForIdle()
         assertIs<Route.Search>(navigator.current.route)
@@ -180,7 +183,7 @@ class EmptyDetailsFlowTest {
     @Test
     fun `a folder of one video opens that video, ready to play`() {
         open(EmptyDetailsSamples.oneFolder)
-        waitFor(hasText(EmptyDetailsSamples.alone.title))
+        // « Audio et sous-titres »: the screen is the video's (its title shows as its logo).
         waitFor(hasTestTag(DetailsPreview.TRACKS))
         focusable(DetailsPreview.PLAY).assertIsFocused()
         press(Key.DirectionCenter)
