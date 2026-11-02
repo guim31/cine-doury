@@ -2749,7 +2749,7 @@ hors d'atteinte tant qu'aucun profil n'est ouvert.
   adresse ajoutée, redémarrage en `Remote` sur le profil ouvert) ; `MobileRemoteAddressTest` par l'appli
   réelle (message, bouton, saisie, « Qui regarde ? » puis l'accueil sans reconnexion ; adresse d'un autre
   serveur refusée ; avec une adresse distante, l'autre message et « Modifier l'adresse à distance ») ;
-  captures 207 du téléphone. La TV n'a ni nouveau code ni nouvelle chaîne sur cet écran ; ses tests et
+  captures 207 du téléphone (dans `docs/screenshots/fiches-vides/`, avec l'avant). La TV n'a ni nouveau code ni nouvelle chaîne sur cet écran ; ses tests et
   captures restent identiques.
 
 ## 5. Tests et CI
