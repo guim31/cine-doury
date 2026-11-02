@@ -202,10 +202,10 @@ class MobileEmptyDetailsTest {
         compose.waitUntil(TIMEOUT) {
             shadowOf(Looper.getMainLooper()).idle()
             runCatching {
-                compose.onAllNodes(hasScrollToNodeAction())[0].performScrollToNode(hasText("Brume"))
+                compose.onAllNodes(hasScrollToNodeAction())[0].performScrollToNode(hasText("Brume", substring = true))
             }.isSuccess
         }
-        assertEquals(0, count(hasText("La grande marée")))
+        assertEquals(0, count(hasText("La grande marée", substring = true)))
         assertEquals(0, count(hasTestTag(MobileDetailsTags.NOTHING)))
         back()
         assertIs<Route.Libraries>(navigator.current.route)
