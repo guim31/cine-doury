@@ -18,6 +18,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
@@ -91,6 +92,8 @@ fun MobileApp(
 ) {
     val saveable = rememberSaveableStateHolder()
     navigator.onRemoved = { saveable.removeState(it.id) }
+    // The activity goes: the view models of its screens too (Y).
+    DisposableEffect(navigator) { onDispose { navigator.clear() } }
     val quickActions = remember { GlobalContext.getOrNull()?.getOrNull<QuickActions>() }
     BackHandler(enabled = navigator.canGoBack) { navigator.pop() }
     val entry = navigator.current
@@ -118,6 +121,11 @@ fun MobileApp(
             ) {
                 saveable.SaveableStateProvider(entry.id) {
                     Screen(entry.route, navigator, sessions, version)
+                }
+                // Its view models stay until it has left the composition (Y).
+                DisposableEffect(entry) {
+                    entry.shown()
+                    onDispose { entry.hidden() }
                 }
             }
         }

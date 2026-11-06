@@ -77,6 +77,10 @@ import kotlin.time.Duration.Companion.seconds
  * mobile), and the quality goes down and back up with the margin ([QualityGovernor]); null on the TV.
  * @param tracks the tracks chosen for each series (W, `SPEC.md` § 4.32): an episode starts with them,
  * and a choice made here becomes that of the series.
+ *
+ * No sound without a screen (Y, `SPEC.md` § 4.32): the player is made and plays only once the screen
+ * says it is started ([onScreenStarted]); it pauses when the screen stops, and is released when the
+ * player closes or the screen goes, even in the middle of a load. One player at a time ([LivePlayers]).
  */
 @Suppress("TooManyFunctions", "LargeClass", "LongParameterList") // A gesture each; the services it joins.
 class PlayerViewModel(
@@ -111,6 +115,18 @@ class PlayerViewModel(
 
     private var request = request
     private var player: VideoPlayer? = null
+
+    /** The number [LivePlayers] gave [player], for its line in the log. */
+    private var playerNumber = 0
+
+    /** The screen is at least started: the player may be made, and play (Y). */
+    private var screenStarted = false
+
+    /** What waits for the screen to start: the player made and the stream played (Y). */
+    private var pending: (() -> Unit)? = null
+
+    /** Another player was made while this one was alive (Y): this one starts again when its screen comes back. */
+    private var evicted = false
     private var reporter: PlaybackReporter? = null
     private var profile: PlaybackProfile? = null
 
@@ -189,18 +205,86 @@ class PlayerViewModel(
                 viewModelScope.launch { loadNeighbours(source, item) }
             }
             val stream = source.firstStream(item, settings, selection, start)
-            val player = player ?: players.create(capabilities, settings).also { created -> watch(created) }
-            this.player = player
-            surfacePlayer.value = player.player
-            local.update { it.copy(stream = stream, loading = false, error = null) }
-            watch.reset()
-            logDecision(item, stream, fallback = false, settings.directPlay == DirectPlayMode.Forced)
-            player.load(stream, start, selection?.audioIndex, selection?.subtitleIndex)
-            if (!request.trailer) {
-                reporter = PlaybackReporter(source.playback, reportScope) { report() }.also { it.start() }
-            }
-            startTicker()
+            if (finished) return@guarded
+            val open = { open(source, request, item, stream, start, selection) }
+            // Not before the screen is there: a load that ends after « Accueil » plays nothing (Y).
+            if (screenStarted) open() else pending = open
         }
+    }
+
+    /** Makes the player if there is none, and plays [stream]: only with the screen started (Y). */
+    private fun open(
+        source: LibrarySource,
+        request: PlaybackRequest,
+        item: MediaItem,
+        stream: PlaybackStream,
+        start: Duration,
+        selection: TrackSelection?,
+    ) {
+        val state = local.value
+        val player = player ?: makePlayer(item, stream)
+        surfacePlayer.value = player.player
+        local.update { it.copy(stream = stream, loading = false, error = null) }
+        watch.reset()
+        logDecision(item, stream, fallback = false, state.settings.directPlay == DirectPlayMode.Forced)
+        player.load(stream, start, selection?.audioIndex, selection?.subtitleIndex)
+        if (!request.trailer) {
+            reporter = PlaybackReporter(source.playback, reportScope) { report() }.also { it.start() }
+        }
+        startTicker()
+    }
+
+    private fun makePlayer(
+        item: MediaItem,
+        stream: PlaybackStream,
+    ): VideoPlayer {
+        val state = local.value
+        val created = players.create(checkNotNull(state.capabilities), state.settings)
+        watch(created)
+        player = created
+        playerNumber =
+            LivePlayers.created(created, "item ${item.id.value}, ${stream.method}") {
+                // Another player was made: this one goes, and starts again if its screen comes back.
+                evicted = true
+                ticker?.cancel()
+                reporter?.stop(report())
+                reporter = null
+                releasePlayer("another player was made")
+            }
+        return created
+    }
+
+    private fun releasePlayer(why: String) {
+        val player = player ?: return
+        this.player = null
+        surfacePlayer.value = null
+        player.release()
+        LivePlayers.released(playerNumber, why)
+    }
+
+    /**
+     * The screen of the player is started (Y): what waited for it plays now. A player released for
+     * another one starts again where it stood.
+     */
+    fun onScreenStarted() {
+        screenStarted = true
+        if (finished) return
+        if (evicted) {
+            evicted = false
+            pending = null
+            restart()
+            return
+        }
+        pending?.let { open ->
+            pending = null
+            open()
+        }
+    }
+
+    /** The screen of the player stopped (« Accueil », another app, gone): no more sound (Y). */
+    fun onScreenStopped() {
+        screenStarted = false
+        if (player != null) pause()
     }
 
     /** The version and tracks chosen on the details screen, else those of the profile (`SPEC.md` § 4.10). */
@@ -627,6 +711,7 @@ class PlayerViewModel(
         reporter?.restart()
         viewModelScope.launch {
             guarded {
+                if (this@PlayerViewModel.player !== player) return@guarded
                 val stream =
                     source.playback.playbackInfo(
                         PlaybackInfoRequest(
@@ -641,6 +726,8 @@ class PlayerViewModel(
                             forceDirect = allowDirect && local.value.settings.directPlay == DirectPlayMode.Forced,
                         ),
                     )
+                // The player went while the server answered (closed, released for another): nothing to play.
+                if (this@PlayerViewModel.player !== player || finished) return@guarded
                 logDecision(state.item, stream, fallback = fellBack, forced = false)
                 local.update {
                     it.copy(
@@ -652,6 +739,8 @@ class PlayerViewModel(
                 }
                 watch.reset()
                 player.load(stream, at, audioIndex, subtitleIndex)
+                // A new stream asked while the screen is stopped (the network of a phone) stays paused (Y).
+                if (!screenStarted) player.pause()
                 reporter?.start()
             }
         }
@@ -862,6 +951,11 @@ class PlayerViewModel(
 
     override fun retry() {
         fellBack = false
+        restart()
+    }
+
+    /** Starts the item again where it stood: after an error, or a player released for another (Y). */
+    private fun restart() {
         local.update { it.copy(error = null, loading = true) }
         viewModelScope.launch {
             // Where the player stopped: the server may not have learnt it (the stopped report fails
@@ -892,6 +986,10 @@ class PlayerViewModel(
     fun close() {
         leave()
         finished = true
+        pending = null
+        ticker?.cancel()
+        // Released now, not when the screen goes: no sound after « Retour », whatever the screens do (Y).
+        releasePlayer("closed")
         closed.send(Unit)
     }
 
@@ -923,10 +1021,10 @@ class PlayerViewModel(
 
     override fun onCleared() {
         if (!finished) leave()
+        finished = true
+        pending = null
         ticker?.cancel()
-        surfacePlayer.value = null
-        player?.release()
-        player = null
+        releasePlayer("screen gone")
     }
 
     private suspend fun guarded(block: suspend () -> Unit) {

@@ -12,6 +12,7 @@ import fr.guim.cinedoury.core.model.SubtitleMethod
 import fr.guim.cinedoury.core.model.TranscodeReason
 import fr.guim.cinedoury.core.source.PlaybackSource
 import fr.guim.cinedoury.core.source.SourceException
+import kotlinx.coroutines.CompletableDeferred
 
 /**
  * Playback held in memory: it plays every source directly unless [transcode] says otherwise (or the
@@ -38,10 +39,14 @@ class InMemoryPlayback(
     /** When set, every report fails with it (the server went away). */
     var failure: SourceException? = null
 
+    /** When set, a stream is given only once it completes: the server is slow to answer (Y). */
+    var gate: CompletableDeferred<Unit>? = null
+
     override val streamHeaders: Map<String, String> = mapOf("Authorization" to "MediaBrowser Token=\"test\"")
 
     override suspend fun playbackInfo(request: PlaybackInfoRequest): PlaybackStream {
         requests += request
+        gate?.await()
         failure?.let { throw it }
         val versions =
             sources[request.item] ?: lookup(request.item) ?: throw SourceException.NotFound(request.item.value)

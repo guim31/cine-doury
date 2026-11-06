@@ -118,6 +118,8 @@ class PlaybackFailureTest {
                 updates = koin.get(),
                 reportScope = koin.get<PlaybackScope>().scope,
             )
+        // The screen of the player is there (Y): without it, nothing plays.
+        model.onScreenStarted()
         loaded(item)
     }
 

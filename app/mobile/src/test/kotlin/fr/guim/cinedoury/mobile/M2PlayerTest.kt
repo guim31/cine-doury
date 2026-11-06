@@ -117,6 +117,8 @@ class M2PlayerTest {
                 reportScope = koin.get<PlaybackScope>().scope,
                 network = network,
             )
+        // The screen of the player is there (Y): without it, nothing plays.
+        model.onScreenStarted()
         waitUntil("playing") { model.state.value.stream != null && !model.state.value.loading }
         fake.duration = 100.minutes
     }

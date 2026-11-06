@@ -58,8 +58,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import fr.guim.cinedoury.core.designsystem.component.CineIcons
 import fr.guim.cinedoury.core.designsystem.component.TrickplayPreview
@@ -178,8 +177,13 @@ fun MobilePlayerRoute(
         onPlayPause = viewModel::togglePlay,
         onJump = { forward -> viewModel.seekTo(jumpFrom(viewModel.state.value, forward)) },
     )
-    // In the background or the screen off, the film pauses; the small window keeps it playing (M2).
-    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.pause() }
+    // The player plays only while its screen is started (Y): stopped (« Accueil », screen off) or gone, it
+    // pauses; a load that ends in the background waits for the screen to come back.
+    // The small window (started, not resumed) keeps it playing (M2).
+    LifecycleStartEffect(viewModel) {
+        viewModel.onScreenStarted()
+        onStopOrDispose { viewModel.onScreenStopped() }
+    }
     MobilePlayerScreen(
         state = state,
         actions = viewModel,

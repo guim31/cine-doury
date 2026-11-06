@@ -41,8 +41,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.Text
 import fr.guim.cinedoury.core.data.SessionManager
@@ -141,7 +140,12 @@ fun PlayerRoute(
         state.settings.matchFrameRate,
         videoHeight = video?.height?.takeIf { state.settings.matchResolution },
     )
-    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.pause() }
+    // The player plays only while its screen is started (Y): stopped (« Accueil », screen off) or gone, it
+    // pauses; a load that ends in the background waits for the screen to come back.
+    LifecycleStartEffect(viewModel) {
+        viewModel.onScreenStarted()
+        onStopOrDispose { viewModel.onScreenStopped() }
+    }
     PlayerScreen(
         state = state,
         actions = viewModel,
