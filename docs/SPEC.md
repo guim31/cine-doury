@@ -2791,6 +2791,9 @@ toutes les icônes : aucune des nôtres n'a de déplacement relatif, et aucun d�
 fermeture (ceux de Material compris) ne dépend de la lecture. Sur l'émulateur API 30 de la CI,
 `PlayerIconsOnDeviceTest` (`ci/emulator-icons.sh`) dessine l'icône par l'Android de la Shield, vérifie
 son triangle et capture le lecteur d'un épisode (artefact `emulator-api30`, `emulator-icons/`).
+**Vérifié sur l'émulateur API 30** (CI, 06/11/2026) : l'ancien tracé y dessine son triangle hors de la
+grille (« path of the 1.0.5 has its triangle in the grid: false »), le nouveau le garde à sa place : le
+défaut de la Shield est reproduit, et corrigé, sur Android 11.
 
 **Y. Le son continuait après avoir quitté une vidéo.** Cause la plus probable, lue dans le code : à
 « Retour », la pile vidait les modèles de vue de l'écran du lecteur **pendant** qu'il était encore

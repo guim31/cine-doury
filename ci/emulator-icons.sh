@@ -18,6 +18,11 @@ for name in $(adb shell run-as fr.guim.cinedoury ls "files/$dir" | tr -d '\r'); 
 done
 adb logcat -d -s PlayerIcons | tail -n 20 | tee -a emulator-icons/emulator-icons.txt || true
 ls -l emulator-icons
+# The pictures in the log too, in Base64: a cloud session reads the log of a job but may not reach the
+# storage of the artifacts (decode with ci/emulator-icons-decode.py).
+for png in emulator-icons/*.png; do
+  echo "ICON-PNG $(basename "$png") $(base64 -w0 "$png")"
+done
 if grep -q -E "FAILURES!!!|INSTRUMENTATION_FAILED|Process crashed" emulator-icons/emulator-icons.txt \
   || ! grep -q "OK (2 tests)" emulator-icons/emulator-icons.txt; then
   echo "::error::the icons of the player on the emulator failed"
