@@ -116,6 +116,7 @@ class PlayerLifecycleTest {
             sessions.addServer(ServerAddress.of("http://192.0.2.10:8096"))
             sessions.signIn(Credentials.Password("admin", "secret"))
         }
+        LivePlayers.forgetAll()
         LivePlayers.sink = { log += it }
     }
 

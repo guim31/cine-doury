@@ -15,9 +15,10 @@ import kotlinx.coroutines.flow.Flow
 /**
  * The local store (`SPEC.md` § 4.7 and § 4.9): servers and profiles (J1), the cache of the home and
  * the home and library preferences (J2), the local index of the libraries and the icons of the
- * libraries (J3), the title index and the recent searches (J5), the tracks chosen for each series (W). Tokens are stored encrypted by a key of the Android
- * Keystore, PINs as salted hashes. The schema of each version is exported to `core/data/schemas/`,
- * and every migration is tested from it (`CineDatabaseMigrationTest`).
+ * libraries (J3), the title index and the recent searches (J5), the tracks chosen for each series
+ * (W). Tokens are stored encrypted by a key of the Android Keystore, PINs as salted hashes. The
+ * schema of each version is exported to `core/data/schemas/`, and every migration is tested from it
+ * (`CineDatabaseMigrationTest`).
  */
 @Database(
     entities = [

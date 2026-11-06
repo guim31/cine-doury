@@ -113,6 +113,7 @@ class MobilePlayerLifecycleTest {
             sessions.addServer(ServerAddress.of("http://192.0.2.10:8096"))
             sessions.signIn(Credentials.Password("admin", "secret"))
         }
+        LivePlayers.forgetAll()
     }
 
     @After
@@ -260,7 +261,8 @@ class MobilePlayerLifecycleTest {
     ) {
         val end = System.currentTimeMillis() + TIMEOUT
         while (System.currentTimeMillis() < end) {
-            shadowOf(Looper.getMainLooper()).idle()
+            // The ticker of the player (the network looked at once a second) runs on the clock of the looper.
+            shadowOf(Looper.getMainLooper()).idleFor(PlayerViewModel.TICK.toJavaDuration())
             if (condition()) return
             Thread.sleep(POLL)
         }

@@ -47,6 +47,12 @@ object LivePlayers {
         return made
     }
 
+    /** Forgets every player: a test starts from none, whatever the tests before it left. */
+    @Synchronized
+    fun forgetAll() {
+        current = null
+    }
+
     @Synchronized
     fun released(
         number: Int,
