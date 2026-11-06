@@ -16,14 +16,52 @@ object TrackPreselection {
      *   preferred language, the default track, else the first;
      * - Smart: as Always when the audio is not in the preferred subtitle language, else as OnlyForced;
      * - Default: a forced track (as OnlyForced), else a track the file marks as default.
+     *
+     * The tracks last chosen for the series ([remembered], W) come first, found by language and nature,
+     * never by index; one the file does not have leaves the choice to the preferences.
      */
     fun choose(
         source: MediaSource,
         preferences: PlaybackPreferences,
+        remembered: SeriesTracks? = null,
     ): TrackSelection {
-        val audio = audio(source.audio, preferences)
-        val subtitles = subtitles(source.subtitles, preferences, audio?.language)
+        val audio = remembered?.audio?.let { match(source.audio, it, audio = true) } ?: audio(source.audio, preferences)
+        val chosen = remembered?.takeIf { it.subtitlesChosen }
+        val subtitles =
+            when {
+                chosen == null -> {
+                    subtitles(source.subtitles, preferences, audio?.language)
+                }
+
+                chosen.subtitles == null -> {
+                    null
+                }
+
+                else -> {
+                    match(source.subtitles, chosen.subtitles, audio = false)
+                        ?: subtitles(source.subtitles, preferences, audio?.language)
+                }
+            }
         return TrackSelection(source.id, audio?.index, subtitles?.index)
+    }
+
+    /**
+     * The track of [tracks] that is what [traits] says: the same language and, for subtitles, forced or
+     * complete as it was; then the same « malentendants », the default, the first.
+     */
+    private fun match(
+        tracks: List<MediaStream>,
+        traits: TrackTraits,
+        audio: Boolean,
+    ): MediaStream? {
+        val same =
+            tracks.filter { track ->
+                val language = traits.language
+                val sameLanguage = if (language == null) track.language == null else track.inLanguage(language)
+                sameLanguage && (audio || track.isForced == traits.forced)
+            }
+        val nature = same.filter { it.isHearingImpaired == traits.hearingImpaired }
+        return nature.firstOrNull { it.isDefault } ?: nature.firstOrNull() ?: same.firstOrNull()
     }
 
     private fun audio(

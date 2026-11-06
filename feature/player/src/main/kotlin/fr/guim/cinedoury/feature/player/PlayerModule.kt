@@ -22,6 +22,7 @@ val playerModule =
                 updates = get(),
                 reportScope = get<PlaybackScope>().scope,
                 network = getOrNull(),
+                tracks = getOrNull(),
             )
         }
         viewModel { PlaybackSettingsViewModel(get(), get()) }

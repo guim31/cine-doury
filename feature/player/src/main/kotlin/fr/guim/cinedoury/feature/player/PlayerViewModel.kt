@@ -9,12 +9,15 @@ import fr.guim.cinedoury.core.data.SessionManager
 import fr.guim.cinedoury.core.data.UserDataUpdates
 import fr.guim.cinedoury.core.data.home.HomeRepository
 import fr.guim.cinedoury.core.data.home.ProfileKey
+import fr.guim.cinedoury.core.data.tracks.SeriesTracksRepository
 import fr.guim.cinedoury.core.model.DeviceCapabilities
 import fr.guim.cinedoury.core.model.DirectPlayMode
 import fr.guim.cinedoury.core.model.FallbackAction
+import fr.guim.cinedoury.core.model.ItemId
 import fr.guim.cinedoury.core.model.ItemKind
 import fr.guim.cinedoury.core.model.MediaItem
 import fr.guim.cinedoury.core.model.MediaSegment
+import fr.guim.cinedoury.core.model.MediaSource
 import fr.guim.cinedoury.core.model.NetworkKind
 import fr.guim.cinedoury.core.model.PlayMethod
 import fr.guim.cinedoury.core.model.PlaybackFailure
@@ -30,9 +33,11 @@ import fr.guim.cinedoury.core.model.PlaybackWatch
 import fr.guim.cinedoury.core.model.PlayerSettings
 import fr.guim.cinedoury.core.model.QualityGovernor
 import fr.guim.cinedoury.core.model.SegmentAction
+import fr.guim.cinedoury.core.model.SeriesTracks
 import fr.guim.cinedoury.core.model.StillWatching
 import fr.guim.cinedoury.core.model.TrackPreselection
 import fr.guim.cinedoury.core.model.TrackSelection
+import fr.guim.cinedoury.core.model.TrackTraits
 import fr.guim.cinedoury.core.model.UserData
 import fr.guim.cinedoury.core.playback.NetworkMonitor
 import fr.guim.cinedoury.core.playback.PlaybackReporter
@@ -70,6 +75,8 @@ import kotlin.time.Duration.Companion.seconds
  * @param reportScope outlives the screen: the last report leaves after it.
  * @param network the network of a phone (M2, `SPEC.md` § 4.27): its default quality follows it (Wi-Fi or
  * mobile), and the quality goes down and back up with the margin ([QualityGovernor]); null on the TV.
+ * @param tracks the tracks chosen for each series (W, `SPEC.md` § 4.32): an episode starts with them,
+ * and a choice made here becomes that of the series.
  */
 @Suppress("TooManyFunctions", "LargeClass", "LongParameterList") // A gesture each; the services it joins.
 class PlayerViewModel(
@@ -83,6 +90,7 @@ class PlayerViewModel(
     private val reportScope: CoroutineScope,
     private val clock: Clock = Clock.systemUTC(),
     private val network: NetworkMonitor? = null,
+    private val tracks: SeriesTracksRepository? = null,
 ) : ViewModel(),
     PlayerActions {
     private val active: ActiveSession? = sessions.active.value
@@ -203,7 +211,44 @@ class PlayerViewModel(
     ): TrackSelection? {
         request.selection?.let { return it }
         val version = item.mediaSources.firstOrNull() ?: return null
-        return TrackPreselection.choose(version, source.playbackPreferences())
+        return TrackPreselection.choose(version, source.playbackPreferences(), remembered(item))
+    }
+
+    /** The tracks last chosen for the series of [item] (W); null for a film, or when none were. */
+    private suspend fun remembered(item: MediaItem): SeriesTracks? {
+        val series = item.seriesId() ?: return null
+        val profile = profileKey() ?: return null
+        return tracks?.get(profile, series)
+    }
+
+    private fun MediaItem.seriesId(): ItemId? = episode?.seriesId?.takeIf { kind == ItemKind.Episode }
+
+    private fun profileKey(): ProfileKey? = active?.let { ProfileKey(it.profile.serverId, it.profile.user.id.value) }
+
+    /** A track chosen by hand during an episode becomes the choice of its series (W). */
+    private fun keepAudioForSeries(index: Int) {
+        val stream = currentVersion()?.audio?.firstOrNull { it.index == index } ?: return
+        rememberForSeries { profile, series -> rememberAudio(profile, series, TrackTraits.of(stream)) }
+    }
+
+    /** [index] null: « Sans sous-titres », a choice too. */
+    private fun keepSubtitlesForSeries(index: Int?) {
+        val version = currentVersion() ?: return
+        val stream = index?.let { wanted -> version.subtitles.firstOrNull { it.index == wanted } ?: return }
+        rememberForSeries { profile, series -> rememberSubtitles(profile, series, stream?.let(TrackTraits::of)) }
+    }
+
+    private fun currentVersion(): MediaSource? =
+        local.value.stream?.source ?: local.value.item.mediaSources
+            .firstOrNull()
+
+    /** Writes for the series of the episode played, where it outlives the screen; nothing for a film. */
+    private fun rememberForSeries(write: suspend SeriesTracksRepository.(ProfileKey, ItemId) -> Unit) {
+        val state = local.value
+        val series = state.item.seriesId()?.takeIf { !state.trailer } ?: return
+        val profile = profileKey() ?: return
+        val repository = tracks ?: return
+        reportScope.launch { repository.write(profile, series) }
     }
 
     private fun StillWatching.restoreFrom(previous: StillWatching) {
@@ -776,6 +821,7 @@ class PlayerViewModel(
 
     override fun selectAudio(index: Int) {
         if (index == local.value.audioIndex) return
+        keepAudioForSeries(index)
         if (player?.selectAudio(index) == true && local.value.method == PlayMethod.DirectPlay) {
             local.update { it.copy(audioIndex = index) }
             reporter?.progress()
@@ -787,6 +833,7 @@ class PlayerViewModel(
     override fun selectSubtitles(index: Int?) {
         if (index == local.value.subtitleIndex) return
         GestureLog.mark("subtitles ${index ?: "none"}")
+        keepSubtitlesForSeries(index)
         if (player?.selectSubtitles(index) == true) {
             local.update { it.copy(subtitleIndex = index) }
             reporter?.progress()

@@ -6,10 +6,12 @@ import androidx.lifecycle.viewModelScope
 import fr.guim.cinedoury.core.data.ActiveSession
 import fr.guim.cinedoury.core.data.SessionManager
 import fr.guim.cinedoury.core.data.UserDataUpdates
+import fr.guim.cinedoury.core.data.home.ProfileKey
 import fr.guim.cinedoury.core.data.index.LibraryIndex
 import fr.guim.cinedoury.core.data.manage.ChangeKind
 import fr.guim.cinedoury.core.data.manage.ItemChange
 import fr.guim.cinedoury.core.data.manage.ManageUpdates
+import fr.guim.cinedoury.core.data.tracks.SeriesTracksRepository
 import fr.guim.cinedoury.core.model.ItemId
 import fr.guim.cinedoury.core.model.ItemKind
 import fr.guim.cinedoury.core.model.ManageRights
@@ -18,11 +20,13 @@ import fr.guim.cinedoury.core.model.MediaSource
 import fr.guim.cinedoury.core.model.MetadataRefresh
 import fr.guim.cinedoury.core.model.PlaybackPreferences
 import fr.guim.cinedoury.core.model.PlaybackRequest
+import fr.guim.cinedoury.core.model.SeriesTracks
 import fr.guim.cinedoury.core.model.SmartPlay
 import fr.guim.cinedoury.core.model.TechBadge
 import fr.guim.cinedoury.core.model.TechnicalSummary
 import fr.guim.cinedoury.core.model.TrackPreselection
 import fr.guim.cinedoury.core.model.TrackSelection
+import fr.guim.cinedoury.core.model.TrackTraits
 import fr.guim.cinedoury.core.model.UserData
 import fr.guim.cinedoury.core.model.seriesCard
 import fr.guim.cinedoury.core.source.LibrarySource
@@ -186,6 +190,7 @@ class DetailsViewModel(
     private val manager: ItemManager? = null,
     manageUpdates: ManageUpdates? = null,
     season: ItemId? = null,
+    private val tracks: SeriesTracksRepository? = null,
 ) : ViewModel(),
     DetailsActions {
     private val active: ActiveSession? = sessions.active.value
@@ -208,6 +213,9 @@ class DetailsViewModel(
             ),
         )
     private var preferences = PlaybackPreferences()
+
+    /** The tracks last chosen for the series of an episode (W); null for anything else. */
+    private var remembered: SeriesTracks? = null
 
     val state: StateFlow<DetailsState> = local.asStateFlow()
 
@@ -268,6 +276,7 @@ class DetailsViewModel(
                     val preferences = async { source.playbackPreferences() }
                     this@DetailsViewModel.preferences = preferences.await()
                     val item = unfolded(source, details.await())
+                    remembered = remembered(item)
                     local.update { state ->
                         state.copy(
                             item = item,
@@ -284,6 +293,7 @@ class DetailsViewModel(
                                     TrackPreselection.choose(
                                         it,
                                         this@DetailsViewModel.preferences,
+                                        remembered,
                                     )
                                 },
                         )
@@ -455,15 +465,41 @@ class DetailsViewModel(
         val source =
             local.value.item.mediaSources
                 .firstOrNull { it.id == sourceId } ?: return
-        local.update { it.copy(selection = TrackPreselection.choose(source, preferences)) }
+        local.update { it.copy(selection = TrackPreselection.choose(source, preferences, remembered)) }
     }
 
-    override fun selectAudio(index: Int) = local.update { it.copy(selection = it.selection?.copy(audioIndex = index)) }
+    override fun selectAudio(index: Int) {
+        local.update { it.copy(selection = it.selection?.copy(audioIndex = index)) }
+        val stream = selectedSource()?.audio?.firstOrNull { it.index == index } ?: return
+        rememberForSeries { profile, series -> rememberAudio(profile, series, TrackTraits.of(stream)) }
+    }
 
-    override fun selectSubtitles(index: Int?) =
-        local.update {
-            it.copy(selection = it.selection?.copy(subtitleIndex = index))
-        }
+    override fun selectSubtitles(index: Int?) {
+        local.update { it.copy(selection = it.selection?.copy(subtitleIndex = index)) }
+        val version = selectedSource() ?: return
+        val stream = index?.let { wanted -> version.subtitles.firstOrNull { it.index == wanted } ?: return }
+        rememberForSeries { profile, series -> rememberSubtitles(profile, series, stream?.let(TrackTraits::of)) }
+    }
+
+    private fun selectedSource(): MediaSource? {
+        val state = local.value
+        return state.item.mediaSources.firstOrNull { it.id == state.selection?.sourceId }
+    }
+
+    /** The tracks of an episode chosen here, before playing, become those of its series (W). */
+    private fun rememberForSeries(write: suspend SeriesTracksRepository.(ProfileKey, ItemId) -> Unit) {
+        val item = local.value.item
+        val series = item.episode?.seriesId?.takeIf { item.kind == ItemKind.Episode } ?: return
+        val repository = tracks ?: return
+        val profile = active?.let { ProfileKey(it.profile.serverId, it.profile.user.id.value) } ?: return
+        viewModelScope.launch { repository.write(profile, series) }
+    }
+
+    private suspend fun remembered(item: MediaItem): SeriesTracks? {
+        val series = item.episode?.seriesId?.takeIf { item.kind == ItemKind.Episode } ?: return null
+        val profile = active?.let { ProfileKey(it.profile.serverId, it.profile.user.id.value) } ?: return null
+        return tracks?.get(profile, series)
+    }
 
     override fun playRequest(fromStart: Boolean): PlaybackRequest? {
         val state = local.value

@@ -6,7 +6,11 @@ import fr.guim.cinedoury.core.data.home.HomeRepository
 import fr.guim.cinedoury.core.data.home.ProfileKey
 import fr.guim.cinedoury.core.data.library.LibraryIconRepository
 import fr.guim.cinedoury.core.data.search.SearchRepository
+import fr.guim.cinedoury.core.data.tracks.SeriesTracksRepository
+import fr.guim.cinedoury.core.model.ItemId
 import fr.guim.cinedoury.core.model.LibraryId
+import fr.guim.cinedoury.core.model.SeriesTracks
+import fr.guim.cinedoury.core.model.TrackTraits
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.json.JSONArray
@@ -128,11 +132,45 @@ class CineDatabaseMigrationTest {
         }
 
     @Test
+    fun `version 4 keeps its title index in version 5, with no track chosen for any series`() =
+        runTest {
+            create("migration-4.db", 4).use { v4 ->
+                v4.execSQL(
+                    "INSERT INTO library_icons (server_id, library_id, icon) VALUES ('home', 'series', 'Shows')",
+                )
+            }
+            val database = Room.databaseBuilder(context, CineDatabase::class.java, "migration-4.db").build()
+            try {
+                assertEquals("Shows", database.index().icon("home", "series"))
+                val tracks = SeriesTracksRepository(database.seriesTracks())
+                val profile = ProfileKey("home", "u1")
+                assertEquals(null, tracks.get(profile, ItemId("marees")))
+                // A choice of audio, then of subtitles: both stay, by language and nature (W).
+                tracks.rememberAudio(profile, ItemId("marees"), TrackTraits("eng"))
+                tracks.rememberSubtitles(profile, ItemId("marees"), TrackTraits("fra", forced = true))
+                assertEquals(
+                    SeriesTracks(TrackTraits("eng"), subtitlesChosen = true, TrackTraits("fra", forced = true)),
+                    tracks.get(profile, ItemId("marees")),
+                )
+                tracks.rememberSubtitles(profile, ItemId("marees"), null)
+                assertEquals(
+                    SeriesTracks(TrackTraits("eng"), subtitlesChosen = true, subtitles = null),
+                    tracks.get(profile, ItemId("marees")),
+                )
+                // The server forgotten: its choices go.
+                tracks.clear("home", null)
+                assertEquals(null, tracks.get(profile, ItemId("marees")))
+            } finally {
+                database.close()
+            }
+        }
+
+    @Test
     fun `the exported schema is the one of the code`() {
         val latest =
             File("schemas/${CineDatabase::class.java.name}").listFiles().orEmpty().maxOf {
                 it.nameWithoutExtension.toInt()
             }
-        assertEquals(4, latest, "export the schema of the new version (CineDatabase.version)")
+        assertEquals(5, latest, "export the schema of the new version (CineDatabase.version)")
     }
 }

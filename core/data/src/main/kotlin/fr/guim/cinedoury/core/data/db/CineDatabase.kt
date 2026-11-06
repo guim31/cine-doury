@@ -15,7 +15,7 @@ import kotlinx.coroutines.flow.Flow
 /**
  * The local store (`SPEC.md` § 4.7 and § 4.9): servers and profiles (J1), the cache of the home and
  * the home and library preferences (J2), the local index of the libraries and the icons of the
- * libraries (J3), the title index and the recent searches (J5). Tokens are stored encrypted by a key of the Android
+ * libraries (J3), the title index and the recent searches (J5), the tracks chosen for each series (W). Tokens are stored encrypted by a key of the Android
  * Keystore, PINs as salted hashes. The schema of each version is exported to `core/data/schemas/`,
  * and every migration is tested from it (`CineDatabaseMigrationTest`).
  */
@@ -35,13 +35,15 @@ import kotlinx.coroutines.flow.Flow
         SearchTitleEntity::class,
         SearchStateEntity::class,
         RecentSearchEntity::class,
+        SeriesTracksEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
         AutoMigration(from = 2, to = 3),
         AutoMigration(from = 3, to = 4),
+        AutoMigration(from = 4, to = 5),
     ],
 )
 @TypeConverters(Converters::class)
@@ -57,6 +59,8 @@ abstract class CineDatabase : RoomDatabase() {
     abstract fun index(): IndexDao
 
     abstract fun search(): SearchDao
+
+    abstract fun seriesTracks(): SeriesTracksDao
 
     companion object {
         const val NAME = "cine-doury.db"
