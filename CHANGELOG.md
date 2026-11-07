@@ -6,6 +6,10 @@ technique est dans [`docs/SPEC.md`](docs/SPEC.md) ; les notes de chaque version 
 
 ## Non publié
 
+## 1.0.6 — 07/11/2026
+
+Notes de version : [`docs/releases/v1.0.6.md`](docs/releases/v1.0.6.md).
+
 Pistes, icône et son (les deux applis, sauf mention) :
 
 - **Les pistes choisies suivent la série** : l'audio et les sous-titres choisis à la main pendant un
