@@ -92,12 +92,20 @@ class FakeVideoPlayer : VideoPlayer {
     }
 }
 
-/** Gives the same [FakeVideoPlayer] to every playback. */
-class FakeVideoPlayers : VideoPlayerFactory {
+/** Gives the same [FakeVideoPlayer] to every playback, or a new one each time with [fresh]; keeps them all. */
+class FakeVideoPlayers(
+    private val fresh: Boolean = false,
+) : VideoPlayerFactory {
     val player = FakeVideoPlayer()
+
+    /** Every player made, in order. */
+    val made = mutableListOf<FakeVideoPlayer>()
+
+    /** A player made and not released would be heard: its sound with no screen is the bug of Y. */
+    val sounding: List<FakeVideoPlayer> get() = made.distinct().filter { it.playing && !it.released }
 
     override fun create(
         capabilities: fr.guim.cinedoury.core.model.DeviceCapabilities,
         settings: fr.guim.cinedoury.core.model.PlayerSettings,
-    ): VideoPlayer = player
+    ): VideoPlayer = (if (fresh && made.isNotEmpty()) FakeVideoPlayer() else player).also { made += it }
 }

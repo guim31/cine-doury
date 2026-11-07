@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
@@ -134,6 +135,8 @@ fun CineApp(
     val quickActions = remember { GlobalContext.getOrNull()?.getOrNull<QuickActions>() }
     val saveable = rememberSaveableStateHolder()
     navigator.onRemoved = { saveable.removeState(it.id) }
+    // The activity goes (or is made again: the navigator with it): the view models of its screens too (Y).
+    DisposableEffect(navigator) { onDispose { navigator.clear() } }
     val reduced = CineTheme.reducedMotion
     BackHandler(enabled = navigator.canGoBack) { navigator.pop() }
     // Opening a details screen is the one animated change of screen (`UI.md` § 7): the poster flies to
@@ -176,6 +179,11 @@ fun CineApp(
             ) {
                 saveable.SaveableStateProvider(entry.id) {
                     Screen(entry.route, navigator, sessions, variant, onToggleVariant, showCatalog, voiceRequests)
+                }
+                // Its view models stay until it has left the composition (Y).
+                DisposableEffect(entry) {
+                    entry.shown()
+                    onDispose { entry.hidden() }
                 }
                 // Its first frame is drawn: the end of its opening (`OpeningTrace`).
                 LaunchedEffect(entry.id) {

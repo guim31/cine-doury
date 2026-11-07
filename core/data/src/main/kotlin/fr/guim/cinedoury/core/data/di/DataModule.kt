@@ -25,6 +25,7 @@ import fr.guim.cinedoury.core.data.search.TitleIndex
 import fr.guim.cinedoury.core.data.security.KeystoreTokenCipher
 import fr.guim.cinedoury.core.data.security.TokenCipher
 import fr.guim.cinedoury.core.data.server.AddressResolver
+import fr.guim.cinedoury.core.data.tracks.SeriesTracksRepository
 import kotlinx.coroutines.flow.first
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
@@ -42,6 +43,7 @@ val dataModule =
         single { get<CineDatabase>().search() }
         single { TitleIndex(get()) }
         single { SearchRepository(get()) }
+        single { SeriesTracksRepository(get<CineDatabase>().seriesTracks()) }
         single {
             RequestSettings(
                 PreferenceDataStoreFactory.create { androidContext().preferencesDataStoreFile(RequestSettings.FILE) },
@@ -75,6 +77,7 @@ val dataModule =
             val titles = get<TitleIndex>()
             val search = get<SearchRepository>()
             val requests = get<RequestSettings>()
+            val tracks = get<SeriesTracksRepository>()
             SessionManager(get(), get(), get(), get(), get()) { serverId, userId ->
                 home.clear(serverId, userId)
                 if (userId != null) search.clearRecent(ProfileKey(serverId, userId))
@@ -83,6 +86,8 @@ val dataModule =
                     index.clear(serverId)
                     titles.clear(serverId)
                     requests.clear(serverId)
+                    // The tracks chosen for the series stay with a profile signed out, like the layout of its home (W).
+                    tracks.clear(serverId, null)
                 }
             }
         }

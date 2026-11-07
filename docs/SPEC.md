@@ -33,6 +33,7 @@ son domaine :
 | Fausse erreur de lecture (31/10/2026, Chromecast en 1.0.1 et téléphone) : un transcodage au son copié (AVI en MPEG-4 et MP3) n'affiche plus d'erreur au lancement ; une erreur affichée arrête le lecteur ; AVI de test sur l'émulateur | en revue (§ 4.28) | — |
 | Transcodage à la taille de l'écran (31/10/2026, Chromecast en 1.0.2 sur télé 1080p SDR) : N, bandeau « Connexion perdue » seulement sur des chargements en échec ; O, réencodage jamais plus grand que l'écran, débit plafonné en « Automatique », H.264 High ; P, HDR lu sur le mode courant de l'écran (API 34), tone mapping direct sur écran SDR ; Q, une lecture figée 30 s finit sur une erreur ; R, tampon de la TV borné à 40 % du tas (la Shield se fermait par manque de mémoire en lecture directe 4K) | en revue (§ 4.29) | — |
 | Fiches vides (02/11/2026, téléphone en essai, logique partagée avec la TV) : S, une saison d'« Ajouts récents » ouvre la fiche de sa série sur elle ; T, un dossier à une vidéo ouvre cette vidéo, un dossier à plusieurs montre son contenu en grille, filtres et index local des vidéos perso ; U, une fiche sans rien à lire le dit, et pourquoi dans « ⋯ » ; V, téléphone hors de la maison : adresse à distance ajoutée depuis l'écran « Le serveur ne répond pas » | en revue (§ 4.30 et 4.31 ; captures dans `docs/screenshots/fiches-vides/`) | — |
+| Pistes, icône et son (06/11/2026, usage réel de la 1.0.5) : W, l'audio et les sous-titres choisis à la main suivent la série (par langue et nature, par profil, sur l'appareil) ; X, « Épisode précédent » cassé sur la Shield (déplacement relatif après une fermeture, lu autrement par Android 11) ; Y, son qui continuait après avoir quitté une vidéo (lecteur refait par l'écran sortant, lecture lancée sans écran) | en revue (§ 4.32 ; captures dans `docs/screenshots/pistes-icone-son/`) | — |
 
 *(Chaque jalon met à jour ce tableau et ajoute ses contrats au § 4.)*
 
@@ -2751,6 +2752,81 @@ hors d'atteinte tant qu'aucun profil n'est ouvert.
   serveur refusée ; avec une adresse distante, l'autre message et « Modifier l'adresse à distance ») ;
   captures 207 du téléphone (dans `docs/screenshots/fiches-vides/`, avec l'avant). La TV n'a ni nouveau code ni nouvelle chaîne sur cet écran ; ses tests et
   captures restent identiques.
+
+### 4.32 Pistes d'une série, icône « Épisode précédent » et son après la sortie (W, X, Y, 06/11/2026)
+
+Trois défauts relevés par le mainteneur en usage réel sur la 1.0.5.
+
+**W. Les pistes choisies suivent la série.** Jellyfin sait se souvenir des pistes
+(`RememberAudioSelections`, `RememberSubtitleSelections`), mais **par élément et par index** : il
+garde l'`AudioStreamIndex` et le `SubtitleStreamIndex` des données utilisateur de l'épisode joué et ne
+les rend, dans `PlaybackInfo`, que pour ce même épisode (`MediaSourceManager.SetDefaultAudioStreamIndex`,
+lu dans les sources du serveur), et seulement quand le client n'impose pas d'index. Or l'appli impose
+toujours les siens (pré-sélection du § 4.10), et l'épisode suivant n'a de toute façon pas de mémoire :
+rien ne pouvait suivre. Les index changent d'ailleurs d'un fichier à l'autre.
+- **Choix** : l'appli garde elle-même, **par profil, par série, sur l'appareil**, le dernier choix fait
+  à la main pendant la lecture (panneaux Audio et Sous-titres, TV et téléphone) ou sur la fiche d'un
+  épisode : la **langue** et la **nature** de la piste (forcés, malentendants), jamais son index ;
+  « Sans sous-titres » compris. Table Room `series_tracks` (`SeriesTracksRepository`, base en
+  version 5, migration automatique, schéma `5.json`) ; effacée avec le serveur oublié, gardée quand
+  le profil se déconnecte (comme sa disposition de l'accueil). Les films ne sont pas concernés.
+- **Application** : `TrackPreselection.choose(source, préférences, mémoire)` cherche d'abord la piste
+  de la mémoire : même langue (codes bibliographiques compris) et, pour des sous-titres, forcés ou
+  complets comme choisis ; puis même « malentendants », puis la piste par défaut, puis la première. Une
+  langue absente de l'épisode retombe sur les préférences du profil, sans erreur ; audio et
+  sous-titres sont indépendants. Le lecteur l'applique à tout épisode lancé sans choix (enchaînement,
+  « Épisode précédent / suivant », « Continuer », mosaïque, « Lire » d'une série), la fiche d'un
+  épisode aussi (ce qu'elle montre est ce qui sera lu).
+- Un choix fait sur la fiche avant de lancer part au lecteur tel quel (prioritaire pour cette
+  lecture) et devient celui de la série.
+
+**X. « Épisode précédent » cassé sur la Shield.** Le tracé était `M6 6h2v12H6zm3.5 6l8.5 6V6z`. En SVG,
+un `m` relatif après `z` part du début du sous-tracé fermé, (6, 6) : le triangle commence en (9,5 ; 12).
+Compose suit bien ce point (`PathParser.toPath`), mais passe le déplacement à
+`android.graphics.Path.rMoveTo`, qui part du **dernier point tracé** dans le Skia d'Android 11 : (6, 18),
+d'où un triangle 12 unités trop bas, hors de la grille. Le tracé s'écrit désormais en absolu
+(`M9.5 12`), et `CineIcons` rend **absolus tous** ses déplacements relatifs à la construction
+(`IconPaths.absoluteMoves`) : aucun `rMoveTo` n'atteint plus Android. `CineIconsTest` (JVM) parcourt
+toutes les icônes : aucune des nôtres n'a de déplacement relatif, et aucun déplacement relatif après une
+fermeture (ceux de Material compris) ne dépend de la lecture. Sur l'émulateur API 30 de la CI,
+`PlayerIconsOnDeviceTest` (`ci/emulator-icons.sh`) dessine l'icône par l'Android de la Shield, vérifie
+son triangle et capture le lecteur d'un épisode (artefact `emulator-api30`, `emulator-icons/`).
+**Vérifié sur l'émulateur API 30** (CI, 06/11/2026) : l'ancien tracé y dessine son triangle hors de la
+grille (« path of the 1.0.5 has its triangle in the grid: false »), le nouveau le garde à sa place : le
+défaut de la Shield est reproduit, et corrigé, sur Android 11.
+
+**Y. Le son continuait après avoir quitté une vidéo.** Cause la plus probable, lue dans le code : à
+« Retour », la pile vidait les modèles de vue de l'écran du lecteur **pendant** qu'il était encore
+composé (l'écran qui sort reste le temps de l'image du changement) ; libérer le lecteur changeait
+son état, l'écran sortant se recomposait, et `koinViewModel` refaisait **un nouveau** `PlayerViewModel`
+dans un magasin que plus personne ne viderait : il chargeait le film et le jouait, sans écran, jusqu'à
+ce qu'on tue l'appli. Selon le moment de l'image, d'où l'absence de reproduction sûre. Autres courses
+confirmées : `ON_STOP` ne mettait rien en pause pendant le chargement (« Accueil » pendant qu'il
+charge : la lecture démarrait derrière), un nouveau flux demandé en arrière-plan (réseau du
+téléphone, repli) repartait en lecture, et une activité refaite (changement de configuration non
+déclaré) laissait les modèles de vue de sa pile sans les vider. Écartées : un second lecteur au
+changement de piste ou au repli (le même lecteur recharge), `onCleared` pendant un `start()` (la portée
+du modèle de vue est annulée avant).
+- **Invariant** : le lecteur n'est créé et ne joue qu'une fois l'écran au moins `STARTED`
+  (`LifecycleStartEffect` : `onScreenStarted` / `onScreenStopped`) ; ce qui arrive avant attend
+  l'écran. Un flux rechargé écran arrêté reste en pause. « Retour » libère le lecteur aussitôt ; un
+  écran qui part le libère, même au milieu d'un chargement (une réponse qui arrive après est ignorée).
+- **Pile** (`BackStackEntry`, TV et téléphone) : les modèles de vue d'un écran retiré ne sont vidés
+  qu'une fois qu'il a quitté la composition ; l'activité qui part vide toute la pile.
+- **Un seul lecteur vivant** (`LivePlayers`) : un lecteur créé alors qu'un autre vit libère l'autre
+  (son écran, s'il revient, repart où il était). Chaque création et libération écrit une ligne
+  `CineDoury` (« player 3 created: item …, DirectPlay », « player 3 released: closed ») :
+  `adb logcat -s CineDoury` dira la suite d'un prochain cas.
+- L'image dans l'image du téléphone ne change pas : la petite fenêtre garde l'activité `STARTED`.
+
+**Preuve** : `SeriesTracksTest` (`:core:model` : autres index, forcés et SDH, « sans », langue absente),
+migration 4 → 5 (`CineDatabaseMigrationTest`) ; `PlayerLifecycleTest` (TV) et
+`MobilePlayerLifecycleTest` (téléphone), par le modèle de vue, la source en mémoire et de faux lecteurs :
+« Retour » et « Accueil » pendant le chargement, écran parti pendant le chargement et pendant la
+lecture, épisode suivant puis « Retour », autre piste puis « Retour », nouveau flux écran arrêté, un
+seul lecteur ; pistes d'un épisode à l'autre par le lecteur et par la fiche. **Non prouvé** : le cas
+réel du mainteneur (jamais reproduit), et la recomposition de l'écran sortant, que les tests ne
+provoquent pas à coup sûr ; la nouvelle pile l'empêche par construction.
 
 ## 5. Tests et CI
 

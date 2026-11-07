@@ -339,6 +339,7 @@ jobs:
           script: |
             ci/emulator-smoke.sh apk
             ci/emulator-playback.sh http://10.0.2.2:8096
+            ci/emulator-icons.sh
             ci/emulator-signin.sh http://10.0.2.2:8096
             ci/emulator-release.sh http://10.0.2.2:8096
             [ "${{ matrix.api-level }}" != 34 ] || ci/couch-gestures.sh "$(adb get-serialno)" --out couch-gestures.md
@@ -371,6 +372,7 @@ jobs:
             emulator-avi-logcat.txt
             emulator-bitrate.txt
             emulator-bitrate-logcat.txt
+            emulator-icons/
           if-no-files-found: ignore
 
   phone-emulator:

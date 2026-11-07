@@ -16,6 +16,7 @@ val detailsModule =
                 manager = get(),
                 manageUpdates = get(),
                 season = params.values.getOrNull(1) as ItemId?,
+                tracks = getOrNull(),
             )
         }
     }

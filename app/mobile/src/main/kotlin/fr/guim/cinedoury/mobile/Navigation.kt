@@ -108,12 +108,36 @@ val Route.beforeSession: Boolean
             this is Route.Unreachable || this is Route.Profiles || this is Route.QuickConnect ||
             this is Route.Password || this is Route.Pin
 
-/** A screen in the back stack, with its own view models: they go when the screen goes. */
+/**
+ * A screen in the back stack, with its own view models: they go when the screen goes, once it has left
+ * the composition (Y). Cleared while still drawn (the screen that leaves stays for the frame of the
+ * change), its screen would make its view models again, in a store nobody clears: a player made that
+ * way played on with no screen.
+ */
 class BackStackEntry(
     val route: Route,
     val id: Long,
 ) : ViewModelStoreOwner {
     override val viewModelStore = ViewModelStore()
+    private var shown = 0
+    private var removed = false
+
+    /** Its screen entered the composition. */
+    fun shown() {
+        shown += 1
+    }
+
+    /** Its screen left the composition: its view models go if it has left the stack. */
+    fun hidden() {
+        shown -= 1
+        if (shown == 0 && removed) viewModelStore.clear()
+    }
+
+    /** It left the stack: its view models go now, or when its screen leaves the composition. */
+    fun remove() {
+        removed = true
+        if (shown == 0) viewModelStore.clear()
+    }
 }
 
 /**
@@ -179,9 +203,12 @@ class Navigator(
         dispose(removed)
     }
 
+    /** The app goes (its activity is destroyed, or made again): every screen goes with it (Y). */
+    fun clear() = dispose(entries)
+
     private fun dispose(removed: List<BackStackEntry>) {
         removed.forEach {
-            it.viewModelStore.clear()
+            it.remove()
             onRemoved(it)
         }
     }

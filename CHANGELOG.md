@@ -6,6 +6,19 @@ technique est dans [`docs/SPEC.md`](docs/SPEC.md) ; les notes de chaque version 
 
 ## Non publié
 
+Pistes, icône et son (les deux applis, sauf mention) :
+
+- **Les pistes choisies suivent la série** : l'audio et les sous-titres choisis à la main pendant un
+  épisode, ou sur sa fiche, deviennent ceux de toute la série pour ce profil (« Sans sous-titres »
+  compris), retrouvés par langue et par nature (forcés, malentendants) dans chaque épisode, quel que
+  soit le chemin (épisode suivant, « Épisode précédent / suivant », fiche, « Continuer », mosaïque).
+  Une langue absente d'un épisode laisse faire les préférences du profil. Les films ne changent pas.
+- **« Épisode précédent »** a de nouveau son triangle sur la Shield (Android 11) ; aucune autre icône
+  ne peut retomber dans ce piège.
+- **Le son ne continue plus après avoir quitté une vidéo** : le lecteur ne démarre qu'avec son écran
+  au premier plan, s'arrête dès « Retour » ou dès que l'écran part, même pendant le chargement, et un
+  seul lecteur vit à la fois. Chaque lecteur créé ou libéré s'écrit dans le journal de l'appareil.
+
 ## 1.0.5 — 02/11/2026
 
 Notes de version : [`docs/releases/v1.0.5.md`](docs/releases/v1.0.5.md).
